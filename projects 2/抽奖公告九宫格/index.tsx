@@ -1,7 +1,7 @@
 import React from 'react'
-import TaskTitle from '../TaskTitle'
-import Announcement from '../Announcement'
-import LotteryGrid from '../LotteryGrid'
+import TaskTitle from '../任务标题'
+import Announcement from '../公告'
+import LotteryGrid from '../九宫格抽奖'
 import styles from './index.module.scss'
 
 export interface LotteryAnnouncementGridProps {

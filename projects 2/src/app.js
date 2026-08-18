@@ -16,11 +16,11 @@ function _normalizeDynamicSchema(path, rawSchema) {
     description: p.description || '',
   }));
   return {
-    id: dirName,
+    id: rawSchema.id || dirName,
     name: rawSchema.title || rawSchema.name || dirName,
     type: 'atom',
     description: rawSchema.description || '',
-    reactComponent: dirName,
+    reactComponent: rawSchema.reactComponent || dirName,
     dimensions: rawSchema.dimensions || null,
     props,
     category: rawSchema.category || '未分类',
@@ -1053,9 +1053,9 @@ const LOTTERY_CONSUMPTION_TEMPLATE_BACKGROUND = "#FFE0E9";
 const lotteryConsumptionTemplateNodes = [
   ["HeaderImage", {}],
   ["账户优惠券提示", {}],
-  ["LotteryAnnouncementGridModule", {}],
-  ["消耗返数据报名规则", {}],
   ["BigDay优惠券报名", {}],
+  ["消耗返数据报名规则", {}],
+  ["LotteryAnnouncementGridModule", {}],
   ["TaskListModule", {}],
   ["投放案例", {}],
   ["StickyBottomButton", {}],
@@ -1156,7 +1156,7 @@ const pageTemplates = [
     id: "lottery-consumption-return",
     name: "抽奖+消耗返",
     category: "营销活动",
-    description: "头图 + 优惠券提示 + 抽奖 + 消耗返 + 任务和案例",
+    description: "头图 + 优惠券提示 + BigDay + 消耗返 + 抽奖 + 任务和案例",
     background: LOTTERY_CONSUMPTION_TEMPLATE_BACKGROUND,
     canvasBackground: LOTTERY_CONSUMPTION_TEMPLATE_BACKGROUND,
     preview: lotteryConsumptionTemplatePreview,
@@ -1689,11 +1689,30 @@ function parseConsumptionRewardCoupon(value) {
     : { milestone: "", amount: "" };
 }
 
+function parseConsumptionRewardAmount(value) {
+  const coupon = parseConsumptionRewardCoupon(value);
+  if (coupon.amount) return coupon.amount;
+  const labeledMatch = String(value || "")
+    .replace(/,/g, "")
+    .match(/(?:奖励|赠)\s*(\d+(?:\.\d+)?)\s*元?/);
+  if (labeledMatch?.[1]) return labeledMatch[1];
+  const match = String(value || "")
+    .replace(/,/g, "")
+    .match(/(\d+(?:\.\d+)?)\s*元?/);
+  return match?.[1] || "";
+}
+
 function parseConsumptionTaskMilestone(value) {
   const match = String(value || "")
     .replace(/,/g, "")
-    .match(/(?:≥|>=|满)\s*(\d+(?:\.\d+)?)\s*元?/);
+    .match(/(?:消耗|≥|>=|满)\s*(\d+(?:\.\d+)?)\s*元?/);
   return match ? `消耗${match[1]}元` : "";
+}
+
+function parseConsumptionMilestone(value) {
+  const coupon = parseConsumptionRewardCoupon(value);
+  if (coupon.milestone) return coupon.milestone;
+  return parseConsumptionTaskMilestone(value);
 }
 
 function getConsumptionProgressAudience(strategy) {
@@ -1718,55 +1737,250 @@ function getConsumptionProgressAudience(strategy) {
   };
 }
 
+function getConsumptionProgressAudienceFromLabel(label) {
+  const normalized = String(label || "").replace(/^⭐/, "").trim();
+  const matchedAudience = getConsumptionProgressAudience(normalized);
+  if (matchedAudience) return matchedAudience;
+  if (/未首消/.test(normalized)) {
+    return {
+      id: "first-spend-personal",
+      title: "未首消（个人）",
+      versionTitle: normalized || "未首消（个人）",
+    };
+  }
+  if (/素人/.test(normalized)) {
+    return {
+      id: "novice",
+      title: "素人",
+      versionTitle: normalized.replace(/^素人[-：:\s]*/, "") || "默认",
+    };
+  }
+  if (/入驻个人/.test(normalized)) {
+    return {
+      id: "settled-personal",
+      title: "入驻个人",
+      versionTitle: normalized.replace(/^入驻个人[-：:\s]*/, "") || "默认",
+    };
+  }
+  if (/企业/.test(normalized)) {
+    return {
+      id: "enterprise",
+      title: "企业",
+      versionTitle: normalized.replace(/^企业[-：:\s]*/, "") || "默认",
+    };
+  }
+  return null;
+}
+
+function createConsumptionProgressEntry(audience, props, index, explicitTitle = "") {
+  if (!audience) return null;
+  return {
+    id: `consumption-progress-${audience.id}-${index + 1}`,
+    dimensionId: audience.id,
+    dimensionTitle: audience.title,
+    title: explicitTitle || audience.versionTitle,
+    props: {
+      lotteryText: "抽奖",
+      reward1AmountText: "",
+      reward1UnitText: "",
+      reward1LabelText: "",
+      reward2AmountText: "",
+      reward2UnitText: "",
+      reward2LabelText: "",
+      reward3AmountText: "",
+      reward3UnitText: "",
+      reward3LabelText: "",
+      milestone1Text: "",
+      milestone2Text: "",
+      milestone3Text: "",
+      milestone4Text: "",
+      ...props,
+    },
+  };
+}
+
+function completeConsumptionProgressRewardProps(props) {
+  [1, 2, 3].forEach((index) => {
+    const amountKey = `reward${index}AmountText`;
+    if (props[amountKey]) {
+      props[`reward${index}UnitText`] = "元";
+      props[`reward${index}LabelText`] = "满赠券";
+    }
+  });
+  return props;
+}
+
+function parseConsumptionProgressLine(line, index) {
+  const source = String(line || "").trim().replace(/"\s*\n\s*/g, "");
+  const audienceMatch = source.match(
+    /^(?:⭐)?(?:未首消（?个人）?|素人-[^\s\t]+|入驻个人-[^\s\t]+|企业-[^\s\t]+)/,
+  );
+  if (!audienceMatch) return null;
+  const audience = getConsumptionProgressAudience(audienceMatch[0]);
+  if (!audience) return null;
+
+  const rest = source.slice(audienceMatch[0].length).trim();
+  let columns = rest.split(/\t+|\s{2,}/).map((item) => item.trim()).filter(Boolean);
+  if (columns.length < 14) {
+    columns = rest.split(/\s+/).map((item) => item.trim()).filter(Boolean);
+  }
+  const taskIndex = columns.findIndex((item) => /累计现金消耗/.test(item));
+  const firstCouponIndex = columns.findIndex((item) => /(?:送)?满\s*\d+(?:\.\d+)?\s*赠\s*\d+/.test(item));
+  if (taskIndex < 0 || firstCouponIndex < 0) return null;
+
+  const coupons = columns
+    .slice(firstCouponIndex)
+    .filter((item) => /(?:送)?满\s*\d+(?:\.\d+)?\s*赠\s*\d+/.test(item))
+    .slice(0, 3)
+    .map(parseConsumptionRewardCoupon);
+
+  return createConsumptionProgressEntry(
+    audience,
+    completeConsumptionProgressRewardProps({
+      milestone1Text: parseConsumptionTaskMilestone(columns[taskIndex]),
+      milestone2Text: coupons[0]?.milestone || "",
+      milestone3Text: coupons[1]?.milestone || "",
+      milestone4Text: coupons[2]?.milestone || "",
+      reward1AmountText: coupons[0]?.amount || "",
+      reward2AmountText: coupons[1]?.amount || "",
+      reward3AmountText: coupons[2]?.amount || "",
+    }),
+    index,
+  );
+}
+
+function parseExplicitConsumptionProgressConfig(rows = []) {
+  const sourceRows = normalizePrdTableRows(rows);
+  const markerIndex = sourceRows.findIndex((row) =>
+    /消耗(?:分|返)\s*[-—–]?\s*阶梯任务进度/.test(`${row.key || ""}${row.value || ""}`),
+  );
+  if (markerIndex < 0) return [];
+
+  const entries = [];
+  let current = null;
+  const commit = () => {
+    if (!current?.audience) return;
+    entries.push(createConsumptionProgressEntry(
+      current.audience,
+      completeConsumptionProgressRewardProps(current.props),
+      entries.length,
+      current.title,
+    ));
+  };
+  const ensureCurrent = () => {
+    if (!current) current = { audience: null, title: "", props: {} };
+    return current;
+  };
+
+  for (let index = markerIndex + 1; index < sourceRows.length; index += 1) {
+    const row = sourceRows[index];
+    const key = String(row.key || "").trim();
+    const value = String(row.value || "").trim();
+    const combined = `${key}：${value}`.trim();
+
+    if (
+      entries.length &&
+      /(?:任务模块|九宫格|奖品|规则说明|头图模块|活动类型)/.test(key)
+    ) {
+      break;
+    }
+
+    if (/^(?:人群|维度|人群策略)$/.test(key)) {
+      if (current?.audience) commit();
+      const audience = getConsumptionProgressAudienceFromLabel(value);
+      current = {
+        audience,
+        title: audience?.versionTitle || "",
+        props: {},
+      };
+      continue;
+    }
+
+    if (/^(?:版本|消耗区间)$/.test(key)) {
+      const target = ensureCurrent();
+      const audience = getConsumptionProgressAudienceFromLabel(value);
+      if (audience) {
+        if (target.audience) commit();
+        current = {
+          audience,
+          title: audience.versionTitle || value,
+          props: {},
+        };
+      } else {
+        target.title = value;
+      }
+      continue;
+    }
+
+    if (/^(?:抽奖门槛|抽奖任务|第1档抽奖任务)$/.test(key)) {
+      ensureCurrent().props.milestone1Text = parseConsumptionTaskMilestone(value) || value;
+      continue;
+    }
+
+    const tierMatch = key.match(/^第\s*([123])\s*档(?:门槛|消耗|奖励)?$/);
+    if (tierMatch) {
+      const tierIndex = Number(tierMatch[1]);
+      const target = ensureCurrent();
+      target.props[`milestone${tierIndex + 1}Text`] = parseConsumptionMilestone(value);
+      target.props[`reward${tierIndex}AmountText`] = parseConsumptionRewardAmount(value);
+      continue;
+    }
+
+    const tierFieldMatch = key.match(/^第\s*([123])\s*档(.+)$/);
+    if (tierFieldMatch) {
+      const tierIndex = Number(tierFieldMatch[1]);
+      const fieldName = tierFieldMatch[2];
+      const target = ensureCurrent();
+      if (/奖励|金额|券/.test(fieldName)) {
+        target.props[`reward${tierIndex}AmountText`] = parseConsumptionRewardAmount(value);
+      }
+      if (/门槛|消耗|节点/.test(fieldName)) {
+        target.props[`milestone${tierIndex + 1}Text`] = parseConsumptionMilestone(value) || value;
+      }
+      continue;
+    }
+
+    const lineEntry = parseConsumptionProgressLine(combined, entries.length);
+    if (lineEntry) {
+      if (current?.audience) {
+        commit();
+        current = null;
+      }
+      entries.push(lineEntry);
+    }
+  }
+  if (current?.audience) commit();
+  return entries;
+}
+
 function parsePrdConsumptionProgressConfig(rows = []) {
+  const explicitEntries = parseExplicitConsumptionProgressConfig(rows);
   const fullText = rows
     .map((row) => `${row.key || ""}\n${row.value || ""}`)
     .join("\n");
   const marker = fullText.match(
     /消耗(?:分|返)\s*[-—–]?\s*阶梯任务进度\s*[:：]?/,
   );
-  if (!marker) return null;
+  if (!marker && !explicitEntries.length) return null;
 
   const source = fullText
-    .slice(marker.index)
+    .slice(marker?.index || 0)
     .replace(/\r\n?/g, "\n")
     .replace(/"\s*\n\s*/g, "");
-  const entries = source
+  const lineEntries = source
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => /^(?:⭐)?(?:未首消（?个人）?|素人-|入驻个人-|企业-)/.test(line))
-    .map((line, index) => {
-      const columns = line.split("\t").map((item) => item.trim().replace(/^"|"$/g, ""));
-      const audience = getConsumptionProgressAudience(columns[0]);
-      if (!audience) return null;
-      const coupons = [columns[6], columns[10], columns[14]].map(
-        parseConsumptionRewardCoupon,
-      );
-      return {
-        id: `consumption-progress-${audience.id}-${index + 1}`,
-        dimensionId: audience.id,
-        dimensionTitle: audience.title,
-        title: audience.versionTitle,
-        props: {
-          lotteryText: "抽奖",
-          milestone1Text: parseConsumptionTaskMilestone(columns[2]),
-          milestone2Text: coupons[0].milestone,
-          milestone3Text: coupons[1].milestone,
-          milestone4Text: coupons[2].milestone,
-          reward1AmountText: coupons[0].amount,
-          reward1UnitText: coupons[0].amount ? "元" : "",
-          reward1LabelText: coupons[0].amount ? "满赠券" : "",
-          reward2AmountText: coupons[1].amount,
-          reward2UnitText: coupons[1].amount ? "元" : "",
-          reward2LabelText: coupons[1].amount ? "满赠券" : "",
-          reward3AmountText: coupons[2].amount,
-          reward3UnitText: coupons[2].amount ? "元" : "",
-          reward3LabelText: coupons[2].amount ? "满赠券" : "",
-        },
-      };
-    })
+    .map(parseConsumptionProgressLine)
     .filter(Boolean);
 
+  const seenEntryKeys = new Set();
+  const entries = [...explicitEntries, ...lineEntries].filter((entry) => {
+    const key = `${entry.dimensionId}::${entry.title}`;
+    if (seenEntryKeys.has(key)) return false;
+    seenEntryKeys.add(key);
+    return true;
+  });
   if (!entries.length) return null;
   const dimensionOrder = [
     "first-spend-personal",
@@ -1774,6 +1988,11 @@ function parsePrdConsumptionProgressConfig(rows = []) {
     "settled-personal",
     "enterprise",
   ];
+  entries.sort((left, right) => {
+    const dimensionDelta =
+      dimensionOrder.indexOf(left.dimensionId) - dimensionOrder.indexOf(right.dimensionId);
+    return dimensionDelta || 0;
+  });
   return {
     entries,
     dimensions: dimensionOrder
@@ -3772,17 +3991,13 @@ function renderPrdTemplateMappingBlueprint(blueprint) {
         </button>
       </header>
 
-      ${renderPrdTemplateMappingSummary({
-        blueprint,
-        pageTemplate,
-        moduleCount: moduleItems.length,
-        infoCount: prdRows.length,
-      })}
-
-      ${hasModuleBoundForm ? renderModuleBoundBlueprintTable({
-        templateName: pageTemplate.name,
-        moduleItems,
-      }) : `
+      ${hasModuleBoundForm ? `
+        ${renderPageBlueprintBasicInfo({ templateName: pageTemplate.name })}
+        ${renderModuleBoundBlueprintTable({
+          templateName: pageTemplate.name,
+          moduleItems,
+        })}
+      ` : `
         <section class="prd-template-map">
         <header>
           <div>
@@ -3806,47 +4021,6 @@ function renderPrdTemplateMappingBlueprint(blueprint) {
         </div>
       </section>
       `}
-    </section>
-  `;
-}
-
-function renderPrdTemplateMappingSummary({ blueprint, pageTemplate, moduleCount, infoCount }) {
-  return `
-    <section class="blueprint-activity-hero prd-template-summary">
-      <div class="blueprint-activity-hero-main">
-        <span>活动基础信息</span>
-        <input
-          value="${escapeAttr(blueprint.activityName)}"
-          data-blueprint-prd-field="activityName"
-          aria-label="活动名称"
-        />
-        <label>
-          <b>类型命中页面</b>
-          <textarea rows="2" readonly>${escapeHtml(blueprint.pageType ? `${blueprint.pageType}${pageTemplate ? ` → ${pageTemplate.name}` : " → 未命中模板"}` : "未在 PRD 中识别到类型")}</textarea>
-        </label>
-      </div>
-      <div class="blueprint-activity-hero-facts">
-        ${renderBlueprintStrategyFact({
-          label: "核心目标",
-          value: blueprint.activityGoal,
-          key: "activityGoal",
-        })}
-        ${renderBlueprintStrategyFact({
-          label: "页面模板",
-          value: pageTemplate?.name || "未命中，预览时按 PRD 字段临时生成",
-          readonly: true,
-        })}
-        ${renderBlueprintStrategyFact({
-          label: "模板模块",
-          value: `${moduleCount} 个顶层模块 / 分子`,
-          readonly: true,
-        })}
-        ${renderBlueprintStrategyFact({
-          label: "PRD 信息",
-          value: `${infoCount} 条信息字段`,
-          readonly: true,
-        })}
-      </div>
     </section>
   `;
 }
@@ -3945,6 +4119,39 @@ function renderModuleBoundBlueprintTable({ templateName, moduleItems }) {
   `;
 }
 
+function renderPageBlueprintBasicInfo({ templateName }) {
+  const form = hydrateModuleBoundBlueprintForm(pageBlueprintFormConfig, { templateName });
+  const fields = form.versions?.[0]?.sections?.[0]?.fields || [];
+  return `
+    <section class="prd-basic-info-panel">
+      <header>
+        <div>
+          <span>活动基础信息</span>
+          <strong>先确认页面类型与活动信息</strong>
+        </div>
+        <em>独立于页面模块，不参与模块编排</em>
+      </header>
+      <div class="prd-basic-info-grid">
+        ${fields.map(renderPageBlueprintBasicInfoField).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderPageBlueprintBasicInfoField(field) {
+  const row = state.prdTableRows[field.rowIndex] || { value: "" };
+  const isWide = field.size === "wide";
+  return `
+    <label class="prd-basic-info-field ${isWide ? "is-wide" : ""}">
+      <span>${escapeHtml(field.label)}</span>
+      <textarea
+        rows="${isWide ? 2 : 1}"
+        data-prd-table-row="${field.rowIndex}"
+      >${escapeHtml(row.value || "")}</textarea>
+    </label>
+  `;
+}
+
 function getPageTemplateBlueprintFormModules(moduleItems = []) {
   const moduleForms = moduleItems
     .map((moduleItem) => {
@@ -3959,7 +4166,7 @@ function getPageTemplateBlueprintFormModules(moduleItems = []) {
       };
     })
     .filter(Boolean);
-  return [pageBlueprintFormConfig, ...moduleForms];
+  return moduleForms;
 }
 
 function findModuleBlueprintFormConfig(moduleItem) {
@@ -4143,15 +4350,19 @@ function getModuleBoundFieldDefaultValue({ moduleConfig, templateName, version, 
   return "";
 }
 
-function renderModuleBoundBlueprintGroup(group) {
+function renderModuleBoundBlueprintGroup(group, index = 0) {
   const hasMultipleVersions = (group.versions || []).length > 1;
   return `
     <section class="prd-variable-module-row ${hasMultipleVersions ? "has-versions" : ""}">
       <article class="prd-variable-module-name">
-        <span>模块</span>
+        <div class="prd-variable-module-kicker">
+          <i>${String(index + 1).padStart(2, "0")}</i>
+          <span>页面模块</span>
+        </div>
         <strong>${escapeHtml(group.moduleName)}</strong>
-        <em>${escapeHtml(group.description || "")}</em>
-        ${hasMultipleVersions ? `<b>${group.versions.length} 个版本</b>` : ""}
+        <div class="prd-variable-module-meta">
+          ${hasMultipleVersions ? `<b>${group.versions.length} 个版本</b>` : `<b>默认版本</b>`}
+        </div>
         ${group.allowManualVersions ? `
           <button
             type="button"
@@ -6178,14 +6389,17 @@ function buildDemoGeneratedActivity() {
 function createGuidedFallbackPage() {
   return {
     id: `page_fallback_${Date.now()}`,
-    name: "页面加载失败",
+    name: "兜底页面",
     dimension: "兜底页面",
-    tags: ["系统页面", "加载异常"],
-    canvasBackground: "#f7f8fa",
-    colorThemeId: "neutral",
+    tags: ["系统页面", "兜底状态"],
+    canvasBackground: "#FFE0E9",
+    colorThemeId: "pink",
     navBarEnabled: false,
     isSystemFallback: true,
-    nodes: [],
+    nodes: [
+      createAtomNode("HeaderImage"),
+      createAtomNode("兜底组件"),
+    ],
   };
 }
 
@@ -7642,11 +7856,7 @@ function renderGuidedPagePreview(pageData) {
           data-page-theme="${escapeAttr(getGuidedPageTheme(pageData).id)}"
           style="${escapeAttr(getGuidedPageThemeStyle(pageData))}"
         >
-          ${
-            pageData.isSystemFallback
-              ? renderGuidedFallbackPage()
-              : pageNodes.map((node) => renderGuidedNode(node)).join("")
-          }
+          ${pageNodes.map((node) => renderGuidedNode(node)).join("")}
           ${pageData.navBarEnabled ? renderPageNavBarOverlay() : ""}
         </div>
       </div>
@@ -7671,41 +7881,19 @@ function renderGuidedPagePreview(pageData) {
   `;
 }
 
-function renderGuidedFallbackPage() {
+function renderGuidedFallbackExportPage(entry) {
+  const page = state.pages.find((item) => item.id === entry.pageId);
+  const nodes = page?.nodes?.length
+    ? page.nodes
+    : [createAtomNode("HeaderImage"), createAtomNode("兜底组件")];
+  const background = page?.canvasBackground || "#FFE0E9";
   return `
-    <div class="guided-fallback-statusbar" aria-hidden="true">
-      <span>9:41</span>
-      <div>
-        <i></i>
-        <i></i>
-        <i></i>
-      </div>
+    <div
+      class="page guided-theme-page guided-fallback-page guided-export-fallback-page"
+      style="background:${escapeAttr(background)};--guided-page-theme-filter:${escapeAttr(entry.pageTheme?.filter || "none")}"
+    >
+      ${nodes.map((node) => renderComponent(node, { editable: false })).join("")}
     </div>
-    <main class="guided-fallback-content">
-      <div class="guided-fallback-visual" aria-hidden="true">
-        <div class="guided-fallback-window">
-          <span></span>
-          <span></span>
-          <span></span>
-          <i></i>
-        </div>
-        <div class="guided-fallback-signal">
-          <i></i>
-        </div>
-      </div>
-      <div class="guided-fallback-copy">
-        <h1>页面暂时加载不出来</h1>
-        <p>网络开小差了，请检查网络后重新加载</p>
-      </div>
-      <div class="guided-fallback-actions">
-        <button type="button">重新加载</button>
-        <button type="button">返回首页</button>
-      </div>
-    </main>
-    <footer class="guided-fallback-footer">
-      <span>仍然无法打开？</span>
-      <button type="button">联系客服</button>
-    </footer>
   `;
 }
 
@@ -10405,11 +10593,7 @@ function renderGuidedExportPreview(entry) {
   const previewWidth = Math.ceil(width * previewScale);
   const previewHeight = Math.ceil(height * previewScale);
   const content = entry.exportKind === "fallback-page"
-    ? `
-      <div class="page guided-fallback-page guided-export-fallback-page">
-        ${renderGuidedFallbackPage()}
-      </div>
-    `
+    ? renderGuidedFallbackExportPage(entry)
     : `
       <div
         class="guided-export-themed-content"
@@ -11198,7 +11382,19 @@ function bindEvents() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       })
-        .then((res) => res.json())
+        .then(async (res) => {
+          const text = await res.text();
+          let json;
+          try {
+            json = text ? JSON.parse(text) : null;
+          } catch {
+            throw new Error(`接口返回不是有效 JSON（HTTP ${res.status}）`);
+          }
+          if (!res.ok) {
+            throw new Error(json?.error || `接口请求失败（HTTP ${res.status}）`);
+          }
+          return json;
+        })
         .then((json) => {
           if (json.success && json.data && json.data.content) {
             state.prdTextInput = json.data.content;

@@ -1,8 +1,11 @@
 const express = require("express");
 const path = require("path");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
 
 const app = express();
 app.use(express.json({ limit: "10mb" }));
+const execFileAsync = promisify(execFile);
 
 const PORT = process.env.DEPLOY_RUN_PORT || process.env.PORT || 5000;
 const HOST = "0.0.0.0";
@@ -125,6 +128,51 @@ async function fetchAuthorizedFeishuContent(documentUrl) {
   return String(rawContentData.content || "").trim() || null;
 }
 
+async function fetchFeishuContentWithCli(documentUrl) {
+  try {
+    const { stdout } = await execFileAsync(
+      "lark-cli",
+      [
+        "docs",
+        "+fetch",
+        "--doc",
+        documentUrl.url,
+        "--doc-format",
+        "markdown",
+        "--format",
+        "json",
+      ],
+      {
+        timeout: 30000,
+        maxBuffer: 1024 * 1024 * 5,
+      },
+    );
+    const result = JSON.parse(stdout);
+    const content = result?.data?.document?.content;
+    return {
+      content:
+        typeof content === "string" && content.trim()
+          ? content.trim()
+          : null,
+      error: null,
+    };
+  } catch (error) {
+    const stderr = String(error?.stderr || "").trim();
+    let parsedError = null;
+    try {
+      parsedError = stderr ? JSON.parse(stderr) : null;
+    } catch {}
+    const message =
+      parsedError?.error?.message ||
+      parsedError?.message ||
+      stderr ||
+      error?.message ||
+      "lark-cli 读取失败";
+    console.warn("lark-cli read failed:", message);
+    return { content: null, error: new Error(message) };
+  }
+}
+
 // Fetch Feishu public document content
 apiRouter.post("/fetch-feishu-doc", async (req, res) => {
   try {
@@ -143,6 +191,19 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
 
     const docId = documentUrl.token;
     console.log("Fetching Feishu document:", docId);
+
+    const cliResult = await fetchFeishuContentWithCli(documentUrl);
+    if (cliResult.content) {
+      return res.json({
+        success: true,
+        data: {
+          docId,
+          content: cliResult.content,
+          length: cliResult.content.length,
+          source: "lark-cli",
+        },
+      });
+    }
 
     let authorizedError = null;
     try {
@@ -204,10 +265,11 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
     }
 
     if (!textContent || textContent.length < 10) {
+      const readError = cliResult.error || authorizedError;
       return res.status(400).json({
         success: false,
-        error: authorizedError
-          ? `无法读取飞书文档：${authorizedError.message}。请确认当前飞书账号有文档访问权限`
+        error: readError
+          ? `无法读取飞书文档：${readError.message}。请确认当前飞书账号有文档访问权限`
           : "无法提取文档内容。请将文档分享权限设置为“获得链接的人可阅读”，或配置飞书用户授权",
       });
     }

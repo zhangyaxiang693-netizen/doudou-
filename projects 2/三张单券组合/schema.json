@@ -1,0 +1,641 @@
+{
+  "name": "TripleSingleCoupon",
+  "title": "三连优惠券",
+  "description": "三张单个优惠券横向并列展示的组合组件；本体引用 SingleCoupon，但三张券各自拥有独立变量",
+  "category": "营销组件",
+  "props": [
+    {
+      "name": "gap",
+      "label": "间距",
+      "type": "number",
+      "default": 4,
+      "min": 0,
+      "max": 80,
+      "description": "三张优惠券之间的横向间距"
+    },
+    {
+      "name": "coupon1Title",
+      "type": "string",
+      "default": "DOU+满赠券",
+      "description": "优惠券的标题文字",
+      "label": "券1标题"
+    },
+    {
+      "name": "coupon1Amount",
+      "type": "string",
+      "default": "800",
+      "description": "优惠券的金额数值",
+      "label": "券1金额"
+    },
+    {
+      "name": "coupon1Unit",
+      "type": "string",
+      "default": "元",
+      "description": "优惠券的金额单位",
+      "label": "券1单位"
+    },
+    {
+      "name": "coupon1Tag",
+      "type": "string",
+      "default": "叠加",
+      "description": "优惠券的标签文字",
+      "label": "券1标签"
+    },
+    {
+      "name": "coupon1Radius",
+      "type": "number",
+      "default": 40,
+      "min": 0,
+      "max": 100,
+      "description": "优惠券主体圆角",
+      "label": "券1圆角"
+    },
+    {
+      "name": "coupon1BgGradientStart",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FFF3F3",
+      "description": "券背景的渐变起始颜色",
+      "label": "券1背景渐变起始色"
+    },
+    {
+      "name": "coupon1BgGradientEnd",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FFFEFE",
+      "description": "券背景的渐变结束颜色",
+      "label": "券1背景渐变结束色"
+    },
+    {
+      "name": "coupon1TopGradientStart",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FF57AF",
+      "description": "顶部渐变的起始颜色",
+      "label": "券1顶部渐变起始色"
+    },
+    {
+      "name": "coupon1TopGradientEnd",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FF387B",
+      "description": "顶部渐变的结束颜色",
+      "label": "券1顶部渐变结束色"
+    },
+    {
+      "name": "coupon1DividerColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FFD2D2",
+      "description": "虚线分割线的颜色",
+      "label": "券1分割线颜色"
+    },
+    {
+      "name": "coupon1TagButtonColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(255, 226, 99, 1)",
+      "description": "叠加标签按钮的背景颜色",
+      "label": "券1按钮颜色"
+    },
+    {
+      "name": "coupon1TitleFontSize",
+      "type": "number",
+      "default": 24,
+      "description": "标题文字的字号",
+      "label": "券1标题字号"
+    },
+    {
+      "name": "coupon1TitleFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Douyin Sans",
+      "description": "标题文字的字体",
+      "label": "券1标题字体"
+    },
+    {
+      "name": "coupon1TitleLetterSpacing",
+      "type": "number",
+      "default": 0,
+      "description": "标题文字的字间距",
+      "label": "券1标题字间距"
+    },
+    {
+      "name": "coupon1TitleColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(255, 255, 255, 1)",
+      "description": "标题文字的颜色",
+      "label": "券1标题字颜色"
+    },
+    {
+      "name": "coupon1AmountFontSize",
+      "type": "number",
+      "default": 63,
+      "description": "金额文字的字号",
+      "label": "券1金额字号"
+    },
+    {
+      "name": "coupon1AmountFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Douyin Number ABC",
+      "description": "金额文字的字体",
+      "label": "券1金额字体"
+    },
+    {
+      "name": "coupon1AmountLetterSpacing",
+      "type": "number",
+      "default": -2.99,
+      "description": "金额文字的字间距",
+      "label": "券1金额字间距"
+    },
+    {
+      "name": "coupon1AmountColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(61, 61, 61, 1)",
+      "description": "金额文字的颜色",
+      "label": "券1金额字颜色"
+    },
+    {
+      "name": "coupon1UnitFontSize",
+      "type": "number",
+      "default": 24,
+      "description": "单位文字的字号",
+      "label": "券1单位字号"
+    },
+    {
+      "name": "coupon1UnitFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Source Han Sans CN",
+      "description": "单位文字的字体",
+      "label": "券1单位字体"
+    },
+    {
+      "name": "coupon1UnitLetterSpacing",
+      "type": "number",
+      "default": 0,
+      "description": "单位文字的字间距",
+      "label": "券1单位字间距"
+    },
+    {
+      "name": "coupon1UnitColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(61, 61, 61, 1)",
+      "description": "单位文字的颜色",
+      "label": "券1单位字颜色"
+    },
+    {
+      "name": "coupon1TagFontSize",
+      "type": "number",
+      "default": 22,
+      "description": "标签文字的字号",
+      "label": "券1标签字号"
+    },
+    {
+      "name": "coupon1TagFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Source Han Sans CN",
+      "description": "标签文字的字体",
+      "label": "券1标签字体"
+    },
+    {
+      "name": "coupon1TagLetterSpacing",
+      "type": "number",
+      "default": 0,
+      "description": "标签文字的字间距",
+      "label": "券1标签字间距"
+    },
+    {
+      "name": "coupon1TagColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(97, 50, 24, 1)",
+      "description": "标签文字的颜色",
+      "label": "券1标签字颜色"
+    },
+    {
+      "name": "coupon2Title",
+      "type": "string",
+      "default": "DOU+满赠券",
+      "description": "优惠券的标题文字",
+      "label": "券2标题"
+    },
+    {
+      "name": "coupon2Amount",
+      "type": "string",
+      "default": "800",
+      "description": "优惠券的金额数值",
+      "label": "券2金额"
+    },
+    {
+      "name": "coupon2Unit",
+      "type": "string",
+      "default": "元",
+      "description": "优惠券的金额单位",
+      "label": "券2单位"
+    },
+    {
+      "name": "coupon2Tag",
+      "type": "string",
+      "default": "叠加",
+      "description": "优惠券的标签文字",
+      "label": "券2标签"
+    },
+    {
+      "name": "coupon2Radius",
+      "type": "number",
+      "default": 40,
+      "min": 0,
+      "max": 100,
+      "description": "优惠券主体圆角",
+      "label": "券2圆角"
+    },
+    {
+      "name": "coupon2BgGradientStart",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FFF3F3",
+      "description": "券背景的渐变起始颜色",
+      "label": "券2背景渐变起始色"
+    },
+    {
+      "name": "coupon2BgGradientEnd",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FFFEFE",
+      "description": "券背景的渐变结束颜色",
+      "label": "券2背景渐变结束色"
+    },
+    {
+      "name": "coupon2TopGradientStart",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FF57AF",
+      "description": "顶部渐变的起始颜色",
+      "label": "券2顶部渐变起始色"
+    },
+    {
+      "name": "coupon2TopGradientEnd",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FF387B",
+      "description": "顶部渐变的结束颜色",
+      "label": "券2顶部渐变结束色"
+    },
+    {
+      "name": "coupon2DividerColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FFD2D2",
+      "description": "虚线分割线的颜色",
+      "label": "券2分割线颜色"
+    },
+    {
+      "name": "coupon2TagButtonColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(255, 226, 99, 1)",
+      "description": "叠加标签按钮的背景颜色",
+      "label": "券2按钮颜色"
+    },
+    {
+      "name": "coupon2TitleFontSize",
+      "type": "number",
+      "default": 24,
+      "description": "标题文字的字号",
+      "label": "券2标题字号"
+    },
+    {
+      "name": "coupon2TitleFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Douyin Sans",
+      "description": "标题文字的字体",
+      "label": "券2标题字体"
+    },
+    {
+      "name": "coupon2TitleLetterSpacing",
+      "type": "number",
+      "default": 0,
+      "description": "标题文字的字间距",
+      "label": "券2标题字间距"
+    },
+    {
+      "name": "coupon2TitleColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(255, 255, 255, 1)",
+      "description": "标题文字的颜色",
+      "label": "券2标题字颜色"
+    },
+    {
+      "name": "coupon2AmountFontSize",
+      "type": "number",
+      "default": 63,
+      "description": "金额文字的字号",
+      "label": "券2金额字号"
+    },
+    {
+      "name": "coupon2AmountFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Douyin Number ABC",
+      "description": "金额文字的字体",
+      "label": "券2金额字体"
+    },
+    {
+      "name": "coupon2AmountLetterSpacing",
+      "type": "number",
+      "default": -2.99,
+      "description": "金额文字的字间距",
+      "label": "券2金额字间距"
+    },
+    {
+      "name": "coupon2AmountColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(61, 61, 61, 1)",
+      "description": "金额文字的颜色",
+      "label": "券2金额字颜色"
+    },
+    {
+      "name": "coupon2UnitFontSize",
+      "type": "number",
+      "default": 24,
+      "description": "单位文字的字号",
+      "label": "券2单位字号"
+    },
+    {
+      "name": "coupon2UnitFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Source Han Sans CN",
+      "description": "单位文字的字体",
+      "label": "券2单位字体"
+    },
+    {
+      "name": "coupon2UnitLetterSpacing",
+      "type": "number",
+      "default": 0,
+      "description": "单位文字的字间距",
+      "label": "券2单位字间距"
+    },
+    {
+      "name": "coupon2UnitColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(61, 61, 61, 1)",
+      "description": "单位文字的颜色",
+      "label": "券2单位字颜色"
+    },
+    {
+      "name": "coupon2TagFontSize",
+      "type": "number",
+      "default": 22,
+      "description": "标签文字的字号",
+      "label": "券2标签字号"
+    },
+    {
+      "name": "coupon2TagFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Source Han Sans CN",
+      "description": "标签文字的字体",
+      "label": "券2标签字体"
+    },
+    {
+      "name": "coupon2TagLetterSpacing",
+      "type": "number",
+      "default": 0,
+      "description": "标签文字的字间距",
+      "label": "券2标签字间距"
+    },
+    {
+      "name": "coupon2TagColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(97, 50, 24, 1)",
+      "description": "标签文字的颜色",
+      "label": "券2标签字颜色"
+    },
+    {
+      "name": "coupon3Title",
+      "type": "string",
+      "default": "DOU+满赠券",
+      "description": "优惠券的标题文字",
+      "label": "券3标题"
+    },
+    {
+      "name": "coupon3Amount",
+      "type": "string",
+      "default": "800",
+      "description": "优惠券的金额数值",
+      "label": "券3金额"
+    },
+    {
+      "name": "coupon3Unit",
+      "type": "string",
+      "default": "元",
+      "description": "优惠券的金额单位",
+      "label": "券3单位"
+    },
+    {
+      "name": "coupon3Tag",
+      "type": "string",
+      "default": "叠加",
+      "description": "优惠券的标签文字",
+      "label": "券3标签"
+    },
+    {
+      "name": "coupon3Radius",
+      "type": "number",
+      "default": 40,
+      "min": 0,
+      "max": 100,
+      "description": "优惠券主体圆角",
+      "label": "券3圆角"
+    },
+    {
+      "name": "coupon3BgGradientStart",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FFF3F3",
+      "description": "券背景的渐变起始颜色",
+      "label": "券3背景渐变起始色"
+    },
+    {
+      "name": "coupon3BgGradientEnd",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FFFEFE",
+      "description": "券背景的渐变结束颜色",
+      "label": "券3背景渐变结束色"
+    },
+    {
+      "name": "coupon3TopGradientStart",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FF57AF",
+      "description": "顶部渐变的起始颜色",
+      "label": "券3顶部渐变起始色"
+    },
+    {
+      "name": "coupon3TopGradientEnd",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FF387B",
+      "description": "顶部渐变的结束颜色",
+      "label": "券3顶部渐变结束色"
+    },
+    {
+      "name": "coupon3DividerColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "#FFD2D2",
+      "description": "虚线分割线的颜色",
+      "label": "券3分割线颜色"
+    },
+    {
+      "name": "coupon3TagButtonColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(255, 226, 99, 1)",
+      "description": "叠加标签按钮的背景颜色",
+      "label": "券3按钮颜色"
+    },
+    {
+      "name": "coupon3TitleFontSize",
+      "type": "number",
+      "default": 24,
+      "description": "标题文字的字号",
+      "label": "券3标题字号"
+    },
+    {
+      "name": "coupon3TitleFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Douyin Sans",
+      "description": "标题文字的字体",
+      "label": "券3标题字体"
+    },
+    {
+      "name": "coupon3TitleLetterSpacing",
+      "type": "number",
+      "default": 0,
+      "description": "标题文字的字间距",
+      "label": "券3标题字间距"
+    },
+    {
+      "name": "coupon3TitleColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(255, 255, 255, 1)",
+      "description": "标题文字的颜色",
+      "label": "券3标题字颜色"
+    },
+    {
+      "name": "coupon3AmountFontSize",
+      "type": "number",
+      "default": 63,
+      "description": "金额文字的字号",
+      "label": "券3金额字号"
+    },
+    {
+      "name": "coupon3AmountFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Douyin Number ABC",
+      "description": "金额文字的字体",
+      "label": "券3金额字体"
+    },
+    {
+      "name": "coupon3AmountLetterSpacing",
+      "type": "number",
+      "default": -2.99,
+      "description": "金额文字的字间距",
+      "label": "券3金额字间距"
+    },
+    {
+      "name": "coupon3AmountColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(61, 61, 61, 1)",
+      "description": "金额文字的颜色",
+      "label": "券3金额字颜色"
+    },
+    {
+      "name": "coupon3UnitFontSize",
+      "type": "number",
+      "default": 24,
+      "description": "单位文字的字号",
+      "label": "券3单位字号"
+    },
+    {
+      "name": "coupon3UnitFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Source Han Sans CN",
+      "description": "单位文字的字体",
+      "label": "券3单位字体"
+    },
+    {
+      "name": "coupon3UnitLetterSpacing",
+      "type": "number",
+      "default": 0,
+      "description": "单位文字的字间距",
+      "label": "券3单位字间距"
+    },
+    {
+      "name": "coupon3UnitColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(61, 61, 61, 1)",
+      "description": "单位文字的颜色",
+      "label": "券3单位字颜色"
+    },
+    {
+      "name": "coupon3TagFontSize",
+      "type": "number",
+      "default": 22,
+      "description": "标签文字的字号",
+      "label": "券3标签字号"
+    },
+    {
+      "name": "coupon3TagFontFamily",
+      "type": "string",
+      "uiType": "font",
+      "default": "Source Han Sans CN",
+      "description": "标签文字的字体",
+      "label": "券3标签字体"
+    },
+    {
+      "name": "coupon3TagLetterSpacing",
+      "type": "number",
+      "default": 0,
+      "description": "标签文字的字间距",
+      "label": "券3标签字间距"
+    },
+    {
+      "name": "coupon3TagColor",
+      "type": "color",
+      "uiType": "color",
+      "default": "rgba(97, 50, 24, 1)",
+      "description": "标签文字的颜色",
+      "label": "券3标签字颜色"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    }
+  ],
+  "id": "TripleSingleCoupon",
+  "reactComponent": "TripleSingleCoupon"
+}

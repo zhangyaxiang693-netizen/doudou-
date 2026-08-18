@@ -1,0 +1,250 @@
+{
+  "name": "PromoCoupon",
+  "title": "促销优惠券",
+  "description": "横版促销优惠券组件，包含金额、限量提示和投放按钮",
+  "category": "营销组件",
+  "props": [
+    {
+      "name": "title",
+      "label": "标题",
+      "type": "string",
+      "default": "周年庆惊喜流量补贴券",
+      "description": "左上角活动标题文字（带下划线装饰）"
+    },
+    {
+      "name": "currency",
+      "label": "货币符号",
+      "type": "string",
+      "default": "￥",
+      "description": "金额前的货币符号"
+    },
+    {
+      "name": "amount",
+      "label": "金额",
+      "type": "string",
+      "default": "800",
+      "description": "优惠券金额数字"
+    },
+    {
+      "name": "limitText",
+      "label": "限量提示",
+      "type": "string",
+      "default": "限量5000张",
+      "description": "限量/剩余数量提示文案"
+    },
+    {
+      "name": "buttonText",
+      "label": "按钮文字",
+      "type": "string",
+      "default": "立即投",
+      "description": "右侧操作按钮文字"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    },
+    {
+      "name": "titleFontFamily",
+      "label": "标题-字体",
+      "type": "string",
+      "default": "MFBenHeiNoncommercial",
+      "description": "左上角标题文字的字体"
+    },
+    {
+      "name": "titleFontSize",
+      "label": "标题-字号",
+      "type": "select",
+      "options": [
+        "24px",
+        "28px",
+        "32px",
+        "36px",
+        "40px",
+        "44px",
+        "48px"
+      ],
+      "default": "36px",
+      "description": "左上角标题文字的字号"
+    },
+    {
+      "name": "titleColor",
+      "label": "标题-颜色",
+      "type": "color",
+      "default": "rgba(45, 45, 45, 1)",
+      "description": "左上角标题文字的颜色"
+    },
+    {
+      "name": "symbolFontFamily",
+      "label": "货币符号-字体",
+      "type": "string",
+      "default": "Source Han Sans CN",
+      "description": "货币符号的字体"
+    },
+    {
+      "name": "symbolFontSize",
+      "label": "货币符号-字号",
+      "type": "select",
+      "options": [
+        "20px",
+        "24px",
+        "28px",
+        "30.13px",
+        "32px",
+        "36px",
+        "40px"
+      ],
+      "default": "30.13px",
+      "description": "货币符号的字号"
+    },
+    {
+      "name": "symbolColor",
+      "label": "货币符号-颜色",
+      "type": "color",
+      "default": "rgba(255, 39, 90, 1)",
+      "description": "货币符号的颜色"
+    },
+    {
+      "name": "amountFontFamily",
+      "label": "金额-字体",
+      "type": "string",
+      "default": "Douyin Number ABC",
+      "description": "金额数字的字体"
+    },
+    {
+      "name": "amountFontSize",
+      "label": "金额-字号",
+      "type": "select",
+      "options": [
+        "60px",
+        "68px",
+        "72px",
+        "78px",
+        "84px",
+        "90px",
+        "100px"
+      ],
+      "default": "78px",
+      "description": "金额数字的字号"
+    },
+    {
+      "name": "amountColor",
+      "label": "金额-颜色",
+      "type": "color",
+      "default": "rgba(255, 39, 90, 1)",
+      "description": "金额数字的颜色"
+    },
+    {
+      "name": "limitFontFamily",
+      "label": "限量提示-字体",
+      "type": "string",
+      "default": "Source Han Sans CN",
+      "description": "限量提示文字的字体"
+    },
+    {
+      "name": "limitFontSize",
+      "label": "限量提示-字号",
+      "type": "select",
+      "options": [
+        "16px",
+        "18px",
+        "20px",
+        "22px",
+        "24px",
+        "28px",
+        "32px"
+      ],
+      "default": "24px",
+      "description": "限量提示文字的字号"
+    },
+    {
+      "name": "limitColor",
+      "label": "限量提示-颜色",
+      "type": "color",
+      "default": "rgba(61, 61, 61, 1)",
+      "description": "限量提示文字的颜色"
+    },
+    {
+      "name": "buttonFontFamily",
+      "label": "按钮文字-字体",
+      "type": "string",
+      "default": "Source Han Sans CN",
+      "description": "右侧按钮文字的字体"
+    },
+    {
+      "name": "buttonFontSize",
+      "label": "按钮文字-字号",
+      "type": "select",
+      "options": [
+        "24px",
+        "26px",
+        "28px",
+        "30px",
+        "32px",
+        "36px",
+        "40px"
+      ],
+      "default": "32px",
+      "description": "右侧按钮文字的字号"
+    },
+    {
+      "name": "buttonColor",
+      "label": "按钮文字-颜色",
+      "type": "color",
+      "default": "rgba(255, 255, 255, 1)",
+      "description": "右侧按钮文字的颜色"
+    },
+    {
+      "name": "buttonBgColor",
+      "label": "按钮背景色",
+      "type": "color",
+      "default": "rgba(255, 19, 78, 1)",
+      "description": "右侧按钮的背景主色（自动生成渐变浅色）"
+    },
+    {
+      "name": "buttonBorderRadius",
+      "label": "按钮圆角",
+      "type": "select",
+      "options": [
+        "0px",
+        "10px",
+        "20px",
+        "30px",
+        "46px",
+        "60px",
+        "80px",
+        "111px"
+      ],
+      "default": "111px",
+      "description": "右侧按钮的圆角大小"
+    },
+    {
+      "name": "svgColor",
+      "label": "SVG主色",
+      "type": "color",
+      "default": "#FF3163",
+      "description": "优惠券SVG的主色调，自动衍生背景渐变、装饰图案和装饰条颜色"
+    },
+    {
+      "name": "svgBorderRadius",
+      "label": "SVG圆角",
+      "type": "select",
+      "options": [
+        "0px",
+        "10px",
+        "20px",
+        "30px",
+        "38px",
+        "50px",
+        "60px",
+        "80px"
+      ],
+      "default": "38px",
+      "description": "优惠券底部SVG的圆角大小"
+    }
+  ],
+  "id": "PromoCoupon",
+  "reactComponent": "PromoCoupon"
+}

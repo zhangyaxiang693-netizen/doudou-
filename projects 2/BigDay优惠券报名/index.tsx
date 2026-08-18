@@ -1,6 +1,6 @@
 import React from 'react'
-import SectionTitle from '../SectionTitle'
-import BigDayCouponClassic from '../BigDayCouponClassic'
+import SectionTitle from '../模块标题'
+import BigDayCouponClassic from '../BigDay经典优惠券'
 import ThresholdRegistration from '../门槛加报名'
 import styles from './index.module.scss'
 

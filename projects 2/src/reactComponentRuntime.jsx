@@ -1,40 +1,40 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
-import Announcement from "../Announcement";
-import BigButton from "../BigButton";
-import BigDayCouponClassic from "../BigDayCouponClassic";
+import Announcement from "../公告";
+import BigButton from "../大按钮";
+import BigDayCouponClassic from "../BigDay经典优惠券";
 import BigDayCouponSignup from "../BigDay优惠券报名";
 import ConsumptionRewardDataRules from "../消耗返数据报名规则";
 import LotteryAnnouncementGrid from "../抽奖公告九宫格";
-import StickyBottomButton from "../StickyBottomButton";
-import CouponTriplePack from "../CouponTriplePack";
-import DoublePromotion from "../DoublePromotion";
-import DualCoupon from "../DualCoupon";
-import HeaderImage from "../HeaderImage";
-import IconTitleCountdown from "../IconTitleCountdown";
-import LotteryGrid from "../LotteryGrid";
-import LotteryGridInteractive from "../LotteryGridInteractive";
+import StickyBottomButton from "../置底按钮";
+import CouponTriplePack from "../三券包";
+import DoublePromotion from "../双人推广";
+import DualCoupon from "../双券";
+import HeaderImage from "../头图";
+import IconTitleCountdown from "../倒计时图标标题";
+import LotteryGrid from "../九宫格抽奖";
+import LotteryGridInteractive from "../互动九宫格抽奖";
 import LotteryResultPopup from "../抽奖弹窗";
-import OrangeCoupon from "../OrangeCoupon";
-import PromoCoupon from "../PromoCoupon";
-import PromotionData from "../PromotionData";
-import PromotionModule from "../PromotionModule";
-import RedPacketCoupon from "../RedPacketCoupon";
-import SectionTitle from "../SectionTitle";
-import TaskModule from "../TaskModule";
-import TaskTitle from "../TaskTitle";
-import ThreePrizes from "../ThreePrizes";
-import TimeNotification from "../TimeNotification";
-import TopicContestNewPrize from "../TopicContestNewPrize";
-import TwoColumnLiveData from "../TwoColumnLiveData";
-import TripleCouponWithBg from "../TripleCouponWithBg";
-import TripleFlatCouponBg from "../TripleFlatCouponBg";
-import TripleOpenCoupon from "../TripleOpenCoupon";
-import MoleculeContainer from "../MoleculeContainer";
-import RichText from "../RichText";
-import SingleCoupon from "../SingleCoupon";
-import TripleSingleCoupon from "../TripleSingleCoupon";
+import OrangeCoupon from "../橙色优惠券";
+import PromoCoupon from "../促销优惠券";
+import PromotionData from "../投放数据";
+import PromotionModule from "../投放任务";
+import RedPacketCoupon from "../红包优惠券";
+import SectionTitle from "../模块标题";
+import TaskModule from "../任务模块";
+import TaskTitle from "../任务标题";
+import ThreePrizes from "../三奖品";
+import TimeNotification from "../时间通知";
+import TopicContestNewPrize from "../话题投稿新奖品";
+import TwoColumnLiveData from "../双列实时数据";
+import TripleCouponWithBg from "../三券背景组合";
+import TripleFlatCouponBg from "../三券扁平背景组合";
+import TripleOpenCoupon from "../三券展开组合";
+import MoleculeContainer from "../分子容器";
+import RichText from "../富文本";
+import SingleCoupon from "../单张优惠券";
+import TripleSingleCoupon from "../三张单券组合";
 import DouPlusJunePromoAnimationV2 from "../动效/DOU+6月大促_第二版";
 import DouPlusJunePromoAnimationV3 from "../动效/DOU+6月大促_第三版";
 import OneClickBoost from "../一键上热门";
@@ -49,6 +49,7 @@ import QualityVideoDiagnosis from "../优质视频诊断组件";
 import DouPlusPlacementGuide from "../DOU+投放攻略";
 import QualityPlacementCase from "../投放优质案例";
 import TextComponentSix from "../文本组件6";
+import FallbackComponent from "../兜底组件";
 
 const roots = new WeakMap();
 
@@ -103,6 +104,7 @@ const componentMap = {
   "DOU+投放攻略": DouPlusPlacementGuide,
   "投放优质案例": QualityPlacementCase,
   "文本组件6": TextComponentSix,
+  "兜底组件": FallbackComponent,
   QualityVideoDiagnosis,
 };
 

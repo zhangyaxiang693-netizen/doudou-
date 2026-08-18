@@ -1,0 +1,73 @@
+{
+  "name": "SectionTitle",
+  "title": "标题",
+  "description": "带左侧图标的标题组件，用于模块标题展示",
+  "category": "基础组件",
+  "props": [
+    {
+      "name": "text",
+      "label": "标题文字",
+      "type": "string",
+      "default": "消耗达标100%赢流量券",
+      "description": "标题的文字内容"
+    },
+    {
+      "name": "icon",
+      "label": "图标",
+      "type": "string",
+      "default": "",
+      "description": "左侧图标SVG的URL，不传则使用默认图标"
+    },
+    {
+      "name": "textFontFamily",
+      "label": "文字字体",
+      "type": "string",
+      "default": "MFBenHeiNoncommercial",
+      "description": "标题文字的字体"
+    },
+    {
+      "name": "textFontSize",
+      "label": "文字字号",
+      "type": "string",
+      "default": "36",
+      "description": "标题文字的字号（单位px）"
+    },
+    {
+      "name": "iconGap",
+      "label": "图标间距",
+      "type": "string",
+      "default": "8",
+      "description": "图标和文字之间的间距（单位px）"
+    },
+    {
+      "name": "textLetterSpacing",
+      "label": "文字间距",
+      "type": "string",
+      "default": "0",
+      "description": "文字之间的字间距（单位px）"
+    },
+    {
+      "name": "textColor",
+      "label": "文字颜色",
+      "type": "string",
+      "default": "rgba(45,45,45,1)",
+      "description": "标题文字的纯色"
+    },
+    {
+      "name": "textGradient",
+      "label": "文字渐变色",
+      "type": "string",
+      "default": "",
+      "description": "标题文字的渐变色，优先级高于文字颜色"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    }
+  ],
+  "id": "SectionTitle",
+  "reactComponent": "SectionTitle"
+}

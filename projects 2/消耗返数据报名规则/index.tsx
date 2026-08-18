@@ -1,8 +1,8 @@
 import React from 'react'
-import SectionTitle from '../SectionTitle'
+import SectionTitle from '../模块标题'
 import ConsumptionRewardProgress from '../消耗返进度条'
-import TwoColumnLiveData from '../TwoColumnLiveData'
-import BigButton from '../BigButton'
+import TwoColumnLiveData from '../双列实时数据'
+import BigButton from '../大按钮'
 import TextComponentOne from '../文本组件1'
 import styles from './index.module.scss'
 

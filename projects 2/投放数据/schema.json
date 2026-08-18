@@ -1,0 +1,52 @@
+{
+  "name": "PromotionData",
+  "title": "投放数据展示模块",
+  "description": "投放数据展示模块组件，灰色圆角背景，左侧两个数据项，右侧操作按钮",
+  "category": "营销组件",
+  "props": [
+    {
+      "name": "label1",
+      "label": "数据1标签",
+      "type": "string",
+      "default": "我的消耗(元)",
+      "description": "第一个数据项的标签文字"
+    },
+    {
+      "name": "value1",
+      "label": "数据1数值",
+      "type": "string",
+      "default": "900",
+      "description": "第一个数据项的数值（大号加粗字体）"
+    },
+    {
+      "name": "label2",
+      "label": "数据2标签",
+      "type": "string",
+      "default": "已领取优惠券(张)",
+      "description": "第二个数据项的标签文字"
+    },
+    {
+      "name": "value2",
+      "label": "数据2数值",
+      "type": "string",
+      "default": "1",
+      "description": "第二个数据项的数值（大号加粗字体）"
+    },
+    {
+      "name": "buttonText",
+      "label": "按钮文字",
+      "type": "string",
+      "default": "去投放",
+      "description": "右侧操作按钮的文字（红色背景白色文字）"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    }
+  ],
+  "id": "PromotionData",
+  "reactComponent": "PromotionData"
+}
