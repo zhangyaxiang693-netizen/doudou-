@@ -14,34 +14,35 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 
 ## 目录结构
 
+本项目为多层结构：工作区根 `/workspace/projects/` 与技术项目根 `projects 2/` 不重合。
+
 ```
-/workspace/projects/
-├── .coze              # 项目配置
-├── .preview           # 预览端口声明
-├── index.html         # Vite 入口 HTML
-├── package.json       # 依赖声明
-├── vite.config.js     # Vite 构建配置
-├── src/
-│   ├── builder-entry.js    # 应用入口
-│   ├── app.js              # 组件注册与 schema 加载
-│   ├── styles.css          # 全局样式与字体声明
-│   ├── components/         # 公共组件（如 InlineSvg）
-│   ├── utils/              # 工具函数
-│   └── reactComponentRuntime.jsx  # React 组件运行时
-├── fonts/             # 字体文件（Source Han Sans、抖音字体等）
-├── scripts/
-│   ├── build.sh       # 构建脚本（pnpm install + vite build）
-│   └── run.sh         # 启动脚本（启动 Express 服务器）
-├── server/
-│   └── index.cjs      # Express 服务器（静态文件 + 飞书文档代理）
-├── dist/              # 构建产物
-├── _backup_build/     # 原始构建产物备份
-├── [组件目录]/         # 各组件源码（BigButton、PromoCoupon 等）
-│   ├── index.tsx      # 组件实现
-│   ├── index.module.scss  # 组件样式
-│   ├── schema.json    # 组件属性定义
-│   └── assets/        # 组件资源
-└── AGENTS.md
+/workspace/projects/                    # 工作区根目录
+├── .coze                              # 根 .coze（平台入口，sub_id=e872924c）
+├── .gitignore
+└── projects 2/                        # 技术项目根目录
+    ├── .coze                          # 子项目 .coze（sub_id=d370d584）
+    ├── .preview                       # 预览端口声明（expose_port=5000）
+    ├── AGENTS.md                      # 本文件
+    ├── index.html                     # Vite 入口 HTML
+    ├── package.json                   # 依赖声明
+    ├── pnpm-workspace.yaml            # pnpm workspace 配置（packages=["."])
+    ├── vite.config.js                 # Vite 构建配置
+    ├── src/
+    │   ├── builder-entry.js           # 应用入口
+    │   ├── app.js                     # 组件注册与 schema 加载
+    │   ├── styles.css                 # 全局样式与字体声明
+    │   ├── components/                # 公共组件
+    │   ├── utils/                     # 工具函数
+    │   └── reactComponentRuntime.jsx  # React 组件运行时
+    ├── fonts/                         # 字体文件
+    ├── scripts/
+    │   ├── build.sh                   # 构建脚本（pnpm install + vite build）
+    │   └── run.sh                     # 启动脚本（Express 服务器）
+    ├── server/
+    │   └── index.cjs                  # Express 服务器
+    ├── dist/                          # 构建产物
+    └── [组件目录]/                     # 各组件源码
 ```
 
 ## 关键入口
@@ -78,3 +79,6 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 - 字体文件较大（总计 ~50MB），首次加载较慢
 - Sass legacy JS API 有 deprecation 警告，不影响构建
 - 构建产物在 `dist/`，预览服务器服务该目录
+- `pnpm-workspace.yaml` 必须包含 `packages: ["."]`，否则 pnpm 会因缺少 packages 字段报错
+- 项目中存在 `package-lock.json`（历史遗留），实际使用 pnpm 管理依赖，不要删除 pnpm-lock.yaml
+- 目录名 `projects 2` 含空格，脚本中路径引用需加引号
