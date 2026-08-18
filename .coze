@@ -9,6 +9,10 @@ entrypoint = "index.html"
 [preview]
 preview_enable = "enabled"
 
+[dev]
+build = ["bash", "scripts/build.sh"]
+run = ["bash", "scripts/run.sh"]
+
 [deploy]
 build = ["bash", "scripts/build.sh"]
 run = ["bash", "scripts/run.sh"]
