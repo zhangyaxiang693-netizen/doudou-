@@ -1,0 +1,79 @@
+.page {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 624.64px;
+  height: 46px;
+}
+.wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 289px;
+  height: 46px;
+}
+.container {
+  width: 289px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.content {
+  position: relative;
+  margin-right: var(--task-title-content-margin-right, 0px);
+  width: 44px;
+  height: 41px;
+}
+.icon {
+  width: 44px;
+  height: 41px;
+  display: block;
+}
+.content1 {
+  height: 46px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-left: 8px;
+}
+.text {
+  font-family: var(--task-title-text-font-family, "MFBenHeiNoncommercial");
+  font-size: var(--task-title-text-font-size, 36px);
+  white-space: nowrap;
+  color: var(--task-title-text-color, rgba(45, 45, 45, 1));
+  line-height: 40px;
+  letter-spacing: var(--task-title-text-letter-spacing, normal);
+  font-weight: 400;
+}
+.wrap1 {
+  width: 254px;
+  height: 46px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 10px;
+  padding-left: 10px;
+  margin-left: 81.64px;
+}
+.text1 {
+  font-family: var(--task-title-text1-font-family, "Source Han Sans CN");
+  font-size: var(--task-title-text1-font-size, 28px);
+  white-space: nowrap;
+  text-align: right;
+  color: var(--task-title-text1-color, rgba(45, 45, 45, 1));
+  line-height: 32.55px;
+  letter-spacing: var(--task-title-text1-letter-spacing, normal);
+  font-weight: 700;
+}
+.text1__seg0 {
+  font-size: var(--task-title-text1-seg0-font-size, 28px);
+}

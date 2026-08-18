@@ -1,0 +1,22 @@
+{
+  "name": "HeaderImage",
+  "title": "头图",
+  "description": "顶部头图组件，用于页面顶部展示主视觉图片",
+  "category": "基础组件",
+  "props": [
+    {
+      "name": "src",
+      "label": "图片地址",
+      "type": "string",
+      "default": "",
+      "description": "自定义头图图片地址，不填使用默认图"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    }
+  ]
+}

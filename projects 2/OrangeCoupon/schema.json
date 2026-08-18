@@ -1,0 +1,183 @@
+{
+  "name": "OrangeCoupon",
+  "title": "橙色优惠券",
+  "description": "橙色背景的单张优惠券组件，左侧展示金额，右侧展示券标题和副标题",
+  "category": "营销组件",
+  "props": [
+    {
+      "name": "amount",
+      "label": "金额",
+      "type": "string",
+      "default": "200",
+      "description": "优惠券的金额数字"
+    },
+    {
+      "name": "unit",
+      "label": "单位",
+      "type": "string",
+      "default": "元",
+      "description": "优惠券的金额单位"
+    },
+    {
+      "name": "condition",
+      "label": "使用条件",
+      "type": "string",
+      "default": "满30元赠",
+      "description": "优惠券的使用条件/获取条件文字"
+    },
+    {
+      "name": "title",
+      "label": "券标题",
+      "type": "string",
+      "default": "DOU+优惠券",
+      "description": "优惠券的标题文字"
+    },
+    {
+      "name": "subtitle",
+      "label": "副标题",
+      "type": "string",
+      "default": "共计20名",
+      "description": "优惠券的副标题/补充说明文字"
+    },
+    {
+      "name": "svgColor",
+      "label": "SVG背景颜色",
+      "type": "string",
+      "default": "#FFBABA",
+      "description": "优惠券背景SVG的主色调，自动衍生渐变效果"
+    },
+    {
+      "name": "borderRadius",
+      "label": "SVG圆角半径",
+      "type": "number",
+      "default": 50,
+      "description": "优惠券四个角的圆角半径，单位px"
+    },
+    {
+      "name": "amountFontFamily",
+      "label": "金额数字字体",
+      "type": "string",
+      "default": "Douyin Number ABC",
+      "description": "金额数字的字体"
+    },
+    {
+      "name": "amountFontSize",
+      "label": "金额数字字号",
+      "type": "string",
+      "default": "78px",
+      "description": "金额数字的字号大小"
+    },
+    {
+      "name": "amountColor",
+      "label": "金额数字颜色",
+      "type": "string",
+      "default": "rgba(72, 49, 49, 1)",
+      "description": "金额数字的颜色"
+    },
+    {
+      "name": "amountLetterSpacing",
+      "label": "金额数字间距",
+      "type": "string",
+      "default": "-3.68px",
+      "description": "金额数字的字间距"
+    },
+    {
+      "name": "unitFontFamily",
+      "label": "单位字体",
+      "type": "string",
+      "default": "OPPOSans",
+      "description": "单位文字的字体"
+    },
+    {
+      "name": "unitFontSize",
+      "label": "单位字号",
+      "type": "string",
+      "default": "32px",
+      "description": "单位文字的字号大小"
+    },
+    {
+      "name": "unitColor",
+      "label": "单位颜色",
+      "type": "string",
+      "default": "rgba(72, 49, 49, 1)",
+      "description": "单位文字的颜色"
+    },
+    {
+      "name": "conditionFontFamily",
+      "label": "使用条件字体",
+      "type": "string",
+      "default": "Source Han Sans CN",
+      "description": "使用条件文字的字体"
+    },
+    {
+      "name": "conditionFontSize",
+      "label": "使用条件字号",
+      "type": "string",
+      "default": "32px",
+      "description": "使用条件文字的字号大小"
+    },
+    {
+      "name": "conditionColor",
+      "label": "使用条件颜色",
+      "type": "string",
+      "default": "rgba(72, 49, 49, 1)",
+      "description": "使用条件文字的颜色"
+    },
+    {
+      "name": "titleFontFamily",
+      "label": "券标题字体",
+      "type": "string",
+      "default": "Source Han Sans CN",
+      "description": "券标题的字体"
+    },
+    {
+      "name": "titleFontSize",
+      "label": "券标题字号",
+      "type": "string",
+      "default": "36px",
+      "description": "券标题的字号大小"
+    },
+    {
+      "name": "titleColor",
+      "label": "券标题颜色",
+      "type": "string",
+      "default": "rgba(215, 103, 103, 1)",
+      "description": "券标题的颜色"
+    },
+    {
+      "name": "titleLetterSpacing",
+      "label": "券标题间距",
+      "type": "string",
+      "default": "0px",
+      "description": "券标题的字间距"
+    },
+    {
+      "name": "subtitleFontFamily",
+      "label": "副标题字体",
+      "type": "string",
+      "default": "Source Han Sans CN",
+      "description": "副标题的字体"
+    },
+    {
+      "name": "subtitleFontSize",
+      "label": "副标题字号",
+      "type": "string",
+      "default": "22px",
+      "description": "副标题的字号大小"
+    },
+    {
+      "name": "subtitleColor",
+      "label": "副标题颜色",
+      "type": "string",
+      "default": "rgba(200, 104, 104, 1)",
+      "description": "副标题的颜色"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    }
+  ]
+}

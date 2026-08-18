@@ -1,0 +1,256 @@
+{
+  "version": "1.0.0",
+  "naming": {
+    "format": "category/icon-name/color",
+    "colors": {
+      "pink": "粉色",
+      "red": "红色",
+      "magenta": "玫红色"
+    },
+    "note": "source 保留原始 Figma 文件名，组件引用建议使用 id 和 color。"
+  },
+  "categories": [
+    {
+      "id": "badge",
+      "name": "徽章",
+      "icons": [
+        {
+          "id": "badge-medal",
+          "name": "奖章徽章",
+          "variants": {
+            "pink": "01-badge/badge-medal-pink.svg",
+            "red": "01-badge/badge-medal-red.svg",
+            "magenta": "01-badge/badge-medal-magenta.svg"
+          }
+        },
+        {
+          "id": "badge-star",
+          "name": "星星奖章",
+          "variants": {
+            "pink": "01-badge/badge-star-pink.svg",
+            "red": "01-badge/badge-star-red.svg",
+            "magenta": "01-badge/badge-star-magenta.svg"
+          }
+        }
+      ]
+    },
+    {
+      "id": "media",
+      "name": "媒体与互动",
+      "icons": [
+        {
+          "id": "media-play",
+          "name": "播放",
+          "variants": {
+            "pink": "02-media/media-play-pink.svg",
+            "red": "02-media/media-play-red.svg",
+            "magenta": "02-media/media-play-magenta.svg"
+          }
+        },
+        {
+          "id": "media-volume",
+          "name": "音量",
+          "variants": {
+            "pink": "02-media/media-volume-pink.svg",
+            "red": "02-media/media-volume-red.svg",
+            "magenta": "02-media/media-volume-magenta.svg"
+          }
+        },
+        {
+          "id": "media-target",
+          "name": "靶心",
+          "variants": {
+            "red": "02-media/media-target-red.svg",
+            "magenta": "02-media/media-target-magenta.svg"
+          }
+        }
+      ]
+    },
+    {
+      "id": "gift",
+      "name": "福利与礼物",
+      "icons": [
+        {
+          "id": "gift-box",
+          "name": "礼盒",
+          "variants": {
+            "pink": "03-gift/gift-box-pink.svg",
+            "red": "03-gift/gift-box-red.svg",
+            "magenta": "03-gift/gift-box-magenta.svg"
+          }
+        },
+        {
+          "id": "gift-flame",
+          "name": "火焰福利",
+          "variants": {
+            "pink": "03-gift/gift-flame-pink.svg",
+            "red": "03-gift/gift-flame-red.svg",
+            "magenta": "03-gift/gift-flame-magenta.svg"
+          }
+        }
+      ]
+    },
+    {
+      "id": "coupon",
+      "name": "优惠券与资产",
+      "icons": [
+        {
+          "id": "coupon-yuan",
+          "name": "金额优惠券",
+          "variants": {
+            "pink": "04-coupon/coupon-yuan-pink.svg",
+            "red": "04-coupon/coupon-yuan-red.svg",
+            "magenta": "04-coupon/coupon-yuan-magenta.svg"
+          }
+        },
+        {
+          "id": "coupon-star",
+          "name": "星星优惠券",
+          "variants": {
+            "pink": "04-coupon/coupon-star-pink.svg",
+            "red": "04-coupon/coupon-star-red.svg",
+            "magenta": "04-coupon/coupon-star-magenta.svg"
+          }
+        },
+        {
+          "id": "asset-card",
+          "name": "资产卡片",
+          "variants": {
+            "pink": "04-coupon/asset-card-pink.svg",
+            "red": "04-coupon/asset-card-red.svg",
+            "magenta": "04-coupon/asset-card-magenta.svg"
+          }
+        },
+        {
+          "id": "asset-coin",
+          "name": "金币",
+          "variants": {
+            "pink": "04-coupon/asset-coin-pink.svg",
+            "red": "04-coupon/asset-coin-red.svg",
+            "magenta": "04-coupon/asset-coin-magenta.svg"
+          }
+        }
+      ]
+    },
+    {
+      "id": "notification",
+      "name": "通知与时间",
+      "icons": [
+        {
+          "id": "notification-bell",
+          "name": "通知铃铛",
+          "variants": {
+            "pink": "05-notification/notification-bell-pink.svg",
+            "red": "05-notification/notification-bell-red.svg",
+            "magenta": "05-notification/notification-bell-magenta.svg"
+          }
+        },
+        {
+          "id": "notification-more",
+          "name": "更多消息",
+          "variants": {
+            "pink": "05-notification/notification-more-pink.svg",
+            "red": "05-notification/notification-more-red.svg",
+            "magenta": "05-notification/notification-more-magenta.svg"
+          }
+        },
+        {
+          "id": "time-alarm",
+          "name": "闹钟",
+          "variants": {
+            "pink": "05-notification/time-alarm-pink.svg",
+            "red": "05-notification/time-alarm-red.svg",
+            "magenta": "05-notification/time-alarm-magenta.svg"
+          }
+        },
+        {
+          "id": "time-clock",
+          "name": "时钟",
+          "variants": {
+            "pink": "05-notification/time-clock-pink.svg",
+            "red": "05-notification/time-clock-red.svg",
+            "magenta": "05-notification/time-clock-magenta.svg"
+          }
+        },
+        {
+          "id": "calendar-check",
+          "name": "日历完成",
+          "variants": {
+            "pink": "05-notification/calendar-check-pink.svg",
+            "red": "05-notification/calendar-check-red.svg",
+            "magenta": "05-notification/calendar-check-magenta.svg"
+          }
+        }
+      ]
+    },
+    {
+      "id": "status",
+      "name": "状态与辅助",
+      "icons": [
+        {
+          "id": "status-question",
+          "name": "帮助问号",
+          "variants": {
+            "pink": "06-status/status-question-pink.svg",
+            "red": "06-status/status-question-red.svg",
+            "magenta": "06-status/status-question-magenta.svg"
+          }
+        },
+        {
+          "id": "status-heart",
+          "name": "喜欢爱心",
+          "variants": {
+            "pink": "06-status/status-heart-pink.svg",
+            "red": "06-status/status-heart-red.svg",
+            "magenta": "06-status/status-heart-magenta.svg"
+          }
+        },
+        {
+          "id": "status-chevron-down",
+          "name": "向下箭头",
+          "variants": {
+            "pink": "06-status/status-chevron-down-pink.svg",
+            "red": "06-status/status-chevron-down-red.svg",
+            "magenta": "06-status/status-chevron-down-magenta.svg"
+          }
+        }
+      ]
+    },
+    {
+      "id": "special",
+      "name": "特殊图标",
+      "icons": [
+        {
+          "id": "special-fire",
+          "name": "火焰",
+          "color": "coral",
+          "source": "07-special/special-fire-coral.svg"
+        },
+        {
+          "id": "special-trend-up",
+          "name": "趋势上升",
+          "color": "purple",
+          "source": "07-special/special-trend-up-purple.svg"
+        },
+        {
+          "id": "special-star",
+          "name": "星标",
+          "color": "pink",
+          "source": "07-special/special-star-pink.svg"
+        },
+        {
+          "id": "special-cycle",
+          "name": "循环切换",
+          "color": "orange",
+          "source": "07-special/special-cycle-orange.svg"
+        },
+        {
+          "id": "special-upload",
+          "name": "上传",
+          "color": "blue",
+          "source": "07-special/special-upload-blue.svg"
+        }
+      ]
+    }
+  ]
+}

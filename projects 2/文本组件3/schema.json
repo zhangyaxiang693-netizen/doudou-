@@ -1,0 +1,15 @@
+{
+  "title": "文本组件3",
+  "description": "说明文本组件，支持通过 text 变量修改文案",
+  "category": "text",
+  "dimensions": { "width": 571, "height": 143 },
+  "props": [
+    {
+      "name": "text",
+      "label": "文本",
+      "type": "text",
+      "default": "*点击报名即成功参与，活动期内投放DOU+「点赞评论量」「视频播放量」「粉丝量」目标，且累计现金消耗达成，第二天账户自动发券，具体奖励以实际下发为准。累计消耗达多档门槛，下发多张优惠券。",
+      "description": "组件展示的文本内容"
+    }
+  ]
+}

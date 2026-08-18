@@ -1,0 +1,124 @@
+.page {
+  position: relative;
+  width: 618px;
+  height: 74px;
+}
+.wrap {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 618px;
+  height: 74px;
+}
+.container {
+  width: 618px;
+  opacity: 0.6;
+  border-radius: var(--two-column-live-data-container-border-radius, 30px);
+  border-width: 2px;
+  box-sizing: border-box;
+  background: var(--two-column-live-data-container-background, rgba(242, 242, 247, 1));
+  min-height: 74px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image {
+  width: 3.64px;
+  height: 57.31px;
+  position: absolute;
+  top: 8px;
+  left: 337px;
+}
+.container1 {
+  width: 171px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 20.9px;
+  left: 381.64px;
+}
+.text {
+  margin-right: var(--two-column-live-data-item-gap, 10px);
+  font-family: var(--two-column-live-data-text-font-family, "Source Han Sans CN");
+  font-size: var(--two-column-live-data-text-font-size, 24px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--two-column-live-data-text-color, rgba(45, 45, 46, 1));
+  line-height: 32.55px;
+  letter-spacing: var(--two-column-live-data-text-letter-spacing, normal);
+  font-weight: 400;
+}
+.text__seg0 {
+  font-size: var(--two-column-live-data-text-seg0-font-size, 24px);
+}
+.text1 {
+  font-family: var(--two-column-live-data-text1-font-family, "Douyin Sans");
+  font-size: var(--two-column-live-data-text1-font-size, 40px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--two-column-live-data-text1-color, rgba(255, 39, 90, 1));
+  line-height: 32.55px;
+  letter-spacing: var(--two-column-live-data-text1-letter-spacing, normal);
+  font-weight: 700;
+}
+.text1__seg0 {
+  font-size: var(--two-column-live-data-text1-seg0-font-size, 40px);
+}
+.wrap1 {
+  width: 242px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 20.9px;
+  left: 50.64px;
+}
+.text2 {
+  margin-right: var(--two-column-live-data-item-gap, 10px);
+  font-family: var(--two-column-live-data-text2-font-family, "Source Han Sans CN");
+  font-size: var(--two-column-live-data-text2-font-size, 24px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--two-column-live-data-text2-color, rgba(45, 45, 46, 1));
+  line-height: 32.55px;
+  letter-spacing: var(--two-column-live-data-text2-letter-spacing, normal);
+  font-weight: 400;
+}
+.text2__seg0 {
+  font-size: var(--two-column-live-data-text2-seg0-font-size, 24px);
+}
+.text3 {
+  margin-right: var(--two-column-live-data-item-gap, 10px);
+  font-family: var(--two-column-live-data-text3-font-family, "Douyin Sans");
+  font-size: var(--two-column-live-data-text3-font-size, 40px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--two-column-live-data-text3-color, rgba(255, 39, 90, 1));
+  line-height: 32.55px;
+  letter-spacing: var(--two-column-live-data-text3-letter-spacing, normal);
+  font-weight: 700;
+}
+.text3__seg0 {
+  font-size: var(--two-column-live-data-text3-seg0-font-size, 40px);
+}
+.text4 {
+  opacity: 0.8;
+  font-family: var(--two-column-live-data-text4-font-family, "Source Han Sans CN");
+  font-size: var(--two-column-live-data-text4-font-size, 24px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--two-column-live-data-text4-color, rgba(0, 0, 0, 1));
+  line-height: 32.55px;
+  letter-spacing: var(--two-column-live-data-text4-letter-spacing, normal);
+  font-weight: 400;
+}
+.text4__seg0 {
+  font-size: var(--two-column-live-data-text4-seg0-font-size, 24px);
+}

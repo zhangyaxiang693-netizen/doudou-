@@ -1,0 +1,39 @@
+{
+  "title": "门槛加报名",
+  "description": "展示活动参与门槛和报名按钮的提示组件",
+  "category": "cta",
+  "dimensions": {
+    "width": 618,
+    "height": 114
+  },
+  "props": [
+    {
+      "name": "actionText",
+      "label": "报名按钮文字",
+      "type": "text",
+      "default": "立即报名",
+      "description": "右侧报名按钮展示的文字"
+    },
+    {
+      "name": "dateText",
+      "label": "活动日期",
+      "type": "text",
+      "default": "8.16–8.18",
+      "description": "活动参与日期"
+    },
+    {
+      "name": "thresholdText",
+      "label": "参与门槛",
+      "type": "text",
+      "default": "投放DOU+≥2 单",
+      "description": "活动参与门槛文字"
+    },
+    {
+      "name": "descriptionText",
+      "label": "门槛说明",
+      "type": "text",
+      "default": "（投点赞评论 / 播放量 / 粉丝量目标）",
+      "description": "参与门槛下方的补充说明"
+    }
+  ]
+}

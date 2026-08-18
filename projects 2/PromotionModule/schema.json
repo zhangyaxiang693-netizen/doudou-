@@ -1,0 +1,50 @@
+{
+  "name": "PromotionModule",
+  "title": "投放模块",
+  "description": "投放任务模块组件，白色圆角背景，左侧任务图标和标题，右侧状态按钮，下方描述文字",
+  "category": "营销组件",
+  "props": [
+    {
+      "name": "status",
+      "label": "状态",
+      "type": "string",
+      "default": "已完成",
+      "description": "右侧状态按钮文字（粉色背景白色文字）"
+    },
+    {
+      "name": "title",
+      "label": "任务标题",
+      "type": "string",
+      "default": "投放一单DOU+",
+      "description": "任务的标题文字"
+    },
+    {
+      "name": "rewardLabel",
+      "label": "奖励标签",
+      "type": "string",
+      "default": "抽奖",
+      "description": "奖励按钮的标签文字（红色背景白色文字）"
+    },
+    {
+      "name": "rewardCount",
+      "label": "奖励数量",
+      "type": "string",
+      "default": "+1",
+      "description": "奖励的数量文字（红色字体）"
+    },
+    {
+      "name": "description",
+      "label": "描述文字",
+      "type": "string",
+      "default": "使用粉丝经营、内容加热目标",
+      "description": "任务下方的描述说明文字（灰色）"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    }
+  ]
+}

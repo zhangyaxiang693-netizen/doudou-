@@ -1,0 +1,310 @@
+.page {
+  position: relative;
+  width: 702px;
+  height: 160px;
+}
+.wrap {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 702px;
+  height: 160px;
+}
+.content {
+  width: 702px;
+  border-radius: 40px;
+  border-width: 0.5px;
+  box-sizing: border-box;
+  background: linear-gradient(
+      90deg,
+      rgba(255, 20, 115, 1) 0%,
+      rgba(255, 34, 159, 1) 100%
+    ),
+    linear-gradient(
+      -70deg,
+      rgba(255, 71, 122, 1) -12.32%,
+      rgba(255, 45, 59, 1) 26.83%,
+      rgba(255, 133, 66, 1) 84.25%
+    );
+  min-height: 160px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.content1 {
+  width: 233px;
+  border-radius: 38px 74px 74px 38px;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 1);
+  min-height: 148px;
+  position: absolute;
+  top: 6px;
+  left: 6px;
+}
+.container1 {
+  border-radius: 6px;
+  box-sizing: border-box;
+  background: rgba(255, 217, 229, 1);
+  padding: 3px 6px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 54px;
+  left: 39px;
+}
+.text {
+  width: 22px;
+  font-family: "Source Han Sans CN";
+  font-size: 22px;
+  text-align: justify;
+  color: rgba(255, 98, 160, 1);
+  line-height: 24px;
+  letter-spacing: -1px;
+  font-weight: 700;
+}
+.wrap1 {
+  width: 141.21px;
+  height: 59px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 54px;
+  left: 74.39px;
+}
+.container2 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+.text1 {
+  margin-right: 2.61px;
+  width: 116px;
+  height: 53.62px;
+  font-family: "Douyin Number ABC";
+  font-size: 66px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 19, 114, 1);
+  line-height: 73.04px;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.text2 {
+  width: 22.61px;
+  height: 39.69px;
+  font-family: "Source Han Sans CN";
+  font-size: 22px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 19, 114, 1);
+  line-height: 24px;
+  letter-spacing: -1px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.wrap2 {
+  width: 176px;
+  height: 67.83px;
+  box-sizing: border-box;
+  position: absolute;
+  top: 43px;
+  left: 252px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+.container3 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.content2 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: -2.91px;
+}
+.text3 {
+  font-family: "Source Han Sans CN";
+  font-size: 30px;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 1);
+  line-height: normal;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+.text4 {
+  font-family: "Source Han Sans CN";
+  font-size: 30px;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 1);
+  line-height: normal;
+  font-weight: 700;
+}
+.content3 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+}
+.text5 {
+  margin-right: 5.09px;
+  font-family: "Source Han Sans CN";
+  font-size: 20px;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 1);
+  line-height: 24px;
+  font-weight: 400;
+}
+.text6 {
+  margin-right: 5.09px;
+  font-family: "Douyin Sans";
+  font-size: 22px;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 1);
+  line-height: normal;
+  font-weight: 400;
+}
+.text7 {
+  font-family: "Source Han Sans CN";
+  font-size: 20px;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 1);
+  line-height: 24px;
+  font-weight: 400;
+}
+.wrap3 {
+  width: 176px;
+  height: 70px;
+  border-radius: var(--promo-radius-pill, 99px);
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 219, 178, 1) 0%,
+    rgba(255, 248, 233, 1) 100%
+  );
+  position: absolute;
+  top: 26px;
+  left: 483px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.text8 {
+  font-family: "Source Han Sans CN";
+  font-size: 26px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 19, 114, 1);
+  line-height: 32px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.wrap4 {
+  position: absolute;
+  top: 96px;
+  left: 458px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 227px;
+  height: 46px;
+}
+.container4 {
+  width: 227px;
+  height: 46px;
+  box-sizing: border-box;
+  position: relative;
+}
+.text9 {
+  position: absolute;
+  top: 11px;
+  left: 12px;
+  font-family: "Source Han Sans CN";
+  font-size: 20px;
+  white-space: nowrap;
+  color: rgba(255, 217, 229, 1);
+  line-height: 24px;
+  font-weight: 500;
+}
+.text10 {
+  position: absolute;
+  top: 10px;
+  left: 87px;
+  width: 52px;
+  height: 26px;
+  font-family: "Source Han Sans CN";
+  font-size: 20px;
+  white-space: nowrap;
+  color: rgba(255, 217, 229, 1);
+  line-height: 24px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}
+.content4 {
+  height: 33px;
+  border-radius: 6px;
+  box-sizing: border-box;
+  background: rgba(255, 98, 160, 1);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding-right: 6px;
+  padding-left: 6px;
+  position: absolute;
+  top: 6.5px;
+  left: 133px;
+}
+.text11 {
+  width: 26px;
+  height: 22px;
+  font-family: "Douyin Number ABC Condensed", "Douyin Number ABC";
+  font-size: 26px;
+  white-space: nowrap;
+  color: rgba(255, 244, 246, 1);
+  line-height: 30px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}
+.text12 {
+  position: absolute;
+  top: 10px;
+  left: 175px;
+  width: 52px;
+  height: 26px;
+  font-family: "Source Han Sans CN";
+  font-size: 20px;
+  white-space: nowrap;
+  color: rgba(255, 217, 229, 1);
+  line-height: 24px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}

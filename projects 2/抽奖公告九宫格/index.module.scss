@@ -1,0 +1,17 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 702px;
+  min-height: 797px;
+  padding: 24px;
+  box-sizing: border-box;
+  overflow: visible;
+  border-radius: 40px;
+  background: #ffffff;
+}
+
+.wrapper > * {
+  flex-shrink: 0;
+}

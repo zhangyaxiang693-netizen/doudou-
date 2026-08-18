@@ -1,0 +1,162 @@
+{
+  "name": "TwoColumnLiveData",
+  "title": "两列活数据",
+  "description": "两列数据展示组件，灰色圆角背景，中间分隔线，左右各展示标签和数值",
+  "category": "基础组件",
+  "props": [
+    {
+      "name": "leftLabel",
+      "label": "左侧标签",
+      "type": "string",
+      "default": "累计现金消耗",
+      "description": "左侧数据的标签文字"
+    },
+    {
+      "name": "leftValue",
+      "label": "左侧数值",
+      "type": "string",
+      "default": "9",
+      "description": "左侧数据的数值"
+    },
+    {
+      "name": "leftUnit",
+      "label": "左侧单位",
+      "type": "string",
+      "default": "(元)",
+      "description": "左侧数据的单位文字"
+    },
+    {
+      "name": "rightLabel",
+      "label": "右侧标签",
+      "type": "string",
+      "default": "可抽奖次数",
+      "description": "右侧数据的标签文字"
+    },
+    {
+      "name": "rightValue",
+      "label": "右侧数值",
+      "type": "string",
+      "default": "2",
+      "description": "右侧数据的数值"
+    },
+    {
+      "name": "iconColor",
+      "label": "分隔线颜色",
+      "type": "string",
+      "default": "#E9EDEF",
+      "description": "中间分隔线的颜色"
+    },
+    {
+      "name": "labelFontFamily",
+      "label": "标签字体",
+      "type": "string",
+      "default": "Source Han Sans CN",
+      "description": "标签文字的字体"
+    },
+    {
+      "name": "labelFontSize",
+      "label": "标签字号",
+      "type": "string",
+      "default": "24",
+      "description": "标签文字的字号（单位px）"
+    },
+    {
+      "name": "labelLetterSpacing",
+      "label": "标签间距",
+      "type": "string",
+      "default": "0",
+      "description": "标签文字之间的字间距（单位px）"
+    },
+    {
+      "name": "labelColor",
+      "label": "标签颜色",
+      "type": "string",
+      "default": "#2D2D2E",
+      "description": "标签文字的颜色"
+    },
+    {
+      "name": "valueFontFamily",
+      "label": "数值字体",
+      "type": "string",
+      "default": "Douyin Sans",
+      "description": "数值文字的字体"
+    },
+    {
+      "name": "valueFontSize",
+      "label": "数值字号",
+      "type": "string",
+      "default": "40",
+      "description": "数值文字的字号（单位px）"
+    },
+    {
+      "name": "valueLetterSpacing",
+      "label": "数值间距",
+      "type": "string",
+      "default": "0",
+      "description": "数值文字之间的字间距（单位px）"
+    },
+    {
+      "name": "valueColor",
+      "label": "数值颜色",
+      "type": "string",
+      "default": "#FF275A",
+      "description": "数值文字的颜色"
+    },
+    {
+      "name": "unitFontFamily",
+      "label": "单位字体",
+      "type": "string",
+      "default": "Source Han Sans CN",
+      "description": "单位文字的字体"
+    },
+    {
+      "name": "unitFontSize",
+      "label": "单位字号",
+      "type": "string",
+      "default": "24",
+      "description": "单位文字的字号（单位px）"
+    },
+    {
+      "name": "unitLetterSpacing",
+      "label": "单位间距",
+      "type": "string",
+      "default": "0",
+      "description": "单位文字之间的字间距（单位px）"
+    },
+    {
+      "name": "unitColor",
+      "label": "单位颜色",
+      "type": "string",
+      "default": "#000000",
+      "description": "单位文字的颜色"
+    },
+    {
+      "name": "itemGap",
+      "label": "元素间距",
+      "type": "string",
+      "default": "10",
+      "description": "标签、数值、单位之间的间距（单位px）"
+    },
+    {
+      "name": "bgColor",
+      "label": "背景颜色",
+      "type": "string",
+      "default": "",
+      "description": "背景的纯色，不传则使用默认灰色"
+    },
+    {
+      "name": "borderRadius",
+      "label": "圆角大小",
+      "type": "string",
+      "default": "30",
+      "description": "组件的圆角大小（单位px）"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    }
+  ]
+}

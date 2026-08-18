@@ -1,0 +1,25 @@
+[project]
+sub_id = "d370d584"
+name = "h5-visual-builder"
+requires = ["nodejs-24"]
+project_type = "web"
+version = "0.0.32"
+entrypoint = "index.html"
+
+[preview]
+preview_enable = "enabled"
+
+[dev]
+build = ["bash", "scripts/build.sh"]
+run = ["bash", "scripts/run.sh"]
+
+[deploy]
+build = ["bash", "scripts/build.sh"]
+run = ["bash", "scripts/run.sh"]
+
+[deploy.profile]
+kind = "service"
+flavor = "web"
+
+[subprojects]
+path = ["."]

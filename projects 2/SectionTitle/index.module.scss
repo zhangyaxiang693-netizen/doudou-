@@ -1,0 +1,43 @@
+.page {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 468.93px;
+  height: 40px;
+}
+.wrap {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+.container {
+  margin-right: var(--section-title-container-margin-right, 8px);
+  position: relative;
+  width: 51.9px;
+  height: 37.24px;
+}
+.icon {
+  width: 51.9px;
+  height: 37.24px;
+  display: block;
+}
+.container1 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+.text {
+  font-family: var(--section-title-text-font-family, "MFBenHeiNoncommercial");
+  font-size: var(--section-title-text-font-size, 36px);
+  white-space: nowrap;
+  color: var(--section-title-text-color, rgba(45, 45, 45, 1));
+  line-height: 40px;
+  letter-spacing: var(--section-title-text-letter-spacing, normal);
+  font-weight: 400;
+}

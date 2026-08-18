@@ -1,0 +1,418 @@
+.page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 598.98px;
+  height: 193.26px;
+}
+.wrap {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+.container {
+  margin-right: 17px;
+  position: relative;
+  width: 163.15px;
+  height: 193.26px;
+}
+.image {
+  width: 163.11px;
+  height: 192.66px;
+  position: absolute;
+  top: 0.6px;
+  left: 0.04px;
+}
+.content {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 163.11px;
+  height: 192.67px;
+}
+.image1 {
+  width: 163.11px;
+  height: 192.67px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image2 {
+  width: 163.11px;
+  height: 192.67px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.content1 {
+  width: 163px;
+  height: 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 75.77px;
+  left: 0px;
+}
+.text {
+  width: 139px;
+  opacity: 0.7;
+  font-family: var(--coupon-triple-pack-text-font-family, "Source Han Sans CN");
+  font-size: var(--coupon-triple-pack-text-font-size, 22px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text-color, rgba(255, 255, 255, 1));
+  line-height: normal;
+  font-weight: 400;
+}
+.content2 {
+  width: 163px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 33.17px;
+  left: 0px;
+}
+.text1 {
+  margin-right: 4px;
+  font-family: var(--coupon-triple-pack-text1-font-family, "Douyin Number ABC");
+  font-size: var(--coupon-triple-pack-text1-font-size, 50px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text1-color, rgba(255, 255, 255, 1));
+  line-height: 41.18px;
+  font-weight: 600;
+}
+.text2 {
+  font-family: var(--coupon-triple-pack-text2-font-family, "Source Han Sans CN");
+  font-size: var(--coupon-triple-pack-text2-font-size, 26px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text2-color, rgba(255, 255, 255, 1));
+  line-height: 100%;
+  font-weight: 700;
+}
+.content3 {
+  width: 126px;
+  height: 50px;
+  border-radius: var(--coupon-triple-pack-content3-border-radius, 35.72px);
+  box-sizing: border-box;
+  background: var(--coupon-triple-pack-content3-background, rgba(255, 218, 175, 1));
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  padding-top: 14px;
+  padding-right: 34px;
+  padding-bottom: 13px;
+  padding-left: 36px;
+  position: absolute;
+  top: 120px;
+  left: 19px;
+}
+.text3 {
+  opacity: 0.5;
+  font-family: var(--coupon-triple-pack-text3-font-family, "Source Han Sans CN");
+  font-size: var(--coupon-triple-pack-text3-font-size, 26px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text3-color, rgba(255, 44, 92, 1));
+  line-height: 142%;
+  font-weight: 500;
+}
+.container1 {
+  margin-right: 17px;
+  position: relative;
+  width: 203.63px;
+  height: 193.26px;
+}
+.image3 {
+  width: 163.11px;
+  height: 192.66px;
+  position: absolute;
+  top: 0.6px;
+  left: 40.53px;
+}
+.content4 {
+  position: absolute;
+  top: 0px;
+  left: 40.48px;
+  width: 163.11px;
+  height: 192.67px;
+}
+.image4 {
+  width: 163.11px;
+  height: 192.67px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image5 {
+  width: 163.11px;
+  height: 192.67px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.content5 {
+  width: 163px;
+  height: 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 75.77px;
+  left: 40.48px;
+}
+.text4 {
+  width: 139px;
+  opacity: 0.7;
+  font-family: var(--coupon-triple-pack-text4-font-family, "Source Han Sans CN");
+  font-size: var(--coupon-triple-pack-text4-font-size, 22px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text4-color, rgba(255, 255, 255, 1));
+  line-height: normal;
+  font-weight: 400;
+}
+.content6 {
+  width: 163px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 33.17px;
+  left: 40.48px;
+}
+.text5 {
+  margin-right: 4px;
+  font-family: var(--coupon-triple-pack-text5-font-family, "Douyin Number ABC");
+  font-size: var(--coupon-triple-pack-text5-font-size, 50px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text5-color, rgba(255, 255, 255, 1));
+  line-height: 41.18px;
+  font-weight: 600;
+}
+.text6 {
+  font-family: var(--coupon-triple-pack-text6-font-family, "Source Han Sans CN");
+  font-size: var(--coupon-triple-pack-text6-font-size, 26px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text6-color, rgba(255, 255, 255, 1));
+  line-height: 100%;
+  font-weight: 700;
+}
+.content7 {
+  width: 136px;
+  height: 56px;
+  border-radius: var(--coupon-triple-pack-content7-border-radius, 91px);
+  box-sizing: border-box;
+  background: var(--coupon-triple-pack-content7-background, rgba(255, 218, 175, 1));
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  padding-top: 14px;
+  padding-right: 34px;
+  padding-bottom: 13px;
+  padding-left: 36px;
+  position: absolute;
+  top: 117px;
+  left: 54.8px;
+}
+.text7 {
+  margin-right: 10px;
+  font-family: var(--coupon-triple-pack-text7-font-family, "Source Han Sans CN");
+  font-size: var(--coupon-triple-pack-text7-font-size, 26px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text7-color, rgba(255, 44, 92, 1));
+  line-height: 142%;
+  font-weight: 500;
+}
+.image6 {
+  width: 9.61px;
+  height: 16.08px;
+}
+.content8 {
+  position: absolute;
+  top: 83.53px;
+  left: 0px;
+  width: 26.2px;
+  height: 26.2px;
+}
+.image7 {
+  width: 26.2px;
+  height: 5.44px;
+  position: absolute;
+  top: 10.37px;
+  left: 0px;
+}
+.image8 {
+  width: 5.44px;
+  height: 26.2px;
+  position: absolute;
+  top: 0px;
+  left: 10.37px;
+}
+.container2 {
+  position: relative;
+  width: 203.63px;
+  height: 193.26px;
+}
+.image9 {
+  width: 163.11px;
+  height: 192.66px;
+  position: absolute;
+  top: 0.6px;
+  left: 40.53px;
+}
+.content9 {
+  position: absolute;
+  top: 0px;
+  left: 40.48px;
+  width: 163.11px;
+  height: 192.67px;
+}
+.image10 {
+  width: 163.11px;
+  height: 192.67px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image11 {
+  width: 163.11px;
+  height: 192.67px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.content10 {
+  width: 163px;
+  height: 28px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 75.77px;
+  left: 40.48px;
+}
+.text8 {
+  width: 139px;
+  opacity: 0.7;
+  font-family: var(--coupon-triple-pack-text8-font-family, "Source Han Sans CN");
+  font-size: var(--coupon-triple-pack-text8-font-size, 22px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text8-color, rgba(255, 255, 255, 1));
+  line-height: normal;
+  font-weight: 400;
+}
+.content11 {
+  width: 163px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 33.17px;
+  left: 40.48px;
+}
+.text9 {
+  margin-right: 4px;
+  font-family: var(--coupon-triple-pack-text9-font-family, "Douyin Number ABC");
+  font-size: var(--coupon-triple-pack-text9-font-size, 50px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text9-color, rgba(255, 255, 255, 1));
+  line-height: 41.18px;
+  font-weight: 600;
+}
+.text10 {
+  font-family: var(--coupon-triple-pack-text10-font-family, "Source Han Sans CN");
+  font-size: var(--coupon-triple-pack-text10-font-size, 26px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text10-color, rgba(255, 255, 255, 1));
+  line-height: 100%;
+  font-weight: 700;
+}
+.content12 {
+  width: 136px;
+  height: 56px;
+  border-radius: var(--coupon-triple-pack-content12-border-radius, 91px);
+  box-sizing: border-box;
+  background: var(--coupon-triple-pack-content12-background, rgba(255, 218, 175, 1));
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  padding-top: 14px;
+  padding-right: 34px;
+  padding-bottom: 13px;
+  padding-left: 36px;
+  position: absolute;
+  top: 117px;
+  left: 54.8px;
+}
+.text11 {
+  margin-right: 10px;
+  font-family: var(--coupon-triple-pack-text11-font-family, "Source Han Sans CN");
+  font-size: var(--coupon-triple-pack-text11-font-size, 26px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--coupon-triple-pack-text11-color, rgba(255, 44, 92, 1));
+  line-height: 142%;
+  font-weight: 500;
+}
+.image12 {
+  width: 9.61px;
+  height: 16.08px;
+}
+.content13 {
+  position: absolute;
+  top: 83.53px;
+  left: 0px;
+  width: 26.2px;
+  height: 26.2px;
+}
+.image13 {
+  width: 26.2px;
+  height: 5.44px;
+  position: absolute;
+  top: 10.37px;
+  left: 0px;
+}
+.image14 {
+  width: 5.44px;
+  height: 26.2px;
+  position: absolute;
+  top: 0px;
+  left: 10.37px;
+}

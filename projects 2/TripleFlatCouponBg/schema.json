@@ -1,0 +1,99 @@
+{
+  "name": "TripleFlatCouponBg",
+  "title": "三连扁券带底",
+  "description": "三张水平排列的扁形带底满赠券组合组件，包含叠加标签",
+  "category": "营销组件",
+  "props": [
+    {
+      "name": "coupon1Title",
+      "label": "券1标题",
+      "type": "string",
+      "default": "DOU+满赠券",
+      "description": "第一张优惠券的标题文字"
+    },
+    {
+      "name": "coupon1Amount",
+      "label": "券1金额",
+      "type": "string",
+      "default": "800",
+      "description": "第一张优惠券的金额数字"
+    },
+    {
+      "name": "coupon1Unit",
+      "label": "券1单位",
+      "type": "string",
+      "default": "元",
+      "description": "第一张优惠券的金额单位"
+    },
+    {
+      "name": "coupon1Tag",
+      "label": "券1标签",
+      "type": "string",
+      "default": "叠加",
+      "description": "第一张优惠券的右侧标签文字"
+    },
+    {
+      "name": "coupon2Title",
+      "label": "券2标题",
+      "type": "string",
+      "default": "DOU+满赠券",
+      "description": "第二张优惠券的标题文字"
+    },
+    {
+      "name": "coupon2Amount",
+      "label": "券2金额",
+      "type": "string",
+      "default": "800",
+      "description": "第二张优惠券的金额数字"
+    },
+    {
+      "name": "coupon2Unit",
+      "label": "券2单位",
+      "type": "string",
+      "default": "元",
+      "description": "第二张优惠券的金额单位"
+    },
+    {
+      "name": "coupon2Tag",
+      "label": "券2标签",
+      "type": "string",
+      "default": "叠加",
+      "description": "第二张优惠券的右侧标签文字"
+    },
+    {
+      "name": "coupon3Title",
+      "label": "券3标题",
+      "type": "string",
+      "default": "DOU+满赠券",
+      "description": "第三张优惠券的标题文字"
+    },
+    {
+      "name": "coupon3Amount",
+      "label": "券3金额",
+      "type": "string",
+      "default": "800",
+      "description": "第三张优惠券的金额数字"
+    },
+    {
+      "name": "coupon3Unit",
+      "label": "券3单位",
+      "type": "string",
+      "default": "元",
+      "description": "第三张优惠券的金额单位"
+    },
+    {
+      "name": "coupon3Tag",
+      "label": "券3标签",
+      "type": "string",
+      "default": "叠加",
+      "description": "第三张优惠券的右侧标签文字"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    }
+  ]
+}

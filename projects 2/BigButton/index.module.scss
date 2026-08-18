@@ -1,0 +1,27 @@
+.page {
+  height: var(--big-button-page-height, auto);
+  min-height: var(--big-button-page-min-height, 110px);
+  padding-left: var(--big-button-page-padding-x, 100px);
+  padding-right: var(--big-button-page-padding-x, 100px);
+  border-radius: var(--big-button-page-border-radius, 100px);
+  box-sizing: border-box;
+  background: var(--big-button-page-background, linear-gradient(
+    73deg,
+    rgba(255, 20, 115, 1) -0.33999999999999997%,
+    rgba(255, 34, 159, 1) 99.66000000000001%
+  ));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.text {
+  font-family: var(--big-button-text-font-family, "Source Han Sans CN");
+  font-size: var(--big-button-text-font-size, 40px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--big-button-text-color, rgba(255, 255, 255, 1));
+  line-height: normal;
+  letter-spacing: var(--big-button-text-letter-spacing, 0.04em);
+  font-weight: 700;
+  flex-shrink: 0;
+}

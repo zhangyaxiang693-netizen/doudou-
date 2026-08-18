@@ -1,0 +1,109 @@
+{
+  "title": "消耗返进度条",
+  "description": "展示消耗进度、阶段奖励和抽奖入口的进度组件",
+  "category": "data",
+  "dimensions": {
+    "width": 622,
+    "height": 225.05
+  },
+  "props": [
+    {
+      "name": "lotteryText",
+      "label": "抽奖入口文字",
+      "type": "text",
+      "default": "抽奖",
+      "description": "左侧抽奖入口展示的文字"
+    },
+    {
+      "name": "reward1AmountText",
+      "label": "奖励1金额",
+      "type": "text",
+      "default": "888",
+      "description": "第一档奖励金额"
+    },
+    {
+      "name": "reward1UnitText",
+      "label": "奖励1单位",
+      "type": "text",
+      "default": "元",
+      "description": "第一档奖励金额单位"
+    },
+    {
+      "name": "reward1LabelText",
+      "label": "奖励1名称",
+      "type": "text",
+      "default": "满赠券",
+      "description": "第一档奖励名称"
+    },
+    {
+      "name": "reward2AmountText",
+      "label": "奖励2金额",
+      "type": "text",
+      "default": "888",
+      "description": "第二档奖励金额"
+    },
+    {
+      "name": "reward2UnitText",
+      "label": "奖励2单位",
+      "type": "text",
+      "default": "元",
+      "description": "第二档奖励金额单位"
+    },
+    {
+      "name": "reward2LabelText",
+      "label": "奖励2名称",
+      "type": "text",
+      "default": "满赠券",
+      "description": "第二档奖励名称"
+    },
+    {
+      "name": "reward3AmountText",
+      "label": "奖励3金额",
+      "type": "text",
+      "default": "888",
+      "description": "第三档奖励金额"
+    },
+    {
+      "name": "reward3UnitText",
+      "label": "奖励3单位",
+      "type": "text",
+      "default": "元",
+      "description": "第三档奖励金额单位"
+    },
+    {
+      "name": "reward3LabelText",
+      "label": "奖励3名称",
+      "type": "text",
+      "default": "满赠券",
+      "description": "第三档奖励名称"
+    },
+    {
+      "name": "milestone1Text",
+      "label": "进度节点1文字",
+      "type": "text",
+      "default": "消耗30元",
+      "description": "第一个进度节点说明"
+    },
+    {
+      "name": "milestone2Text",
+      "label": "进度节点2文字",
+      "type": "text",
+      "default": "消耗20元",
+      "description": "第二个进度节点说明"
+    },
+    {
+      "name": "milestone3Text",
+      "label": "进度节点3文字",
+      "type": "text",
+      "default": "消耗30元",
+      "description": "第三个进度节点说明"
+    },
+    {
+      "name": "milestone4Text",
+      "label": "进度节点4文字",
+      "type": "text",
+      "default": "消耗40元",
+      "description": "第四个进度节点说明"
+    }
+  ]
+}

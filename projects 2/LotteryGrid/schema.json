@@ -1,0 +1,204 @@
+{
+  "name": "LotteryGrid",
+  "title": "抽奖9宫格",
+  "description": "抽奖9宫格组件，3x3布局，8个奖品格子围绕中间抽奖按钮",
+  "category": "营销组件",
+  "props": [
+    {
+      "name": "prize1",
+      "label": "奖品1文字（左上）",
+      "type": "string",
+      "default": "666元流量扶持",
+      "description": "第一行第一列的奖品名称"
+    },
+    {
+      "name": "prize2",
+      "label": "奖品2文字（中上）",
+      "type": "string",
+      "default": "满68赠6流量券",
+      "description": "第一行第二列的奖品名称"
+    },
+    {
+      "name": "prize3",
+      "label": "奖品3文字（右上）",
+      "type": "string",
+      "default": "满100赠10流量券",
+      "description": "第一行第三列的奖品名称"
+    },
+    {
+      "name": "prize4",
+      "label": "奖品4文字（左中）",
+      "type": "string",
+      "default": "DOU仔冰箱贴",
+      "description": "第二行第一列的奖品名称"
+    },
+    {
+      "name": "prize5",
+      "label": "奖品5文字（右中）",
+      "type": "string",
+      "default": "DOU仔帆布包",
+      "description": "第二行第三列的奖品名称"
+    },
+    {
+      "name": "prize6",
+      "label": "奖品6文字（左下）",
+      "type": "string",
+      "default": "满30赠5代投券",
+      "description": "第三行第一列的奖品名称"
+    },
+    {
+      "name": "prize7",
+      "label": "奖品7文字（中下）",
+      "type": "string",
+      "default": "DOU仔挂件",
+      "description": "第三行第二列的奖品名称"
+    },
+    {
+      "name": "prize8",
+      "label": "奖品8文字（右下）",
+      "type": "string",
+      "default": "DOU仔玩偶",
+      "description": "第三行第三列的奖品名称"
+    },
+    {
+      "name": "buttonText",
+      "label": "抽奖按钮文字",
+      "type": "string",
+      "default": "抽",
+      "description": "中间抽奖按钮的文字"
+    },
+    {
+      "name": "prizeImage1",
+      "label": "奖品1图片（左上）",
+      "type": "string",
+      "default": "",
+      "description": "第一行第一列的奖品图片URL，替换占位图"
+    },
+    {
+      "name": "prizeImage2",
+      "label": "奖品2图片（中上）",
+      "type": "string",
+      "default": "",
+      "description": "第一行第二列的奖品图片URL，替换占位图"
+    },
+    {
+      "name": "prizeImage3",
+      "label": "奖品3图片（右上）",
+      "type": "string",
+      "default": "",
+      "description": "第一行第三列的奖品图片URL，替换占位图"
+    },
+    {
+      "name": "prizeImage4",
+      "label": "奖品4图片（左中）",
+      "type": "string",
+      "default": "",
+      "description": "第二行第一列的奖品图片URL，替换占位图"
+    },
+    {
+      "name": "prizeImage5",
+      "label": "奖品5图片（右中）",
+      "type": "string",
+      "default": "",
+      "description": "第二行第三列的奖品图片URL，替换占位图"
+    },
+    {
+      "name": "prizeImage6",
+      "label": "奖品6图片（左下）",
+      "type": "string",
+      "default": "",
+      "description": "第三行第一列的奖品图片URL，替换占位图"
+    },
+    {
+      "name": "prizeImage7",
+      "label": "奖品7图片（中下）",
+      "type": "string",
+      "default": "",
+      "description": "第三行第二列的奖品图片URL，替换占位图"
+    },
+    {
+      "name": "prizeImage8",
+      "label": "奖品8图片（右下）",
+      "type": "string",
+      "default": "",
+      "description": "第三行第三列的奖品图片URL，替换占位图"
+    },
+    {
+      "name": "buttonBgColor",
+      "label": "抽奖按钮背景色",
+      "type": "string",
+      "default": "rgba(255, 19, 114, 1)",
+      "description": "中间抽奖按钮的背景颜色"
+    },
+    {
+      "name": "buttonBorderRadius",
+      "label": "抽奖按钮圆角",
+      "type": "number",
+      "default": 40,
+      "description": "中间抽奖按钮的圆角半径，单位px"
+    },
+    {
+      "name": "prizeFontFamily",
+      "label": "奖品文字-字体",
+      "type": "string",
+      "default": "Source Han Sans CN",
+      "description": "8个奖品文字的字体，统一控制"
+    },
+    {
+      "name": "prizeFontSize",
+      "label": "奖品文字-字号",
+      "type": "string",
+      "default": "22px",
+      "description": "8个奖品文字的字号，统一控制"
+    },
+    {
+      "name": "prizeColor",
+      "label": "奖品文字-颜色",
+      "type": "string",
+      "default": "rgba(45, 45, 45, 1)",
+      "description": "8个奖品文字的颜色，统一控制"
+    },
+    {
+      "name": "prizeLetterSpacing",
+      "label": "奖品文字-字间距",
+      "type": "string",
+      "default": "0px",
+      "description": "8个奖品文字的字间距，统一控制"
+    },
+    {
+      "name": "buttonFontFamily",
+      "label": "抽奖按钮文字-字体",
+      "type": "string",
+      "default": "MFYuanHeiNoncommercial-Regular",
+      "description": "中间抽奖按钮文字的字体"
+    },
+    {
+      "name": "buttonFontSize",
+      "label": "抽奖按钮文字-字号",
+      "type": "string",
+      "default": "102.95px",
+      "description": "中间抽奖按钮文字的字号"
+    },
+    {
+      "name": "buttonColor",
+      "label": "抽奖按钮文字-颜色",
+      "type": "string",
+      "default": "rgba(255, 255, 255, 1)",
+      "description": "中间抽奖按钮文字的颜色"
+    },
+    {
+      "name": "buttonSkewX",
+      "label": "抽奖按钮文字-横向倾斜",
+      "type": "number",
+      "default": -4,
+      "description": "抽奖按钮文字的横向倾斜角度，正值顶部向右倾斜，单位度"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    }
+  ]
+}

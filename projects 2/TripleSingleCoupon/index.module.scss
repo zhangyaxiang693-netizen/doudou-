@@ -1,0 +1,19 @@
+.page {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--triple-single-coupon-gap);
+  width: 580px;
+  height: var(--triple-single-coupon-height);
+}
+.couponSlot {
+  width: var(--triple-single-coupon-slot-width);
+  height: var(--triple-single-coupon-height);
+  position: relative;
+  flex: 0 0 var(--triple-single-coupon-slot-width);
+}
+.couponInner {
+  width: 193.84px;
+  height: 196.1px;
+  transform: scale(var(--triple-single-coupon-scale));
+  transform-origin: top left;
+}

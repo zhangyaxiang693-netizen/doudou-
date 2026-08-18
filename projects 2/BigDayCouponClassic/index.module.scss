@@ -1,0 +1,144 @@
+.page {
+  position: relative;
+  width: 607px;
+  height: 199px;
+}
+.wrap {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 607px;
+  height: 199px;
+}
+.image {
+  width: 607px;
+  height: 199px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image1 {
+  width: 478px;
+  height: 176.88px;
+  position: absolute;
+  top: 10.77px;
+  left: 11px;
+}
+.container {
+  position: absolute;
+  top: 0px;
+  left: 186.14px;
+  width: 420.8px;
+  height: 199px;
+}
+.image2 {
+  width: 420.8px;
+  height: 199px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image3 {
+  width: 420.8px;
+  height: 199px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.wrap1 {
+  width: 259.15px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: flex-end;
+  position: absolute;
+  top: 67.03px;
+  left: 0px;
+}
+.text {
+  margin-right: 4px;
+  font-family: var(--big-day-coupon-classic-text-font-family, "Douyin Number ABC");
+  font-size: var(--big-day-coupon-classic-text-font-size, 73px);
+  white-space: nowrap;
+  color: var(--big-day-coupon-classic-text-color, rgba(61, 61, 61, 1));
+  line-height: 100%;
+  letter-spacing: var(--big-day-coupon-classic-text-letter-spacing, -3px);
+  font-weight: 600;
+}
+.container1 {
+  width: 26px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+}
+.text1 {
+  width: 26px;
+  height: 52.76px;
+  font-family: var(--big-day-coupon-classic-text1-font-family, "Source Han Sans CN");
+  font-size: var(--big-day-coupon-classic-text1-font-size, 26px);
+  white-space: nowrap;
+  text-align: justify;
+  color: var(--big-day-coupon-classic-text1-color, rgba(61, 61, 61, 1));
+  line-height: 149.24%;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+.wrap2 {
+  width: 153.03px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  position: absolute;
+  top: 109px;
+  left: 303px;
+}
+.text2 {
+  opacity: 0.9;
+  font-family: var(--big-day-coupon-classic-text2-font-family, "Source Han Sans CN");
+  font-size: var(--big-day-coupon-classic-text2-font-size, 26px);
+  white-space: nowrap;
+  color: var(--big-day-coupon-classic-text2-color, rgba(255, 255, 255, 1));
+  line-height: 120%;
+  font-weight: 400;
+}
+.wrap3 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 46px;
+  left: 303px;
+}
+.text3 {
+  margin-right: 3px;
+  -webkit-text-stroke-width: var(--big-day-coupon-classic-text3-webkit-text-stroke-width, 1px);
+  -webkit-text-stroke-color: var(--big-day-coupon-classic-text3-webkit-text-stroke-color, rgba(255, 255, 255, 1));
+  paint-order: stroke fill;
+  font-family: var(--big-day-coupon-classic-text3-font-family, "Douyin Sans");
+  font-size: var(--big-day-coupon-classic-text3-font-size, 43px);
+  white-space: nowrap;
+  color: var(--big-day-coupon-classic-text3-color, rgba(255, 255, 255, 1));
+  line-height: normal;
+  letter-spacing: var(--big-day-coupon-classic-text3-letter-spacing, -3px);
+  font-weight: 400;
+}
+.text4 {
+  font-family: var(--big-day-coupon-classic-text4-font-family, "Source Han Sans CN");
+  font-size: var(--big-day-coupon-classic-text4-font-size, 40px);
+  white-space: nowrap;
+  color: var(--big-day-coupon-classic-text4-color, rgba(255, 255, 255, 1));
+  line-height: normal;
+  font-weight: 700;
+}

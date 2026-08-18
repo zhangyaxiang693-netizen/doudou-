@@ -1,0 +1,228 @@
+.page {
+  position: relative;
+  width: 700px;
+  height: 347.34px;
+}
+.wrap {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 700px;
+  height: 347.34px;
+}
+.container {
+  position: relative;
+  width: 700px;
+  height: 347.34px;
+}
+.image {
+  width: 700px;
+  height: 343px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.content {
+  position: absolute;
+  top: 13px;
+  left: 13px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 674px;
+  height: 224.12px;
+}
+.image1 {
+  width: 674px;
+  height: 224.12px;
+}
+.image2 {
+  width: 673.56px;
+  height: 223.56px;
+  position: absolute;
+  top: 13.56px;
+  left: 13.64px;
+}
+.image3 {
+  width: 4.63px;
+  height: 182.73px;
+  position: absolute;
+  top: 55.88px;
+  left: 330.76px;
+}
+.content1 {
+  position: absolute;
+  top: 178.13px;
+  left: 0px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 700px;
+  height: 169.21px;
+}
+.image4 {
+  width: 700px;
+  height: 169.21px;
+}
+.wrap1 {
+  width: 351px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  position: absolute;
+  top: 63px;
+  left: 335.69px;
+}
+.container1 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.content2 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+.text {
+  -webkit-text-stroke-width: var(--red-packet-coupon-text-webkit-text-stroke-width, 1.04px);
+  -webkit-text-stroke-color: var(--red-packet-coupon-text-webkit-text-stroke-color, rgba(61, 61, 61, 1));
+  paint-order: stroke fill;
+  font-family: var(--red-packet-coupon-text-font-family, "Douyin Sans");
+  font-size: var(--red-packet-coupon-text-font-size, 44px);
+  white-space: nowrap;
+  color: var(--red-packet-coupon-text-color, rgba(61, 61, 61, 1));
+  line-height: normal;
+  letter-spacing: var(--red-packet-coupon-text-letter-spacing, -3.12px);
+  font-weight: 400;
+}
+.text__seg0 {
+  letter-spacing: var(--red-packet-coupon-text-seg0-letter-spacing, -3.12px);
+}
+.text1 {
+  font-family: var(--red-packet-coupon-text1-font-family, "Source Han Sans CN");
+  font-size: var(--red-packet-coupon-text1-font-size, 40px);
+  white-space: nowrap;
+  color: var(--red-packet-coupon-text1-color, rgba(61, 61, 61, 1));
+  line-height: normal;
+  letter-spacing: var(--red-packet-coupon-text1-letter-spacing, normal);
+  font-weight: 700;
+}
+.text2 {
+  opacity: 0.9;
+  font-family: var(--red-packet-coupon-text2-font-family, "Source Han Sans CN");
+  font-size: var(--red-packet-coupon-text2-font-size, 24px);
+  white-space: nowrap;
+  color: var(--red-packet-coupon-text2-color, rgba(61, 61, 61, 1));
+  line-height: 120%;
+  letter-spacing: var(--red-packet-coupon-text2-letter-spacing, normal);
+  font-weight: 700;
+}
+.wrap2 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 68px;
+  left: 72px;
+}
+.container2 {
+  width: 34px;
+  border-radius: var(--red-packet-coupon-container2-border-radius, 8px);
+  box-sizing: border-box;
+  background: var(--red-packet-coupon-container2-background, rgba(255, 217, 229, 1));
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  margin-right: 11px;
+}
+.text3 {
+  width: 22px;
+  opacity: 0.6;
+  font-family: var(--red-packet-coupon-text3-font-family, "Source Han Sans CN");
+  font-size: var(--red-packet-coupon-text3-font-size, 22px);
+  text-align: center;
+  color: var(--red-packet-coupon-text3-color, rgba(255, 19, 114, 1));
+  line-height: 115%;
+  letter-spacing: var(--red-packet-coupon-text3-letter-spacing, -1px);
+  font-weight: 700;
+}
+.container3 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+.text4 {
+  margin-right: 3px;
+  -webkit-text-stroke-width: var(--red-packet-coupon-text4-webkit-text-stroke-width, 3.58px);
+  -webkit-text-stroke-color: undefined;
+  paint-order: stroke fill;
+  font-family: var(--red-packet-coupon-text4-font-family, "Douyin Number ABC");
+  font-size: var(--red-packet-coupon-text4-font-size, 76px);
+  white-space: nowrap;
+  color: var(--red-packet-coupon-text4-color, rgba(255, 19, 114, 1));
+  line-height: 100%;
+  letter-spacing: var(--red-packet-coupon-text4-letter-spacing, -3.58px);
+  font-weight: 600;
+}
+.text4__seg0 {
+  letter-spacing: var(--red-packet-coupon-text4-seg0-letter-spacing, -3.58px);
+}
+.text5 {
+  font-family: var(--red-packet-coupon-text5-font-family, "Source Han Sans CN");
+  font-size: var(--red-packet-coupon-text5-font-size, 26px);
+  white-space: nowrap;
+  text-align: justify;
+  color: var(--red-packet-coupon-text5-color, rgba(61, 61, 61, 1));
+  line-height: 1;
+  letter-spacing: var(--red-packet-coupon-text5-letter-spacing, normal);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.wrap3 {
+  min-height: 110px;
+  min-width: 350px;
+  border-radius: var(--red-packet-coupon-wrap3-border-radius, 100px);
+  box-sizing: border-box;
+  background: var(--red-packet-coupon-wrap3-background, linear-gradient(
+    90deg,
+    rgba(255, 219, 178, 1) 2.86%,
+    rgba(255, 248, 233, 1) 100%
+  ));
+  position: absolute;
+  top: 216px;
+  left: 175px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.text6 {
+  font-family: var(--red-packet-coupon-text6-font-family, "Source Han Sans CN");
+  font-size: var(--red-packet-coupon-text6-font-size, 40px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--red-packet-coupon-text6-color, rgba(255, 44, 92, 1));
+  line-height: normal;
+  letter-spacing: var(--red-packet-coupon-text6-letter-spacing, 0.04em);
+  font-weight: 700;
+  flex-shrink: 0;
+}

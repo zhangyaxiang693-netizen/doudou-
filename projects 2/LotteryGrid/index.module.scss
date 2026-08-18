@@ -1,0 +1,470 @@
+.page {
+  width: 615.08px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.placeholder {
+  width: 92px;
+  height: 92px;
+  border-radius: var(--lottery-grid-placeholder-border-radius, 24px);
+  box-sizing: border-box;
+  background: var(--lottery-grid-placeholder-background, linear-gradient(135deg, #ff6b9d 0%, #ffb6c1 100%));
+}
+.prizeImageWrap {
+  width: 92px;
+  height: 92px;
+  border-radius: var(--lottery-grid-prize-image-wrap-border-radius, 24px);
+  box-sizing: border-box;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.wrap {
+  width: 615.08px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.container {
+  margin-right: 25px;
+  position: relative;
+  width: 188.36px;
+  height: 188px;
+}
+.content {
+  width: 188px;
+  border-radius: var(--lottery-grid-content-border-radius, 38px);
+  box-sizing: border-box;
+  background: var(--lottery-grid-content-background, rgba(244, 244, 244, 1));
+  min-height: 188px;
+  position: absolute;
+  top: 0px;
+  left: 0.36px;
+}
+.content1 {
+  width: 188px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 123.9px;
+  left: 0px;
+}
+.text {
+  font-family: var(--lottery-grid-prize-font-family, "Source Han Sans CN");
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--lottery-grid-prize-color, rgba(45, 45, 45, 1));
+  line-height: 34px;
+  font-weight: 500;
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.text__seg0 {
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.content2 {
+  position: absolute;
+  top: 25px;
+  left: 48px;
+  width: 92px;
+  height: 92px;
+}
+.container1 {
+  margin-right: 25px;
+  position: relative;
+  width: 188px;
+  height: 188px;
+}
+.content3 {
+  width: 188px;
+  border-radius: var(--lottery-grid-content3-border-radius, 38px);
+  box-sizing: border-box;
+  background: var(--lottery-grid-content3-background, rgba(244, 244, 244, 1));
+  min-height: 188px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.content4 {
+  width: 187px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 123.9px;
+  left: 0.64px;
+}
+.text1 {
+  font-family: var(--lottery-grid-prize-font-family, "Source Han Sans CN");
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--lottery-grid-prize-color, rgba(45, 45, 45, 1));
+  line-height: 34px;
+  font-weight: 500;
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.text1__seg0 {
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.content5 {
+  position: absolute;
+  top: 25px;
+  left: 48px;
+  width: 92px;
+  height: 92px;
+}
+.container2 {
+  position: relative;
+  width: 188.64px;
+  height: 188px;
+}
+.content6 {
+  width: 188px;
+  border-radius: var(--lottery-grid-content6-border-radius, 38px);
+  box-sizing: border-box;
+  background: var(--lottery-grid-content6-background, rgba(244, 244, 244, 1));
+  min-height: 188px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.content7 {
+  width: 188px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 123.9px;
+  left: 0.64px;
+}
+.text2 {
+  font-family: var(--lottery-grid-prize-font-family, "Source Han Sans CN");
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--lottery-grid-prize-color, rgba(45, 45, 45, 1));
+  line-height: 34px;
+  font-weight: 500;
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.text2__seg0 {
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.content8 {
+  position: absolute;
+  top: 25px;
+  left: 48px;
+  width: 92px;
+  height: 92px;
+}
+.wrap1 {
+  width: 615.08px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.container3 {
+  margin-right: 25px;
+  position: relative;
+  width: 188.36px;
+  height: 188px;
+}
+.content9 {
+  width: 188px;
+  border-radius: var(--lottery-grid-content9-border-radius, 38px);
+  box-sizing: border-box;
+  background: var(--lottery-grid-content9-background, rgba(244, 244, 244, 1));
+  min-height: 188px;
+  position: absolute;
+  top: 0px;
+  left: 0.36px;
+}
+.content10 {
+  width: 188px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 123.9px;
+  left: 0px;
+}
+.text3 {
+  font-family: var(--lottery-grid-prize-font-family, "Source Han Sans CN");
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--lottery-grid-prize-color, rgba(45, 45, 45, 1));
+  line-height: 34px;
+  font-weight: 500;
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.text3__seg0 {
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.content11 {
+  position: absolute;
+  top: 25px;
+  left: 48px;
+  width: 92px;
+  height: 92px;
+}
+.container4 {
+  width: 187px;
+  height: 189px;
+  border-radius: var(--lottery-grid-button-border-radius, 40px);
+  box-sizing: border-box;
+  background: var(--lottery-grid-button-bg-color, rgba(255, 19, 114, 1));
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  margin-right: 25px;
+}
+.text4 {
+  width: 103px;
+  font-family: var(--lottery-grid-button-font-family, "MFYuanHeiNoncommercial-Regular");
+  font-size: var(--lottery-grid-button-font-size, 102.95px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--lottery-grid-button-color, rgba(255, 255, 255, 1));
+  line-height: 114.39px;
+  font-weight: 400;
+  transform: skewX(var(--lottery-grid-button-skew-x, -4deg));
+}
+.text4__seg0 {
+  font-size: var(--lottery-grid-button-font-size, 102.95px);
+}
+.container5 {
+  position: relative;
+  width: 188.36px;
+  height: 188px;
+}
+.content12 {
+  width: 188px;
+  border-radius: var(--lottery-grid-content12-border-radius, 38px);
+  box-sizing: border-box;
+  background: var(--lottery-grid-content12-background, rgba(244, 244, 244, 1));
+  min-height: 188px;
+  position: absolute;
+  top: 0px;
+  left: 0.36px;
+}
+.content13 {
+  width: 188px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 123.9px;
+  left: 0px;
+}
+.text5 {
+  font-family: var(--lottery-grid-prize-font-family, "Source Han Sans CN");
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--lottery-grid-prize-color, rgba(45, 45, 45, 1));
+  line-height: 34px;
+  font-weight: 500;
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.text5__seg0 {
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.content14 {
+  position: absolute;
+  top: 25px;
+  left: 48px;
+  width: 92px;
+  height: 92px;
+}
+.wrap2 {
+  width: 615.08px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+.container6 {
+  margin-right: 25px;
+  position: relative;
+  width: 188.36px;
+  height: 188px;
+}
+.content15 {
+  width: 188px;
+  border-radius: var(--lottery-grid-content15-border-radius, 38px);
+  box-sizing: border-box;
+  background: var(--lottery-grid-content15-background, rgba(244, 244, 244, 1));
+  min-height: 188px;
+  position: absolute;
+  top: 0px;
+  left: 0.36px;
+}
+.content16 {
+  width: 188px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 123.9px;
+  left: 0px;
+}
+.text6 {
+  font-family: var(--lottery-grid-prize-font-family, "Source Han Sans CN");
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--lottery-grid-prize-color, rgba(45, 45, 45, 1));
+  line-height: 34px;
+  font-weight: 500;
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.text6__seg0 {
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.content17 {
+  position: absolute;
+  top: 25px;
+  left: 48px;
+  width: 92px;
+  height: 92px;
+}
+.container7 {
+  margin-right: 25px;
+  position: relative;
+  width: 188.36px;
+  height: 188px;
+}
+.content18 {
+  width: 188px;
+  border-radius: var(--lottery-grid-content18-border-radius, 38px);
+  box-sizing: border-box;
+  background: var(--lottery-grid-content18-background, rgba(244, 244, 244, 1));
+  min-height: 188px;
+  position: absolute;
+  top: 0px;
+  left: 0.36px;
+}
+.content19 {
+  width: 188px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 123.9px;
+  left: 0px;
+}
+.text7 {
+  font-family: var(--lottery-grid-prize-font-family, "Source Han Sans CN");
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--lottery-grid-prize-color, rgba(45, 45, 45, 1));
+  line-height: 34px;
+  font-weight: 500;
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.text7__seg0 {
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.content20 {
+  position: absolute;
+  top: 25px;
+  left: 48px;
+  width: 92px;
+  height: 92px;
+}
+.container8 {
+  position: relative;
+  width: 188.36px;
+  height: 188px;
+}
+.content21 {
+  width: 188px;
+  border-radius: var(--lottery-grid-content21-border-radius, 38px);
+  box-sizing: border-box;
+  background: var(--lottery-grid-content21-background, rgba(244, 244, 244, 1));
+  min-height: 188px;
+  position: absolute;
+  top: 0px;
+  left: 0.36px;
+}
+.content22 {
+  position: absolute;
+  top: 25px;
+  left: 48px;
+  width: 92px;
+  height: 92px;
+}
+.content23 {
+  width: 188px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 124.9px;
+  left: 0px;
+}
+.text8 {
+  font-family: var(--lottery-grid-prize-font-family, "Source Han Sans CN");
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--lottery-grid-prize-color, rgba(45, 45, 45, 1));
+  line-height: 34px;
+  font-weight: 500;
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}
+.text8__seg0 {
+  font-size: var(--lottery-grid-prize-font-size, 22px);
+  letter-spacing: var(--lottery-grid-prize-letter-spacing, 0px);
+}

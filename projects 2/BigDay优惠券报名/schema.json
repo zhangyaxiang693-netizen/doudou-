@@ -1,0 +1,72 @@
+{
+  "title": "BigDay优惠券报名",
+  "description": "标题、BigDay经典优惠券、门槛加报名组成的分子组件",
+  "type": "atom",
+  "category": "分子组件",
+  "dimensions": {
+    "width": 702,
+    "height": 449
+  },
+  "props": [
+    {
+      "name": "titleText",
+      "label": "标题文案",
+      "type": "string",
+      "default": "消耗达标100%赢流量券"
+    },
+    {
+      "name": "couponAmount",
+      "label": "券金额",
+      "type": "string",
+      "default": "800"
+    },
+    {
+      "name": "couponUnit",
+      "label": "券单位",
+      "type": "string",
+      "default": "元"
+    },
+    {
+      "name": "couponExpiry",
+      "label": "有效期",
+      "type": "string",
+      "default": "仅剩 1 天使用"
+    },
+    {
+      "name": "couponPrefix",
+      "label": "券前缀",
+      "type": "string",
+      "default": "DOU+"
+    },
+    {
+      "name": "couponTitle",
+      "label": "券名称",
+      "type": "string",
+      "default": "优惠券"
+    },
+    {
+      "name": "actionText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "立即报名"
+    },
+    {
+      "name": "dateText",
+      "label": "活动日期",
+      "type": "string",
+      "default": "8.16–8.18"
+    },
+    {
+      "name": "thresholdText",
+      "label": "门槛文案",
+      "type": "string",
+      "default": "投放DOU+≥2 单"
+    },
+    {
+      "name": "descriptionText",
+      "label": "说明文案",
+      "type": "string",
+      "default": "（投点赞评论 / 播放量 / 粉丝量目标）"
+    }
+  ]
+}

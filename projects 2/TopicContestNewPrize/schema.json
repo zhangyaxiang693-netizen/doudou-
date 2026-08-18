@@ -1,0 +1,99 @@
+{
+  "name": "TopicContestNewPrize",
+  "title": "投稿赢流量新版",
+  "description": "三列奖品展示组件，包含一等奖、二等奖、三等奖，每个奖项有标题、描述、金额和单位",
+  "category": "营销组件",
+  "props": [
+    {
+      "name": "firstPrizeTitle",
+      "label": "一等奖标题",
+      "type": "string",
+      "default": "DOU+流量券",
+      "description": "一等奖的标题文字"
+    },
+    {
+      "name": "firstPrizeDesc",
+      "label": "一等奖描述",
+      "type": "string",
+      "default": "一等奖*10",
+      "description": "一等奖的描述文字（奖项和数量）"
+    },
+    {
+      "name": "firstPrizeAmount",
+      "label": "一等奖金额",
+      "type": "string",
+      "default": "888",
+      "description": "一等奖的金额数值"
+    },
+    {
+      "name": "firstPrizeUnit",
+      "label": "一等奖单位",
+      "type": "string",
+      "default": "元",
+      "description": "一等奖金额的单位"
+    },
+    {
+      "name": "secondPrizeTitle",
+      "label": "二等奖标题",
+      "type": "string",
+      "default": "DOU+流量券",
+      "description": "二等奖的标题文字"
+    },
+    {
+      "name": "secondPrizeDesc",
+      "label": "二等奖描述",
+      "type": "string",
+      "default": "二等奖*50",
+      "description": "二等奖的描述文字（奖项和数量）"
+    },
+    {
+      "name": "secondPrizeAmount",
+      "label": "二等奖金额",
+      "type": "string",
+      "default": "188",
+      "description": "二等奖的金额数值"
+    },
+    {
+      "name": "secondPrizeUnit",
+      "label": "二等奖单位",
+      "type": "string",
+      "default": "元",
+      "description": "二等奖金额的单位"
+    },
+    {
+      "name": "thirdPrizeTitle",
+      "label": "三等奖标题",
+      "type": "string",
+      "default": "DOU+流量券",
+      "description": "三等奖的标题文字"
+    },
+    {
+      "name": "thirdPrizeDesc",
+      "label": "三等奖描述",
+      "type": "string",
+      "default": "三等奖*100",
+      "description": "三等奖的描述文字（奖项和数量）"
+    },
+    {
+      "name": "thirdPrizeAmount",
+      "label": "三等奖金额",
+      "type": "string",
+      "default": "88",
+      "description": "三等奖的金额数值"
+    },
+    {
+      "name": "thirdPrizeUnit",
+      "label": "三等奖单位",
+      "type": "string",
+      "default": "元",
+      "description": "三等奖金额的单位"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "name": "TimeNotification",
+  "title": "时间通知",
+  "description": "时间通知组件，带渐变背景，用于展示活动时间等信息",
+  "category": "基础组件",
+  "props": [
+    {
+      "name": "text",
+      "label": "通知文字",
+      "type": "string",
+      "default": "抢券开放时间：5月10日10:00-23:59",
+      "description": "通知的文字内容"
+    },
+    {
+      "name": "textFontFamily",
+      "label": "文字字体",
+      "type": "string",
+      "default": "Source Han Sans CN",
+      "description": "通知文字的字体"
+    },
+    {
+      "name": "textFontSize",
+      "label": "文字字号",
+      "type": "string",
+      "default": "28",
+      "description": "通知文字的字号（单位px）"
+    },
+    {
+      "name": "textLetterSpacing",
+      "label": "文字间距",
+      "type": "string",
+      "default": "0",
+      "description": "通知文字之间的字间距（单位px）"
+    },
+    {
+      "name": "textColor",
+      "label": "文字颜色",
+      "type": "string",
+      "default": "#FF3C6D",
+      "description": "通知文字的纯色"
+    },
+    {
+      "name": "textGradient",
+      "label": "文字渐变色",
+      "type": "string",
+      "default": "",
+      "description": "通知文字的渐变色，优先级高于文字颜色"
+    },
+    {
+      "name": "bgColor",
+      "label": "背景颜色",
+      "type": "string",
+      "default": "#FFDDE2",
+      "description": "通知背景的颜色，会自动生成两头透明的渐变效果"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    }
+  ]
+}

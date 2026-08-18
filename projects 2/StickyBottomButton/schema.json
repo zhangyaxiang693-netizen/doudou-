@@ -1,0 +1,29 @@
+{
+  "name": "StickyBottomButton",
+  "title": "置底按钮",
+  "description": "置底大按钮组件，粉色渐变背景，红色圆角按钮，背景图片装饰",
+  "category": "营销组件",
+  "props": [
+    {
+      "name": "text",
+      "label": "按钮文字",
+      "type": "string",
+      "default": "立即投放上热门",
+      "description": "按钮上显示的文字"
+    },
+    {
+      "name": "className",
+      "label": "CSS类名",
+      "type": "string",
+      "default": "",
+      "description": "自定义CSS类名"
+    },
+    {
+      "name": "onClick",
+      "label": "点击事件",
+      "type": "function",
+      "default": "",
+      "description": "按钮点击回调函数"
+    }
+  ]
+}

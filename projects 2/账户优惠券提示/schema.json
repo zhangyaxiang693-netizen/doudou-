@@ -1,0 +1,102 @@
+{
+  "title": "账户优惠券提示",
+  "description": "展示账户优惠券金额、数量和有效期的提示组件",
+  "category": "reward",
+  "dimensions": {
+    "width": 702,
+    "height": 160
+  },
+  "props": [
+    {
+      "name": "totalText",
+      "label": "总计文字",
+      "type": "text",
+      "default": "总计",
+      "description": "左侧总计标签文字"
+    },
+    {
+      "name": "amountText",
+      "label": "金额",
+      "type": "text",
+      "default": "800",
+      "description": "优惠券总金额"
+    },
+    {
+      "name": "amountUnitText",
+      "label": "金额单位",
+      "type": "text",
+      "default": "元",
+      "description": "金额后的单位文字"
+    },
+    {
+      "name": "brandText",
+      "label": "品牌文字",
+      "type": "text",
+      "default": "DOU+",
+      "description": "优惠券品牌文字"
+    },
+    {
+      "name": "couponTypeText",
+      "label": "优惠券类型",
+      "type": "text",
+      "default": "优惠券",
+      "description": "品牌后的优惠券类型文字"
+    },
+    {
+      "name": "text",
+      "label": "账户提示文字",
+      "type": "text",
+      "default": "账户内共有",
+      "description": "账户优惠券提示文字"
+    },
+    {
+      "name": "couponCountText",
+      "label": "券数量",
+      "type": "text",
+      "default": "2",
+      "description": "账户内的优惠券数量"
+    },
+    {
+      "name": "couponUnitText",
+      "label": "券数量单位",
+      "type": "text",
+      "default": "张券",
+      "description": "优惠券数量后的单位文字"
+    },
+    {
+      "name": "actionText",
+      "label": "按钮文字",
+      "type": "text",
+      "default": "立即使用",
+      "description": "操作按钮文字"
+    },
+    {
+      "name": "validityLabelText",
+      "label": "有效期文字",
+      "type": "text",
+      "default": "有效期：",
+      "description": "有效期标签文字"
+    },
+    {
+      "name": "remainingText",
+      "label": "剩余提示文字",
+      "type": "text",
+      "default": "仅剩",
+      "description": "剩余时间前的提示文字"
+    },
+    {
+      "name": "durationText",
+      "label": "剩余时间",
+      "type": "text",
+      "default": "12",
+      "description": "优惠券剩余有效时间"
+    },
+    {
+      "name": "timeUnitText",
+      "label": "时间单位",
+      "type": "text",
+      "default": "小时",
+      "description": "剩余时间后的单位文字"
+    }
+  ]
+}

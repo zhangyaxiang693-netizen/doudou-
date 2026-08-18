@@ -1,0 +1,135 @@
+.page {
+  position: relative;
+  width: 702.36px;
+  height: 198.1px;
+}
+.svgWrap {
+  position: absolute;
+  top: 0px;
+  left: 0.36px;
+  width: 702px;
+  height: 198.1px;
+  border-radius: var(--promo-coupon-svg-wrap-border-radius, 38px);
+  overflow: hidden;
+}
+.image {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.wrap {
+  width: 451px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding-right: 96px;
+  padding-left: 42px;
+  position: absolute;
+  top: 92px;
+  left: 0px;
+}
+.text {
+  margin-right: 8px;
+  font-family: var(--promo-coupon-symbol-font-family, "Source Han Sans CN");
+  font-size: var(--promo-coupon-symbol-font-size, 30.13px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--promo-coupon-symbol-color, rgba(255, 39, 90, 1));
+  line-height: 149.24%;
+  font-weight: 700;
+}
+.text__seg0 {
+  font-size: var(--promo-coupon-symbol-font-size, 30.13px);
+}
+.text1 {
+  margin-right: 8px;
+  font-family: var(--promo-coupon-amount-font-family, "Douyin Number ABC");
+  font-size: var(--promo-coupon-amount-font-size, 78px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--promo-coupon-amount-color, rgba(255, 39, 90, 1));
+  line-height: 100%;
+  letter-spacing: var(--promo-coupon-text1-letter-spacing, -3.68px);
+  font-weight: 600;
+}
+.text1__seg0 {
+  letter-spacing: var(--promo-coupon-text1-seg0-letter-spacing, -3.68px);
+}
+.text2 {
+  font-family: var(--promo-coupon-limit-font-family, "Source Han Sans CN");
+  font-size: var(--promo-coupon-limit-font-size, 24px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--promo-coupon-limit-color, rgba(61, 61, 61, 1));
+  line-height: 149.24%;
+  font-weight: 400;
+}
+.wrap1 {
+  width: 198px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 56px;
+  left: 477px;
+}
+.container {
+  height: 92px;
+  border-radius: var(--promo-coupon-button-border-radius, 111px);
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    var(--promo-coupon-button-bg-color, rgba(255, 19, 78, 1)) 0%,
+    var(--promo-coupon-button-bg-light, rgba(255, 91, 119, 1)) 100%
+  );
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  padding: 0 34px;
+}
+.text3 {
+  font-family: var(--promo-coupon-button-font-family, "Source Han Sans CN");
+  font-size: var(--promo-coupon-button-font-size, 32px);
+  white-space: nowrap;
+  text-align: center;
+  color: var(--promo-coupon-button-color, rgba(255, 255, 255, 1));
+  line-height: normal;
+  font-weight: 700;
+}
+.text3__seg0 {
+  font-size: var(--promo-coupon-button-font-size, 32px);
+}
+.wrap2 {
+  width: max-content;
+  height: 52px;
+  box-sizing: border-box;
+  position: absolute;
+  top: 37px;
+  left: 41px;
+}
+.text4 {
+  position: relative;
+  z-index: 1;
+  font-family: var(--promo-coupon-title-font-family, "MFBenHeiNoncommercial");
+  font-size: var(--promo-coupon-title-font-size, 36px);
+  white-space: nowrap;
+  color: var(--promo-coupon-title-color, rgba(45, 45, 45, 1));
+  line-height: 40px;
+  font-weight: 400;
+}
+.image1 {
+  width: 187.72px;
+  height: 17.72px;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+}

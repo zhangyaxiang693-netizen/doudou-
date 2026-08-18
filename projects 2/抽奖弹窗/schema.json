@@ -1,0 +1,35 @@
+{
+  "title": "抽奖结果弹窗",
+  "description": "九宫格抽奖完成后展示的静态中奖结果弹窗，可独立编辑与导出。",
+  "category": "弹窗组件",
+  "dimensions": {
+    "width": 576,
+    "height": 640
+  },
+  "props": [
+    {
+      "name": "hintText",
+      "label": "提示文案",
+      "type": "string",
+      "default": "快去填写地址吧~"
+    },
+    {
+      "name": "titleText",
+      "label": "中奖标题",
+      "type": "string",
+      "default": "恭喜抽中抖仔盲盒！"
+    },
+    {
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "填写地址"
+    },
+    {
+      "name": "badgeText",
+      "label": "奖品标记",
+      "type": "string",
+      "default": "？"
+    }
+  ]
+}
