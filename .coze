@@ -10,8 +10,8 @@ entrypoint = "index.html"
 preview_enable = "enabled"
 
 [deploy]
-build = ["bash", "projects 2/scripts/build.sh"]
-run = ["bash", "projects 2/scripts/run.sh"]
+build = ["bash", "scripts/build.sh"]
+run = ["bash", "scripts/run.sh"]
 
 [deploy.profile]
 kind = "service"

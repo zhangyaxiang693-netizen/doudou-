@@ -81,4 +81,4 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 - 构建产物在 `dist/`，预览服务器服务该目录
 - `pnpm-workspace.yaml` 必须包含 `packages: ["."]`，否则 pnpm 会因缺少 packages 字段报错
 - 项目中存在 `package-lock.json`（历史遗留），实际使用 pnpm 管理依赖，不要删除 pnpm-lock.yaml
-- 目录名 `projects 2` 含空格，脚本中路径引用需加引号
+- 目录名 `projects 2` 含空格，部署平台执行时会被截断。根目录 `scripts/build.sh` 和 `scripts/run.sh` 是包装脚本，正确引用子项目路径，`.coze` 的 `[deploy]` 指向这两个包装脚本而非子项目内的脚本
