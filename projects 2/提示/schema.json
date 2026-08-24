@@ -1,0 +1,105 @@
+{
+  "id": "提示",
+  "name": "提示",
+  "title": "提示",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "提示条组件，展示一条中奖或活动提示文案。",
+  "reactComponent": "提示",
+  "dimensions": {
+    "width": 629.21,
+    "height": 40
+  },
+  "fonts": [
+    {
+      "text": "用户XXXXXXX领到抖仔毛绒挂件奖",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "内容",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "提示",
+      "提示条",
+      "中奖提示",
+      "活动提示"
+    ],
+    "textProps": [
+      "contentText"
+    ]
+  },
+  "props": [
+    {
+      "key": "contentText",
+      "name": "contentText",
+      "label": "内容",
+      "type": "string",
+      "default": "用户XXXXXXX领到抖仔毛绒挂件奖",
+      "description": "提示条展示文案。"
+    },
+    {
+      "key": "backgroundColor",
+      "name": "backgroundColor",
+      "label": "背景底色",
+      "type": "color",
+      "default": "#FFF4F6"
+    },
+    {
+      "key": "iconColor",
+      "name": "iconColor",
+      "label": "矢量icon",
+      "type": "color",
+      "default": "#FF62A0"
+    },
+    {
+      "key": "textColor",
+      "name": "textColor",
+      "label": "文案颜色",
+      "type": "color",
+      "default": "#FF62A0"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "backgroundColor": "#FFF4F6",
+        "iconColor": "#FF62A0",
+        "textColor": "#FF62A0"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "backgroundColor": "#FFF4F4",
+        "iconColor": "#FF6265",
+        "textColor": "#FF6265"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "backgroundColor": "#FFFDF0",
+        "iconColor": "#FF8F4A",
+        "textColor": "#FF8F4A"
+      }
+    }
+  ]
+}

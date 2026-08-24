@@ -1,0 +1,229 @@
+{
+  "id": "发券-样式3",
+  "name": "发券-样式3",
+  "title": "发券-样式3",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "发券卡片样式3，展示金额和限量条件。",
+  "reactComponent": "发券-样式3",
+  "dimensions": {
+    "width": 607,
+    "height": 198
+  },
+  "fonts": [
+    {
+      "text": "限量20张",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "26px",
+      "lineHeight": "30px",
+      "usage": "条件",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "DOU+",
+      "family": "Douyin Sans",
+      "weight": 400,
+      "size": "42px",
+      "lineHeight": "normal",
+      "usage": "标题英文",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Sans Regular / 400",
+        "note": "当前字体包只有 DouyinSansBold.ttf，不能作为 400 字重精确源。"
+      }
+    },
+    {
+      "text": "优惠券",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "40px",
+      "lineHeight": "56px",
+      "usage": "标题中文",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "满100元赠",
+      "family": "Source Han Sans CN",
+      "weight": 500,
+      "size": "28px",
+      "lineHeight": "42px",
+      "usage": "条件说明",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-MEDIUM.otf"
+      }
+    },
+    {
+      "text": "七夕专项",
+      "family": "Douyin Sans",
+      "weight": 300,
+      "size": "24px",
+      "lineHeight": "1",
+      "usage": "专项标签",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Sans Light / 300",
+        "note": "当前字体包只有 DouyinSansBold.ttf，组件按原始 font-family 和 300 字重声明渲染。"
+      }
+    },
+    {
+      "text": "520",
+      "family": "Douyin Number ABC",
+      "weight": 600,
+      "size": "76px",
+      "lineHeight": "84px",
+      "usage": "金额",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Number ABC / 600",
+        "note": "组件按原始 font-weight: 600 声明渲染，当前字体包未提供 600 字重文件。"
+      }
+    },
+    {
+      "text": "元",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "149.24%",
+      "usage": "金额单位",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "发券-样式3",
+      "发券",
+      "优惠券",
+      "限量20张",
+      "限量",
+      "满100元赠"
+    ],
+    "textProps": [
+      "amountText",
+        "conditionText",
+        "giftConditionText",
+        "specialText"
+    ]
+  },
+  "props": [
+    {
+      "key": "amountText",
+      "name": "amountText",
+      "label": "金额",
+      "type": "string",
+      "default": "520",
+      "description": "券金额数字，组件固定显示“元”单位。"
+    },
+    {
+      "key": "conditionText",
+      "name": "conditionText",
+      "label": "条件",
+      "type": "string",
+      "default": "限量20张",
+      "description": "右侧条件文案。"
+    },
+    {
+      "key": "giftConditionText",
+      "name": "giftConditionText",
+      "label": "赠送条件",
+      "type": "string",
+      "default": "满100元赠",
+      "description": "左侧金额上方条件文案。"
+    },
+    {
+      "key": "specialText",
+      "name": "specialText",
+      "label": "专项标签",
+      "type": "string",
+      "default": "七夕专项",
+      "description": "右上角专项标签文案。"
+    },
+    {
+      "key": "subtractGradientStart",
+      "name": "subtractGradientStart",
+      "label": "Subtract 渐变开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "subtractGradientEnd",
+      "name": "subtractGradientEnd",
+      "label": "Subtract 渐变结束",
+      "type": "color",
+      "default": "#FF229F"
+    },
+    {
+      "key": "rectangleColor",
+      "name": "rectangleColor",
+      "label": "Rectangle 2131355592",
+      "type": "color",
+      "default": ""
+    },
+    {
+      "key": "iconGradientStart",
+      "name": "iconGradientStart",
+      "label": "icon 渐变开始",
+      "type": "color",
+      "default": "#FF44A9"
+    },
+    {
+      "key": "iconGradientEnd",
+      "name": "iconGradientEnd",
+      "label": "icon 渐变结束",
+      "type": "color",
+      "default": "#FF2B8A"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "subtractGradientStart": "#FF1473",
+        "subtractGradientEnd": "#FF229F",
+        "rectangleColor": "",
+        "iconGradientStart": "#FF44A9",
+        "iconGradientEnd": "#FF2B8A"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "subtractGradientStart": "#FF180C",
+        "subtractGradientEnd": "#FF166F",
+        "rectangleColor": "#FFA6BD",
+        "iconGradientStart": "#F60052",
+        "iconGradientEnd": "#FF0D3F"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "subtractGradientStart": "#FF4F01",
+        "subtractGradientEnd": "#FF7C02",
+        "rectangleColor": "#FF9597",
+        "iconGradientStart": "#FF6B02",
+        "iconGradientEnd": "#FF5B1A"
+      }
+    }
+  ]
+}

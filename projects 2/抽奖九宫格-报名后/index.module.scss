@@ -1,0 +1,109 @@
+.page {
+  width: 615.08px;
+  height: 613px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.wrap,
+.wrap1,
+.wrap2 {
+  width: 615.08px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.wrap1,
+.wrap2 {
+  margin-top: 24px;
+}
+
+.prizeCard {
+  position: relative;
+  width: 188px;
+  height: 188px;
+  margin-right: 24px;
+  border-radius: 40px;
+  box-sizing: border-box;
+  background: rgba(244, 244, 244, 1);
+}
+
+.prizeCard:nth-child(3) {
+  margin-right: 0;
+}
+
+.prizeImage {
+  width: 136px;
+  height: 100px;
+  position: absolute;
+  top: 20px;
+  left: 26px;
+  display: block;
+  object-fit: contain;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.pointsPrizeImage {
+  transform: translateX(16px);
+}
+
+.prizeName {
+  position: absolute;
+  top: 123.9px;
+  left: 0px;
+  width: 188px;
+  min-height: 34px;
+  padding: 0 8px;
+  overflow: visible;
+  text-overflow: clip;
+  box-sizing: border-box;
+  font-family: "Source Han Sans CN";
+  font-size: 22px;
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+  color: rgba(81, 81, 81, 1);
+  line-height: 24px;
+  font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.container4 {
+  width: 187px;
+  height: 189px;
+  border-radius: 40px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    var(--lottery-registered-button-gradient-start, #FF1473) 0%,
+    var(--lottery-registered-button-gradient-end, #FF229F) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  margin-right: 24px;
+}
+
+.text4 {
+  width: 103px;
+  font-family: MFYuanHeiNoncommercial;
+  font-size: 102px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 255, 255, 1);
+  font-weight: 400;
+}

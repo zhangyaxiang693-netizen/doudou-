@@ -1,0 +1,73 @@
+{
+  "id": "正文-带底框样式1",
+  "name": "正文-带底框样式1",
+  "title": "正文-带底框样式1",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "带底框的正文组件样式1，展示标题和正文。",
+  "reactComponent": "正文-带底框样式1",
+  "dimensions": {
+    "width": 626,
+    "height": 230
+  },
+  "heightMode": "auto",
+  "minHeight": 230,
+  "fonts": [
+    {
+      "text": "#如何参与",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "28px",
+      "lineHeight": "normal",
+      "usage": "标题",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "活动期间，领取任务后并投放DOU+「点赞评论量」「视频播放量」「粉丝量」目标，且现金消耗大于68元的用户，可参与抽奖。每天均可参与一次抽奖活动。",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "正文",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "正文-带底框样式1",
+      "正文",
+      "带底框",
+      "活动规则",
+      "标题"
+    ],
+    "textProps": [
+      "titleText",
+      "bodyText"
+    ]
+  },
+  "props": [
+    {
+      "key": "titleText",
+      "name": "titleText",
+      "label": "标题",
+      "type": "string",
+      "default": "#如何参与",
+      "description": "正文模块标题。"
+    },
+    {
+      "key": "bodyText",
+      "name": "bodyText",
+      "label": "正文",
+      "type": "string",
+      "default": "活动期间，领取任务后并投放DOU+「点赞评论量」「视频播放量」「粉丝量」目标，且现金消耗大于68元的用户，可参与抽奖。每天均可参与一次抽奖活动。",
+      "description": "正文模块内容。"
+    }
+  ]
+}

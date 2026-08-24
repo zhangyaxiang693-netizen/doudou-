@@ -1,0 +1,108 @@
+.page {
+  width: 603px;
+  min-height: 318px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+.text {
+  width: 603px;
+  font-family: "Source Han Sans CN";
+  font-size: 28px;
+  white-space: nowrap;
+  color: rgba(45, 45, 45, 1);
+  line-height: normal;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.wrap {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 603px;
+}
+.container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 603px;
+  min-height: 72px;
+}
+.image {
+  width: 13px;
+  height: 13px;
+  margin-top: 12px;
+}
+.text1 {
+  margin-left: 12px;
+  width: 578px;
+  font-family: "Source Han Sans CN";
+  font-size: 24px;
+  text-align: justify;
+  color: rgba(81, 81, 81, 1);
+  line-height: 36px;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+}
+.highlightText,
+.text1__seg1 {
+  font-weight: 700;
+  color: rgba(255, 19, 114, 1);
+}
+.container2 {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 603px;
+  min-height: 108px;
+}
+.image2 {
+  width: 13px;
+  height: 13px;
+  margin-top: 12px;
+}
+.text3 {
+  margin-left: 12px;
+  width: 578px;
+  font-family: "Source Han Sans CN";
+  font-size: 24px;
+  text-align: justify;
+  color: rgba(81, 81, 81, 1);
+  line-height: 36px;
+  font-weight: 400;
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+}
+.container1 {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 596px;
+  min-height: 36px;
+}
+.image1 {
+  width: 13px;
+  height: 13px;
+  margin-top: 12.97px;
+}
+.text2 {
+  margin-left: 12px;
+  width: 571px;
+  font-family: "Source Han Sans CN";
+  font-size: 24px;
+  white-space: normal;
+  text-align: justify;
+  color: rgba(81, 81, 81, 1);
+  line-height: 36px;
+  font-weight: 400;
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+}

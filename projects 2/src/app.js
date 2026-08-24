@@ -5,10 +5,78 @@ const _cssVarModules = import.meta.glob('../*/index.module.scss', { eager: true,
 const navigationBarSvgUrl = new URL("../导航栏/顶栏.svg", import.meta.url).href;
 const contentModuleImageUrl = new URL("../内容模块.png", import.meta.url).href;
 const contentModuleImage2Url = new URL("../内容模块2.png", import.meta.url).href;
+const mockPrizeLibrary = [
+  {
+    id: "traffic_coupon_5",
+    name: "5元流量券",
+    image: new URL("../九宫格-奖品库/5元流量券.png", import.meta.url).href,
+  },
+  {
+    id: "traffic_coupon_6",
+    name: "6元流量券",
+    image: new URL("../九宫格-奖品库/6元流量券.png", import.meta.url).href,
+  },
+  {
+    id: "traffic_coupon_10",
+    name: "10元流量券",
+    image: new URL("../九宫格-奖品库/10元流量券.png", import.meta.url).href,
+  },
+  {
+    id: "official_recommendation",
+    name: "DOU+官方推荐机会",
+    image: new URL("../九宫格-奖品库/dou+官方推荐机会.png", import.meta.url).href,
+  },
+  {
+    id: "douzi_merch",
+    name: "DOU仔周边",
+    image: new URL("../九宫格-奖品库/dou仔周边.png", import.meta.url).href,
+  },
+  {
+    id: "douzi_family_pack",
+    name: "DOU仔周边全家福",
+    image: new URL("../九宫格-奖品库/dou仔周边全家福.png", import.meta.url).href,
+  },
+  {
+    id: "douzi_canvas_bag",
+    name: "DOU仔周边帆布包",
+    image: new URL("../九宫格-奖品库/dou仔周边帆布包.png", import.meta.url).href,
+  },
+  {
+    id: "douzi_keychain",
+    name: "DOU仔挂件",
+    image: new URL("../九宫格-奖品库/dou仔挂件.png", import.meta.url).href,
+  },
+  {
+    id: "douzi_doll",
+    name: "DOU仔玩偶",
+    image: new URL("../九宫格-奖品库/dou仔玩偶.png", import.meta.url).href,
+  },
+  {
+    id: "coupon_pack",
+    name: "券包",
+    image: new URL("../九宫格-奖品库/券包.png", import.meta.url).href,
+  },
+  {
+    id: "jianying_vip",
+    name: "剪映VIP",
+    image: new URL("../九宫格-奖品库/剪映vip.png", import.meta.url).href,
+  },
+  {
+    id: "traffic_support",
+    name: "流量扶持",
+    image: new URL("../九宫格-奖品库/流量扶持.png", import.meta.url).href,
+  },
+  {
+    id: "points",
+    name: "积分",
+    image: new URL("../九宫格-奖品库/积分.png", import.meta.url).href,
+  },
+];
 
 function _normalizeDynamicSchema(path, rawSchema) {
   const dirName = path.split('/').slice(-2)[0];
   const props = (rawSchema.props || []).map((p) => ({
+    ...p,
     key: p.name || p.key,
     label: p.label || p.name || p.key,
     type: p.type || 'string',
@@ -16,6 +84,7 @@ function _normalizeDynamicSchema(path, rawSchema) {
     description: p.description || '',
   }));
   return {
+    ...rawSchema,
     id: rawSchema.id || dirName,
     name: rawSchema.title || rawSchema.name || dirName,
     type: 'atom',
@@ -62,676 +131,7 @@ function _buildDynamicSchemas() {
 
 const _dynamicSchemas = _buildDynamicSchemas();
 
-const _hardcodedAtomSchemas = [
-  {
-    id: "HeaderImage",
-    name: "头图",
-    type: "atom",
-    description: "顶部头图组件，用于页面顶部展示主视觉图片",
-    reactComponent: "HeaderImage",
-    dimensions: { width: 750, height: 528 },
-    props: [
-      { key: "src", label: "图片地址", type: "string", default: "" },
-    ],
-  },
-  {
-    id: "ContentModuleImage",
-    name: "内容模块",
-    type: "atom",
-    description: "用于蓝图示意的内容模块图片占位组件",
-    dimensions: { width: 702, height: 1639 },
-    props: [
-      { key: "src", label: "图片地址", type: "string", default: contentModuleImageUrl },
-      { key: "alt", label: "替代文本", type: "string", default: "内容模块" },
-    ],
-  },
-  {
-    id: "QualityVideoDiagnosis",
-    name: "优质视频诊断组件",
-    type: "atom",
-    description: "用于端午活动包的优质视频诊断玩法组件",
-    reactComponent: "QualityVideoDiagnosis",
-    dimensions: { width: 702, height: 326 },
-    props: [
-      { key: "title", label: "标题", type: "string", default: "优质视频诊断" },
-      { key: "description", label: "提示文案", type: "string", default: "发现你有一条高潜视频！" },
-      { key: "buttonText", label: "按钮文案", type: "string", default: "立即生成报告" },
-    ],
-  },
-  {
-    id: "OneClickBoost",
-    name: "一键上热门",
-    type: "atom",
-    description: "内容诊断后的上热门行动组件",
-    reactComponent: "OneClickBoost",
-    dimensions: { width: 702, height: 650 },
-    props: [
-      { key: "titlePrefix", label: "标题前段", type: "string", default: "报告已生成 用" },
-      { key: "brandText", label: "品牌文字", type: "string", default: "DOU+" },
-      { key: "titleSuffix", label: "标题后段", type: "string", default: "推爆内容吧！" },
-      { key: "sectionTitle", label: "建议标签", type: "string", default: "诊断建议" },
-      { key: "videoTitle", label: "视频标题", type: "string", default: "当猫咪发现了扫地机器人" },
-      { key: "userName", label: "用户昵称", type: "string", default: "用户昵称" },
-      { key: "suggestionText", label: "诊断建议", type: "string", default: "你的视频总播放量、点赞率均高于同类水平! 如果能再优化前几秒的视觉冲击和节奏就更好啦~ 评论区记得加入引导话术哦!" },
-      { key: "moreText", label: "查看更多文案", type: "string", default: "查看更多内容诊断信息 >>" },
-      { key: "buttonText", label: "按钮文案", type: "string", default: "一键上热门" },
-    ],
-  },
-  {
-    id: "TextComponentOne",
-    name: "文本组件1",
-    type: "atom",
-    description: "规则说明文本组件",
-    reactComponent: "TextComponentOne",
-    dimensions: { width: 610, height: 315 },
-    props: [
-      { key: "title", label: "标题", type: "string", default: "参与规则:" },
-      { key: "ruleOne", label: "规则一", type: "string", default: "报名：点击上方“立即报名”加入活动" },
-      { key: "ruleTwo", label: "规则二", type: "string", default: "2026年6.19-6.21期间累计现金消耗≥80元且消耗完成（投DOU+点赞评论量、视频播放量、粉丝量目标），即有机会获得一张满100元赠480元DOU+优惠券" },
-      { key: "ruleThree", label: "规则三", type: "string", default: "共抽取5位用户（消耗越高，中奖机会越大）" },
-      { key: "note", label: "底部说明", type: "string", default: "*奖励将于活动结束后5个工作日内发放至获奖用户的DOU+账户" },
-    ],
-  },
-  {
-    id: "TextComponentTwo",
-    name: "文本组件2",
-    type: "atom",
-    description: "分段说明文本组件",
-    reactComponent: "TextComponentTwo",
-    dimensions: { width: 596, height: 520 },
-    props: [
-      { key: "titleOne", label: "标题一", type: "string", default: "怎么参与？" },
-      { key: "contentOnePrefix", label: "正文一前段", type: "string", default: "5月1日-5月31日期间，在" },
-      { key: "contentOneHighlight", label: "正文一重点", type: "string", default: "话题#DOU+已就位，流量马上来#" },
-      { key: "contentOneSuffix", label: "正文一后段", type: "string", default: "下投稿，并给投稿视频投放一单DOU+≥30元即有机会获得200元流量优惠券！" },
-      { key: "titleTwo", label: "标题二", type: "string", default: "怎么评选？" },
-      { key: "contentTwoPrefix", label: "正文二前段", type: "string", default: "官方将从投稿作品中，" },
-      { key: "contentTwoHighlight", label: "正文二重点", type: "string", default: "基于内容质量和视频数据，评选出20名优质创作者" },
-      { key: "contentTwoSuffix", label: "正文二后段", type: "string", default: "，提供每个人一张价值200元的DOU+优惠券。" },
-      { key: "titleThree", label: "标题三", type: "string", default: "发奖时间：" },
-      { key: "contentThreePrefix", label: "正文三前段", type: "string", default: "5.31活动结束后，将于" },
-      { key: "contentThreeHighlight", label: "正文三重点", type: "string", default: "7个工作日内" },
-      { key: "contentThreeSuffix", label: "正文三后段", type: "string", default: "完成所有奖品的下发以及中奖名单的公示，可以在活动规则文档中查看。" },
-    ],
-  },
-  {
-    id: "BigButton",
-    name: "大按钮",
-    type: "atom",
-    description: "大号圆角按钮组件，玫红色渐变背景，白色粗体文字",
-    reactComponent: "BigButton",
-    dimensions: { width: 360, height: 110 },
-    props: [
-      { key: "text", label: "按钮文字", type: "string", default: "去投放" },
-    ],
-  },
-  {
-    id: "StickyBottomButton",
-    name: "置底按钮",
-    type: "atom",
-    description: "置底大按钮组件，粉色渐变背景，红色圆角按钮，背景图片装饰",
-    reactComponent: "StickyBottomButton",
-    dimensions: { width: 750, height: 287 },
-    props: [
-      { key: "text", label: "按钮文字", type: "string", default: "立即投放上热门" },
-    ],
-  },
-  {
-    id: "RichText",
-    name: "富文本",
-    type: "atom",
-    description: "富文本文本框组件，宽度610px，高度自适应，支持直接编辑",
-    reactComponent: "RichText",
-    dimensions: { width: 610, height: 100 },
-    props: [
-      { key: "content", label: "文本内容", type: "string", default: "在此输入文本内容..." },
-      { key: "fontSize", label: "字号", type: "string", default: "body" },
-      { key: "color", label: "颜色", type: "string", default: "black" },
-      { key: "bullet", label: "项目符号", type: "boolean", default: false },
-      { key: "icon", label: "标题图标", type: "boolean", default: false },
-    ],
-  },
-  {
-    id: "SectionTitle",
-    name: "标题",
-    type: "atom",
-    description: "带左侧图标的标题组件，用于模块标题展示",
-    reactComponent: "SectionTitle",
-    dimensions: { width: 468.93, height: 40 },
-    props: [
-      { key: "text", label: "标题文字", type: "string", default: "消耗达标100%赢流量券" },
-    ],
-  },
-  {
-    id: "TaskTitle",
-    name: "标题2",
-    type: "atom",
-    description: "任务抽奖标题组件，左侧带礼物图标，中间主标题，右侧副标题",
-    reactComponent: "TaskTitle",
-    dimensions: { width: 624.64, height: 46 },
-    props: [
-      { key: "title", label: "主标题", type: "string", default: "做任务 抽好礼" },
-      { key: "subtitle", label: "副标题", type: "string", default: "剩余抽奖次数：2" },
-    ],
-  },
-  {
-    id: "IconTitleCountdown",
-    name: "icon标题+倒计时",
-    type: "atom",
-    description: "带沙漏图标的标题组件，右侧附带倒计时展示（粉色底色高亮数字）",
-    reactComponent: "IconTitleCountdown",
-    dimensions: { width: 673, height: 46 },
-    props: [
-      { key: "title", label: "标题文字", type: "string", default: "端午福利限时用" },
-      { key: "label", label: "倒计时标签", type: "string", default: "有效期：" },
-      { key: "prefix", label: "倒计时前缀", type: "string", default: "仅剩" },
-      { key: "countdownValue", label: "倒计时数值", type: "string", default: "12" },
-      { key: "unit", label: "倒计时单位", type: "string", default: "小时" },
-    ],
-  },
-  {
-    id: "TimeNotification",
-    name: "时间通知",
-    type: "atom",
-    description: "时间通知组件，带粉色渐变背景，用于展示活动时间等信息",
-    reactComponent: "TimeNotification",
-    dimensions: { width: 475, height: 55 },
-    props: [
-      { key: "text", label: "通知文字", type: "string", default: "抢券开放时间：5月10日10:00-23:59" },
-    ],
-  },
-  {
-    id: "TwoColumnLiveData",
-    name: "两列活数据",
-    type: "atom",
-    description: "两列数据展示组件，灰色圆角背景，中间分隔线，左右各展示标签和数值",
-    reactComponent: "TwoColumnLiveData",
-    dimensions: { width: 618, height: 74 },
-    props: [
-      { key: "leftLabel", label: "左侧标签", type: "string", default: "累计现金消耗" },
-      { key: "leftValue", label: "左侧数值", type: "string", default: "9" },
-      { key: "leftUnit", label: "左侧单位", type: "string", default: "(元)" },
-      { key: "rightLabel", label: "右侧标签", type: "string", default: "可抽奖次数" },
-      { key: "rightValue", label: "右侧数值", type: "string", default: "2" },
-    ],
-  },
-  {
-    id: "Announcement",
-    name: "公告",
-    type: "atom",
-    description: "公告组件，粉色圆角背景，左侧带铃铛图标，用于展示活动公告信息",
-    reactComponent: "Announcement",
-    dimensions: { width: 614, height: 40 },
-    props: [
-      { key: "text", label: "公告文字", type: "string", default: "用户XXXXXXX领到抖仔毛绒挂件奖" },
-    ],
-  },
-  {
-    id: "RedPacketCoupon",
-    name: "红包优惠券",
-    type: "atom",
-    description: "红包样式的优惠券组件，包含金额、账户信息和使用按钮",
-    reactComponent: "RedPacketCoupon",
-    dimensions: { width: 700, height: 347.34 },
-    props: [
-      { key: "prefix", label: "前缀", type: "string", default: "DOU+" },
-      { key: "title", label: "标题", type: "string", default: "优惠券" },
-      { key: "accountInfo", label: "账户信息", type: "string", default: "账户内共有 2 张券" },
-      { key: "totalLabel", label: "总计标签", type: "string", default: "总计" },
-      { key: "amount", label: "金额", type: "string", default: "800" },
-      { key: "unit", label: "单位", type: "string", default: "元" },
-      { key: "buttonText", label: "按钮文字", type: "string", default: "立即使用" },
-      { key: "primaryColor", label: "主色调", type: "string", default: "#FF2E60" },
-      { key: "secondaryColor", label: "辅助色", type: "string", default: "#FF0CC6" },
-      { key: "lightColor", label: "浅色调", type: "string", default: "#FFC6E5" },
-      { key: "dotColor", label: "虚线颜色", type: "string", default: "#FFCFD7" },
-    ],
-    variants: [
-      {
-        id: "red",
-        name: "经典红",
-        props: {
-          primaryColor: "#FF2E60",
-          secondaryColor: "#FF0CC6",
-          lightColor: "#FFC6E5",
-          dotColor: "#FFCFD7",
-        },
-      },
-      {
-        id: "gold",
-        name: "高贵金",
-        props: {
-          primaryColor: "#FF8A00",
-          secondaryColor: "#FFB800",
-          lightColor: "#FFE4B5",
-          dotColor: "#FFD89A",
-        },
-      },
-      {
-        id: "blue",
-        name: "清新蓝",
-        props: {
-          primaryColor: "#3B82F6",
-          secondaryColor: "#8B5CF6",
-          lightColor: "#DBEAFE",
-          dotColor: "#93C5FD",
-        },
-      },
-      {
-        id: "green",
-        name: "活力绿",
-        props: {
-          primaryColor: "#10B981",
-          secondaryColor: "#059669",
-          lightColor: "#A7F3D0",
-          dotColor: "#6EE7B7",
-        },
-      },
-    ],
-  },
-  {
-    id: "PromoCoupon",
-    name: "促销优惠券",
-    type: "atom",
-    description: "横版促销优惠券组件，包含金额、限量提示和投放按钮",
-    reactComponent: "PromoCoupon",
-    dimensions: { width: 702.36, height: 198.1 },
-    props: [
-      { key: "title", label: "标题", type: "string", default: "周年庆惊喜流量补贴券" },
-      { key: "currency", label: "货币符号", type: "string", default: "￥" },
-      { key: "amount", label: "金额", type: "string", default: "800" },
-      { key: "limitText", label: "限量提示", type: "string", default: "限量5000张" },
-      { key: "buttonText", label: "按钮文字", type: "string", default: "立即投" },
-    ],
-  },
-  {
-    id: "PromotionModule",
-    name: "投放模块",
-    type: "atom",
-    description: "投放任务模块组件，白色圆角背景，左侧任务图标和标题，右侧状态按钮，下方描述文字",
-    reactComponent: "PromotionModule",
-    dimensions: { width: 702, height: 154 },
-    props: [
-      { key: "status", label: "状态", type: "string", default: "已完成" },
-      { key: "title", label: "任务标题", type: "string", default: "投放一单DOU+" },
-      { key: "rewardLabel", label: "奖励标签", type: "string", default: "抽奖" },
-      { key: "rewardCount", label: "奖励数量", type: "string", default: "+1" },
-      { key: "description", label: "描述文字", type: "string", default: "使用粉丝经营、内容加热目标" },
-    ],
-  },
-  {
-    id: "TaskModule",
-    name: "任务模块",
-    type: "atom",
-    description: "任务模块组件，带背景卡片，左侧任务标题和奖励，右侧操作按钮和每日次数",
-    reactComponent: "TaskModule",
-    dimensions: { width: 702, height: 161.1 },
-    props: [
-      { key: "frequency", label: "每日次数", type: "string", default: "12次/天" },
-      { key: "buttonText", label: "按钮文字", type: "string", default: "去完成" },
-      { key: "title", label: "任务标题", type: "string", default: "投放DOU+现金消耗≥30元" },
-      { key: "rewardLabel", label: "奖励标签", type: "string", default: "抽奖" },
-      { key: "rewardCount", label: "奖励数量", type: "string", default: "+1" },
-      { key: "description", label: "描述文字", type: "string", default: "投粉丝经营、内容加热目标且消耗达标" },
-    ],
-  },
-  {
-    id: "DoublePromotion",
-    name: "投放投放",
-    type: "atom",
-    description: "投放推广卡片组件，白色圆角背景，左侧大图，右侧标题和副标题",
-    reactComponent: "DoublePromotion",
-    dimensions: { width: 702, height: 193 },
-    props: [
-      { key: "title", label: "标题", type: "string", default: "专属管家专业指导投放" },
-      { key: "subtitle", label: "副标题", type: "string", default: "DOU+认证用户专享" },
-    ],
-  },
-  {
-    id: "LotteryGrid",
-    name: "抽奖9宫格",
-    type: "atom",
-    description: "抽奖9宫格组件，3x3布局，8个奖品格子围绕中间抽奖按钮",
-    reactComponent: "LotteryGrid",
-    dimensions: { width: 615.08, height: 596 },
-    props: [
-      { key: "prize1", label: "奖品1（左上）", type: "string", default: "666元流量扶持" },
-      { key: "prize2", label: "奖品2（中上）", type: "string", default: "满68赠6流量券" },
-      { key: "prize3", label: "奖品3（右上）", type: "string", default: "满100赠10流量券" },
-      { key: "prize4", label: "奖品4（左中）", type: "string", default: "DOU仔冰箱贴" },
-      { key: "prize5", label: "奖品5（右中）", type: "string", default: "DOU仔帆布包" },
-      { key: "prize6", label: "奖品6（左下）", type: "string", default: "满30赠5代投券" },
-      { key: "prize7", label: "奖品7（中下）", type: "string", default: "DOU仔挂件" },
-      { key: "prize8", label: "奖品8（右下）", type: "string", default: "DOU仔玩偶" },
-      { key: "buttonText", label: "抽奖按钮文字", type: "string", default: "抽" },
-    ],
-  },
-  {
-    id: "PromotionData",
-    name: "投放数据展示模块",
-    type: "atom",
-    description: "投放数据展示模块组件，灰色圆角背景，左侧两个数据项，右侧操作按钮",
-    reactComponent: "PromotionData",
-    dimensions: { width: 618, height: 153 },
-    props: [
-      { key: "label1", label: "数据1标签", type: "string", default: "我的消耗(元)" },
-      { key: "value1", label: "数据1数值", type: "string", default: "900" },
-      { key: "label2", label: "数据2标签", type: "string", default: "已领取优惠券(张)" },
-      { key: "value2", label: "数据2数值", type: "string", default: "1" },
-      { key: "buttonText", label: "按钮文字", type: "string", default: "去投放" },
-    ],
-  },
-  {
-    id: "ThreePrizes",
-    name: "3个奖品展示",
-    type: "atom",
-    description: "三个奖品并排展示组件，粉色渐变背景，每个奖品带图标和名称",
-    reactComponent: "ThreePrizes",
-    dimensions: { width: 617.36, height: 208 },
-    props: [
-      { key: "prize1", label: "奖品1名称", type: "string", default: "抖仔限量盲盒" },
-      { key: "prize2", label: "奖品2名称", type: "string", default: "剪映VIP月卡" },
-      { key: "prize3", label: "奖品3名称", type: "string", default: "DOU+流量券" },
-    ],
-  },
-  {
-    id: "OrangeCoupon",
-    name: "橙色优惠券",
-    type: "atom",
-    description: "橙色背景的单张优惠券组件，左侧展示金额，右侧展示券标题和副标题",
-    reactComponent: "OrangeCoupon",
-    dimensions: { width: 554, height: 216.2 },
-    props: [
-      { key: "amount", label: "金额", type: "string", default: "200" },
-      { key: "unit", label: "单位", type: "string", default: "元" },
-      { key: "condition", label: "使用条件", type: "string", default: "满30元赠" },
-      { key: "title", label: "券标题", type: "string", default: "DOU+优惠券" },
-      { key: "subtitle", label: "副标题", type: "string", default: "共计20名" },
-    ],
-  },
-  {
-    id: "BigDayCouponClassic",
-    name: "BigDay经典优惠券",
-    type: "atom",
-    description: "BigDay经典优惠券组件，DOU+优惠券样式，带渐变模糊背景",
-    reactComponent: "BigDayCouponClassic",
-    dimensions: { width: 607, height: 199 },
-    props: [
-      { key: "amount", label: "金额", type: "string", default: "800" },
-      { key: "unit", label: "单位", type: "string", default: "元" },
-      { key: "expiry", label: "有效期", type: "string", default: "仅剩 1 天使用" },
-      { key: "prefix", label: "前缀", type: "string", default: "DOU+" },
-      { key: "title", label: "标题", type: "string", default: "优惠券" },
-    ],
-  },
-  {
-    id: "CouponTriplePack",
-    name: "三连券包",
-    type: "atom",
-    description: "三张优惠券并排展示的组合组件，包含不同金额和状态的券",
-    reactComponent: "CouponTriplePack",
-    dimensions: { width: 598.98, height: 193.26 },
-    props: [
-      { key: "coupon1Amount", label: "券1金额", type: "string", default: "50" },
-      { key: "coupon1Unit", label: "券1单位", type: "string", default: "元" },
-      { key: "coupon1Condition", label: "券1使用条件", type: "string", default: "满50元可用" },
-      { key: "coupon1Button", label: "券1按钮文字", type: "string", default: "待完成" },
-      { key: "coupon2Amount", label: "券2金额", type: "string", default: "30" },
-      { key: "coupon2Unit", label: "券2单位", type: "string", default: "元" },
-      { key: "coupon2Condition", label: "券2使用条件", type: "string", default: "满50元可用" },
-      { key: "coupon2Button", label: "券2按钮文字", type: "string", default: "立即领" },
-      { key: "coupon3Amount", label: "券3金额", type: "string", default: "30" },
-      { key: "coupon3Unit", label: "券3单位", type: "string", default: "元" },
-      { key: "coupon3Condition", label: "券3使用条件", type: "string", default: "满50元可用" },
-      { key: "coupon3Button", label: "券3按钮文字", type: "string", default: "立即领" },
-    ],
-  },
-  {
-    id: "TripleOpenCoupon",
-    name: "三连开券",
-    type: "atom",
-    description: "三张垂直排列的打开式优惠券组合组件，包含不同面额和限量标签",
-    reactComponent: "TripleOpenCoupon",
-    dimensions: { width: 621.52, height: 213.21 },
-    props: [
-      { key: "coupon1Title", label: "券1标题", type: "string", default: "DOU+福利券" },
-      { key: "coupon1Amount", label: "券1金额", type: "string", default: "880" },
-      { key: "coupon1Unit", label: "券1单位", type: "string", default: "元" },
-      { key: "coupon1Condition", label: "券1使用条件", type: "string", default: "满100元可用" },
-      { key: "coupon1Limit", label: "券1限量标签", type: "string", default: "限量10个" },
-      { key: "coupon2Title", label: "券2标题", type: "string", default: "DOU+福利券" },
-      { key: "coupon2Amount", label: "券2金额", type: "string", default: "88" },
-      { key: "coupon2Unit", label: "券2单位", type: "string", default: "元" },
-      { key: "coupon2Condition", label: "券2使用条件", type: "string", default: "满30元可用" },
-      { key: "coupon2Limit", label: "券2限量标签", type: "string", default: "限量30个" },
-      { key: "coupon3Title", label: "券3标题", type: "string", default: "DOU+福利券" },
-      { key: "coupon3Amount", label: "券3金额", type: "string", default: "8" },
-      { key: "coupon3Unit", label: "券3单位", type: "string", default: "元" },
-      { key: "coupon3Condition", label: "券3使用条件", type: "string", default: "满30元可用" },
-      { key: "coupon3Limit", label: "券3限量标签", type: "string", default: "限量50个" },
-    ],
-  },
-  {
-    id: "DualCoupon",
-    name: "两连满赠券",
-    type: "atom",
-    description: "两张垂直排列的满赠优惠券组合组件，分别展示您可获得和TA可获得的券",
-    reactComponent: "DualCoupon",
-    dimensions: { width: 576.2, height: 191.76 },
-    props: [
-      { key: "coupon1Title", label: "券1标题", type: "string", default: "DOU+满赠券" },
-      { key: "coupon1Prefix", label: "券1前缀", type: "string", default: "最高" },
-      { key: "coupon1Amount", label: "券1金额", type: "string", default: "275" },
-      { key: "coupon1Unit", label: "券1单位", type: "string", default: "元" },
-      { key: "coupon1Label", label: "券1标签", type: "string", default: "您可获得" },
-      { key: "coupon2Title", label: "券2标题", type: "string", default: "DOU+满赠券" },
-      { key: "coupon2Amount", label: "券2金额", type: "string", default: "20" },
-      { key: "coupon2Unit", label: "券2单位", type: "string", default: "元" },
-      { key: "coupon2Label", label: "券2标签", type: "string", default: "TA可获得" },
-    ],
-  },
-  {
-    id: "TripleCouponWithBg",
-    name: "三连带底券样",
-    type: "atom",
-    description: "三张垂直排列的带背景券样组合组件，包含限量标签、金额、使用条件和立即抢按钮",
-    reactComponent: "TripleCouponWithBg",
-    dimensions: { width: 661.52, height: 309 },
-    props: [
-      { key: "coupon1Limit", label: "券1限量标签", type: "string", default: "限量10个" },
-      { key: "coupon1Title", label: "券1标题", type: "string", default: "DOU+福利券" },
-      { key: "coupon1Amount", label: "券1金额", type: "string", default: "880" },
-      { key: "coupon1Unit", label: "券1单位", type: "string", default: "元" },
-      { key: "coupon1Condition", label: "券1使用条件", type: "string", default: "满100元可用" },
-      { key: "coupon1Button", label: "券1按钮文字", type: "string", default: "立即抢" },
-      { key: "coupon2Limit", label: "券2限量标签", type: "string", default: "限量30个" },
-      { key: "coupon2Title", label: "券2标题", type: "string", default: "DOU+福利券" },
-      { key: "coupon2Amount", label: "券2金额", type: "string", default: "88" },
-      { key: "coupon2Unit", label: "券2单位", type: "string", default: "元" },
-      { key: "coupon2Condition", label: "券2使用条件", type: "string", default: "满30元可用" },
-      { key: "coupon2Button", label: "券2按钮文字", type: "string", default: "立即抢" },
-      { key: "coupon3Limit", label: "券3限量标签", type: "string", default: "限量50个" },
-      { key: "coupon3Title", label: "券3标题", type: "string", default: "DOU+福利券" },
-      { key: "coupon3Amount", label: "券3金额", type: "string", default: "8" },
-      { key: "coupon3Unit", label: "券3单位", type: "string", default: "元" },
-      { key: "coupon3Condition", label: "券3使用条件", type: "string", default: "满30元可用" },
-      { key: "coupon3Button", label: "券3按钮文字", type: "string", default: "立即抢" },
-    ],
-  },
-  {
-    id: "TripleFlatCouponBg",
-    name: "三连扁券带底",
-    type: "atom",
-    description: "三张水平排列的扁形带底满赠券组合组件，包含叠加标签",
-    reactComponent: "TripleFlatCouponBg",
-    dimensions: { width: 646.48, height: 212.27 },
-    props: [
-      { key: "coupon1Title", label: "券1标题", type: "string", default: "DOU+满赠券" },
-      { key: "coupon1Amount", label: "券1金额", type: "string", default: "800" },
-      { key: "coupon1Unit", label: "券1单位", type: "string", default: "元" },
-      { key: "coupon1Tag", label: "券1标签", type: "string", default: "叠加" },
-      { key: "coupon2Title", label: "券2标题", type: "string", default: "DOU+满赠券" },
-      { key: "coupon2Amount", label: "券2金额", type: "string", default: "800" },
-      { key: "coupon2Unit", label: "券2单位", type: "string", default: "元" },
-      { key: "coupon2Tag", label: "券2标签", type: "string", default: "叠加" },
-      { key: "coupon3Title", label: "券3标题", type: "string", default: "DOU+满赠券" },
-      { key: "coupon3Amount", label: "券3金额", type: "string", default: "800" },
-      { key: "coupon3Unit", label: "券3单位", type: "string", default: "元" },
-      { key: "coupon3Tag", label: "券3标签", type: "string", default: "叠加" },
-    ],
-  },
-  {
-    id: "TopicContestNewPrize",
-    name: "投稿赢流量新版",
-    type: "atom",
-    description: "三列奖品展示组件，中间一等奖最高，两侧二、三等奖稍矮，包含标题、描述、金额和单位",
-    reactComponent: "TopicContestNewPrize",
-    dimensions: { width: 700, height: 420 },
-    props: [
-      { key: "firstPrizeTitle", label: "一等奖标题", type: "string", default: "DOU+流量券" },
-      { key: "firstPrizeDesc", label: "一等奖描述", type: "string", default: "一等奖*10" },
-      { key: "firstPrizeAmount", label: "一等奖金额", type: "string", default: "888" },
-      { key: "firstPrizeUnit", label: "一等奖单位", type: "string", default: "元" },
-      { key: "secondPrizeTitle", label: "二等奖标题", type: "string", default: "DOU+流量券" },
-      { key: "secondPrizeDesc", label: "二等奖描述", type: "string", default: "二等奖*50" },
-      { key: "secondPrizeAmount", label: "二等奖金额", type: "string", default: "188" },
-      { key: "secondPrizeUnit", label: "二等奖单位", type: "string", default: "元" },
-      { key: "thirdPrizeTitle", label: "三等奖标题", type: "string", default: "DOU+流量券" },
-      { key: "thirdPrizeDesc", label: "三等奖描述", type: "string", default: "三等奖*100" },
-      { key: "thirdPrizeAmount", label: "三等奖金额", type: "string", default: "88" },
-      { key: "thirdPrizeUnit", label: "三等奖单位", type: "string", default: "元" },
-    ],
-  },
-  {
-    id: "SingleCoupon",
-    name: "单个优惠券",
-    type: "atom",
-    description: "单个优惠券组件，包含标题、金额、单位和标签",
-    reactComponent: "SingleCoupon",
-    dimensions: { width: 200, height: 200 },
-    props: [
-      { key: "title", label: "标题", type: "string", default: "DOU+满赠券" },
-      { key: "amount", label: "金额", type: "string", default: "800" },
-      { key: "unit", label: "单位", type: "string", default: "元" },
-      { key: "tag", label: "标签", type: "string", default: "叠加" },
-      { key: "radius", label: "圆角", type: "number", default: 40, min: 0, max: 100 },
-      { key: "bgGradientStart", label: "背景渐变起始色", type: "color", default: "#FFF3F3" },
-      { key: "bgGradientEnd", label: "背景渐变结束色", type: "color", default: "#FFFEFE" },
-      { key: "topGradientStart", label: "顶部渐变起始色", type: "color", default: "#FF57AF" },
-      { key: "topGradientEnd", label: "顶部渐变结束色", type: "color", default: "#FF387B" },
-      { key: "dividerColor", label: "分割线颜色", type: "color", default: "#FFD2D2" },
-      { key: "tagButtonColor", label: "按钮颜色", type: "color", default: "rgba(255, 226, 99, 1)" },
-      { key: "titleFontSize", label: "标题字号", type: "number", default: 24 },
-      { key: "titleFontFamily", label: "标题字体", type: "string", default: "Douyin Sans" },
-      { key: "titleLetterSpacing", label: "标题字间距", type: "number", default: 0 },
-      { key: "titleColor", label: "标题字颜色", type: "color", default: "rgba(255, 255, 255, 1)" },
-      { key: "amountFontSize", label: "金额字号", type: "number", default: 63 },
-      { key: "amountFontFamily", label: "金额字体", type: "string", default: "Douyin Number ABC" },
-      { key: "amountLetterSpacing", label: "金额字间距", type: "number", default: -2.99 },
-      { key: "amountColor", label: "金额字颜色", type: "color", default: "rgba(61, 61, 61, 1)" },
-      { key: "unitFontSize", label: "单位字号", type: "number", default: 24 },
-      { key: "unitFontFamily", label: "单位字体", type: "string", default: "Source Han Sans CN" },
-      { key: "unitLetterSpacing", label: "单位字间距", type: "number", default: 0 },
-      { key: "unitColor", label: "单位字颜色", type: "color", default: "rgba(61, 61, 61, 1)" },
-      { key: "tagFontSize", label: "标签字号", type: "number", default: 22 },
-      { key: "tagFontFamily", label: "标签字体", type: "string", default: "Source Han Sans CN" },
-      { key: "tagLetterSpacing", label: "标签字间距", type: "number", default: 0 },
-      { key: "tagColor", label: "标签字颜色", type: "color", default: "rgba(97, 50, 24, 1)" },
-    ],
-  },
-  {
-    id: "TripleSingleCoupon",
-    name: "三连优惠券",
-    type: "atom",
-    description: "三张单个优惠券横向并列展示的组合组件；本体引用 SingleCoupon，但三张券各自拥有独立变量",
-    reactComponent: "TripleSingleCoupon",
-    dimensions: { width: 580, height: 193 },
-    props: [
-      { key: "gap", label: "间距", type: "number", default: 4, min: 0, max: 80 },
-      { key: "coupon1Title", label: "券1标题", type: "string", default: "DOU+满赠券" },
-      { key: "coupon1Amount", label: "券1金额", type: "string", default: "800" },
-      { key: "coupon1Unit", label: "券1单位", type: "string", default: "元" },
-      { key: "coupon1Tag", label: "券1标签", type: "string", default: "叠加" },
-      { key: "coupon1Radius", label: "券1圆角", type: "number", default: 40, min: 0, max: 100 },
-      { key: "coupon1BgGradientStart", label: "券1背景渐变起始色", type: "color", default: "#FFF3F3" },
-      { key: "coupon1BgGradientEnd", label: "券1背景渐变结束色", type: "color", default: "#FFFEFE" },
-      { key: "coupon1TopGradientStart", label: "券1顶部渐变起始色", type: "color", default: "#FF57AF" },
-      { key: "coupon1TopGradientEnd", label: "券1顶部渐变结束色", type: "color", default: "#FF387B" },
-      { key: "coupon1DividerColor", label: "券1分割线颜色", type: "color", default: "#FFD2D2" },
-      { key: "coupon1TagButtonColor", label: "券1按钮颜色", type: "color", default: "rgba(255, 226, 99, 1)" },
-      { key: "coupon1TitleFontSize", label: "券1标题字号", type: "number", default: 24 },
-      { key: "coupon1TitleFontFamily", label: "券1标题字体", type: "string", default: "Douyin Sans" },
-      { key: "coupon1TitleLetterSpacing", label: "券1标题字间距", type: "number", default: 0 },
-      { key: "coupon1TitleColor", label: "券1标题字颜色", type: "color", default: "rgba(255, 255, 255, 1)" },
-      { key: "coupon1AmountFontSize", label: "券1金额字号", type: "number", default: 63 },
-      { key: "coupon1AmountFontFamily", label: "券1金额字体", type: "string", default: "Douyin Number ABC" },
-      { key: "coupon1AmountLetterSpacing", label: "券1金额字间距", type: "number", default: -2.99 },
-      { key: "coupon1AmountColor", label: "券1金额字颜色", type: "color", default: "rgba(61, 61, 61, 1)" },
-      { key: "coupon1UnitFontSize", label: "券1单位字号", type: "number", default: 24 },
-      { key: "coupon1UnitFontFamily", label: "券1单位字体", type: "string", default: "Source Han Sans CN" },
-      { key: "coupon1UnitLetterSpacing", label: "券1单位字间距", type: "number", default: 0 },
-      { key: "coupon1UnitColor", label: "券1单位字颜色", type: "color", default: "rgba(61, 61, 61, 1)" },
-      { key: "coupon1TagFontSize", label: "券1标签字号", type: "number", default: 22 },
-      { key: "coupon1TagFontFamily", label: "券1标签字体", type: "string", default: "Source Han Sans CN" },
-      { key: "coupon1TagLetterSpacing", label: "券1标签字间距", type: "number", default: 0 },
-      { key: "coupon1TagColor", label: "券1标签字颜色", type: "color", default: "rgba(97, 50, 24, 1)" },
-      { key: "coupon2Title", label: "券2标题", type: "string", default: "DOU+满赠券" },
-      { key: "coupon2Amount", label: "券2金额", type: "string", default: "800" },
-      { key: "coupon2Unit", label: "券2单位", type: "string", default: "元" },
-      { key: "coupon2Tag", label: "券2标签", type: "string", default: "叠加" },
-      { key: "coupon2Radius", label: "券2圆角", type: "number", default: 40, min: 0, max: 100 },
-      { key: "coupon2BgGradientStart", label: "券2背景渐变起始色", type: "color", default: "#FFF3F3" },
-      { key: "coupon2BgGradientEnd", label: "券2背景渐变结束色", type: "color", default: "#FFFEFE" },
-      { key: "coupon2TopGradientStart", label: "券2顶部渐变起始色", type: "color", default: "#FF57AF" },
-      { key: "coupon2TopGradientEnd", label: "券2顶部渐变结束色", type: "color", default: "#FF387B" },
-      { key: "coupon2DividerColor", label: "券2分割线颜色", type: "color", default: "#FFD2D2" },
-      { key: "coupon2TagButtonColor", label: "券2按钮颜色", type: "color", default: "rgba(255, 226, 99, 1)" },
-      { key: "coupon2TitleFontSize", label: "券2标题字号", type: "number", default: 24 },
-      { key: "coupon2TitleFontFamily", label: "券2标题字体", type: "string", default: "Douyin Sans" },
-      { key: "coupon2TitleLetterSpacing", label: "券2标题字间距", type: "number", default: 0 },
-      { key: "coupon2TitleColor", label: "券2标题字颜色", type: "color", default: "rgba(255, 255, 255, 1)" },
-      { key: "coupon2AmountFontSize", label: "券2金额字号", type: "number", default: 63 },
-      { key: "coupon2AmountFontFamily", label: "券2金额字体", type: "string", default: "Douyin Number ABC" },
-      { key: "coupon2AmountLetterSpacing", label: "券2金额字间距", type: "number", default: -2.99 },
-      { key: "coupon2AmountColor", label: "券2金额字颜色", type: "color", default: "rgba(61, 61, 61, 1)" },
-      { key: "coupon2UnitFontSize", label: "券2单位字号", type: "number", default: 24 },
-      { key: "coupon2UnitFontFamily", label: "券2单位字体", type: "string", default: "Source Han Sans CN" },
-      { key: "coupon2UnitLetterSpacing", label: "券2单位字间距", type: "number", default: 0 },
-      { key: "coupon2UnitColor", label: "券2单位字颜色", type: "color", default: "rgba(61, 61, 61, 1)" },
-      { key: "coupon2TagFontSize", label: "券2标签字号", type: "number", default: 22 },
-      { key: "coupon2TagFontFamily", label: "券2标签字体", type: "string", default: "Source Han Sans CN" },
-      { key: "coupon2TagLetterSpacing", label: "券2标签字间距", type: "number", default: 0 },
-      { key: "coupon2TagColor", label: "券2标签字颜色", type: "color", default: "rgba(97, 50, 24, 1)" },
-      { key: "coupon3Title", label: "券3标题", type: "string", default: "DOU+满赠券" },
-      { key: "coupon3Amount", label: "券3金额", type: "string", default: "800" },
-      { key: "coupon3Unit", label: "券3单位", type: "string", default: "元" },
-      { key: "coupon3Tag", label: "券3标签", type: "string", default: "叠加" },
-      { key: "coupon3Radius", label: "券3圆角", type: "number", default: 40, min: 0, max: 100 },
-      { key: "coupon3BgGradientStart", label: "券3背景渐变起始色", type: "color", default: "#FFF3F3" },
-      { key: "coupon3BgGradientEnd", label: "券3背景渐变结束色", type: "color", default: "#FFFEFE" },
-      { key: "coupon3TopGradientStart", label: "券3顶部渐变起始色", type: "color", default: "#FF57AF" },
-      { key: "coupon3TopGradientEnd", label: "券3顶部渐变结束色", type: "color", default: "#FF387B" },
-      { key: "coupon3DividerColor", label: "券3分割线颜色", type: "color", default: "#FFD2D2" },
-      { key: "coupon3TagButtonColor", label: "券3按钮颜色", type: "color", default: "rgba(255, 226, 99, 1)" },
-      { key: "coupon3TitleFontSize", label: "券3标题字号", type: "number", default: 24 },
-      { key: "coupon3TitleFontFamily", label: "券3标题字体", type: "string", default: "Douyin Sans" },
-      { key: "coupon3TitleLetterSpacing", label: "券3标题字间距", type: "number", default: 0 },
-      { key: "coupon3TitleColor", label: "券3标题字颜色", type: "color", default: "rgba(255, 255, 255, 1)" },
-      { key: "coupon3AmountFontSize", label: "券3金额字号", type: "number", default: 63 },
-      { key: "coupon3AmountFontFamily", label: "券3金额字体", type: "string", default: "Douyin Number ABC" },
-      { key: "coupon3AmountLetterSpacing", label: "券3金额字间距", type: "number", default: -2.99 },
-      { key: "coupon3AmountColor", label: "券3金额字颜色", type: "color", default: "rgba(61, 61, 61, 1)" },
-      { key: "coupon3UnitFontSize", label: "券3单位字号", type: "number", default: 24 },
-      { key: "coupon3UnitFontFamily", label: "券3单位字体", type: "string", default: "Source Han Sans CN" },
-      { key: "coupon3UnitLetterSpacing", label: "券3单位字间距", type: "number", default: 0 },
-      { key: "coupon3UnitColor", label: "券3单位字颜色", type: "color", default: "rgba(61, 61, 61, 1)" },
-      { key: "coupon3TagFontSize", label: "券3标签字号", type: "number", default: 22 },
-      { key: "coupon3TagFontFamily", label: "券3标签字体", type: "string", default: "Source Han Sans CN" },
-      { key: "coupon3TagLetterSpacing", label: "券3标签字间距", type: "number", default: 0 },
-      { key: "coupon3TagColor", label: "券3标签字颜色", type: "color", default: "rgba(97, 50, 24, 1)" },
-    ],
-  },
-];
+const _hardcodedAtomSchemas = [];
 
 function _mergeSchemas(hardcoded, dynamic) {
   const dynamicMap = new Map(dynamic.map((s) => [s.id, s]));
@@ -758,89 +158,9 @@ function _mergeSchemas(hardcoded, dynamic) {
 
 const atomSchemas = _mergeSchemas(_hardcodedAtomSchemas, _dynamicSchemas);
 
-const moleculeSchemas = [
-  {
-    id: "MoleculeContainer",
-    name: "分子容器",
-    type: "molecule",
-    description: "白色圆角底容器，可拖入原子组合成分子组件",
-    children: [],
-  },
-  {
-    id: "TaskListModule",
-    name: "任务列表模块",
-    type: "molecule",
-    description: "纵向任务列表分子模块，可拖入多个任务模块形成一个整体组件",
-    allowedChildren: ["TaskModule"],
-    className: "task-list-module",
-    children: [
-      [
-        "TaskModule",
-        {
-          frequency: "12次/天",
-          buttonText: "去完成",
-          title: "投放DOU+现金消耗≥30元",
-          rewardLabel: "抽奖",
-          rewardCount: "+1",
-          description: "投粉丝经营、内容加热目标且消耗达标",
-        },
-      ],
-      [
-        "TaskModule",
-        {
-          frequency: "1次/天",
-          buttonText: "去完成",
-          title: "分享活动给好友",
-          rewardLabel: "抽奖",
-          rewardCount: "+1",
-          description: "分享活动页面给好友，双方各得1次",
-        },
-      ],
-      [
-        "TaskModule",
-        {
-          frequency: "1次/天",
-          buttonText: "去完成",
-          title: "浏览活动规则",
-          rewardLabel: "抽奖",
-          rewardCount: "+1",
-          description: "查看活动规则并完成一次确认",
-        },
-      ],
-    ],
-  },
-  {
-    id: "LotteryAnnouncementGridModule",
-    name: "抽奖公告九宫格",
-    type: "molecule",
-    description: "抽奖标题、中奖公告与互动九宫格组成的抽奖分子模块",
-    className: "lottery-announcement-grid-module",
-    allowedChildren: ["TaskTitle", "Announcement", "LotteryGridInteractive"],
-    children: [
-      [
-        "TaskTitle",
-        {
-          title: "幸运大抽奖",
-          subtitle: "剩余抽奖次数：3",
-        },
-      ],
-      [
-        "Announcement",
-        {
-          text: "恭喜用户获得活动奖品",
-        },
-      ],
-      [
-        "LotteryGridInteractive",
-        {
-          buttonText: "抽",
-        },
-      ],
-    ],
-  },
-];
+const moleculeSchemas = [];
 
-const MOLECULE_STORAGE_KEY = "builder_molecule_templates";
+const MOLECULE_STORAGE_KEY = "builder_molecule_templates_empty_v1";
 function loadMoleculeTemplates() {
   try {
     const raw = localStorage.getItem(MOLECULE_STORAGE_KEY);
@@ -858,11 +178,7 @@ function loadMoleculeTemplates() {
 }
 function saveMoleculeTemplatesToStorage() {
   try {
-    const builtInIds = [
-      "MoleculeContainer",
-      "TaskListModule",
-      "LotteryAnnouncementGridModule",
-    ];
+    const builtInIds = [];
     const userTemplates = moleculeSchemas.filter((item) => !builtInIds.includes(item.id));
     localStorage.setItem(MOLECULE_STORAGE_KEY, JSON.stringify(userTemplates));
   } catch (e) {
@@ -892,7 +208,7 @@ function deleteMoleculeOnServer(id) {
 }
 loadMoleculeTemplates();
 
-const PAGE_TEMPLATE_STORAGE_KEY = "builder_page_templates";
+const PAGE_TEMPLATE_STORAGE_KEY = "builder_page_templates_empty_v1";
 const LEGACY_PRD_PAGE_TEMPLATE_NAME = "页面1";
 const CONSUMPTION_RETURN_PAGE_TEMPLATE_NAME = "抽奖+消耗返";
 const COUPON_PAGE_TEMPLATE_NAME = "发券";
@@ -1050,24 +366,8 @@ function addPageFromCustomTemplate(templateId) {
 loadCustomPageTemplates();
 
 const LOTTERY_CONSUMPTION_TEMPLATE_BACKGROUND = "#FFE0E9";
-const lotteryConsumptionTemplateNodes = [
-  ["HeaderImage", {}],
-  ["账户优惠券提示", {}],
-  ["BigDay优惠券报名", {}],
-  ["消耗返数据报名规则", {}],
-  ["LotteryAnnouncementGridModule", {}],
-  ["TaskListModule", {}],
-  ["投放案例", {}],
-  ["StickyBottomButton", {}],
-];
-const lotteryConsumptionTemplatePreview = [
-  { type: "hero", height: 56, gradient: "linear-gradient(135deg, #ff6b9d 0%, #ff9ab6 100%)", radius: 8 },
-  { type: "card", height: 28, gradient: "#ffffff", marginTop: 8, radius: 8 },
-  { type: "grid", height: 72, gradient: "linear-gradient(135deg, #fff2f6 0%, #ffd0df 100%)", marginTop: 8, radius: 10 },
-  { type: "card", height: 48, gradient: "#ffffff", marginTop: 8, radius: 10 },
-  { type: "card", height: 38, gradient: "#ffffff", marginTop: 8, radius: 10 },
-  { type: "button", height: 18, gradient: "linear-gradient(90deg, #ff1473, #ff229f)", marginTop: 8, radius: 20 },
-];
+const lotteryConsumptionTemplateNodes = [];
+const lotteryConsumptionTemplatePreview = [];
 const pageBlueprintFormConfig = {
   moduleName: "页面基础信息",
   description: "先确认模板命中和活动基本信息。",
@@ -1076,210 +376,12 @@ const pageBlueprintFormConfig = {
   ],
 };
 
-const moduleBlueprintFormConfigs = {
-  账户优惠券提示: {
-    description: "展示用户当前账户里的券资产和立即使用入口。",
-    sections: [
-      { title: "券资产", fields: ["当前账户优惠券总金额", "当前账户优惠券数量", "优惠券剩余有效时间"] },
-      { title: "行动入口", fields: [{ label: "按钮文案", size: "wide" }] },
-    ],
-  },
-  抽奖公告九宫格: {
-    description: "标题、中奖公告、奖品池和中间抽奖按钮分开录入。",
-    versionMode: "lotteryPrizes",
-    sections: [
-      { title: "模块头部", fields: ["抽奖模块标题", "剩余抽奖次数文案", { label: "用户中奖公告文案", size: "wide" }] },
-      { title: "奖品池", className: "is-prize-grid", fields: ["奖品1名称", "奖品2名称", "奖品3名称", "奖品4名称", "奖品5名称", "奖品6名称", "奖品7名称", "奖品8名称"] },
-      { title: "抽奖按钮", fields: [{ label: "抽奖按钮文案", size: "wide" }] },
-    ],
-  },
-  消耗返数据报名规则: {
-    description: "消耗返模块信息量大，按进度、数据和规则拆开填写。",
-    versionMode: "consumptionProgress",
-    sections: [
-      { title: "模块头部", fields: ["消耗返模块标题", "抽奖入口文案", "行动按钮文案"] },
-      { title: "奖励档位", fields: ["第1档奖励金额", "第2档奖励金额", "第3档奖励金额"] },
-      { title: "进度节点", className: "is-progress-grid", fields: ["第1个进度节点文案", "第2个进度节点文案", "第3个进度节点文案", "第4个进度节点文案"] },
-      { title: "实时数据", fields: ["左侧数据名称", "左侧数据数值", "左侧数据单位", "右侧数据名称", "右侧数据数值"] },
-      { title: "参与规则", className: "is-rule-list", fields: [{ label: "规则标题", size: "wide" }, { label: "参与规则1", size: "full" }, { label: "参与规则2", size: "full" }, { label: "参与规则3", size: "full" }, { label: "规则备注", size: "full" }] },
-    ],
-  },
-  BigDay优惠券报名: {
-    description: "报名模块由标题、券面信息和报名门槛组成。",
-    sections: [
-      { title: "模块头部", fields: ["报名模块标题", "活动日期文案", "报名按钮文案"] },
-      { title: "券面信息", fields: ["优惠券金额", "优惠券单位", "优惠券有效期文案", "优惠券品牌前缀", "优惠券名称"] },
-      { title: "报名条件", fields: [{ label: "报名门槛文案", size: "wide" }, { label: "报名说明文案", size: "wide" }] },
-    ],
-  },
-  任务列表模块: {
-    description: "按单条任务分组，每条任务内部保持同一套字段。",
-    sections: [
-      { title: "任务1", className: "is-task-card", fields: ["任务1标题", "任务1奖励类型", "任务1奖励数量", "任务1每日次数", "任务1按钮文案", { label: "任务1描述", size: "wide" }] },
-      { title: "任务2", className: "is-task-card", fields: ["任务2标题", "任务2奖励类型", "任务2奖励数量", "任务2每日次数", "任务2按钮文案", { label: "任务2描述", size: "wide" }] },
-      { title: "任务3", className: "is-task-card", fields: ["任务3标题", "任务3奖励类型", "任务3奖励数量", "任务3每日次数", "任务3按钮文案", { label: "任务3描述", size: "wide" }] },
-    ],
-  },
-  投放案例: {
-    description: "案例标题、建议内容和关键数字分区填写。",
-    sections: [
-      { title: "案例信息", fields: ["行业分类", { label: "案例标题", size: "wide" }] },
-      { title: "建议内容", className: "is-rule-list", fields: [{ label: "视频内容建议", size: "full" }, { label: "投放建议", size: "full" }, { label: "执行要点", size: "full" }] },
-      { title: "关键数字", fields: ["视频日更数量", "建议单笔投放金额", "日更最小数量", "日更最大数量", "追投预算比例"] },
-    ],
-  },
-  置底按钮: {
-    description: "页面底部固定 CTA。",
-    sections: [
-      { title: "底部 CTA", fields: [{ label: "底部按钮文案", size: "wide" }] },
-    ],
-  },
-};
+const moduleBlueprintFormConfigs = {};
 
-const moduleBlueprintFormAliases = {
-  TaskListModule: "任务列表模块",
-  StickyBottomButton: "置底按钮",
-};
+const moduleBlueprintFormAliases = {};
 
-const templateSchemas = [
-  {
-    id: "lottery-consumption-return",
-    name: "抽奖+消耗返",
-    audience: "营销活动",
-    goal: "抽奖与消耗返组合",
-    background: LOTTERY_CONSUMPTION_TEMPLATE_BACKGROUND,
-    nodes: lotteryConsumptionTemplateNodes,
-  },
-];
+const templateSchemas = [];
 const pageTemplates = [
-  {
-    id: "lottery-consumption-return",
-    name: "抽奖+消耗返",
-    category: "营销活动",
-    description: "头图 + 优惠券提示 + BigDay + 消耗返 + 抽奖 + 任务和案例",
-    background: LOTTERY_CONSUMPTION_TEMPLATE_BACKGROUND,
-    canvasBackground: LOTTERY_CONSUMPTION_TEMPLATE_BACKGROUND,
-    preview: lotteryConsumptionTemplatePreview,
-    nodes: lotteryConsumptionTemplateNodes,
-  },
-  {
-    id: "promo-home",
-    name: "活动首页",
-    category: "活动页",
-    description: "头图 + 大按钮 + 富文本的标准活动首页",
-    preview: [
-      { type: "hero", height: 60, gradient: "linear-gradient(135deg, #ff6b9d 0%, #c44569 50%, #feca57 100%)" },
-      { type: "button", height: 28, gradient: "linear-gradient(90deg, #ff6b9d, #ee5a6f)", radius: 40, marginTop: 12, width: 140 },
-      { type: "text", height: 16, gradient: "#f1f2f6", marginTop: 12, width: 220 },
-      { type: "text", height: 16, gradient: "#f1f2f6", marginTop: 6, width: 180 },
-      { type: "card", height: 50, gradient: "linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)", marginTop: 12, radius: 10 },
-    ],
-    nodes: [
-      ["HeaderImage", {}],
-      ["BigButton", { text: "立即参与" }],
-      ["RichText", { content: "活动规则：活动期间完成指定任务即可获得抽奖机会，100%中奖！", fontSize: "body", color: "black", bullet: false, icon: false }],
-      ["PromoCoupon", { title: "618专属流量补贴券", currency: "￥", amount: "618", limitText: "限量1000张", buttonText: "立即抢" }],
-    ],
-  },
-  {
-    id: "task-list",
-    name: "任务列表页",
-    category: "任务页",
-    description: "任务清单 + 进度 + 奖励展示",
-    preview: [
-      { type: "title", height: 20, gradient: "#2d3436", marginTop: 12, width: 120 },
-      { type: "card", height: 36, gradient: "linear-gradient(135deg, #74b9ff 0%, #0984e3 100%)", marginTop: 10, radius: 8 },
-      { type: "card", height: 40, gradient: "#ffffff", marginTop: 8, radius: 10, border: "#e17055" },
-      { type: "card", height: 40, gradient: "#ffffff", marginTop: 8, radius: 10, border: "#fdcb6e" },
-      { type: "card", height: 40, gradient: "#ffffff", marginTop: 8, radius: 10, border: "#00b894" },
-      { type: "card", height: 36, gradient: "#dfe6e9", marginTop: 10, radius: 8 },
-    ],
-    nodes: [
-      ["SectionTitle", { text: "做任务 赢好礼" }],
-      ["PromotionModule", { status: "已完成", title: "投放一单DOU+", rewardLabel: "抽奖", rewardCount: "+1", description: "使用粉丝经营、内容加热目标" }],
-      ["TaskModule", { frequency: "12次/天", buttonText: "去完成", title: "投放DOU+现金消耗≥30元", rewardLabel: "抽奖", rewardCount: "+1", description: "投粉丝经营、内容加热目标且消耗达标" }],
-      ["TaskModule", { frequency: "1次/天", buttonText: "去完成", title: "分享活动给好友", rewardLabel: "抽奖", rewardCount: "+1", description: "分享活动页面给好友，双方各得1次" }],
-      ["PromotionData", { label1: "我的消耗(元)", value1: "900", label2: "已领取优惠券(张)", value2: "3", buttonText: "去投放" }],
-    ],
-  },
-  {
-    id: "lottery",
-    name: "抽奖页",
-    category: "玩法页",
-    description: "抽奖转盘 + 奖品列表 + 抽奖记录",
-    preview: [
-      { type: "title", height: 20, gradient: "#6c5ce7", marginTop: 12, width: 140 },
-      { type: "text", height: 14, gradient: "#b2bec3", marginTop: 6, width: 160 },
-      { type: "grid", height: 120, gradient: "linear-gradient(135deg, #ffeaa7 0%, #fd79a8 100%)", marginTop: 10, radius: 12 },
-      { type: "prize-row", height: 36, gradient: "linear-gradient(90deg, #fd79a8, #e84393, #6c5ce7)", marginTop: 10, radius: 8 },
-    ],
-    nodes: [
-      ["TaskTitle", { title: "幸运大抽奖", subtitle: "剩余抽奖次数：3" }],
-      ["TwoColumnLiveData", { leftLabel: "累计现金消耗", leftValue: "9", leftUnit: "(元)", rightLabel: "可抽奖次数", rightValue: "3" }],
-      ["LotteryGrid", { prize1: "666元流量扶持", prize2: "满68赠6流量券", prize3: "满100赠10流量券", prize4: "DOU仔冰箱贴", prize5: "DOU仔帆布包", prize6: "满30赠5代投券", prize7: "DOU仔挂件", prize8: "DOU仔玩偶", buttonText: "抽" }],
-      ["ThreePrizes", { prize1: "抖仔限量盲盒", prize2: "剪映VIP月卡", prize3: "DOU+流量券" }],
-    ],
-  },
-  {
-    id: "sign-in",
-    name: "签到页",
-    category: "日常运营",
-    description: "7天签到日历 + 累计奖励",
-    preview: [
-      { type: "title", height: 20, gradient: "#00b894", marginTop: 12, width: 140 },
-      { type: "badge", height: 24, gradient: "linear-gradient(90deg, #55efc4, #00b894)", marginTop: 8, radius: 30, width: 100 },
-      { type: "announcement", height: 24, gradient: "linear-gradient(90deg, #ffeaa7, #fdcb6e)", marginTop: 10, radius: 20 },
-      { type: "week-row", height: 28, gradient: "#dfe6e9", marginTop: 12, radius: 8 },
-      { type: "card", height: 50, gradient: "linear-gradient(135deg, #ff7675 0%, #d63031 100%)", marginTop: 10, radius: 10 },
-    ],
-    nodes: [
-      ["IconTitleCountdown", { title: "每日签到领好礼", label: "连续签到：", prefix: "第", countdownValue: "5", unit: "天" }],
-      ["Announcement", { text: "恭喜用户XXX获得连续签到7天大奖" }],
-      ["SectionTitle", { text: "签到奖励" }],
-      ["RedPacketCoupon", { prefix: "DOU+", title: "签到优惠券", accountInfo: "连续签到3天可得", totalLabel: "面额", amount: "30", unit: "元", buttonText: "立即签到" }],
-      ["PromotionModule", { status: "进行中", title: "今日签到", rewardLabel: "奖励", rewardCount: "+10积分", description: "每日0点更新签到状态" }],
-    ],
-  },
-  {
-    id: "my-rewards",
-    name: "我的奖励",
-    category: "个人中心",
-    description: "奖励列表 + 状态 + 领取按钮",
-    preview: [
-      { type: "title", height: 20, gradient: "#e17055", marginTop: 12, width: 120 },
-      { type: "card", height: 44, gradient: "linear-gradient(135deg, #ff9f43 0%, #ee5a24 100%)", marginTop: 10, radius: 10 },
-      { type: "card", height: 44, gradient: "linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%)", marginTop: 8, radius: 10 },
-      { type: "coupon-row", height: 40, gradient: "linear-gradient(90deg, #fdcb6e, #e17055, #d63031)", marginTop: 8, radius: 8 },
-    ],
-    nodes: [
-      ["SectionTitle", { text: "我的优惠券" }],
-      ["OrangeCoupon", { amount: "200", unit: "元", condition: "满30元赠", title: "DOU+优惠券", subtitle: "已领取" }],
-      ["BigDayCouponClassic", { amount: "800", unit: "元", expiry: "有效期至7月31日", prefix: "DOU+", title: "优惠券" }],
-      ["CouponTriplePack", { coupon1Amount: "50", coupon1Unit: "元", coupon1Condition: "满50元可用", coupon1Button: "待使用", coupon2Amount: "30", coupon2Unit: "元", coupon2Condition: "满30元可用", coupon2Button: "去使用", coupon3Amount: "30", coupon3Unit: "元", coupon3Condition: "满30元可用", coupon3Button: "去使用" }],
-    ],
-  },
-  {
-    id: "rule-page",
-    name: "规则说明页",
-    category: "说明页",
-    description: "纯文本规则说明，可带标题图标",
-    preview: [
-      { type: "title", height: 22, gradient: "#2d3436", marginTop: 16, width: 100 },
-      { type: "text", height: 12, gradient: "#dfe6e9", marginTop: 14, width: 220 },
-      { type: "text", height: 12, gradient: "#dfe6e9", marginTop: 6, width: 200 },
-      { type: "text", height: 12, gradient: "#dfe6e9", marginTop: 6, width: 180 },
-      { type: "text", height: 12, gradient: "#dfe6e9", marginTop: 14, width: 210 },
-      { type: "text", height: 12, gradient: "#dfe6e9", marginTop: 6, width: 190 },
-      { type: "text", height: 12, gradient: "#dfe6e9", marginTop: 6, width: 170 },
-    ],
-    nodes: [
-      ["SectionTitle", { text: "活动规则" }],
-      ["RichText", { content: "一、活动时间\n2025年6月1日00:00 - 2025年6月20日23:59", fontSize: "body", color: "black", bullet: false, icon: false }],
-      ["RichText", { content: "二、参与方式\n活动期间，完成指定任务即可获得抽奖机会。每个用户每天最多可获得10次抽奖机会。", fontSize: "body", color: "black", bullet: false, icon: false }],
-      ["RichText", { content: "三、奖品设置\n一等奖：888元流量券（10名）\n二等奖：188元流量券（50名）\n三等奖：88元流量券（100名）\n参与奖：随机积分奖励", fontSize: "body", color: "black", bullet: false, icon: false }],
-      ["RichText", { content: "四、其他说明\n1. 奖品将在活动结束后7个工作日内发放\n2. 本活动最终解释权归平台所有", fontSize: "body", color: "black", bullet: false, icon: false }],
-    ],
-  },
   {
     id: "blank-page",
     name: "空白页",
@@ -1292,7 +394,7 @@ const pageTemplates = [
   },
 ];
 
-const ACTIVITY_STORAGE_KEY = "builder_activity_data_";
+const ACTIVITY_STORAGE_KEY = "builder_activity_data_empty_v1_";
 const PRD_TABLE_PACKAGE_ID = "saved-prd-table";
 try {
   localStorage.removeItem("builder_prd_generated_history");
@@ -1302,11 +404,7 @@ try {
 }
 
 function getDefaultPrdTableRows() {
-  return [
-    { key: "活动名称", value: "DOU+ 端午经营活动" },
-    { key: "活动目标", value: "提升活动报名与现金消耗" },
-    { key: "核心人群", value: "个人创作者 / 企业用户" },
-  ];
+  return [{ key: "", value: "" }];
 }
 
 function normalizePrdTableRows(rows) {
@@ -1477,82 +575,27 @@ function getPrdTaskVariants(text) {
 }
 
 function getPrdModuleComponent(row) {
-  const text = getPrdCombinedText(row);
-  if (/logo标题|主标题|副标题|头图|首屏|banner/i.test(text)) return "DouPlusJunePromoAnimationV2";
-  if (/九宫格|抽奖|奖池|奖品/.test(text)) return "LotteryGridInteractive";
-  if (/优惠券|流量券|券包|金额|满\d+|赠\d+/.test(text)) return "BigDayCouponClassic";
-  if (/任务|门槛|消耗返|消耗|玩法/.test(text)) return "TaskModule";
-  if (/按钮|报名|参与|立即/.test(text) && String(row.key || "").length < 12) return "BigButton";
-  if (/公告|提示|通知|提醒/.test(text)) return "Announcement";
-  if (/标题/.test(row.key || "") && String(row.value || "").length < 40) return "SectionTitle";
-  return "RichText";
+  return findPrdNamedComponents(row)[0] || null;
 }
 
 function getPrdModuleComponents(row) {
-  const namedComponents = findPrdNamedComponents(row);
-  if (namedComponents.length) return namedComponents;
-
-  const text = getPrdCombinedText(row);
-  if (/logo标题|主标题|副标题|头图|首屏|banner/i.test(text)) return ["DouPlusJunePromoAnimationV2"];
-  const components = [];
-  const isLongMixedContent = text.length > 120;
-  if (/九宫格|抽奖|奖池|奖品/.test(text)) components.push("LotteryGridInteractive");
-  if (/任务|门槛|消耗返|消耗|玩法/.test(text)) components.push("TaskModule");
-  if (!isLongMixedContent && /优惠券|流量券|券包|金额|满\d+|赠\d+/.test(text)) components.unshift("BigDayCouponClassic");
-  if (components.length) return [...new Set(components)];
-  return [getPrdModuleComponent(row)];
+  return findPrdNamedComponents(row);
 }
 
 function getPrdModuleRows(row, component) {
   const text = getPrdCombinedText(row);
   const value = String(row.value || "").trim();
   const key = String(row.key || "").trim();
-  if (component === "DouPlusJunePromoAnimationV2") {
-    return [
-      { field: "logo标题", value: getPrdLabeledValue(text, ["logo标题", "顶部标题"]) || "DOU+" },
-      { field: "主标题", value: getPrdLabeledValue(text, ["主标题", "标题"]) || value || key },
-      { field: "副标题", value: getPrdLabeledValue(text, ["副标题", "核心利益点", "利益点"]) || "" },
-      { field: "活动时间", value: getPrdLabeledValue(text, ["活动时间", "时间", "日期"]) || "" },
-    ];
-  }
-  if (component === "BigDayCouponClassic") {
-    return [
-      { field: "金额", value: getPrdAmount(text) || "800" },
-      { field: "单位", value: /元/.test(text) ? "元" : "" },
-      { field: "标题", value: getPrdLabeledValue(text, ["标题", "券标题"]) || key || "优惠券" },
-      { field: "前缀", value: getPrdLabeledValue(text, ["前缀"]) || "DOU+" },
-      { field: "有效期", value: getPrdLabeledValue(text, ["有效期", "使用期"]) || "" },
-    ];
-  }
-  if (component === "LotteryGridInteractive") {
-    const prizes = getPrdPrizeCandidates(text);
-    return [
-      ...Array.from({ length: 8 }, (_, index) => ({
-        field: `奖品${index + 1}`,
-        value: prizes[index] || "",
-      })),
-      { field: "抽奖按钮", value: getPrdLabeledValue(text, ["抽奖按钮", "按钮文案"]) || "抽" },
-      { field: "中奖提示", value: getPrdLabeledValue(text, ["中奖提示", "弹窗提示"]) || "恭喜抽中{prize}！" },
-    ];
-  }
-  if (component === "TaskModule") {
-    return [
-      { field: "任务标题", value: getPrdLabeledValue(text, ["任务标题", "标题"]) || key || "完成任务" },
-      { field: "描述文字", value: getPrdLabeledValue(text, ["任务内容", "描述", "说明"]) || value || text },
-      { field: "奖励标签", value: getPrdLabeledValue(text, ["奖励标签"]) || "抽奖" },
-      { field: "奖励数量", value: getPrdLabeledValue(text, ["奖励数量"]) || "+1" },
-      { field: "每日次数", value: getPrdLabeledValue(text, ["每日次数", "次数"]) || "" },
-      { field: "按钮文案", value: getPrdLabeledValue(text, ["按钮文案", "按钮"]) || "去完成" },
-    ];
-  }
-  if (component === "BigButton" || component === "SectionTitle" || component === "Announcement") {
-    return [{ field: "文本", value: value || key }];
-  }
-
   const schema = findAtomSchema(component);
   if (schema) {
     let assignedMainValue = false;
-    return getPropEntries(schema).map(([propKey, prop]) => {
+    const blueprintTextProps = Array.isArray(schema.blueprint?.textProps)
+      ? new Set(schema.blueprint.textProps)
+      : null;
+    const propEntries = getPropEntries(schema).filter(([propKey, prop]) =>
+      blueprintTextProps ? blueprintTextProps.has(propKey) : isCopyPropField(propKey, prop, prop.default),
+    );
+    return propEntries.map(([propKey, prop]) => {
       const label = prop.label || propKey;
       const explicitValue = getPrdLabeledValue(text, [label, propKey]);
       const shouldUseMainValue =
@@ -1570,59 +613,13 @@ function getPrdModuleRows(row, component) {
 
   return [
     { field: "文本", value: value || text },
-    { field: "字号", value: String(value || text).length > 80 ? "body" : "title" },
   ];
 }
 
 function parsePrdModuleVariantGroups(content, fieldName, component, baseRows) {
-  const text = String(content || "").trim();
-  if (!text) {
-    return {
-      rows: baseRows,
-      variantGroups: [{ id: "base", name: "默认文案", rows: clone(baseRows) }],
-    };
-  }
-
-  if (component === "LotteryGridInteractive" || component === "LotteryGrid") {
-    const prizeGroups = parsePrdLotteryPrizeGroups(text);
-    if (prizeGroups.length >= 2) {
-      const variantGroups = prizeGroups.map((group, index) => ({
-        id: index === 0 ? "base" : `lottery-${group.id}`,
-        name: group.name,
-        rows: applyPrdLotteryPrizesToRows(baseRows, group.prizes),
-      }));
-      return {
-        rows: clone(variantGroups[0].rows),
-        variantGroups,
-        blueprintRule: `${fieldName} 包含个人与企业奖品，已绑定到九宫格模块变量版本 1。`,
-      };
-    }
-  }
-
-  const variants =
-    component === "LotteryGridInteractive" ||
-    component === "LotteryGrid" ||
-    component === "BigDayCouponClassic"
-    ? []
-    : getPrdTaskVariants(text);
-
-  if (variants.length < 2) {
-    return {
-      rows: baseRows,
-      variantGroups: [{ id: "base", name: "默认文案", rows: clone(baseRows) }],
-    };
-  }
-
-  const variantGroups = variants.map((variant, index) => ({
-    id: index === 0 ? "base" : `variant-${index + 1}`,
-    name: variant.name,
-    rows: getPrdModuleRows({ key: fieldName, value: variant.value }, component),
-  }));
-
   return {
-    rows: clone(variantGroups[0].rows),
-    variantGroups,
-    blueprintRule: `${fieldName} 包含 ${variants.length} 个维度变体，已写入模块变量版本 1。`,
+    rows: baseRows,
+    variantGroups: [{ id: "base", name: "默认文案", rows: clone(baseRows) }],
   };
 }
 
@@ -2301,8 +1298,15 @@ const state = {
   canvasPanY: 40,
   spaceDown: false,
   canvasPanDrag: null,
-  selectedPreviewSchemaId: null,
-  previewPropValues: {},
+  adminComponentVerifier: {
+    schemaId: "账户优惠券提示",
+    parentThemeId: "pink",
+    variantId: "default_pink",
+    blueprint: {
+      amountText: "600",
+      actionText: "立即使用",
+    },
+  },
   prdDemoStep: "upload",
   prdFileModalOpen: false,
   prdTextInput: "",
@@ -2310,9 +1314,9 @@ const state = {
   prdTableRows: [],
   prdTableBlueprint: null,
   prdTableBlueprintSignature: "",
-  selectedDemoPackageId: "audience-only",
-  selectedBlueprintAudienceId: "personal",
-  selectedBlueprintSceneId: "personal-new:warmup",
+  selectedDemoPackageId: "",
+  selectedBlueprintAudienceId: "",
+  selectedBlueprintSceneId: "",
   demoSelectedNodeId: null,
   blueprintReturningFromPreview: false,
   guidedPanelMode: null,
@@ -2425,52 +1429,7 @@ function findAtomSchema(schemaId) {
   });
 }
 
-const moduleKindMap = {
-  HeaderImage: "hero",
-  DouPlusJunePromoAnimationV2: "hero",
-  DouPlusJunePromoAnimationV3: "hero",
-  SectionTitle: "title",
-  TaskTitle: "title",
-  IconTitleCountdown: "title",
-  TimeNotification: "notice",
-  Announcement: "notice",
-  RichText: "rule",
-  TextComponentOne: "rule",
-  TextComponentTwo: "rule",
-  文本组件3: "rule",
-  BigButton: "cta",
-  StickyBottomButton: "cta",
-  置底按钮: "cta",
-  OneClickBoost: "cta",
-  门槛加报名: "cta",
-  PromoCoupon: "reward",
-  RedPacketCoupon: "reward",
-  CouponTriplePack: "reward",
-  OrangeCoupon: "reward",
-  BigDayCouponClassic: "reward",
-  TripleOpenCoupon: "reward",
-  TripleCouponWithBg: "reward",
-  TripleFlatCouponBg: "reward",
-  TripleSingleCoupon: "reward",
-  SingleCoupon: "reward",
-  DualCoupon: "reward",
-  TopicContestNewPrize: "reward",
-  ThreePrizes: "reward",
-  账户优惠券提示: "reward",
-  TaskModule: "task",
-  PromotionModule: "task",
-  DoublePromotion: "service",
-  投放案例: "service",
-  TwoColumnLiveData: "data",
-  PromotionData: "data",
-  消耗返进度条: "data",
-  LotteryGrid: "play",
-  LotteryGridInteractive: "play",
-  LotteryAnnouncementGridModule: "play",
-  抽奖弹窗: "play",
-  QualityVideoDiagnosis: "play",
-  ContentModuleImage: "service",
-};
+const moduleKindMap = {};
 
 const moduleKindLabels = {
   hero: "头图/动效",
@@ -2485,429 +1444,41 @@ const moduleKindLabels = {
   service: "服务权益",
 };
 
-const demoReplacementMap = {
-  hero: ["HeaderImage", "DouPlusJunePromoAnimationV2", "DouPlusJunePromoAnimationV3"],
-  title: ["SectionTitle", "TaskTitle", "IconTitleCountdown"],
-  notice: ["TimeNotification", "Announcement"],
-  cta: ["BigButton", "StickyBottomButton", "OneClickBoost", "门槛加报名"],
-  reward: ["PromoCoupon", "RedPacketCoupon", "CouponTriplePack", "TripleCouponWithBg", "TripleFlatCouponBg", "OrangeCoupon", "BigDayCouponClassic", "账户优惠券提示"],
-  task: ["TaskModule", "PromotionModule"],
-  data: ["TwoColumnLiveData", "PromotionData", "消耗返进度条"],
-  play: ["LotteryGrid", "LotteryGridInteractive", "QualityVideoDiagnosis"],
-  service: ["DoublePromotion", "PromotionModule", "投放案例"],
-  rule: ["RichText", "TextComponentOne", "TextComponentTwo", "文本组件3"],
-};
+const demoReplacementMap = {};
 
 const demoPrdBlueprint = {
-  activityName: "DOU+ 端午经营活动",
-  sourceName: "示意 PRD：端午福利限时用",
-  matchedPackage: "618 大促活动包",
-  confidence: 92,
-  summary: "系统识别到这是一个营销活动页面，包含头图、活动玩法和案例内容三个模块，并针对不同人群配置独立变量。",
-  audiences: [
-    {
-      name: "个人用户",
-      children: ["新客", "老客", "高价值用户"],
-    },
-    {
-      name: "企业用户",
-      children: ["未预约企业", "已预约企业"],
-    },
-  ],
+  activityName: "",
+  sourceName: "",
+  matchedPackage: "",
+  confidence: 0,
+  summary: "",
+  audiences: [],
 };
 
-const demoCaseModuleRows = [
-  { field: "模块标题", value: "DOU+ 投放优质案例" },
-  { field: "案例 1 博主名称", value: "美食博主-**子然" },
-  { field: "案例 1 粉丝数", value: "16.6万" },
-  { field: "案例 1 投放策略", value: "使用点赞评论目标，先用小额订单通过冷启期，后通过大额订单突破10w+点赞" },
-  { field: "案例 1 图片", value: "美食博主案例图片" },
-  { field: "案例 1 成本变化", value: "-93%" },
-  { field: "案例 1 分享率变化", value: "+107.04%" },
-  { field: "案例 1 完播率变化", value: "+33.7%" },
-  { field: "案例 2 博主名称", value: "生活记录-韩国人*然" },
-  { field: "案例 2 粉丝数", value: "2.3万" },
-  { field: "案例 2 投放策略", value: "使用快速涨粉目标，每单必投DOU+，用小预算、连续单的方式，对多个视频持续加热" },
-  { field: "案例 2 图片", value: "生活记录博主案例图片" },
-  { field: "案例 2 加热前粉丝量", value: "100+" },
-  { field: "案例 2 加热后粉丝量", value: "8K+" },
-  { field: "案例 3 博主名称", value: "装修博主-**装修阿涛" },
-  { field: "案例 3 粉丝数", value: "1100" },
-  { field: "案例 3 投放策略", value: "每单必投DOU+，并采纳投放助手的投放复盘建议，不断迭代投放策略" },
-  { field: "案例 3 图片", value: "装修博主案例图片" },
-  { field: "案例 3 互动成本变化", value: "-48%" },
-  { field: "案例 3 播放量变化", value: "+150%" },
-];
+const demoCaseModuleRows = [];
 
 const demoActivityPackage = {
   id: "audience-only",
-  name: "人群差异化活动包",
-  dimensionLabel: "仅人群维度",
-  slots: [
-    { id: "hero", label: "首屏表达" },
-    { id: "interaction", label: "核心互动" },
-    { id: "content", label: "内容承接" },
-  ],
-  audiences: [
-    {
-      id: "personal",
-      name: "个人用户",
-      description: "通过完成任务获得抽奖次数。",
-      canvasBackground: "#FFE0E9",
-      modules: [
-        {
-          id: "personal-hero",
-          slot: "hero",
-          name: "个人用户活动头图",
-          component: "DouPlusJunePromoAnimationV3",
-          rows: [
-            { field: "主标题", value: "端午出圈季" },
-            { field: "核心利益点", value: "抽流量大奖" },
-            { field: "活动时间", value: "6.10-6.21" },
-            { field: "视觉主题", value: "端午绿" },
-          ],
-        },
-        {
-          id: "personal-diagnosis",
-          slot: "interaction",
-          name: "优质视频诊断",
-          component: "QualityVideoDiagnosis",
-          prependComponents: [
-            {
-              id: "personal-red-packet-coupon",
-              name: "红包优惠券组件",
-              component: "RedPacketCoupon",
-            },
-          ],
-          rows: [
-            { field: "标题", value: "优质视频诊断" },
-            { field: "提示文案", value: "发现你有一条高潜视频！" },
-            { field: "按钮文案", value: "立即生成报告" },
-          ],
-          states: [
-            {
-              id: "after-click",
-              name: "点击后状态",
-              component: "OneClickBoost",
-              rows: [
-                { field: "标题前段", value: "报告已生成 用" },
-                { field: "品牌文字", value: "DOU+" },
-                { field: "标题后段", value: "推爆内容吧！" },
-                { field: "建议标签", value: "诊断建议" },
-                { field: "视频标题", value: "当猫咪发现了扫地机器人" },
-                { field: "用户昵称", value: "用户昵称" },
-                { field: "诊断建议", value: "你的视频总播放量、点赞率均高于同类水平! 如果能再优化前几秒的视觉冲击和节奏就更好啦~ 评论区记得加入引导话术哦!" },
-                { field: "查看更多文案", value: "查看更多内容诊断信息 >>" },
-                { field: "按钮文案", value: "一键上热门" },
-              ],
-            },
-          ],
-        },
-        {
-          id: "personal-case",
-          slot: "content",
-          name: "DOU+ 投放优质案例",
-          component: "DoublePromotion",
-          inputScope: "activity",
-          rows: clone(demoCaseModuleRows),
-        },
-      ],
-    },
-    {
-      id: "enterprise",
-      name: "企业用户",
-      description: "不使用抽奖，通过专属服务承接企业线索。",
-      canvasBackground: "#FFE0E9",
-      modules: [
-        {
-          id: "enterprise-hero",
-          slot: "hero",
-          name: "企业权益头图",
-          component: "HeaderImage",
-          rows: [
-            { field: "主标题", value: "端午增长季" },
-            { field: "权益说明", value: "专属顾问服务" },
-            { field: "活动时间", value: "6.10-6.25" },
-          ],
-        },
-        {
-          id: "enterprise-consumption-return",
-          slot: "interaction",
-          name: "九宫格任务抽奖",
-          component: "molecule:九宫格",
-          fallbackComponent: "LotteryGridInteractive",
-          useLotteryTaskGroup: true,
-          blueprintRole: "通过九宫格抽奖和任务机制，推动企业用户完成活动目标。",
-          blueprintRule: "企业用户完成指定任务后获得抽奖机会，奖池权益以流量券和服务权益为主。",
-          blueprintBenefit: "抽取流量扶持、服务权益和投放优惠券。",
-          rows: [],
-        },
-        {
-          id: "enterprise-case",
-          slot: "content",
-          name: "DOU+ 投放优质案例",
-          component: "DoublePromotion",
-          inputScope: "activity",
-          rows: clone(demoCaseModuleRows),
-        },
-      ],
-    },
-  ],
+  name: "空活动包",
+  dimensionLabel: "",
+  slots: [],
+  audiences: [],
 };
 
-const demoTimePersonalOldPeakModules = [
-  {
-    id: "old-hero",
-    slot: "hero",
-    name: "老客召回头图",
-    component: "DouPlusJunePromoAnimationV2",
-    rows: [
-      { field: "主标题", value: "端午福利限时用" },
-      { field: "召回文案", value: "老朋友回归再享专属加码" },
-      { field: "活动时间", value: "6月10日-6月21日" },
-    ],
-  },
-  {
-    id: "old-task",
-    slot: "interaction",
-    name: "阶梯任务激励",
-    component: "TaskModule",
-    rows: [
-      { field: "任务标题", value: "消耗任务赢加码奖励" },
-      { field: "任务一", value: "累计消耗满100元" },
-      { field: "任务一奖励", value: "50元流量券" },
-      { field: "任务二", value: "累计消耗满500元" },
-      { field: "任务二奖励", value: "200元流量券" },
-      { field: "任务周期", value: "活动期间累计" },
-    ],
-  },
-  {
-    id: "old-case",
-    slot: "content",
-    name: "达人投放案例",
-    component: "DoublePromotion",
-    rows: [
-      { field: "内容标题", value: "优质内容投放效率提升" },
-      { field: "案例介绍", value: "通过内容加热提升优质视频曝光" },
-      { field: "核心效果", value: "转化成本降低35%" },
-      { field: "案例图片", value: "达人案例封面图" },
-    ],
-  },
-];
+const demoTimePersonalOldPeakModules = [];
 
 const demoTimeActivityPackage = {
   id: "audience-time",
-  name: "人群 × 时间阶段活动包",
-  dimensionLabel: "人群 + 时间维度",
-  slots: demoActivityPackage.slots,
-  audiences: [
-    { id: "personal-new", name: "个人新客" },
-    { id: "personal-old", name: "个人老客" },
-    { id: "enterprise", name: "企业用户" },
-  ],
-  phases: [
-    { id: "warmup", name: "预热期", description: "提前告知权益，引导预约或关注。" },
-    { id: "peak", name: "爆发期", description: "集中承接流量，推动参与和转化。" },
-    { id: "return", name: "返场期", description: "承接未转化用户，完成最后召回。" },
-  ],
-  scenes: [
-    {
-      id: "personal-new:warmup",
-      audienceId: "personal-new",
-      phaseId: "warmup",
-      description: "新客预热：突出首次参与权益并引导预约。",
-      modules: [
-        { id: "nw-hero", slot: "hero", name: "新客预热头图", component: "HeaderImage", rows: [
-          { field: "主标题", value: "端午新客福利即将开启" },
-          { field: "预热利益点", value: "预约可额外获得1次抽奖机会" },
-          { field: "正式开始时间", value: "6月10日 10:00" },
-        ] },
-        { id: "nw-booking", slot: "interaction", name: "开抢提醒预约", component: "TimeNotification", rows: [
-          { field: "通知文案", value: "开抢前10分钟提醒我" },
-          { field: "倒计时", value: "距离活动开始还有3天" },
-          { field: "按钮文案", value: "预约提醒" },
-        ] },
-        { id: "nw-content", slot: "content", name: "奖励预告内容", component: "DoublePromotion", rows: [
-          { field: "内容标题", value: "新客最高可抽666元" },
-          { field: "内容说明", value: "首次投放即可获得抽奖资格" },
-          { field: "展示图片", value: "新客奖励预告图" },
-        ] },
-      ],
-    },
-    {
-      id: "personal-new:peak",
-      audienceId: "personal-new",
-      phaseId: "peak",
-      description: "新客爆发：通过低门槛抽奖推动首次投放。",
-      modules: clone(demoActivityPackage.audiences[0].modules),
-    },
-    {
-      id: "personal-new:return",
-      audienceId: "personal-new",
-      phaseId: "return",
-      description: "新客返场：用限时补领权益召回未参与用户。",
-      modules: [
-        { id: "nr-hero", slot: "hero", name: "新客返场头图", component: "HeaderImage", rows: [
-          { field: "主标题", value: "最后一天，新客福利返场" },
-          { field: "核心信息", value: "错过本次需再等30天" },
-          { field: "截止时间", value: "6月25日 24:00" },
-        ] },
-        { id: "nr-reward", slot: "interaction", name: "新客奖励补领", component: "PromoCoupon", rows: [
-          { field: "奖励金额", value: "50元" },
-          { field: "领取条件", value: "完成首次投放" },
-          { field: "有效期", value: "领取后7天" },
-          { field: "按钮文案", value: "立即补领" },
-        ] },
-        { id: "nr-content", slot: "content", name: "返场说明内容", component: "Announcement", rows: [
-          { field: "说明标题", value: "返场权益说明" },
-          { field: "说明正文", value: "活动期间未领取的新客可参与补领" },
-        ] },
-      ],
-    },
-    {
-      id: "personal-old:warmup",
-      audienceId: "personal-old",
-      phaseId: "warmup",
-      description: "老客预热：强调回归加码权益。",
-      modules: [
-        { id: "ow-hero", slot: "hero", name: "老客召回预热头图", component: "DouPlusJunePromoAnimationV2", rows: [
-          { field: "主标题", value: "老朋友，端午加码福利来了" },
-          { field: "召回利益点", value: "历史投放用户专享奖励" },
-          { field: "开始时间", value: "6月10日 10:00" },
-        ] },
-        { id: "ow-notice", slot: "interaction", name: "回归权益预告", component: "Announcement", rows: [
-          { field: "公告标题", value: "老客专享任务即将开放" },
-          { field: "公告内容", value: "完成累计消耗任务可解锁多档奖励" },
-        ] },
-        { id: "ow-content", slot: "content", name: "任务奖励预览", component: "DoublePromotion", rows: [
-          { field: "内容标题", value: "最高可得200元流量券" },
-          { field: "内容说明", value: "任务按活动期间累计消耗计算" },
-          { field: "展示图片", value: "老客任务预告图" },
-        ] },
-      ],
-    },
-    {
-      id: "personal-old:peak",
-      audienceId: "personal-old",
-      phaseId: "peak",
-      description: "老客爆发：通过阶梯任务推动持续消耗。",
-      modules: clone(demoTimePersonalOldPeakModules),
-    },
-    {
-      id: "personal-old:return",
-      audienceId: "personal-old",
-      phaseId: "return",
-      description: "老客返场：针对未完成任务提供最后加码。",
-      modules: [
-        { id: "or-hero", slot: "hero", name: "老客加码头图", component: "HeaderImage", rows: [
-          { field: "主标题", value: "任务返场，奖励最后加码" },
-          { field: "核心信息", value: "再投放100元即可领取奖励" },
-          { field: "截止时间", value: "6月25日 24:00" },
-        ] },
-        { id: "or-task", slot: "interaction", name: "返场冲刺任务", component: "TaskModule", rows: [
-          { field: "当前进度", value: "已完成400/500元" },
-          { field: "冲刺目标", value: "再完成100元消耗" },
-          { field: "冲刺奖励", value: "额外100元流量券" },
-          { field: "按钮文案", value: "继续完成任务" },
-        ] },
-        { id: "or-content", slot: "content", name: "返场案例内容", component: "DoublePromotion", rows: [
-          { field: "内容标题", value: "最后冲刺带来的增长" },
-          { field: "案例介绍", value: "持续加热帮助优质内容突破流量瓶颈" },
-          { field: "核心效果", value: "播放量再提升80%" },
-        ] },
-      ],
-    },
-    {
-      id: "enterprise:warmup",
-      audienceId: "enterprise",
-      phaseId: "warmup",
-      description: "企业预热：提前释放服务权益和预约名额。",
-      modules: [
-        { id: "ew-hero", slot: "hero", name: "企业权益预告头图", component: "HeaderImage", rows: [
-          { field: "主标题", value: "企业端午增长季即将开启" },
-          { field: "权益说明", value: "专属顾问与免费账户诊断" },
-          { field: "开放时间", value: "6月10日" },
-        ] },
-        { id: "ew-booking", slot: "interaction", name: "企业权益预约", component: "PromotionModule", rows: [
-          { field: "预约标题", value: "抢先锁定企业顾问名额" },
-          { field: "预约权益", value: "优先获得账户诊断报告" },
-          { field: "预约名额", value: "限量100家" },
-          { field: "按钮文案", value: "提前预约" },
-        ] },
-        { id: "ew-content", slot: "content", name: "企业服务介绍", component: "DoublePromotion", rows: [
-          { field: "内容标题", value: "企业专属增长服务" },
-          { field: "内容说明", value: "从诊断到投放的一站式顾问服务" },
-          { field: "展示图片", value: "企业服务介绍图" },
-        ] },
-      ],
-    },
-    {
-      id: "enterprise:peak",
-      audienceId: "enterprise",
-      phaseId: "peak",
-      description: "企业爆发：通过顾问预约承接高意向线索。",
-      modules: clone(demoActivityPackage.audiences[1].modules),
-    },
-    {
-      id: "enterprise:return",
-      audienceId: "enterprise",
-      phaseId: "return",
-      description: "企业返场：用诊断报告和案例完成二次跟进。",
-      modules: [
-        { id: "er-hero", slot: "hero", name: "企业返场头图", component: "HeaderImage", rows: [
-          { field: "主标题", value: "企业增长服务持续开放" },
-          { field: "核心信息", value: "预约即赠行业诊断报告" },
-          { field: "截止时间", value: "6月30日" },
-        ] },
-        { id: "er-report", slot: "interaction", name: "诊断报告领取", component: "PromotionModule", rows: [
-          { field: "报告标题", value: "企业账户增长诊断报告" },
-          { field: "报告内容", value: "行业对标、账户问题与投放建议" },
-          { field: "领取条件", value: "提交企业联系方式" },
-          { field: "按钮文案", value: "领取诊断报告" },
-        ] },
-        { id: "er-content", slot: "content", name: "企业返场案例", component: "DoublePromotion", rows: [
-          { field: "内容标题", value: "品牌企业规模增长案例" },
-          { field: "案例介绍", value: "顾问持续跟进优化企业投放效率" },
-          { field: "核心效果", value: "整体GMV提升120%" },
-          { field: "客户行业", value: "本地生活" },
-        ] },
-      ],
-    },
-  ],
+  name: "空活动包",
+  dimensionLabel: "",
+  slots: [],
+  audiences: [],
+  phases: [],
+  scenes: [],
 };
 
 function applyDemoPackageComponents() {
-  const configureContexts = (contexts) => {
-    contexts.forEach((context, contextIndex) => {
-      context.modules.forEach((module) => {
-        if (module.slot === "hero") {
-          module.component = "DouPlusJunePromoAnimationV2";
-          module.name = "大促动效头图 · 第二版";
-          return;
-        }
-
-        if (module.slot === "interaction") {
-          if (module.component === "QualityVideoDiagnosis" || module.component.startsWith("molecule:")) return;
-          const moleculeName = contextIndex % 2 === 0 ? "九宫格" : "消耗返1";
-          module.component = `molecule:${moleculeName}`;
-          module.fallbackComponent =
-            moleculeName === "九宫格" ? "LotteryGridInteractive" : "TaskModule";
-          module.name = moleculeName === "九宫格" ? "九宫格任务抽奖" : "消耗返玩法";
-          return;
-        }
-
-        if (module.slot === "content") {
-          module.component = "ContentModuleImage";
-          module.name = module.rows.some((row) => row.field === "案例 1 博主名称")
-            ? "DOU+ 投放优质案例"
-            : "内容模块图片占位";
-        }
-      });
-    });
-  };
-
-  configureContexts(demoActivityPackage.audiences);
-  configureContexts(demoTimeActivityPackage.scenes);
+  return null;
 }
 
 applyDemoPackageComponents();
@@ -2967,6 +1538,7 @@ function getPropEntries(schema) {
 
 function normalizeVariants(schema) {
   return (schema?.variants || []).map((variant) => ({
+    ...variant,
     id: variant.id || variant.key,
     name: variant.name || variant.label,
     props: { ...(variant.props || {}) },
@@ -3712,20 +2284,7 @@ function renderActivityCenter() {
         </div>
         ${
           state.prdFileModalOpen
-            ? renderPrdFileModal([
-                {
-                  id: demoActivityPackage.id,
-                  name: "DOU+ 端午经营活动 PRD",
-                  meta: "飞书文档 · 2 类人群",
-                  icon: "PRD",
-                },
-                {
-                  id: demoTimeActivityPackage.id,
-                  name: "DOU+ 618 全周期营销活动 PRD",
-                  meta: "PDF · 人群 × 活动阶段",
-                  icon: "PRD",
-                },
-              ])
+            ? renderPrdFileModal()
             : ""
         }
       </section>
@@ -3737,9 +2296,6 @@ function renderActivityCenter() {
 function renderAdminDashboard() {
   const center = $(".activity-center");
   if (!center) return;
-  const builtInMoleculeIds = ["MoleculeContainer", "TaskListModule"];
-  const customMolecules = moleculeSchemas.filter((item) => !builtInMoleculeIds.includes(item.id));
-  const templateCount = pageTemplates.length + customPageTemplates.length;
 
   center.innerHTML = `
     <section class="admin-shell">
@@ -3751,34 +2307,434 @@ function renderAdminDashboard() {
       <header class="admin-hero">
         <span>DESIGN OPS</span>
         <h1>组件模板管理</h1>
-        <p>管理活动搭建后台能力：从零创建活动、查看组件与动效预览。</p>
+        <p>进入画布组合原子/分子，搭建活动页面。</p>
       </header>
 
       <section class="admin-action-grid">
         <button class="admin-action-card primary" data-open-create-modal>
           <span>01</span>
-          <strong>从零创建活动</strong>
+          <strong>进入后台画布</strong>
           <em>进入画布组合原子/分子，搭建活动页面</em>
         </button>
-        <button class="admin-action-card" data-open-preview-library>
+        <button class="admin-action-card" data-open-admin-component-verifier>
           <span>02</span>
-          <strong>组件预览库</strong>
-          <em>查看所有组件、schema 字段和变量效果</em>
+          <strong>组件验收面板</strong>
+          <em>快速验证蓝图同步、文字变量、父级色系联动和导出切图</em>
         </button>
-        <button class="admin-action-card" data-open-animation-preview-library>
-          <span>03</span>
-          <strong>动效预览库</strong>
-          <em>集中查看动效组件版本与预览状态</em>
-        </button>
-      </section>
-
-      <section class="admin-stats">
-        <div><strong>${atomSchemas.length}</strong><span>原子组件</span></div>
-        <div><strong>${templateCount}</strong><span>页面模板</span></div>
       </section>
       ${state.createModalOpen ? renderCreateModal() : ""}
     </section>
   `;
+}
+
+function getSchemaDefaultValues(schema) {
+  const props = {};
+  getPropEntries(schema).forEach(([key, field]) => {
+    props[key] = field.default ?? "";
+  });
+  return props;
+}
+
+function isPrizePropField(field) {
+  return field?.type === "prize" || field?.control === "prize-library";
+}
+
+function isTextareaPropField(field) {
+  return field?.type === "text" || field?.control === "textarea";
+}
+
+function serializePrizeOption(prize) {
+  return JSON.stringify({
+    name: prize.name,
+    image: prize.image,
+  });
+}
+
+function serializePrizeValueWithName(value, name) {
+  const parsed = parsePrizeValue(value);
+  const trimmedName = String(name ?? "").trim();
+  if (!parsed) return "";
+  return JSON.stringify({
+    name: trimmedName || parsed.name || "",
+    image: parsed.image || "",
+  });
+}
+
+function parsePrizeValue(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      return {
+        name: parsed.name || parsed.title || parsed.label || "",
+        image: parsed.image || parsed.imageUrl || parsed.url || parsed.src || "",
+      };
+    }
+  } catch {
+    return { name: raw, image: "" };
+  }
+  return { name: raw, image: "" };
+}
+
+function renderPrizeLibrarySelect(value, dataAttr, ariaLabel, nameDataAttr = "") {
+  const rawValue = String(value ?? "");
+  const optionValues = new Set(mockPrizeLibrary.map((item) => serializePrizeOption(item)));
+  const customPrize = rawValue && !optionValues.has(rawValue) ? parsePrizeValue(rawValue) : null;
+  const selectedPrize = rawValue ? parsePrizeValue(rawValue) : null;
+  return `
+    <div class="prize-library-control">
+      <span class="prize-library-thumb">
+        ${selectedPrize?.image
+          ? `<img src="${escapeAttr(selectedPrize.image)}" alt="" />`
+          : "<i></i>"}
+      </span>
+      <select class="prize-library-select" ${dataAttr} aria-label="${escapeAttr(ariaLabel)}">
+        <option value="" ${rawValue ? "" : "selected"}>占位奖品</option>
+        ${mockPrizeLibrary.map((item) => {
+          const optionValue = serializePrizeOption(item);
+          return `
+            <option value="${escapeAttr(optionValue)}" ${rawValue === optionValue ? "selected" : ""}>
+              ${escapeHtml(item.name)}
+            </option>
+          `;
+        }).join("")}
+        ${customPrize ? `
+          <option value="${escapeAttr(rawValue)}" selected>
+            ${escapeHtml(customPrize.name || "已选奖品")}
+          </option>
+        ` : ""}
+      </select>
+      ${selectedPrize ? `
+        <input
+          class="prize-library-name-input"
+          type="text"
+          ${nameDataAttr}
+          value="${escapeAttr(selectedPrize.name || "")}"
+          aria-label="${escapeAttr(`${ariaLabel}名称`)}"
+        />
+      ` : ""}
+    </div>
+  `;
+}
+
+function syncPrizeLibraryControl(select) {
+  const control = select?.closest(".prize-library-control");
+  const thumb = control?.querySelector(".prize-library-thumb");
+  if (!thumb) return;
+  const selectedPrize = parsePrizeValue(select.value);
+  thumb.innerHTML = selectedPrize?.image
+    ? `<img src="${escapeAttr(selectedPrize.image)}" alt="" />`
+    : "<i></i>";
+  let input = control.querySelector(".prize-library-name-input");
+  if (!input && selectedPrize) {
+    const nameAttr = select.dataset.adminPrizeProp
+      ? `data-admin-prize-name-prop="${escapeAttr(select.dataset.adminPrizeProp)}"`
+      : select.dataset.blueprintPrizeValue
+        ? `data-blueprint-prize-name-value="${escapeAttr(select.dataset.blueprintPrizeValue)}"`
+        : select.dataset.nodePropInput
+          ? `data-node-prize-name-input="${escapeAttr(select.dataset.nodePropInput)}"`
+          : "";
+    if (nameAttr) {
+      select.insertAdjacentHTML(
+        "afterend",
+        `<input class="prize-library-name-input" type="text" ${nameAttr} aria-label="奖品名称" />`,
+      );
+      input = control.querySelector(".prize-library-name-input");
+    }
+  }
+  if (input && selectedPrize) input.value = selectedPrize.name || "";
+  if (input && !selectedPrize) input.remove();
+}
+
+function getBlueprintRowField(module, row) {
+  const schema = findAtomSchema(module?.component);
+  if (!schema || !row?.propKey) return null;
+  const entry = getPropEntries(schema).find(([key]) => key === row.propKey);
+  return entry?.[1] || null;
+}
+
+function getAdminVerifierSchema() {
+  return findAtomSchema(state.adminComponentVerifier?.schemaId) || atomSchemas[0] || null;
+}
+
+function ensureAdminVerifierState(schema) {
+  const verifier = state.adminComponentVerifier || {};
+  const schemaId = schema?.id || atomSchemas[0]?.id || "账户优惠券提示";
+  const sameSchema = verifier.schemaId === schemaId;
+  const textProps = Array.isArray(schema?.blueprint?.textProps)
+    ? schema.blueprint.textProps
+    : getPropEntries(schema)
+        .filter(([key, field]) => isCopyPropField(key, field, field.default))
+        .map(([key]) => key);
+  const blueprint = sameSchema ? { ...(verifier.blueprint || {}) } : {};
+  const defaults = getSchemaDefaultValues(schema);
+  textProps.forEach((key) => {
+    if (blueprint[key] === undefined) blueprint[key] = defaults[key] ?? "";
+  });
+  const variants = normalizeVariants(schema);
+  const fallbackVariantId = variants[0]?.id || null;
+  const variantId = sameSchema && variants.some((variant) => variant.id === verifier.variantId)
+    ? verifier.variantId
+    : fallbackVariantId;
+  state.adminComponentVerifier = {
+    schemaId,
+    parentThemeId: sameSchema ? verifier.parentThemeId || getVariantThemeId(schema, variantId) : getVariantThemeId(schema, variantId),
+    variantId,
+    blueprint,
+  };
+  return state.adminComponentVerifier;
+}
+
+function getAdminVerifierVariant(schema, verifier) {
+  const variants = normalizeVariants(schema);
+  return variants.find((item) => item.id === verifier.variantId) || variants[0] || null;
+}
+
+function getAdminVerifierProps(schema, verifier) {
+  const variant = getAdminVerifierVariant(schema, verifier);
+  return {
+    ...getSchemaDefaultValues(schema),
+    ...(variant?.props || {}),
+    ...(verifier.blueprint || {}),
+  };
+}
+
+function getSchemaFontEntries(schema) {
+  if (!schema) return [];
+  if (Array.isArray(schema.fonts)) return schema.fonts;
+  if (Array.isArray(schema.typography)) return schema.typography;
+  return [];
+}
+
+function getVariantThemeId(schema, variantId) {
+  const rawVariant = (schema?.variants || []).find((item) => (item.id || item.key) === variantId);
+  return rawVariant?.themeBinding?.parentThemeId || "pink";
+}
+
+function renderAdminComponentVerifier() {
+  const center = $(".activity-center");
+  if (!center) return;
+
+  const schema = getAdminVerifierSchema();
+  if (!schema) {
+    center.innerHTML = `
+      <section class="admin-shell">
+        <nav class="admin-nav">
+          <button class="admin-back" data-back-admin>← 返回后台</button>
+          <span>组件验收</span>
+        </nav>
+        <div class="admin-empty-state">
+          <strong>没有找到待验收组件</strong>
+          <span>请先注册 schema.json。</span>
+        </div>
+      </section>
+    `;
+    return;
+  }
+
+  const verifier = ensureAdminVerifierState(schema);
+  const props = getAdminVerifierProps(schema, verifier);
+  const textPropKeys = Array.isArray(schema.blueprint?.textProps) ? schema.blueprint.textProps : [];
+  const textProps = getPropEntries(schema).filter(([key]) => textPropKeys.includes(key));
+  const blueprintVariableLabel = textProps.some(([, field]) => isPrizePropField(field))
+    ? `${textProps.length} 个蓝图变量`
+    : `${textProps.length} 个文字变量`;
+  const colorProps = getPropEntries(schema).filter(([, field]) => field.type === "color");
+    const fontEntries = getSchemaFontEntries(schema);
+    const missingFontCount = fontEntries.filter((font) => font.source?.status && font.source.status !== "exact").length;
+  const variants = normalizeVariants(schema);
+  const theme = guidedPageThemePresets.find((item) => item.id === verifier.parentThemeId) || guidedPageThemePresets[0];
+  const width = Number(schema.dimensions?.width || 702);
+  const height = Number(schema.dimensions?.height || 160);
+  const isAutoHeight = schema.heightMode === "auto";
+  const preview = renderAtomPreview(schema.id, props);
+    const exportPreview = renderAtomPreview(schema.id, getCutExportProps(schema.id, props));
+
+  center.innerHTML = `
+    <section class="admin-shell admin-verifier-shell">
+      <nav class="admin-nav">
+        <button class="admin-back" data-back-admin>← 返回后台</button>
+        <span>组件验收</span>
+      </nav>
+
+      <header class="admin-hero admin-verifier-head">
+        <span>COMPONENT QA</span>
+        <div class="admin-verifier-title-row">
+          <h1>${escapeHtml(schema.name)}</h1>
+          <label class="admin-verifier-component-select">
+            <span>验收组件</span>
+            <select data-admin-select-component>
+              ${atomSchemas.map((item) => `
+                <option value="${escapeAttr(item.id)}" ${item.id === schema.id ? "selected" : ""}>
+                  ${escapeHtml(item.name || item.id)}
+                </option>
+              `).join("")}
+            </select>
+          </label>
+        </div>
+        <p>固定检查蓝图输入、组件文案、父级色系联动和最终导出切图。</p>
+      </header>
+
+      <section class="admin-verifier-grid">
+        <aside class="admin-verifier-panel">
+          <section class="admin-verifier-block">
+            <header>
+              <strong>蓝图同步</strong>
+              <span>${blueprintVariableLabel}</span>
+            </header>
+            <div class="admin-verifier-fields">
+              ${textProps.map(([key, field]) => {
+                const value = verifier.blueprint[key] ?? field.default ?? "";
+                return `
+                  <label>
+                    <span>${escapeHtml(field.label || key)}</span>
+                    ${isPrizePropField(field)
+                      ? renderPrizeLibrarySelect(
+                          value,
+                          `data-admin-prize-prop="${escapeAttr(key)}"`,
+                          `${schema.name} ${field.label || key}`,
+                          `data-admin-prize-name-prop="${escapeAttr(key)}"`,
+                        )
+                      : isTextareaPropField(field)
+                        ? `
+                          <textarea
+                            rows="${getBlueprintTextareaRows(value)}"
+                            data-admin-blueprint-prop="${escapeAttr(key)}"
+                          >${escapeHtml(value)}</textarea>
+                        `
+                      : `
+                        <input
+                          type="text"
+                          data-admin-blueprint-prop="${escapeAttr(key)}"
+                          value="${escapeAttr(value)}"
+                        />
+                      `}
+                  </label>
+                `;
+              }).join("")}
+            </div>
+          </section>
+
+          <section class="admin-verifier-block">
+            <header>
+              <strong>父级色系</strong>
+              <span>${escapeHtml(theme.name)}</span>
+            </header>
+            <div class="admin-verifier-variants">
+              ${variants.map((variant) => {
+                const themeId = getVariantThemeId(schema, variant.id);
+                const variantTheme = guidedPageThemePresets.find((item) => item.id === themeId) || guidedPageThemePresets[0];
+                return `
+                  <button
+                    class="${variant.id === verifier.variantId ? "active" : ""}"
+                    type="button"
+                    data-admin-preview-variant="${escapeAttr(variant.id)}"
+                    style="--admin-variant-start:${escapeAttr(variant.props.containerGradientStart || variantTheme.primary)};--admin-variant-end:${escapeAttr(variant.props.containerGradientEnd || variantTheme.secondary)}"
+                  >
+                    <i></i>
+                    <span>${escapeHtml(variant.name)}</span>
+                    <em>${escapeHtml(variantTheme.name)}</em>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </section>
+
+          <section class="admin-verifier-block">
+            <header>
+              <strong>颜色变量</strong>
+              <span>${colorProps.length} 个</span>
+            </header>
+            <div class="admin-verifier-color-list">
+              ${colorProps.map(([key, field]) => `
+                <div>
+                  <i style="background:${escapeAttr(props[key] || field.default || "#ffffff")}"></i>
+                  <span>${escapeHtml(field.label || key)}</span>
+                  <code>${escapeHtml(props[key] || field.default || "")}</code>
+                </div>
+              `).join("")}
+            </div>
+          </section>
+
+            <section class="admin-verifier-block">
+              <header>
+                <strong>字体</strong>
+                <span>${missingFontCount ? `${missingFontCount} 项缺失` : `${fontEntries.length} 项通过`}</span>
+              </header>
+              <div class="admin-verifier-font-list">
+                ${fontEntries.map((font) => {
+                  const family = font.family || font.fontFamily || "";
+                  const weight = font.weight || font.fontWeight || "";
+                  const size = font.size || font.fontSize || "";
+                  const lineHeight = font.lineHeight || "";
+                  const usage = font.usage || font.label || "";
+                  const source = font.source || {};
+                  const isExact = source.status === "exact";
+                  const sampleText = font.text || font.sample || "";
+                  const requiredFont = source.required || `${family} ${weight}`;
+                  return `
+                    <div class="${isExact ? "is-ok" : "is-missing"}">
+                      <span
+                        style="font-family:${escapeAttr(family)};font-weight:${escapeAttr(weight)};font-size:${escapeAttr(size || "18px")};line-height:${escapeAttr(lineHeight || "normal")}"
+                      >${escapeHtml(sampleText || "缺少真实文案")}</span>
+                      <strong>${escapeHtml(family)}</strong>
+                      <em>${isExact ? "已匹配" : "缺失"}</em>
+                      <code>${escapeHtml([weight && `W${weight}`, size, lineHeight && `LH ${lineHeight}`].filter(Boolean).join(" / "))}</code>
+                      ${usage ? `<small>用途：${escapeHtml(usage)}</small>` : ""}
+                      <small>${isExact ? `文件：${escapeHtml(source.file || "")}` : `需要：${escapeHtml(requiredFont)}`}</small>
+                      ${source.note ? `<small>${escapeHtml(source.note)}</small>` : ""}
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+            </section>
+        </aside>
+
+        <main class="admin-verifier-stage">
+          <section class="admin-verifier-preview" style="background:${escapeAttr(theme.background)}">
+            <header>
+              <strong>后台实时预览</strong>
+              <span>父级页面：${escapeHtml(theme.name)}</span>
+            </header>
+            <div class="admin-verifier-component">${preview}</div>
+          </section>
+
+          <section class="admin-verifier-export">
+            <header>
+              <div>
+                <strong>导出切图样子</strong>
+                <span>${isAutoHeight ? `${width}px 宽，自适应高度` : `${width} x ${height}px`}，透明背景</span>
+              </div>
+              <button type="button" data-admin-export-cut>下载 PNG</button>
+            </header>
+            <div class="admin-export-canvas">
+              <div
+                class="admin-export-capture"
+                data-admin-export-cut-capture
+                style="width:${width}px;${isAutoHeight ? `min-height:${height}px` : `height:${height}px`}"
+                >${exportPreview}</div>
+            </div>
+          </section>
+        </main>
+      </section>
+    </section>
+  `;
+
+  mountPreviewDetailReactMaterials();
+}
+
+function refreshAdminVerifierPreview() {
+  const schema = getAdminVerifierSchema();
+  if (!schema) return;
+  const verifier = ensureAdminVerifierState(schema);
+  const liveProps = getAdminVerifierProps(schema, verifier);
+  const exportProps = getCutExportProps(schema.id, liveProps);
+  const liveTarget = document.querySelector(".admin-verifier-component");
+  const exportTarget = document.querySelector("[data-admin-export-cut-capture]");
+  if (liveTarget) liveTarget.innerHTML = renderAtomPreview(schema.id, liveProps);
+  if (exportTarget) exportTarget.innerHTML = renderAtomPreview(schema.id, exportProps);
+  mountPreviewDetailReactMaterials();
 }
 
 function renderEntrySurface() {
@@ -3821,14 +2777,14 @@ function renderPrdDemoFlow() {
   `;
 }
 
-function renderPrdFileModal(files) {
+function renderPrdFileModal() {
   return `
     <div class="prd-file-modal" data-demo-file-modal>
       <section role="dialog" aria-modal="true" aria-labelledby="prd-file-modal-title">
         <header>
           <div>
             <span>演示模式</span>
-            <h2 id="prd-file-modal-title">选择一份 PRD</h2>
+            <h2 id="prd-file-modal-title">导入 PRD</h2>
           </div>
           <button data-demo-close-file-modal aria-label="关闭">×</button>
         </header>
@@ -3876,32 +2832,8 @@ function renderPrdFileModal(files) {
             </span>
           </div>
         </div>
-        <div class="prd-file-divider"><span>或选择已有 PRD</span></div>
-        <div class="prd-file-list">
-          ${files
-            .map(
-              (file) => `
-                <label class="prd-file-option ${state.selectedDemoPackageId === file.id ? "selected" : ""}">
-                  <input
-                    type="radio"
-                    name="demo-prd-file"
-                    data-demo-package="${file.id}"
-                    ${state.selectedDemoPackageId === file.id ? "checked" : ""}
-                  />
-                  <span class="prd-file-icon">${escapeHtml(file.icon || "PRD")}</span>
-                  <span>
-                    <strong>${escapeHtml(file.name)}</strong>
-                    <em>${escapeHtml(file.meta)}</em>
-                  </span>
-                  <i></i>
-                </label>
-              `,
-            )
-            .join("")}
-        </div>
         <footer>
           <button data-demo-close-file-modal>取消</button>
-          <button class="prd-primary-btn" data-demo-parse-prd>使用这份 PRD <span>→</span></button>
         </footer>
       </section>
     </div>
@@ -6207,22 +5139,35 @@ function renderBlueprintModuleTable(context, module, index, contextName = contex
           </div>
           ${module.rows
             .map(
-              (row, rowIndex) => `
-                <div class="blueprint-variable-row ${isShared ? "shared" : ""}">
-                  <strong>${escapeHtml(row.field)}</strong>
-                  ${tableContexts
-                    .map(
-                      (entry) => `
-                        <textarea
-                          rows="1"
-                          data-blueprint-value="${escapeAttr(`${entry.context.id}|${entry.module.id}|${rowIndex}`)}"
-                          aria-label="${escapeAttr(`${entry.contextName} ${entry.module.name} ${row.field}`)}"
-                        >${escapeHtml(entry.module.rows[rowIndex].value)}</textarea>
-                      `,
-                    )
-                    .join("")}
-                </div>
-              `,
+              (row, rowIndex) => {
+                const field = getBlueprintRowField(module, row);
+                return `
+                  <div class="blueprint-variable-row ${isShared ? "shared" : ""}">
+                    <strong>${escapeHtml(row.field)}</strong>
+                    ${tableContexts
+                      .map((entry) => {
+                        const value = entry.module.rows[rowIndex].value;
+                        const controlId = `${entry.context.id}|${entry.module.id}|${rowIndex}`;
+                        const ariaLabel = `${entry.contextName} ${entry.module.name} ${row.field}`;
+                        return isPrizePropField(field)
+                          ? renderPrizeLibrarySelect(
+                              value,
+                              `data-blueprint-prize-value="${escapeAttr(controlId)}"`,
+                              ariaLabel,
+                              `data-blueprint-prize-name-value="${escapeAttr(controlId)}"`,
+                            )
+                          : `
+                            <textarea
+                              rows="1"
+                              data-blueprint-value="${escapeAttr(controlId)}"
+                              aria-label="${escapeAttr(ariaLabel)}"
+                            >${escapeHtml(value)}</textarea>
+                          `;
+                      })
+                      .join("")}
+                  </div>
+                `;
+              },
             )
             .join("")}
         </div>
@@ -6396,85 +5341,20 @@ function createGuidedFallbackPage() {
     colorThemeId: "pink",
     navBarEnabled: false,
     isSystemFallback: true,
-    nodes: [
-      createAtomNode("HeaderImage"),
-      createAtomNode("兜底组件"),
-    ],
+    nodes: [],
   };
 }
 
 function isLotteryGridNode(node) {
-  return node?.schemaId === "LotteryGrid" || node?.schemaId === "LotteryGridInteractive";
+  return false;
 }
 
 function createLotteryAnnouncementMoleculeFromNode(sourceNode) {
-  const moleculeNode = createMoleculeNode("LotteryAnnouncementGridModule");
-  if (!moleculeNode) return sourceNode;
-
-  moleculeNode.id = sourceNode?.id || moleculeNode.id;
-  const sourceProps = sourceNode?.props || {};
-  const titleNode = findTemplateNodeBySchemaId(moleculeNode.children, ["TaskTitle"]);
-  const announcementNode = findTemplateNodeBySchemaId(moleculeNode.children, ["Announcement"]);
-  const lotteryNode = findTemplateNodeBySchemaId(moleculeNode.children, ["LotteryGridInteractive"]);
-
-  assignStructuredProps(titleNode, {
-    title: sourceProps.title,
-    subtitle: sourceProps.subtitle,
-  });
-  assignStructuredProps(announcementNode, {
-    text: sourceProps.announcementText,
-  });
-  if (lotteryNode) {
-    lotteryNode.props = {
-      ...lotteryNode.props,
-      ...sourceProps,
-    };
-    [
-      "guidedLineageVariants",
-      "activeLineageVariantId",
-      "guidedLineageGraph",
-      "sourceContext",
-      "sourceModuleName",
-    ].forEach((key) => {
-      if (sourceNode?.[key] !== undefined) lotteryNode[key] = clone(sourceNode[key]);
-    });
-  }
-  return moleculeNode;
+  return sourceNode;
 }
 
 function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = false) {
-  nodes.forEach((node, index) => {
-    if (node?.type === "molecule") {
-      replaceGuidedLotteryNodesWithInteractive(node.children || [], true);
-      return;
-    }
-
-    const isLegacyLotteryAtom = [
-      "LotteryGrid",
-      "LotteryGridInteractive",
-      "抽奖公告九宫格",
-    ].includes(node?.schemaId);
-    if (!isLegacyLotteryAtom) return;
-
-    if (!insideMolecule) {
-      nodes[index] = createLotteryAnnouncementMoleculeFromNode(node);
-      return;
-    }
-
-    if (node.schemaId !== "LotteryGridInteractive") {
-      const interactiveNode = createAtomNode("LotteryGridInteractive", node.props || {});
-      nodes[index] = {
-        ...node,
-        ...interactiveNode,
-        id: node.id || interactiveNode.id,
-        name: "互动九宫格抽奖",
-        props: {
-          ...interactiveNode.props,
-          ...(node.props || {}),
-        },
-      };
-    }
-  });
+  return nodes;
 }
 
 function collectInteractiveLotteryGridNodes(nodes = [], result = []) {
@@ -6543,7 +5423,7 @@ function applyLotteryRowsToNode(node, rows) {
     : findLotteryGridNode(node.children || []);
   if (!lotteryNode) return;
   rows.forEach((row) => {
-    if (/^prize[1-8]$/.test(row.propKey || "")) {
+    if (/^prize[1-8](Name)?$/.test(row.propKey || "")) {
       lotteryNode.props[row.propKey] = row.value;
     }
   });
@@ -6621,47 +5501,15 @@ function bindConsumptionProgressVariants(nodes, config) {
 }
 
 function findTaskListModuleNode(nodes = []) {
-  for (const node of nodes) {
-    if (
-      node.schemaId === "TaskListModule" ||
-      node.className === "task-list-module" ||
-      (
-        node.type === "molecule" &&
-        Array.isArray(node.allowedChildren) &&
-        node.allowedChildren.includes("TaskModule")
-      )
-    ) {
-      return node;
-    }
-    const nested = findTaskListModuleNode(node.children || []);
-    if (nested) return nested;
-  }
   return null;
 }
 
 function createPrdTaskNode(task) {
-  return createAtomNode("TaskModule", {
-    title: task.title,
-    description: task.description,
-    rewardLabel: task.rewardLabel || "抽奖",
-    rewardCount: task.rewardCount || "+1",
-    frequency: task.frequency || "1次/天",
-    buttonText: task.buttonText || "去完成",
-  });
+  return null;
 }
 
 function bindPrdTaskListToTemplateNodes(nodes, config) {
-  if (!config?.tasks?.length) return;
-  const target = findTaskListModuleNode(nodes);
-  if (!target) return;
-
-  target.children = config.tasks.map(createPrdTaskNode);
-  target.allowedChildren = ["TaskModule"];
-  target.className = target.className || "task-list-module";
-  delete target.guidedLineageVariants;
-  delete target.guidedLineageDimensions;
-  delete target.guidedLineageGraph;
-  delete target.activeLineageVariantId;
+  return null;
 }
 
 function findTemplateNodeBySchemaId(nodes = [], schemaIds = []) {
@@ -6685,22 +5533,23 @@ function getStructuredPrdValue(rows, label) {
 const structuredModuleVersionPropMaps = {
   账户优惠券提示: {
     当前账户优惠券总金额: "amountText",
-    当前账户优惠券数量: "couponCountText",
-    优惠券剩余有效时间: "durationText",
+    金额: "amountText",
     按钮文案: "actionText",
+    小按钮文案: "actionText",
+    立即使用: "actionText",
   },
   抽奖公告九宫格: {
     抽奖模块标题: "title",
     剩余抽奖次数文案: "subtitle",
     用户中奖公告文案: "announcementText",
-    奖品1名称: "prize1",
-    奖品2名称: "prize2",
-    奖品3名称: "prize3",
-    奖品4名称: "prize4",
-    奖品5名称: "prize5",
-    奖品6名称: "prize6",
-    奖品7名称: "prize7",
-    奖品8名称: "prize8",
+    奖品1名称: "prize1Name",
+    奖品2名称: "prize2Name",
+    奖品3名称: "prize3Name",
+    奖品4名称: "prize4Name",
+    奖品5名称: "prize5Name",
+    奖品6名称: "prize6Name",
+    奖品7名称: "prize7Name",
+    奖品8名称: "prize8Name",
     抽奖按钮文案: "buttonText",
   },
   消耗返数据报名规则: {
@@ -7046,8 +5895,6 @@ function applyLotteryConsumptionStructuredFields(nodes, rows = []) {
 
   assignStructuredProps(findTemplateNodeBySchemaId(nodes, ["账户优惠券提示"]), {
     amountText: value("当前账户优惠券总金额"),
-    couponCountText: value("当前账户优惠券数量"),
-    durationText: value("优惠券剩余有效时间"),
     actionText: value("按钮文案"),
   });
 
@@ -7058,15 +5905,19 @@ function applyLotteryConsumptionStructuredFields(nodes, rows = []) {
   assignStructuredProps(findTemplateNodeBySchemaId(nodes, ["Announcement"]), {
     text: value("用户中奖公告文案"),
   });
-  assignStructuredProps(findTemplateNodeBySchemaId(nodes, ["LotteryGridInteractive"]), {
-    prize1: value("奖品1名称"),
-    prize2: value("奖品2名称"),
-    prize3: value("奖品3名称"),
-    prize4: value("奖品4名称"),
-    prize5: value("奖品5名称"),
-    prize6: value("奖品6名称"),
-    prize7: value("奖品7名称"),
-    prize8: value("奖品8名称"),
+  assignStructuredProps(findTemplateNodeBySchemaId(nodes, [
+    "LotteryGridInteractive",
+    "抽奖九宫格-报名前",
+    "抽奖九宫格-报名后",
+  ]), {
+    prize1Name: value("奖品1名称"),
+    prize2Name: value("奖品2名称"),
+    prize3Name: value("奖品3名称"),
+    prize4Name: value("奖品4名称"),
+    prize5Name: value("奖品5名称"),
+    prize6Name: value("奖品6名称"),
+    prize7Name: value("奖品7名称"),
+    prize8Name: value("奖品8名称"),
     buttonText: value("抽奖按钮文案"),
   });
 
@@ -7883,9 +6734,7 @@ function renderGuidedPagePreview(pageData) {
 
 function renderGuidedFallbackExportPage(entry) {
   const page = state.pages.find((item) => item.id === entry.pageId);
-  const nodes = page?.nodes?.length
-    ? page.nodes
-    : [createAtomNode("HeaderImage"), createAtomNode("兜底组件")];
+  const nodes = page?.nodes?.length ? page.nodes : [];
   const background = page?.canvasBackground || "#FFE0E9";
   return `
     <div
@@ -8736,20 +7585,7 @@ function getGuidedContentOptions() {
 }
 
 function createDefaultGuidedTasks() {
-  return [
-    ["完成首次投放", "活动期间首次投放满30元，可获得1次抽奖机会"],
-    ["完成消耗任务", "当日累计消耗满100元，可获得1次抽奖机会"],
-    ["分享活动", "将活动分享给好友，可获得1次抽奖机会"],
-  ].map(([title, description]) =>
-    createAtomNode("TaskModule", {
-      title,
-      description,
-      frequency: "可完成",
-      buttonText: "去完成",
-      rewardLabel: "抽奖",
-      rewardCount: "+1",
-    }),
-  );
+  return [];
 }
 
 function createGuidedModuleReplacement(optionId, found) {
@@ -8861,10 +7697,7 @@ function renderGuidedMoleculePreview(item) {
     return `<img class="guided-content-option-image" src="${escapeAttr(item.imageUrl)}" alt="${escapeAttr(item.name)}" />`;
   }
   if (item.schema) return renderMoleculePreview(item.schema);
-  const fallbackSchemaId = item.name === "九宫格"
-    ? "LotteryGridInteractive"
-    : "TaskModule";
-  return renderAtomPreview(fallbackSchemaId);
+  return "";
 }
 
 function getGuidedPageTheme(page) {
@@ -8882,12 +7715,32 @@ function getGuidedPageThemeStyle(page) {
   return `background:${theme.background};--guided-page-theme-filter:${theme.filter};`;
 }
 
+function applyThemeBoundVariantsToNodes(nodes = [], themeId) {
+  nodes.forEach((node) => {
+    if (node.type === "atom") {
+      const schema = findAtomSchema(node.schemaId);
+      const boundVariant = normalizeVariants(schema).find((variant) => {
+        const rawVariant = (schema?.variants || []).find(
+          (item) => (item.id || item.key) === variant.id,
+        );
+        return rawVariant?.themeBinding?.parentThemeId === themeId;
+      });
+      if (boundVariant) {
+        node.activeVariantId = boundVariant.id;
+        node.props = { ...defaultProps(node.schemaId), ...(node.props || {}), ...boundVariant.props };
+      }
+    }
+    if (node.children?.length) applyThemeBoundVariantsToNodes(node.children, themeId);
+  });
+}
+
 function applyGuidedPageTheme(themeId) {
   const page = activePage();
   const theme = guidedPageThemePresets.find((item) => item.id === themeId);
   if (!page || !theme) return;
   page.colorThemeId = theme.id;
   page.canvasBackground = theme.background;
+  applyThemeBoundVariantsToNodes(page.nodes, theme.id);
   const pageEl = document.querySelector(`.guided-device-stage [data-page-id="${page.id}"]`);
   if (pageEl) {
     pageEl.style.background = theme.background;
@@ -9094,26 +7947,7 @@ function getModuleKind(schemaId) {
   return moduleKindMap[schemaId] || "reward";
 }
 
-const animationPreviewItems = [
-  {
-    id: "dou-plus-june-promo-v2",
-    name: "DOU+6月大促",
-    version: "第二版",
-    component: "DouPlusJunePromoAnimationV2",
-    dimensions: { width: 750, height: 559 },
-    description: "第二版本地动效，增加额外视觉素材层，适合对比最终上线版本。",
-    source: "动效/DOU+6月大促_第二版",
-  },
-  {
-    id: "dou-plus-june-promo-v3",
-    name: "DOU+6月大促",
-    version: "第三版",
-    component: "DouPlusJunePromoAnimationV3",
-    dimensions: { width: 750, height: 559 },
-    description: "第三版本地动效，保留可编辑文案、素材替换、播放暂停和图层控制。",
-    source: "动效/DOU+6月大促_第三版",
-  },
-];
+const animationPreviewItems = [];
 
 function renderAnimationPreviewLibrary() {
   const center = $(".activity-center");
@@ -9125,7 +7959,7 @@ function renderAnimationPreviewLibrary() {
       <span class="motion-lib-kicker">Local Motion Assets</span>
       <h1>动效预览库</h1>
       <p>预览项目里的本地动效组件，用于校对素材、层级、尺寸和循环节奏。</p>
-      <div class="preview-lib-summary">
+      <div class="motion-lib-summary">
         <span>共 ${animationPreviewItems.length} 个动效</span>
         <span>·</span>
         <span>全部来自本地 动效/ 目录</span>
@@ -9180,221 +8014,10 @@ function renderAnimationPreviewCard(item) {
   `;
 }
 
-function renderPreviewLibrary() {
-  const center = $(".activity-center");
-  if (!center) return;
-
-  const categories = {};
-  for (const schema of atomSchemas) {
-    const cat = schema.category || "未分类";
-    if (!categories[cat]) categories[cat] = [];
-    categories[cat].push(schema);
-  }
-
-  const categoryOrder = Object.keys(categories).sort((a, b) => a.localeCompare(b, 'zh-CN'));
-
-  center.innerHTML = `
-    <div class="activity-hero">
-      <button class="back-btn" data-back-home>← 返回活动中心</button>
-      <h1>组件预览库</h1>
-      <p>浏览所有组件及其变量，实时同步 schema.json 与组件代码</p>
-      <div class="preview-lib-summary">
-        <span>共 ${atomSchemas.length} 个组件</span>
-        <span>·</span>
-        <span>${Object.keys(categories).length} 个分类</span>
-        <span>·</span>
-        <span>点击组件查看全部变量</span>
-      </div>
-    </div>
-
-    <section class="preview-lib-section">
-      <div class="preview-lib-grid">
-        ${atomSchemas.map((schema) => renderPreviewLibCard(schema)).join("")}
-      </div>
-    </section>
-
-    <div class="preview-lib-detail-panel" data-preview-detail-panel style="display:none;">
-      <div class="preview-lib-detail-backdrop" data-close-preview-detail></div>
-      <div class="preview-lib-detail-content">
-        <button class="preview-lib-detail-close" data-close-preview-detail>×</button>
-        <div class="preview-lib-detail-body" data-preview-detail-body></div>
-      </div>
-    </div>
-  `;
-}
-
-function renderPreviewLibCard(schema) {
-  const propCount = (schema.props || []).length;
-  const cssVarCount = (schema.props || []).filter((p) => p.isCssVar).length;
-  const normalPropCount = propCount - cssVarCount;
-  const preview = renderAtomPreview(schema.id);
-
-  return `
-    <button class="preview-lib-card" data-preview-schema="${schema.id}">
-      <div class="preview-lib-card-preview">${preview}</div>
-      <div class="preview-lib-card-info">
-        <strong>${escapeHtml(schema.name)}</strong>
-        <span>${escapeHtml(schema.id)}</span>
-        <div class="preview-lib-card-tags">
-          <span class="prop-tag">${normalPropCount} 变量</span>
-          ${cssVarCount > 0 ? `<span class="css-tag">${cssVarCount} CSS变量</span>` : ""}
-          <span class="cat-tag">${escapeHtml(schema.category || "未分类")}</span>
-        </div>
-      </div>
-    </button>
-  `;
-}
-
-function renderPreviewLibDetail(schemaId) {
-  const schema = findAtomSchema(schemaId);
-  if (!schema) return "";
-
-  const props = schema.props || [];
-  const normalProps = props.filter((p) => !p.isCssVar);
-  const cssVars = props.filter((p) => p.isCssVar);
-
-  const defaultVals = {};
-  for (const p of normalProps) defaultVals[p.key] = p.default;
-
-  const varInputs = props.map((p) => {
-    const value = p.default ?? "";
-    let inputHtml = "";
-    if (p.type === "boolean") {
-      inputHtml = `<label class="prop-checkbox"><input type="checkbox" data-prop-input="${p.key}" ${value ? "checked" : ""} /> <span>开启</span></label>`;
-    } else if (p.type === "select" && Array.isArray(p.options)) {
-      inputHtml = `
-        <select data-prop-input="${p.key}">
-          ${p.options.map((option) => {
-            const optionValue = option.value ?? option;
-            const optionLabel = option.label ?? optionValue;
-            return `<option value="${escapeAttr(String(optionValue))}" ${String(optionValue) === String(value) ? "selected" : ""}>${escapeHtml(optionLabel)}</option>`;
-          }).join("")}
-        </select>
-      `;
-    } else if (p.type === "color") {
-      inputHtml = `<input type="color" data-prop-input="${p.key}" value="${String(value).startsWith('#') ? value : '#ffffff'}" />`;
-    } else if (p.type === "number") {
-      inputHtml = `<input type="number" data-prop-input="${p.key}" value="${escapeAttr(String(value))}" placeholder="${escapeAttr(String(value))}" />`;
-    } else if (p.type === "text" || String(value).length > 80) {
-      inputHtml = `<textarea data-prop-input="${p.key}" rows="${String(value).length > 160 ? 6 : 3}" placeholder="${escapeAttr(String(value))}">${escapeHtml(String(value))}</textarea>`;
-    } else {
-      inputHtml = `<input type="text" data-prop-input="${p.key}" value="${escapeAttr(String(value))}" placeholder="${escapeAttr(String(value))}" />`;
-    }
-
-    return `
-      <div class="prop-row">
-        <div class="prop-meta">
-          <label>${escapeHtml(p.label || p.key)}</label>
-          <code>${escapeHtml(p.key)}</code>
-          ${p.description ? `<span class="prop-desc">${escapeHtml(p.description)}</span>` : ""}
-          ${p.isCssVar ? `<span class="prop-css-badge">CSS变量</span>` : ""}
-        </div>
-        <div class="prop-control">
-          ${inputHtml}
-          <span class="prop-default">默认: ${escapeAttr(String(value))}</span>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  return `
-    <div class="preview-detail-header">
-      <div class="preview-detail-info">
-        <h2>${escapeHtml(schema.name)} <span class="preview-detail-id">${escapeHtml(schema.id)}</span></h2>
-        <p>${escapeHtml(schema.description || "")}</p>
-        <div class="preview-detail-meta">
-          <span class="cat-tag">${escapeHtml(schema.category || "未分类")}</span>
-          <span>${normalProps.length} 普通变量</span>
-          ${cssVars.length > 0 ? `<span>${cssVars.length} CSS变量</span>` : ""}
-        </div>
-      </div>
-      <div class="preview-detail-size">
-        ${schema.dimensions ? `${schema.dimensions.width}×${schema.dimensions.height}` : ""}
-      </div>
-    </div>
-
-    <div class="preview-detail-layout">
-      <div class="preview-detail-preview">
-        <div class="preview-detail-preview-title">
-          <strong>实时预览</strong>
-          <span>修改右侧变量后即时更新</span>
-        </div>
-        <div class="preview-detail-component" data-preview-component="${schema.id}">
-          ${renderAtomPreview(schema.id, defaultVals)}
-        </div>
-      </div>
-
-      <div class="preview-detail-props">
-        <div class="preview-detail-props-title">
-          <h3>全部变量 (${props.length})</h3>
-          <span class="preview-detail-hint">右侧独立滚动，预览保持可见</span>
-        </div>
-        <div class="preview-detail-props-list">
-          ${varInputs}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
 function mountPreviewDetailReactMaterials() {
   window.renderReactMaterials?.();
   requestAnimationFrame(() => {
     window.renderReactMaterials?.();
-  });
-}
-
-function bindPreviewDetailEvents(schemaId) {
-  const schema = findAtomSchema(schemaId);
-  if (!schema) return;
-
-  const props = schema.props || [];
-  const currentValues = { ...state.previewPropValues };
-
-  for (const p of props) {
-    if (currentValues[p.key] === undefined) {
-      currentValues[p.key] = p.default ?? "";
-    }
-  }
-
-  state.previewPropValues = currentValues;
-
-  const propInputs = document.querySelectorAll("[data-prop-input]");
-  propInputs.forEach((input) => {
-    const propKey = input.dataset.propInput;
-    const propDef = props.find((p) => p.key === propKey);
-    if (!propDef) return;
-
-    if (propDef.type === "boolean") {
-      input.checked = Boolean(currentValues[propKey] ?? propDef.default);
-    } else {
-      input.value = currentValues[propKey] ?? propDef.default ?? "";
-    }
-
-    input.addEventListener("input", (e) => {
-      let val;
-      if (propDef.type === "number") {
-        val = parseFloat(e.target.value) || 0;
-      } else if (propDef.type === "boolean") {
-        val = Boolean(e.target.checked);
-      } else {
-        val = e.target.value;
-      }
-      state.previewPropValues[propKey] = val;
-
-      const componentEl = document.querySelector("[data-preview-component]");
-      if (componentEl) {
-        const overrides = {};
-        for (const [k, v] of Object.entries(state.previewPropValues)) {
-          const propDef2 = props.find((p) => p.key === k);
-          if (propDef2 && !propDef2.isCssVar) {
-            overrides[k] = v;
-          }
-        }
-        componentEl.innerHTML = renderAtomPreview(schemaId, overrides);
-        mountPreviewDetailReactMaterials();
-      }
-    });
   });
 }
 
@@ -9902,8 +8525,8 @@ function renderComponent(node, options = {}) {
     return renderMoleculeComponent(node, options);
   }
 
-  const p = node.props || defaultProps(node.schemaId);
   const schema = findAtomSchema(node.schemaId);
+  const p = schema ? defaultProps(node.schemaId, node.props || {}) : (node.props || {});
   if (schema?.id === "StickyBottomButton" || node.schemaId === "StickyBottomButton" || node.schemaId === "置底按钮" || node.name === "置底按钮") {
     return renderStickyBottomButtonFallback(p, editOptions);
   }
@@ -9969,6 +8592,13 @@ function renderReactComponent(schema, props, editOptions) {
   const variantId = editOptions.variantId || "";
   const width = Number(schema.dimensions?.width || 700);
   const height = Number(schema.dimensions?.height || 300);
+  const isAutoHeight = schema.heightMode === "auto";
+  const fitSizeStyle = isAutoHeight
+    ? `--component-width:${width}px;--component-height:${height}px;min-height:${height}px;height:auto;`
+    : `--component-width:${width}px;--component-height:${height}px`;
+  const hostSizeStyle = isAutoHeight
+    ? `width:${width}px;min-height:${height}px;height:auto;`
+    : `width:${width}px;height:${height}px`;
   const lineagePrefix = editOptions.lineagePrefix || "";
   const lineageInitialProps =
     mode === "lineage"
@@ -9976,10 +8606,10 @@ function renderReactComponent(schema, props, editOptions) {
       : "";
 
   return `
-    <div class="react-component-fit" style="--component-width:${width}px;--component-height:${height}px">
+    <div class="react-component-fit" style="${fitSizeStyle}">
       <div
         class="react-component-host"
-        style="width:${width}px;height:${height}px"
+        style="${hostSizeStyle}"
         data-react-component="${escapeAttr(schema.reactComponent)}"
         data-props="${escapeAttr(JSON.stringify(props))}"
         data-edit-mode="${escapeAttr(mode)}"
@@ -10255,6 +8885,13 @@ function renderNodePropControl(node, field) {
     control = `<input id="${escapeAttr(id)}" type="color" data-node-prop-input="${escapeAttr(key)}" value="${String(value).startsWith("#") ? escapeAttr(String(value)) : "#ffffff"}" />`;
   } else if (type === "number") {
     control = `<input id="${escapeAttr(id)}" type="number" data-node-prop-input="${escapeAttr(key)}" value="${escapeAttr(String(value))}" />`;
+  } else if (isPrizePropField(field)) {
+    control = renderPrizeLibrarySelect(
+      value,
+      `data-node-prop-input="${escapeAttr(key)}"`,
+      `${node.name} ${field.label || key}`,
+      `data-node-prize-name-input="${escapeAttr(key)}"`,
+    );
   } else {
     control = `<textarea id="${escapeAttr(id)}" data-node-prop-input="${escapeAttr(key)}" rows="${String(value).length > 48 ? 3 : 1}">${escapeHtml(String(value))}</textarea>`;
   }
@@ -10409,13 +9046,45 @@ function exportPage() {
 }
 
 const guidedCutExportRules = {
-  "账户优惠券提示": {
-    hiddenPropKeys: ["amountText", "couponCountText"],
+  账户优惠券提示: {
+    exportPropOverrides: {
+      hideExportMetaNumbers: true,
+    },
+  },
+  "抽奖+消耗返3-3个券": {
+    exportPropOverrides: {
+      hideProgressGraphic: true,
+    },
+  },
+  "消耗返样式4个券": {
+    exportPropOverrides: {
+      hideProgressGraphic: true,
+    },
+  },
+  "横排按钮数据条": {
+    exportPropOverrides: {
+      hideNumbers: true,
+    },
+  },
+  "提示": {
+    exportPropOverrides: {
+      contentText: "",
+      text: "",
+      description: "",
+    },
   },
 };
 
 function getGuidedCutExportRule(node) {
   return guidedCutExportRules[node?.schemaId] || guidedCutExportRules[node?.name] || {
+  };
+}
+
+function getCutExportProps(schemaId, props = {}) {
+  const rule = getGuidedCutExportRule({ schemaId, name: schemaId });
+  return {
+    ...props,
+    ...(rule.exportPropOverrides || {}),
   };
 }
 
@@ -10430,6 +9099,12 @@ function getExportEntryNode(entry) {
     rule.hiddenPropKeys.forEach((key) => {
       if (key in node.props) node.props[key] = "";
     });
+  }
+  if (rule.exportPropOverrides) {
+    node.props = {
+      ...(node.props || {}),
+      ...rule.exportPropOverrides,
+    };
   }
   return node;
 }
@@ -10981,15 +9656,18 @@ function render() {
     return;
   }
 
-  if (state.view === "preview-library") {
-    renderPreviewLibrary();
+  if (state.view === "animation-preview-library") {
+    renderAnimationPreviewLibrary();
     window.renderReactMaterials?.();
     return;
   }
 
-  if (state.view === "animation-preview-library") {
-    renderAnimationPreviewLibrary();
-    window.renderReactMaterials?.();
+  if (state.view === "admin-component-verifier") {
+    renderAdminComponentVerifier();
+    $(".code-modal")?.classList.remove("open");
+    $(".quick-toolbar")?.classList.remove("open");
+    $(".variant-inspector")?.classList.remove("open");
+    $(".richtext-editor")?.classList.remove("open");
     return;
   }
 
@@ -11916,17 +10594,46 @@ function bindEvents() {
       return;
     }
 
-    const editMoleculeTemplate = event.target.closest("[data-admin-edit-molecule]");
-    if (editMoleculeTemplate) {
-      openMoleculeTemplateEditor(editMoleculeTemplate.dataset.adminEditMolecule);
+    if (event.target.closest("[data-open-admin-component-verifier]")) {
+      state.view = "admin-component-verifier";
+      render();
       return;
     }
 
-    const openPreviewLib = event.target.closest("[data-open-preview-library]");
-    if (openPreviewLib) {
-      state.libraryReturnView = state.view === "admin" ? "admin" : null;
-      state.view = "preview-library";
+    if (event.target.closest("[data-back-admin]")) {
+      state.view = "admin";
       render();
+      return;
+    }
+
+    const adminPreviewVariant = event.target.closest("[data-admin-preview-variant]");
+    if (adminPreviewVariant) {
+      const schema = getAdminVerifierSchema();
+      const variantId = adminPreviewVariant.dataset.adminPreviewVariant;
+      state.adminComponentVerifier.variantId = variantId;
+      state.adminComponentVerifier.parentThemeId = getVariantThemeId(schema, variantId);
+      render();
+      return;
+    }
+
+    if (event.target.closest("[data-admin-export-cut]")) {
+      const target = document.querySelector("[data-admin-export-cut-capture]");
+      if (target) {
+          const schema = getAdminVerifierSchema();
+          const fileName = `${schema?.name || schema?.id || "组件切图"}.png`;
+        exportElementToPngBlob(target, { pixelRatio: 2 })
+            .then((blob) => downloadBlob(fileName, blob))
+          .catch((error) => {
+            console.error("[admin-export] cut export failed", error);
+            window.alert(`导出失败：${error?.message || "未知错误"}`);
+          });
+      }
+      return;
+    }
+
+    const editMoleculeTemplate = event.target.closest("[data-admin-edit-molecule]");
+    if (editMoleculeTemplate) {
+      openMoleculeTemplateEditor(editMoleculeTemplate.dataset.adminEditMolecule);
       return;
     }
 
@@ -11942,43 +10649,21 @@ function bindEvents() {
     if (backHome) {
       if (prdParseTimer) clearTimeout(prdParseTimer);
       state.view =
-        (state.view === "preview-library" || state.view === "animation-preview-library") &&
-        state.libraryReturnView === "admin"
+        state.view === "animation-preview-library" && state.libraryReturnView === "admin"
           ? "admin"
           : "home";
       state.libraryReturnView = null;
-      state.selectedPreviewSchemaId = null;
       state.selectedId = null;
       render();
       return;
     }
 
-    const previewCard = event.target.closest("[data-preview-schema]");
-    if (previewCard) {
-      const schemaId = previewCard.dataset.previewSchema;
-      state.selectedPreviewSchemaId = schemaId;
-      const detailBody = document.querySelector("[data-preview-detail-body]");
-      const detailPanel = document.querySelector("[data-preview-detail-panel]");
-      if (detailBody && detailPanel) {
-        detailBody.innerHTML = renderPreviewLibDetail(schemaId);
-        detailPanel.style.display = "flex";
-        mountPreviewDetailReactMaterials();
-        bindPreviewDetailEvents(schemaId);
-      }
-      return;
-    }
-
-    const closeDetail = event.target.closest("[data-close-preview-detail]");
-    if (closeDetail) {
-      const detailPanel = document.querySelector("[data-preview-detail-panel]");
-      if (detailPanel) detailPanel.style.display = "none";
-      return;
-    }
-
     if (event.target.closest("[data-open-create-modal]")) {
-      state.createModalOpen = true;
+      state.createModalOpen = false;
+      state.draftTemplateModalOpen = false;
+      state.draftTemplateModalTarget = null;
       state.createDraft = { name: "新活动", dimensions: ["个人用户"], pages: {} };
-      renderEntrySurface();
+      createActivityFromDraft();
       return;
     }
 
@@ -12622,6 +11307,14 @@ function bindEvents() {
       return;
     }
 
+    const adminBlueprintInput = event.target.closest("[data-admin-blueprint-prop]");
+    if (adminBlueprintInput) {
+      const key = adminBlueprintInput.dataset.adminBlueprintProp;
+      state.adminComponentVerifier.blueprint[key] = adminBlueprintInput.value;
+      refreshAdminVerifierPreview();
+      return;
+    }
+
     const lineageTitle = event.target.closest("[data-guided-lineage-title]");
     if (lineageTitle) {
       const found = getSelectedNodeInfo();
@@ -12947,6 +11640,60 @@ function bindEvents() {
   });
 
   document.addEventListener("input", (event) => {
+    const nodePrizeNameInput = event.target.closest("[data-node-prize-name-input]");
+    if (nodePrizeNameInput) {
+      const found = getSelectedNodeInfo();
+      const key = nodePrizeNameInput.dataset.nodePrizeNameInput;
+      if (!found || !key) return;
+      const value = serializePrizeValueWithName(found.node.props[key], nodePrizeNameInput.value);
+      found.node.props[key] = value;
+      const activeVariant = found.node.variants?.find((item) => item.id === found.node.activeVariantId);
+      if (activeVariant && key in activeVariant.props) activeVariant.props[key] = value;
+      renderCanvas();
+      renderStructureTree();
+      renderPageSaveFloat();
+      renderContextControls();
+      return;
+    }
+
+    const adminPrizeNameInput = event.target.closest("[data-admin-prize-name-prop]");
+    if (adminPrizeNameInput) {
+      const key = adminPrizeNameInput.dataset.adminPrizeNameProp;
+      if (!key) return;
+      state.adminComponentVerifier.blueprint[key] = serializePrizeValueWithName(
+        state.adminComponentVerifier.blueprint[key],
+        adminPrizeNameInput.value,
+      );
+      refreshAdminVerifierPreview();
+      return;
+    }
+
+    const blueprintPrizeNameInput = event.target.closest("[data-blueprint-prize-name-value]");
+    if (blueprintPrizeNameInput) {
+      const [contextId, moduleId, rowIndex] = blueprintPrizeNameInput.dataset.blueprintPrizeNameValue.split("|");
+      const contexts = getBlueprintContexts();
+      const context = contexts.find((item) => item.id === contextId);
+      const module = context?.modules.find((item) => item.id === moduleId);
+      const row = module?.rows[Number(rowIndex)];
+      if (row) {
+        const value = serializePrizeValueWithName(row.value, blueprintPrizeNameInput.value);
+        row.value = value;
+        if (module.inputScope === "activity") {
+          contexts.forEach((candidateContext) => {
+            const sharedModule = candidateContext.modules.find(
+              (candidateModule) =>
+                candidateModule.inputScope === "activity" &&
+                candidateModule.slot === module.slot,
+            );
+            if (sharedModule?.rows[Number(rowIndex)]) {
+              sharedModule.rows[Number(rowIndex)].value = value;
+            }
+          });
+        }
+      }
+      return;
+    }
+
     const input = event.target.closest("[data-node-prop-input]");
     if (!input) return;
     const found = getSelectedNodeInfo();
@@ -12979,6 +11726,57 @@ function bindEvents() {
   });
 
   document.addEventListener("change", (event) => {
+    const adminComponentSelect = event.target.closest("[data-admin-select-component]");
+    if (adminComponentSelect) {
+      const schema = findAtomSchema(adminComponentSelect.value);
+      if (!schema) return;
+      const variants = normalizeVariants(schema);
+      const variantId = variants[0]?.id || null;
+      state.adminComponentVerifier = {
+        schemaId: schema.id,
+        parentThemeId: getVariantThemeId(schema, variantId),
+        variantId,
+        blueprint: {},
+      };
+      render();
+      return;
+    }
+
+    const adminPrizeSelect = event.target.closest("[data-admin-prize-prop]");
+    if (adminPrizeSelect) {
+      const key = adminPrizeSelect.dataset.adminPrizeProp;
+      state.adminComponentVerifier.blueprint[key] = adminPrizeSelect.value;
+      syncPrizeLibraryControl(adminPrizeSelect);
+      refreshAdminVerifierPreview();
+      return;
+    }
+
+    const blueprintPrizeSelect = event.target.closest("[data-blueprint-prize-value]");
+    if (blueprintPrizeSelect) {
+      const [contextId, moduleId, rowIndex] = blueprintPrizeSelect.dataset.blueprintPrizeValue.split("|");
+      const contexts = getBlueprintContexts();
+      const context = contexts.find((item) => item.id === contextId);
+      const module = context?.modules.find((item) => item.id === moduleId);
+      const row = module?.rows[Number(rowIndex)];
+      if (row) {
+        row.value = blueprintPrizeSelect.value;
+        syncPrizeLibraryControl(blueprintPrizeSelect);
+        if (module.inputScope === "activity") {
+          contexts.forEach((candidateContext) => {
+            const sharedModule = candidateContext.modules.find(
+              (candidateModule) =>
+                candidateModule.inputScope === "activity" &&
+                candidateModule.slot === module.slot,
+            );
+            if (sharedModule?.rows[Number(rowIndex)]) {
+              sharedModule.rows[Number(rowIndex)].value = blueprintPrizeSelect.value;
+            }
+          });
+        }
+      }
+      return;
+    }
+
     const demoPackage = event.target.closest("[data-demo-package]");
     if (demoPackage) {
       state.selectedDemoPackageId = demoPackage.dataset.demoPackage;
@@ -12988,6 +11786,10 @@ function bindEvents() {
 
     const nodePropInput = event.target.closest("[data-node-prop-input]");
     if (nodePropInput) {
+      const found = getSelectedNodeInfo();
+      const schema = found ? findAtomSchema(found.node.schemaId) : null;
+      const field = (schema?.props || []).find((item) => (item.key || item.name) === nodePropInput.dataset.nodePropInput);
+      if (isPrizePropField(field)) syncPrizeLibraryControl(nodePropInput);
       nodePropInput.dispatchEvent(new Event("input", { bubbles: true }));
       return;
     }

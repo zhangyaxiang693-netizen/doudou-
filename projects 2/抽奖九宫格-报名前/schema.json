@@ -1,0 +1,117 @@
+{
+  "id": "抽奖九宫格-报名前",
+  "name": "抽奖九宫格-报名前",
+  "title": "抽奖九宫格-报名前",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "报名前状态的抽奖九宫格组件，奖品位由蓝图奖品变量填入。",
+  "reactComponent": "抽奖九宫格-报名前",
+  "dimensions": {
+    "width": 615.08,
+    "height": 403
+  },
+  "fonts": [
+    {
+      "text": "DOU仔周边",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "奖品名称",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "50",
+      "family": "Douyin Number ABC",
+      "weight": 600,
+      "size": "22.33px",
+      "lineHeight": "100%",
+      "usage": "积分数量",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Number ABC / 600",
+        "note": "当前字体包未确认 600 权重文件，组件仍按原始 font-family 和 font-weight 声明渲染。"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "抽奖九宫格-报名前",
+      "抽奖九宫格",
+      "九宫格",
+      "报名",
+      "奖品",
+      "奖品库"
+    ],
+    "textProps": [
+      "prize1",
+      "prize2",
+      "prize3",
+      "prize4",
+      "prize5"
+    ],
+    "prizeProps": [
+      {
+        "prop": "prize1"
+      },
+      {
+        "prop": "prize2"
+      },
+      {
+        "prop": "prize3"
+      },
+      {
+        "prop": "prize4"
+      },
+      {
+        "prop": "prize5"
+      }
+    ]
+  },
+  "props": [
+    {
+      "key": "prize1",
+      "name": "prize1",
+      "label": "奖品1",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize2",
+      "name": "prize2",
+      "label": "奖品2",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize3",
+      "name": "prize3",
+      "label": "奖品3",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize4",
+      "name": "prize4",
+      "label": "奖品4",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize5",
+      "name": "prize5",
+      "label": "奖品5",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    }
+  ]
+}

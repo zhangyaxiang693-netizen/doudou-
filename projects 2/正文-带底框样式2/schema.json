@@ -1,0 +1,118 @@
+{
+  "id": "正文-带底框样式2",
+  "name": "正文-带底框样式2",
+  "title": "正文-带底框样式2",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "带底框的活动规则正文组件，展示两段标题和说明文案。",
+  "reactComponent": "正文-带底框样式2",
+  "dimensions": {
+    "width": 626,
+    "height": 484
+  },
+  "heightMode": "auto",
+  "minHeight": 484,
+  "fonts": [
+    {
+      "text": "#如何参与",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "28px",
+      "lineHeight": "normal",
+      "usage": "标题",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "正文内容",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "150%",
+      "usage": "正文内容",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "正文-带底框样式2",
+      "带底框样式2",
+      "活动规则",
+      "规则正文",
+      "第一段标题",
+      "第一段正文",
+      "第一段高亮文本",
+      "第二段标题",
+      "第二段正文",
+      "第二段高亮文本"
+    ],
+    "textProps": [
+      "firstTitleText",
+      "firstBodyText",
+      "firstHighlightText",
+      "secondTitleText",
+      "secondBodyText",
+      "secondHighlightText"
+    ]
+  },
+  "props": [
+    {
+      "key": "firstTitleText",
+      "name": "firstTitleText",
+      "label": "第一段标题",
+      "type": "string",
+      "default": "#如何参与",
+      "description": "第一段标题文案。"
+    },
+    {
+      "key": "firstBodyText",
+      "name": "firstBodyText",
+      "label": "第一段正文",
+      "type": "text",
+      "control": "textarea",
+      "default": "作品投放指定话题#DOU+春日上热门，并且投放DOU+「点赞评论量、视频播放量、粉丝量」目标，且现金消耗大于30元的用户，可参与抽奖。",
+      "description": "第一段正文内容。"
+    },
+    {
+      "key": "firstHighlightText",
+      "name": "firstHighlightText",
+      "label": "第一段高亮文本",
+      "type": "text",
+      "control": "textarea",
+      "default": "#DOU+春日上热门\nDOU+「点赞评论量、视频播放量、粉丝量」目标",
+      "description": "第一段正文中需要高亮的完整文本片段，多个片段可用换行、逗号、分号或竖线分隔。"
+    },
+    {
+      "key": "secondTitleText",
+      "name": "secondTitleText",
+      "label": "第二段标题",
+      "type": "string",
+      "default": "#如何发奖",
+      "description": "第二段标题文案。"
+    },
+    {
+      "key": "secondBodyText",
+      "name": "secondBodyText",
+      "label": "第二段正文",
+      "type": "text",
+      "control": "textarea",
+      "default": "活动结束后，官方将完成上述条件的用户，统一完成随机抽奖，获奖名单将于活动结束后2日在活动规则页面展示。中奖用户将在5个工作日内收到DOU+官方账号加热的流量。",
+      "description": "第二段正文内容。"
+    },
+    {
+      "key": "secondHighlightText",
+      "name": "secondHighlightText",
+      "label": "第二段高亮文本",
+      "type": "text",
+      "control": "textarea",
+      "default": "用户将在5个工作日内",
+      "description": "第二段正文中需要高亮的完整文本片段，多个片段可用换行、逗号、分号或竖线分隔。"
+    }
+  ]
+}

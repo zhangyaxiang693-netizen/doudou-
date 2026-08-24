@@ -1,0 +1,96 @@
+{
+  "id": "正文-带底框样式3",
+  "name": "正文-带底框样式3",
+  "title": "正文-带底框样式3",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "带底框的正文组件样式3，展示三段正文内容。",
+  "reactComponent": "正文-带底框样式3",
+  "dimensions": {
+    "width": 634,
+    "height": 517
+  },
+  "fonts": [
+    {
+      "text": "1.最多可邀请 10 位新人好友，每成功邀请 1 位，可获得 1 张优惠券，奖励可叠加，2.获得奖励需同时满足：",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "160%",
+      "usage": "第一段正文",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "被邀请的好友是从未使用过 DOU+ 投放或最近 1 年内未在 DOU+ 投放的新用户，好友通过你的邀请码成功绑定，活动期间内正常完成一单现金消耗≥30 元的投放（投点赞评论量、播放量、主页浏览量、粉丝量目标）",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "第二段正文",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "注意：奖励发放按照好友投放完成进度执行，与邀请先后顺序无关。实际获券面额以“完成助力的好友情况”页面展示为准",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "第三段正文",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "正文-带底框样式3",
+      "带底框样式3",
+      "正文",
+      "带底框",
+      "邀请好友",
+      "活动规则",
+      "第一段正文",
+      "第二段正文",
+      "第三段正文"
+    ],
+    "textProps": [
+      "firstBodyText",
+      "secondBodyText",
+      "thirdBodyText"
+    ]
+  },
+  "props": [
+    {
+      "key": "firstBodyText",
+      "name": "firstBodyText",
+      "label": "第一段正文",
+      "type": "string",
+      "default": "1.最多可邀请 10 位新人好友，每成功邀请 1 位，可获得 1 张优惠券，奖励可叠加，2.获得奖励需同时满足：",
+      "description": "第一段正文内容。"
+    },
+    {
+      "key": "secondBodyText",
+      "name": "secondBodyText",
+      "label": "第二段正文",
+      "type": "string",
+      "default": "被邀请的好友是从未使用过 DOU+ 投放或最近 1 年内未在 DOU+ 投放的新用户，好友通过你的邀请码成功绑定，活动期间内正常完成一单现金消耗≥30 元的投放（投点赞评论量、播放量、主页浏览量、粉丝量目标）",
+      "description": "第二段正文内容。"
+    },
+    {
+      "key": "thirdBodyText",
+      "name": "thirdBodyText",
+      "label": "第三段正文",
+      "type": "string",
+      "default": "注意：奖励发放按照好友投放完成进度执行，与邀请先后顺序无关。实际获券面额以“完成助力的好友情况”页面展示为准",
+      "description": "第三段正文内容。"
+    }
+  ]
+}

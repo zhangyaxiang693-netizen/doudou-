@@ -1,111 +1,54 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
-import Announcement from "../公告";
-import BigButton from "../大按钮";
-import BigDayCouponClassic from "../BigDay经典优惠券";
-import BigDayCouponSignup from "../BigDay优惠券报名";
-import ConsumptionRewardDataRules from "../消耗返数据报名规则";
-import LotteryAnnouncementGrid from "../抽奖公告九宫格";
-import StickyBottomButton from "../置底按钮";
-import CouponTriplePack from "../三券包";
-import DoublePromotion from "../双人推广";
-import DualCoupon from "../双券";
-import HeaderImage from "../头图";
-import IconTitleCountdown from "../倒计时图标标题";
-import LotteryGrid from "../九宫格抽奖";
-import LotteryGridInteractive from "../互动九宫格抽奖";
-import LotteryResultPopup from "../抽奖弹窗";
-import OrangeCoupon from "../橙色优惠券";
-import PromoCoupon from "../促销优惠券";
-import PromotionData from "../投放数据";
-import PromotionModule from "../投放任务";
-import RedPacketCoupon from "../红包优惠券";
-import SectionTitle from "../模块标题";
-import TaskModule from "../任务模块";
-import TaskTitle from "../任务标题";
-import ThreePrizes from "../三奖品";
-import TimeNotification from "../时间通知";
-import TopicContestNewPrize from "../话题投稿新奖品";
-import TwoColumnLiveData from "../双列实时数据";
-import TripleCouponWithBg from "../三券背景组合";
-import TripleFlatCouponBg from "../三券扁平背景组合";
-import TripleOpenCoupon from "../三券展开组合";
-import MoleculeContainer from "../分子容器";
-import RichText from "../富文本";
-import SingleCoupon from "../单张优惠券";
-import TripleSingleCoupon from "../三张单券组合";
-import DouPlusJunePromoAnimationV2 from "../动效/DOU+6月大促_第二版";
-import DouPlusJunePromoAnimationV3 from "../动效/DOU+6月大促_第三版";
-import OneClickBoost from "../一键上热门";
-import TextComponentOne from "../文本组件1";
-import TextComponentTwo from "../文本组件2";
-import TextComponentThree from "../文本组件3";
 import AccountCouponNotice from "../账户优惠券提示";
-import ThresholdRegistration from "../门槛加报名";
-import ConsumptionRewardProgress from "../消耗返进度条";
-import PlacementCase from "../投放案例";
-import QualityVideoDiagnosis from "../优质视频诊断组件";
-import DouPlusPlacementGuide from "../DOU+投放攻略";
-import QualityPlacementCase from "../投放优质案例";
-import TextComponentSix from "../文本组件6";
-import FallbackComponent from "../兜底组件";
+import CouponIssueStyle1 from "../发券-样式1";
+import CouponIssueStyle2 from "../发券-样式2";
+import CouponIssueStyle3 from "../发券-样式3";
+import CouponIssueStyle4 from "../发券-样式4";
+import LotteryConsumeReturn3Coupons from "../抽奖+消耗返3-3个券";
+import ConsumeReturnStyle4Coupons from "../消耗返样式4个券";
+import PromptNotice from "../提示";
+import NotificationNotice from "../通知";
+import SupplementalNote from "../说明文-补充说明";
+import HorizontalButtonDataBar from "../横排按钮数据条";
+import ModuleTitleNormal from "../模块标题-正常";
+import ActivityRuleStyle1 from "../正文-活动规则样式1";
+import ActivityRuleStyle2 from "../正文-活动规则样式2";
+import ActivityRuleStyle3 from "../正文-活动规则样式3";
+import FramedBodyStyle1 from "../正文-带底框样式1";
+import FramedBodyStyle2 from "../正文-带底框样式2";
+import FramedBodyStyle3 from "../正文-带底框样式3";
+import LotteryGridBeforeSignup from "../抽奖九宫格-报名前";
+import LotteryGridAfterSignup from "../抽奖九宫格-报名后";
+import TaskBarStyle1 from "../任务条-样式1";
+import TaskBarStyle2 from "../任务条-样式2";
 
 const roots = new WeakMap();
 
 const componentMap = {
-  Announcement,
-  BigButton,
-  BigDayCouponClassic,
-  BigDayCouponSignup,
-  ConsumptionRewardDataRules,
-  LotteryAnnouncementGrid,
-  StickyBottomButton,
-  CouponTriplePack,
-  DoublePromotion,
-  DualCoupon,
-  HeaderImage,
-  IconTitleCountdown,
-  LotteryGrid,
-  LotteryGridInteractive,
-  "抽奖弹窗": LotteryResultPopup,
-  OrangeCoupon,
-  PromoCoupon,
-  PromotionData,
-  PromotionModule,
-  RedPacketCoupon,
-  SectionTitle,
-  TaskModule,
-  TaskTitle,
-  ThreePrizes,
-  TimeNotification,
-  TopicContestNewPrize,
-  TwoColumnLiveData,
-  TripleCouponWithBg,
-  TripleFlatCouponBg,
-  TripleOpenCoupon,
-  MoleculeContainer,
-  RichText,
-  SingleCoupon,
-  TripleSingleCoupon,
-  DouPlusJunePromoAnimationV2,
-  DouPlusJunePromoAnimationV3,
-  OneClickBoost,
-  TextComponentOne,
-  TextComponentTwo,
-  "文本组件3": TextComponentThree,
-  "账户优惠券提示": AccountCouponNotice,
-  "门槛加报名": ThresholdRegistration,
-  "BigDay优惠券报名": BigDayCouponSignup,
-  "消耗返数据报名规则": ConsumptionRewardDataRules,
-  "抽奖公告九宫格": LotteryAnnouncementGrid,
-  "消耗返进度条": ConsumptionRewardProgress,
-  "投放案例": PlacementCase,
-  "DOU+投放攻略": DouPlusPlacementGuide,
-  "投放优质案例": QualityPlacementCase,
-  "文本组件6": TextComponentSix,
-  "兜底组件": FallbackComponent,
-  QualityVideoDiagnosis,
+  账户优惠券提示: AccountCouponNotice,
+  "发券-样式1": CouponIssueStyle1,
+  "发券-样式2": CouponIssueStyle2,
+  "发券-样式3": CouponIssueStyle3,
+  "发券-样式4": CouponIssueStyle4,
+  "抽奖+消耗返3-3个券": LotteryConsumeReturn3Coupons,
+  "消耗返样式4个券": ConsumeReturnStyle4Coupons,
+  "提示": PromptNotice,
+  "通知": NotificationNotice,
+  "说明文-补充说明": SupplementalNote,
+  "横排按钮数据条": HorizontalButtonDataBar,
+  "模块标题-正常": ModuleTitleNormal,
+  "正文-活动规则样式1": ActivityRuleStyle1,
+  "正文-活动规则样式2": ActivityRuleStyle2,
+  "正文-活动规则样式3": ActivityRuleStyle3,
+  "正文-带底框样式1": FramedBodyStyle1,
+  "正文-带底框样式2": FramedBodyStyle2,
+  "正文-带底框样式3": FramedBodyStyle3,
+  "抽奖九宫格-报名前": LotteryGridBeforeSignup,
+  "抽奖九宫格-报名后": LotteryGridAfterSignup,
+  "任务条-样式1": TaskBarStyle1,
+  "任务条-样式2": TaskBarStyle2,
 };
 
 function parseProps(element) {

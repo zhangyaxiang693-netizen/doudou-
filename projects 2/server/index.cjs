@@ -1,4 +1,5 @@
 const express = require("express");
+const fs = require("fs/promises");
 const path = require("path");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
@@ -11,9 +12,79 @@ const PORT = process.env.DEPLOY_RUN_PORT || process.env.PORT || 5000;
 const HOST = "0.0.0.0";
 
 const distDir = path.join(__dirname, "..", "dist");
+const projectRoot = path.join(__dirname, "..");
 
 // API routes
 const apiRouter = express.Router();
+
+const ignoredComponentDirs = new Set([
+  ".git",
+  ".vite-cache",
+  "dist",
+  "node_modules",
+  "server",
+  "src",
+  "scripts",
+  "fonts",
+  "icon库",
+  "导航栏",
+]);
+
+async function pathExists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function readJsonFile(filePath) {
+  const content = await fs.readFile(filePath, "utf8");
+  return JSON.parse(content);
+}
+
+async function listComponentManifests() {
+  const entries = await fs.readdir(projectRoot, { withFileTypes: true });
+  const components = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory() || ignoredComponentDirs.has(entry.name)) continue;
+    const componentDir = path.join(projectRoot, entry.name);
+    const schemaPath = path.join(componentDir, "schema.json");
+    if (!(await pathExists(schemaPath))) continue;
+
+    const schema = await readJsonFile(schemaPath);
+    const assetDir = path.join(componentDir, "assets");
+    const assets = (await pathExists(assetDir))
+      ? (await fs.readdir(assetDir, { withFileTypes: true }))
+          .filter((asset) => asset.isFile())
+          .map((asset) => `assets/${asset.name}`)
+      : [];
+
+    components.push({
+      id: schema.id || entry.name,
+      name: schema.name || schema.title || entry.name,
+      directoryName: entry.name,
+      type: schema.type || "atom",
+      category: schema.category || "未分类",
+      description: schema.description || "",
+      reactComponent: schema.reactComponent || entry.name,
+      dimensions: schema.dimensions || null,
+      props: schema.props || [],
+      variants: schema.variants || [],
+      blueprint: schema.blueprint || null,
+      files: {
+        schema: "schema.json",
+        component: (await pathExists(path.join(componentDir, "index.tsx"))) ? "index.tsx" : null,
+        style: (await pathExists(path.join(componentDir, "index.module.scss"))) ? "index.module.scss" : null,
+        assets,
+      },
+    });
+  }
+
+  return components.sort((a, b) => String(a.name).localeCompare(String(b.name), "zh-CN"));
+}
 
 const FEISHU_DOCUMENT_HOSTS = [
   "feishu.cn",
@@ -21,6 +92,53 @@ const FEISHU_DOCUMENT_HOSTS = [
   "larkoffice.com",
   "doubao.com",
 ];
+
+apiRouter.get("/components", async (req, res) => {
+  try {
+    const components = await listComponentManifests();
+    res.json({
+      success: true,
+      data: {
+        count: components.length,
+        components,
+      },
+    });
+  } catch (error) {
+    console.error("GET /api/components error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+apiRouter.get("/components/:id", async (req, res) => {
+  try {
+    const components = await listComponentManifests();
+    const normalizedId = String(req.params.id || "").replace(/\s+/g, "").toLowerCase();
+    const component = components.find((item) =>
+      [item.id, item.name, item.reactComponent].some(
+        (value) => String(value || "").replace(/\s+/g, "").toLowerCase() === normalizedId,
+      ),
+    );
+    if (!component) {
+      return res.status(404).json({ success: false, error: "Component not found" });
+    }
+
+    const componentDir = path.join(projectRoot, component.directoryName || component.id);
+    const sourcePath = path.join(componentDir, "index.tsx");
+    const stylePath = path.join(componentDir, "index.module.scss");
+
+    res.json({
+      success: true,
+      data: {
+        ...component,
+        source: (await pathExists(sourcePath)) ? await fs.readFile(sourcePath, "utf8") : "",
+        style: (await pathExists(stylePath)) ? await fs.readFile(stylePath, "utf8") : "",
+      },
+    });
+  } catch (error) {
+    console.error("GET /api/components/:id error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 function parseFeishuDocumentUrl(rawUrl, depth = 0) {
   if (typeof rawUrl !== "string" || depth > 2) return null;
@@ -72,9 +190,12 @@ function getFeishuAccessToken() {
   return (
     process.env.FEISHU_USER_ACCESS_TOKEN ||
     process.env.LARK_USER_ACCESS_TOKEN ||
-    process.env.LARKSUITE_CLI_USER_ACCESS_TOKEN ||
     ""
   ).trim();
+}
+
+function createCliEnv() {
+  return process.env;
 }
 
 async function fetchFeishuOpenApi(pathname, accessToken) {
@@ -143,6 +264,7 @@ async function fetchFeishuContentWithCli(documentUrl) {
         "json",
       ],
       {
+        env: createCliEnv(),
         timeout: 30000,
         maxBuffer: 1024 * 1024 * 5,
       },
@@ -205,7 +327,14 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
       });
     }
 
-    let authorizedError = null;
+    if (cliResult.error) {
+      return res.status(401).json({
+        success: false,
+        error: `无法读取飞书文档：${cliResult.error.message}。请确认当前飞书账号有文档访问权限，或重新完成飞书授权`,
+        source: "lark-cli",
+      });
+    }
+
     try {
       const authorizedContent =
         await fetchAuthorizedFeishuContent(documentUrl);
@@ -221,7 +350,6 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
         });
       }
     } catch (error) {
-      authorizedError = error;
       console.warn(
         "Feishu OpenAPI read failed:",
         error?.message || error,
@@ -265,12 +393,9 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
     }
 
     if (!textContent || textContent.length < 10) {
-      const readError = cliResult.error || authorizedError;
       return res.status(400).json({
         success: false,
-        error: readError
-          ? `无法读取飞书文档：${readError.message}。请确认当前飞书账号有文档访问权限`
-          : "无法提取文档内容。请将文档分享权限设置为“获得链接的人可阅读”，或配置飞书用户授权",
+        error: "无法提取文档内容。请将文档分享权限设置为“获得链接的人可阅读”，或重新完成飞书授权",
       });
     }
 

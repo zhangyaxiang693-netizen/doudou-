@@ -1,0 +1,53 @@
+{
+  "id": "说明文-补充说明",
+  "name": "说明文-补充说明",
+  "title": "说明文-补充说明",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "补充说明文案组件。",
+  "reactComponent": "说明文-补充说明",
+  "dimensions": {
+    "width": 604,
+    "height": 36
+  },
+  "heightMode": "auto",
+  "minHeight": 36,
+  "fonts": [
+    {
+      "text": "*奖励将于活动结束后5个工作日内发放至获奖用户DOU+账户",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "说明文-补充说明",
+      "补充说明",
+      "说明文",
+      "奖励说明",
+      "文案"
+    ],
+    "textProps": [
+      "text"
+    ]
+  },
+  "props": [
+    {
+      "key": "text",
+      "name": "text",
+      "label": "文案",
+      "type": "text",
+      "control": "textarea",
+      "default": "*奖励将于活动结束后5个工作日内发放至获奖用户DOU+账户",
+      "description": "补充说明文案。"
+    }
+  ]
+}

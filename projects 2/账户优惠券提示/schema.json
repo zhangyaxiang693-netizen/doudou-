@@ -1,102 +1,279 @@
 {
+  "id": "账户优惠券提示",
+  "name": "账户优惠券提示",
   "title": "账户优惠券提示",
-  "description": "展示账户优惠券金额、数量和有效期的提示组件",
-  "category": "reward",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "展示当前账户优惠券总金额，并提供立即使用入口。",
+  "reactComponent": "账户优惠券提示",
   "dimensions": {
     "width": 702,
     "height": 160
   },
+  "fonts": [
+    {
+      "text": "总计",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "22px",
+      "lineHeight": "24px",
+      "usage": "总计",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "立即使用",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "32px",
+      "usage": "立即使用",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "600",
+      "family": "Douyin Number ABC",
+      "weight": 800,
+      "size": "50px",
+      "lineHeight": "42px",
+      "usage": "金额",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-ExtraBold.otf"
+      }
+    },
+    {
+      "text": "元",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "元",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "DOU+",
+      "family": "Douyin Sans",
+      "weight": 400,
+      "size": "32px",
+      "lineHeight": "normal",
+      "usage": "标题英文",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Sans Regular / 400",
+        "note": "当前字体包只有 DouyinSansBold.ttf，不能作为 400 字重精确源。"
+      }
+    },
+    {
+      "text": "优惠券",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "30px",
+      "lineHeight": "normal",
+      "usage": "标题中文",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "共有",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "共有文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "2",
+      "family": "Douyin Number ABC",
+      "weight": 700,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "券数量数字",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-Bold.otf"
+      }
+    },
+    {
+      "text": "张券",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "张券文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "仅剩",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "倒计时前缀",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "12",
+      "family": "Douyin Number ABC",
+      "weight": 700,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "倒计时数字",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-Bold.otf"
+      }
+    },
+    {
+      "text": "小时",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "小时文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "账户优惠券提示",
+      "账户优惠券",
+      "优惠券提示",
+      "优惠券总金额",
+      "当前账户优惠券总金额",
+      "立即使用"
+    ],
+    "textProps": [
+      "amountText",
+      "actionText"
+    ]
+  },
   "props": [
     {
-      "name": "totalText",
-      "label": "总计文字",
-      "type": "text",
-      "default": "总计",
-      "description": "左侧总计标签文字"
-    },
-    {
+      "key": "amountText",
       "name": "amountText",
       "label": "金额",
-      "type": "text",
-      "default": "800",
-      "description": "优惠券总金额"
+      "type": "string",
+      "default": "600",
+      "description": "优惠券金额数字，组件固定显示“元”单位。"
     },
     {
-      "name": "amountUnitText",
-      "label": "金额单位",
-      "type": "text",
-      "default": "元",
-      "description": "金额后的单位文字"
-    },
-    {
-      "name": "brandText",
-      "label": "品牌文字",
-      "type": "text",
-      "default": "DOU+",
-      "description": "优惠券品牌文字"
-    },
-    {
-      "name": "couponTypeText",
-      "label": "优惠券类型",
-      "type": "text",
-      "default": "优惠券",
-      "description": "品牌后的优惠券类型文字"
-    },
-    {
-      "name": "text",
-      "label": "账户提示文字",
-      "type": "text",
-      "default": "账户内共有",
-      "description": "账户优惠券提示文字"
-    },
-    {
-      "name": "couponCountText",
-      "label": "券数量",
-      "type": "text",
-      "default": "2",
-      "description": "账户内的优惠券数量"
-    },
-    {
-      "name": "couponUnitText",
-      "label": "券数量单位",
-      "type": "text",
-      "default": "张券",
-      "description": "优惠券数量后的单位文字"
-    },
-    {
+      "key": "actionText",
       "name": "actionText",
-      "label": "按钮文字",
-      "type": "text",
+      "label": "小按钮文案",
+      "type": "string",
       "default": "立即使用",
-      "description": "操作按钮文字"
+      "description": "右侧小按钮文案。"
     },
     {
-      "name": "validityLabelText",
-      "label": "有效期文字",
-      "type": "text",
-      "default": "有效期：",
-      "description": "有效期标签文字"
+      "key": "totalTextColor",
+      "name": "totalTextColor",
+      "label": "总计/金额/按钮文字色",
+      "type": "color",
+      "default": "#FF1372"
     },
     {
-      "name": "remainingText",
-      "label": "剩余提示文字",
-      "type": "text",
-      "default": "仅剩",
-      "description": "剩余时间前的提示文字"
+      "key": "totalBadgeBg",
+      "name": "totalBadgeBg",
+      "label": "总计背景框",
+      "type": "color",
+      "default": "#FFD9E5"
     },
     {
-      "name": "durationText",
-      "label": "剩余时间",
-      "type": "text",
-      "default": "12",
-      "description": "优惠券剩余有效时间"
+      "key": "containerGradientStart",
+      "name": "containerGradientStart",
+      "label": "背景容器渐变开始",
+      "type": "color",
+      "default": "#FF1473"
     },
     {
-      "name": "timeUnitText",
-      "label": "时间单位",
-      "type": "text",
-      "default": "小时",
-      "description": "剩余时间后的单位文字"
+      "key": "containerGradientEnd",
+      "name": "containerGradientEnd",
+      "label": "背景容器渐变结束",
+      "type": "color",
+      "default": "#FF229F"
+    },
+    {
+      "key": "iconGradientStart",
+      "name": "iconGradientStart",
+      "label": "icon 渐变开始",
+      "type": "color",
+      "default": "#FF44A9"
+    },
+    {
+      "key": "iconGradientEnd",
+      "name": "iconGradientEnd",
+      "label": "icon 渐变结束",
+      "type": "color",
+      "default": "#FF2B8A"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "totalTextColor": "#FF1372",
+        "totalBadgeBg": "#FFD9E5",
+        "containerGradientStart": "#FF1473",
+        "containerGradientEnd": "#FF229F",
+        "iconGradientStart": "#FF44A9",
+        "iconGradientEnd": "#FF2B8A"
+      }
+    },
+    {
+      "id": "blue_parent_pink",
+      "name": "蓝色父级页面 · 粉红套",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "totalTextColor": "#FF134E",
+        "totalBadgeBg": "#FFD9DA",
+        "containerGradientStart": "#FF180C",
+        "containerGradientEnd": "#FF166F",
+        "iconGradientStart": "#F60052",
+        "iconGradientEnd": "#FF0D3F"
+      }
+    },
+    {
+      "id": "orange_parent_orange",
+      "name": "橘色父级页面 · 橙红套",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "totalTextColor": "#FF1A1D",
+        "totalBadgeBg": "#FFE8D9",
+        "containerGradientStart": "#FF4400",
+        "containerGradientEnd": "#FF7C02",
+        "iconGradientStart": "#FF6B02",
+        "iconGradientEnd": "#FF5B1A"
+      }
     }
   ]
 }

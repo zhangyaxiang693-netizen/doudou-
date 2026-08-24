@@ -1,0 +1,104 @@
+.page {
+  width: 633.59px;
+  height: 517px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+.text {
+  width: 633.59px;
+  font-family: "Source Han Sans CN";
+  font-size: 24px;
+  text-align: justify;
+  color: rgba(45, 45, 45, 1);
+  line-height: 160%;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+.text__seg0 {
+  font-weight: 700;
+  color: rgba(51, 51, 51, 1);
+}
+.text__seg1 {
+  color: rgba(51, 51, 51, 1);
+}
+.text__seg2 {
+  font-weight: 700;
+  color: rgba(51, 51, 51, 1);
+}
+.text__seg3 {
+  color: rgba(51, 51, 51, 1);
+}
+.wrap {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 24px;
+}
+.text1 {
+  margin-bottom: 8px;
+  width: 633.59px;
+  font-family: "Source Han Sans CN";
+  font-size: 24px;
+  white-space: nowrap;
+  text-align: justify;
+  color: rgba(45, 45, 45, 1);
+  line-height: 36px;
+  font-weight: 400;
+}
+.container {
+  width: 626px;
+  border-radius: var(var(--promo-radius-m), 40px);
+  box-sizing: border-box;
+  background: rgba(247, 247, 250, 1);
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.text2 {
+  margin-bottom: 16px;
+  width: 584.29px;
+  font-family: "Source Han Sans CN";
+  font-size: 24px;
+  text-align: justify;
+  color: rgba(45, 45, 45, 1);
+  line-height: 36px;
+  font-weight: 400;
+}
+.text3 {
+  width: 584.29px;
+  font-family: "Source Han Sans CN";
+  font-size: 24px;
+  text-align: justify;
+  color: rgba(45, 45, 45, 1);
+  line-height: 160%;
+  font-weight: 400;
+}
+.text3__seg1 {
+  font-weight: 700;
+}
+.text4 {
+  width: 584.29px;
+  font-family: "Source Han Sans CN";
+  font-size: 22px;
+  text-align: justify;
+  color: rgba(129, 129, 129, 1);
+  line-height: normal;
+  font-weight: 400;
+}

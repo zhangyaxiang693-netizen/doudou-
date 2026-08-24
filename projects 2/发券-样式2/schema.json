@@ -1,0 +1,184 @@
+{
+  "id": "发券-样式2",
+  "name": "发券-样式2",
+  "title": "发券-样式2",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "发券卡片样式2，展示金额和剩余使用条件。",
+  "reactComponent": "发券-样式2",
+  "dimensions": {
+    "width": 608,
+    "height": 201.71
+  },
+  "fonts": [
+    {
+      "text": "仅剩 1 天使用",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "26px",
+      "lineHeight": "30px",
+      "usage": "条件",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "DOU+",
+      "family": "Douyin Sans",
+      "weight": 400,
+      "size": "42px",
+      "lineHeight": "normal",
+      "usage": "标题英文",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Sans Regular / 400",
+        "note": "当前字体包只有 DouyinSansBold.ttf，不能作为 400 字重精确源。"
+      }
+    },
+    {
+      "text": "优惠券",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "40px",
+      "lineHeight": "56px",
+      "usage": "标题中文",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "880",
+      "family": "Douyin Number ABC",
+      "weight": 700,
+      "size": "76px",
+      "lineHeight": "84px",
+      "usage": "金额",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-Bold.otf"
+      }
+    },
+    {
+      "text": "元",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "38px",
+      "usage": "金额单位",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "发券-样式2",
+      "发券",
+      "优惠券",
+      "仅剩1天使用",
+      "仅剩 1 天使用"
+    ],
+    "textProps": [
+      "amountText",
+      "conditionText"
+    ]
+  },
+  "props": [
+    {
+      "key": "amountText",
+      "name": "amountText",
+      "label": "金额",
+      "type": "string",
+      "default": "880",
+      "description": "券金额数字，组件固定显示“元”单位。"
+    },
+    {
+      "key": "conditionText",
+      "name": "conditionText",
+      "label": "条件",
+      "type": "string",
+      "default": "仅剩 1 天使用",
+      "description": "右侧条件文案。"
+    },
+    {
+      "key": "subtractGradientStart",
+      "name": "subtractGradientStart",
+      "label": "Subtract 渐变开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "subtractGradientEnd",
+      "name": "subtractGradientEnd",
+      "label": "Subtract 渐变结束",
+      "type": "color",
+      "default": "#FF229F"
+    },
+    {
+      "key": "rectangleColor",
+      "name": "rectangleColor",
+      "label": "Rectangle 2131355592",
+      "type": "color",
+      "default": ""
+    },
+    {
+      "key": "iconGradientStart",
+      "name": "iconGradientStart",
+      "label": "icon 渐变开始",
+      "type": "color",
+      "default": "#FF44A9"
+    },
+    {
+      "key": "iconGradientEnd",
+      "name": "iconGradientEnd",
+      "label": "icon 渐变结束",
+      "type": "color",
+      "default": "#FF2B8A"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "subtractGradientStart": "#FF1473",
+        "subtractGradientEnd": "#FF229F",
+        "rectangleColor": "",
+        "iconGradientStart": "#FF44A9",
+        "iconGradientEnd": "#FF2B8A"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "subtractGradientStart": "#FF180C",
+        "subtractGradientEnd": "#FF166F",
+        "rectangleColor": "#FFA6BD",
+        "iconGradientStart": "#F60052",
+        "iconGradientEnd": "#FF0D3F"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "subtractGradientStart": "#FF4F01",
+        "subtractGradientEnd": "#FF7C02",
+        "rectangleColor": "#FF9597",
+        "iconGradientStart": "#FF6B02",
+        "iconGradientEnd": "#FF5B1A"
+      }
+    }
+  ]
+}

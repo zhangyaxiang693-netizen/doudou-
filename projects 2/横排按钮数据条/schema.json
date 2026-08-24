@@ -1,0 +1,108 @@
+{
+  "id": "横排按钮数据条",
+  "name": "横排按钮数据条",
+  "title": "横排按钮数据条",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "横排按钮数据条组件，展示累计现金消耗和可抽奖次数。",
+  "reactComponent": "横排按钮数据条",
+  "dimensions": {
+    "width": 618,
+    "height": 74
+  },
+  "fonts": [
+    {
+      "text": "累计现金消耗",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "标签文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "30 / 2",
+      "family": "Douyin Number ABC",
+      "weight": 500,
+      "size": "40px",
+      "lineHeight": "32px",
+      "usage": "消耗金额 / 抽奖次数",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-Medium.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "横排按钮数据条",
+      "数据条",
+      "累计现金消耗",
+      "可抽奖次数",
+      "消耗金额",
+      "抽奖次数"
+    ],
+    "textProps": [
+      "consumeAmountText",
+      "lotteryCountText"
+    ]
+  },
+  "props": [
+    {
+      "key": "consumeAmountText",
+      "name": "consumeAmountText",
+      "label": "消耗金额",
+      "type": "string",
+      "default": "30",
+      "description": "累计现金消耗金额数字，组件固定显示“(元)”单位。"
+    },
+    {
+      "key": "lotteryCountText",
+      "name": "lotteryCountText",
+      "label": "抽奖次数",
+      "type": "string",
+      "default": "2",
+      "description": "可抽奖次数数字。"
+    },
+    {
+      "key": "valueTextColor",
+      "name": "valueTextColor",
+      "label": "消耗金额 抽奖次数",
+      "type": "color",
+      "default": "#FF1B77"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "valueTextColor": "#FF1B77"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "valueTextColor": "#FF134E"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "valueTextColor": "#FF1A1D"
+      }
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "id": "模块标题-正常",
+  "name": "模块标题-正常",
+  "title": "模块标题-正常",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "模块标题组件，展示图标和标题文案。",
+  "reactComponent": "模块标题-正常",
+  "dimensions": {
+    "width": 640.13,
+    "height": 50.09
+  },
+  "fonts": [
+    {
+      "text": "端午消耗返冲刺赢大额券",
+      "family": "MFBenHeiNoncommercial",
+      "weight": 400,
+      "size": "36px",
+      "lineHeight": "40px",
+      "usage": "标题内容",
+      "source": {
+        "status": "missing",
+        "required": "MFBenHeiNoncommercial / 400",
+        "note": "当前字体包未找到该字体文件，组件仍按原始 font-family 声明渲染。"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "模块标题-正常",
+      "模块标题",
+      "标题",
+      "标题内容"
+    ],
+    "textProps": [
+      "titleText"
+    ]
+  },
+  "props": [
+    {
+      "key": "titleText",
+      "name": "titleText",
+      "label": "标题内容",
+      "type": "string",
+      "default": "端午消耗返冲刺赢大额券",
+      "description": "模块标题展示文案。"
+    },
+    {
+      "key": "iconVariant",
+      "name": "iconVariant",
+      "label": "icon",
+      "type": "string",
+      "default": "current",
+      "description": "内部主题图标切换字段：current / red / yellow。"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "iconVariant": "current"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "iconVariant": "red"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "iconVariant": "yellow"
+      }
+    }
+  ]
+}

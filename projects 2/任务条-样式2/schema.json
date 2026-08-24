@@ -1,0 +1,239 @@
+{
+  "id": "任务条-样式2",
+  "name": "任务条-样式2",
+  "title": "任务条-样式2",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "任务条组件样式2，展示任务标签、任务标题、副标题、抽奖加成和完成次数。",
+  "reactComponent": "任务条-样式2",
+  "dimensions": {
+    "width": 702,
+    "height": 161
+  },
+  "fonts": [
+    {
+      "text": "任务1",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "20px",
+      "lineHeight": "30px",
+      "usage": "任务标签",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "投放DOU+现金消耗≥30元",
+      "family": "Source Han Sans CN",
+      "weight": 500,
+      "size": "28px",
+      "lineHeight": "normal",
+      "usage": "任务标题",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-MEDIUM.otf"
+      }
+    },
+    {
+      "text": "抽奖",
+      "family": "Douyin Sans",
+      "weight": 400,
+      "size": "20px",
+      "lineHeight": "24px",
+      "usage": "抽奖标签",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Sans / 400",
+        "note": "当前字体包只有 DouyinSansBold.ttf，组件仍按原始 font-family 和 font-weight 声明渲染。"
+      }
+    },
+    {
+      "text": "+1",
+      "family": "Douyin Number ABC",
+      "weight": 500,
+      "size": "28px",
+      "lineHeight": "24px",
+      "usage": "抽奖加成",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-Medium.otf"
+      }
+    },
+    {
+      "text": "投粉丝经营、内容加热目标且消耗达标",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "任务副标题",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "去完成",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "32px",
+      "usage": "按钮文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "12次/天",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "20px",
+      "lineHeight": "30px",
+      "usage": "完成次数文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "任务条-样式2",
+      "任务条",
+      "任务",
+      "任务1",
+      "任务2",
+      "任务标题",
+      "任务副标题",
+      "抽奖加成",
+      "每日可完成"
+    ],
+    "textProps": [
+      "taskType",
+      "taskTitle",
+      "taskSubtitle",
+      "rewardCountText",
+      "completionText"
+    ]
+  },
+  "props": [
+    {
+      "key": "taskType",
+      "name": "taskType",
+      "label": "任务标签",
+      "type": "string",
+      "default": "任务1",
+      "description": "左上角任务标签。输入任务1时标签颜色为 #FFC544；输入任务2时标签颜色为 #5AB7FF。"
+    },
+    {
+      "key": "taskTitle",
+      "name": "taskTitle",
+      "label": "任务标题",
+      "type": "string",
+      "default": "投放DOU+现金消耗≥30元",
+      "description": "任务条左上方标题。"
+    },
+    {
+      "key": "taskSubtitle",
+      "name": "taskSubtitle",
+      "label": "任务副标题",
+      "type": "string",
+      "default": "投粉丝经营、内容加热目标且消耗达标",
+      "description": "任务条左下方说明文案。"
+    },
+    {
+      "key": "rewardCountText",
+      "name": "rewardCountText",
+      "label": "抽奖加成",
+      "type": "string",
+      "default": "+1",
+      "description": "抽奖标签右侧加成文字。"
+    },
+    {
+      "key": "completionText",
+      "name": "completionText",
+      "label": "完成次数文案",
+      "type": "string",
+      "default": "12次/天",
+      "description": "按钮下方完成次数文案。"
+    },
+    {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮颜色开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮颜色结束",
+      "type": "color",
+      "default": "#FF229F"
+    },
+    {
+      "key": "lotteryTagGradientStart",
+      "name": "lotteryTagGradientStart",
+      "label": "抽奖标签颜色开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "lotteryTagGradientEnd",
+      "name": "lotteryTagGradientEnd",
+      "label": "抽奖标签颜色结束",
+      "type": "color",
+      "default": "#FF229F"
+    },
+    {
+      "key": "rewardCountTextColor",
+      "name": "rewardCountTextColor",
+      "label": "加成文字",
+      "type": "color",
+      "default": "#FF62A0"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "buttonGradientStart": "#FF1473",
+        "buttonGradientEnd": "#FF229F",
+        "lotteryTagGradientStart": "#FF1473",
+        "lotteryTagGradientEnd": "#FF229F",
+        "rewardCountTextColor": "#FF62A0"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "buttonGradientStart": "#FF190E",
+        "buttonGradientEnd": "#FF166E",
+        "lotteryTagGradientStart": "#FF190E",
+        "lotteryTagGradientEnd": "#FF166E",
+        "rewardCountTextColor": "#FF6265"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "buttonGradientStart": "#FF4501",
+        "buttonGradientEnd": "#FF7C02",
+        "lotteryTagGradientStart": "#FF4501",
+        "lotteryTagGradientEnd": "#FF7C02",
+        "rewardCountTextColor": "#FF8F4A"
+      }
+    }
+  ]
+}

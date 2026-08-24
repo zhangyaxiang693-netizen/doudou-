@@ -1,0 +1,198 @@
+{
+  "id": "抽奖九宫格-报名后",
+  "name": "抽奖九宫格-报名后",
+  "title": "抽奖九宫格-报名后",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "报名后状态的抽奖九宫格组件，8 个奖品位由蓝图奖品库变量填入。",
+  "reactComponent": "抽奖九宫格-报名后",
+  "dimensions": {
+    "width": 615.08,
+    "height": 613
+  },
+  "fonts": [
+    {
+      "text": "1314元心动券包",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "奖品名称",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "抽",
+      "family": "MFYuanHeiNoncommercial",
+      "weight": 400,
+      "size": "102px",
+      "lineHeight": "normal",
+      "usage": "抽奖按钮",
+      "source": {
+        "status": "exact",
+        "file": "MFYUANHEI_NONCOMMERCIAL-REGULAR.OTF"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "抽奖九宫格-报名后",
+      "抽奖九宫格",
+      "九宫格",
+      "报名后",
+      "奖品",
+      "奖品库"
+    ],
+    "textProps": [
+      "prize1",
+      "prize2",
+      "prize3",
+      "prize4",
+      "prize5",
+      "prize6",
+      "prize7",
+      "prize8"
+    ],
+    "prizeProps": [
+      {
+        "prop": "prize1"
+      },
+      {
+        "prop": "prize2"
+      },
+      {
+        "prop": "prize3"
+      },
+      {
+        "prop": "prize4"
+      },
+      {
+        "prop": "prize5"
+      },
+      {
+        "prop": "prize6"
+      },
+      {
+        "prop": "prize7"
+      },
+      {
+        "prop": "prize8"
+      }
+    ]
+  },
+  "props": [
+    {
+      "key": "prize1",
+      "name": "prize1",
+      "label": "奖品1",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize2",
+      "name": "prize2",
+      "label": "奖品2",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize3",
+      "name": "prize3",
+      "label": "奖品3",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize4",
+      "name": "prize4",
+      "label": "奖品4",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize5",
+      "name": "prize5",
+      "label": "奖品5",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize6",
+      "name": "prize6",
+      "label": "奖品6",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize7",
+      "name": "prize7",
+      "label": "奖品7",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize8",
+      "name": "prize8",
+      "label": "奖品8",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮底色开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮底色结束",
+      "type": "color",
+      "default": "#FF229F"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "buttonGradientStart": "#FF1473",
+        "buttonGradientEnd": "#FF229F"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "buttonGradientStart": "#FF190F",
+        "buttonGradientEnd": "#FF166F"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "buttonGradientStart": "#FF4502",
+        "buttonGradientEnd": "#FF7C03"
+      }
+    }
+  ]
+}

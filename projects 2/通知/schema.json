@@ -1,0 +1,95 @@
+{
+  "id": "通知",
+  "name": "通知",
+  "title": "通知",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "通知条组件，展示抢券开放时间等单行提示文案。",
+  "reactComponent": "通知",
+  "dimensions": {
+    "width": 475,
+    "height": 55
+  },
+  "fonts": [
+    {
+      "text": "抢券开放时间：5月10日10:00-23:59",
+      "family": "Source Han Sans CN",
+      "weight": 500,
+      "size": "28px",
+      "lineHeight": "42px",
+      "usage": "文案内容",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-MEDIUM.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "通知",
+      "通知条",
+      "抢券开放时间",
+      "开放时间"
+    ],
+    "textProps": [
+      "contentText"
+    ]
+  },
+  "props": [
+    {
+      "key": "contentText",
+      "name": "contentText",
+      "label": "文案内容",
+      "type": "string",
+      "default": "抢券开放时间：5月10日10:00-23:59",
+      "description": "通知条展示文案。"
+    },
+    {
+      "key": "backgroundColor",
+      "name": "backgroundColor",
+      "label": "背景颜色",
+      "type": "color",
+      "default": "#FFDDE2"
+    },
+    {
+      "key": "textColor",
+      "name": "textColor",
+      "label": "文字颜色",
+      "type": "color",
+      "default": "#FF1B77"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "backgroundColor": "#FFDDE2",
+        "textColor": "#FF1B77"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "backgroundColor": "#F7E1E2",
+        "textColor": "#FF134E"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "backgroundColor": "#F6EBE1",
+        "textColor": "#FF1A1D"
+      }
+    }
+  ]
+}

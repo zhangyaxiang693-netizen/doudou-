@@ -1,0 +1,67 @@
+.page {
+  width: 596px;
+  min-height: 156px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.wrap {
+  width: 596px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.container {
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 571px;
+  min-height: 108px;
+}
+.text {
+  width: 571px;
+  font-family: "Source Han Sans CN";
+  font-size: 24px;
+  text-align: justify;
+  color: rgba(81, 81, 81, 1);
+  line-height: 36px;
+  font-weight: 400;
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+}
+.container1 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 571px;
+  min-height: 36px;
+}
+.text1 {
+  width: 571px;
+  font-family: "Source Han Sans CN";
+  font-size: 24px;
+  white-space: normal;
+  text-align: justify;
+  color: rgba(81, 81, 81, 1);
+  line-height: 149.24%;
+  font-weight: 400;
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+}
+.boldText,
+.text1__seg0 {
+  color: rgba(45, 45, 45, 1);
+}
+.boldText,
+.text1__seg1 {
+  font-weight: 700;
+  color: rgba(45, 45, 45, 1);
+}
+.text1__seg2 {
+  color: rgba(45, 45, 45, 1);
+}

@@ -1,0 +1,156 @@
+{
+  "id": "正文-活动规则样式3",
+  "name": "正文-活动规则样式3",
+  "title": "正文-活动规则样式3",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "活动规则正文组件，展示活动说明和三条规则正文。",
+  "reactComponent": "正文-活动规则样式3",
+  "dimensions": {
+    "width": 603,
+    "height": 318
+  },
+  "heightMode": "auto",
+  "minHeight": 318,
+  "fonts": [
+    {
+      "text": "活动说明:",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "28px",
+      "lineHeight": "normal",
+      "usage": "第一段标题",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "活动规则正文",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "正文内容",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "正文-活动规则样式3",
+      "活动规则样式3",
+      "活动规则",
+      "规则正文",
+      "活动说明",
+      "标题",
+      "第一段正文",
+      "第二段正文",
+      "第三段正文",
+      "高亮文本",
+      "段落数量"
+    ],
+    "textProps": [
+      "titleText",
+      "firstBodyText",
+      "secondBodyText",
+      "thirdBodyText",
+      "highlightText",
+      "paragraphCount"
+    ]
+  },
+  "props": [
+    {
+      "key": "titleText",
+      "name": "titleText",
+      "label": "标题",
+      "type": "string",
+      "default": "活动说明:",
+      "description": "活动规则标题文案。"
+    },
+    {
+      "key": "firstBodyText",
+      "name": "firstBodyText",
+      "label": "第一段正文",
+      "type": "text",
+      "control": "textarea",
+      "default": "现金消耗满30元开启第一次抽奖，且累计满90/150/200元，可解锁更多抽奖机会，每日最多可抽10次",
+      "description": "第一段规则正文。"
+    },
+    {
+      "key": "secondBodyText",
+      "name": "secondBodyText",
+      "label": "第二段正文",
+      "type": "text",
+      "control": "textarea",
+      "default": "活动期间下单「内容加热」「粉丝经营」目标，且达成累计现金消耗门槛后，还可获得流量券，自动下发至DOU+账户。页面消耗数据于次日更新",
+      "description": "第二段规则正文。"
+    },
+    {
+      "key": "thirdBodyText",
+      "name": "thirdBodyText",
+      "label": "第三段正文",
+      "type": "text",
+      "control": "textarea",
+      "default": "现金消耗全程累计，投得越多，好礼越多",
+      "description": "第三段规则正文。"
+    },
+    {
+      "key": "highlightText",
+      "name": "highlightText",
+      "label": "高亮文本",
+      "type": "text",
+      "control": "textarea",
+      "default": "90/150/200",
+      "description": "正文中需要高亮的完整文本片段，多个片段可用换行、逗号、分号或竖线分隔。"
+    },
+    {
+      "key": "paragraphCount",
+      "name": "paragraphCount",
+      "label": "段落数量",
+      "type": "string",
+      "default": "3",
+      "description": "控制红点正文展示几段，可填 1、2 或 3。"
+    },
+    {
+      "key": "iconVariant",
+      "name": "iconVariant",
+      "label": "icon",
+      "type": "string",
+      "default": "current",
+      "description": "内部主题图标切换字段：current / red / yellow。"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "iconVariant": "current"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "iconVariant": "red"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "iconVariant": "yellow"
+      }
+    }
+  ]
+}

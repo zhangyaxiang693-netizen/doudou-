@@ -1,0 +1,122 @@
+.page {
+  position: relative;
+  width: 702.36px;
+  height: 198.1px;
+}
+.image {
+  width: 702px;
+  height: 198.1px;
+  position: absolute;
+  top: 0px;
+  left: 0.36px;
+}
+.image svg {
+  display: block;
+  width: 702px;
+  height: 198.1px;
+}
+.wrap {
+  position: absolute;
+  top: 39.01px;
+  left: 46.54px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 360px;
+  height: 40px;
+}
+.text {
+  font-family: "MFBenHeiNoncommercial";
+  font-size: 36px;
+  white-space: nowrap;
+  text-align: left;
+  color: rgba(45, 45, 45, 1);
+  line-height: 40px;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+.wrap1 {
+  width: 451px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-end;
+  padding-right: 96px;
+  padding-left: 42px;
+  position: absolute;
+  top: 99.05px;
+  left: 0px;
+}
+.container {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-right: 16px;
+}
+.text1 {
+  margin-right: 4px;
+  width: 31px;
+  height: 63.92px;
+  font-family: "Source Han Sans CN";
+  font-size: 30px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 27, 119, 1);
+  line-height: 40px;
+  letter-spacing: 0.01em;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.text2 {
+  min-width: 0;
+  height: 73.95px;
+  font-family: "Douyin Number ABC";
+  font-size: 76px;
+  white-space: nowrap;
+  text-align: left;
+  color: rgba(255, 27, 119, 1);
+  line-height: 84px;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+.buttonText {
+  position: absolute;
+  top: 56px;
+  left: 475.64px;
+  width: 198px;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Source Han Sans CN";
+  font-size: 32px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 255, 255, 1);
+  line-height: 40px;
+  font-weight: 600;
+}
+.text3 {
+  min-width: 0;
+  height: 55.83px;
+  font-family: "Source Han Sans CN";
+  font-size: 24px;
+  white-space: nowrap;
+  text-align: left;
+  color: rgba(45, 45, 45, 1);
+  line-height: 36px;
+  font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+}

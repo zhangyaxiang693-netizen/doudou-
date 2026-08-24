@@ -1,0 +1,182 @@
+{
+  "id": "发券-样式1",
+  "name": "发券-样式1",
+  "title": "发券-样式1",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "发券卡片样式，展示券名称、金额、条件和中按钮。",
+  "reactComponent": "发券-样式1",
+  "dimensions": {
+    "width": 702.36,
+    "height": 198.1
+  },
+  "fonts": [
+    {
+      "text": "周年庆惊喜流量补贴券",
+      "family": "MFBenHeiNoncommercial",
+      "weight": 400,
+      "size": "36px",
+      "lineHeight": "40px",
+      "usage": "券名称",
+      "source": {
+        "status": "exact",
+        "file": "造字工房本黑体.otf"
+      }
+    },
+    {
+      "text": "￥",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "30px",
+      "lineHeight": "40px",
+      "usage": "金额符号",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "800",
+      "family": "Douyin Number ABC",
+      "weight": 800,
+      "size": "76px",
+      "lineHeight": "84px",
+      "usage": "金额",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-ExtraBold.otf"
+      }
+    },
+    {
+      "text": "限量5000张",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "条件",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "立即抢",
+      "family": "Source Han Sans CN",
+      "weight": 600,
+      "size": "32px",
+      "lineHeight": "40px",
+      "usage": "中按钮文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-MEDIUM.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "发券-样式1",
+      "发券",
+      "优惠券",
+      "流量补贴券",
+      "周年庆惊喜流量补贴券",
+      "立即领取"
+    ],
+    "textProps": [
+      "couponName",
+      "amountText",
+      "conditionText",
+      "actionText"
+    ]
+  },
+  "props": [
+    {
+      "key": "couponName",
+      "name": "couponName",
+      "label": "券名称",
+      "type": "string",
+      "default": "周年庆惊喜流量补贴券",
+      "description": "卡片左上方券名称。"
+    },
+    {
+      "key": "amountText",
+      "name": "amountText",
+      "label": "金额",
+      "type": "string",
+      "default": "800",
+      "description": "券金额数字，组件固定显示人民币符号。"
+    },
+    {
+      "key": "conditionText",
+      "name": "conditionText",
+      "label": "条件",
+      "type": "string",
+      "default": "限量5000张",
+      "description": "金额右侧条件文案。"
+    },
+    {
+      "key": "actionText",
+      "name": "actionText",
+      "label": "中按钮文案",
+      "type": "string",
+      "default": "立即抢",
+      "description": "右侧中按钮文案。"
+    },
+    {
+      "key": "middleButtonGradientStart",
+      "name": "middleButtonGradientStart",
+      "label": "中按钮渐变开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "middleButtonGradientEnd",
+      "name": "middleButtonGradientEnd",
+      "label": "中按钮渐变结束",
+      "type": "color",
+      "default": "#FF229F"
+    },
+    {
+      "key": "amountTextColor",
+      "name": "amountTextColor",
+      "label": "金额文字色",
+      "type": "color",
+      "default": "#FF1B77"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "middleButtonGradientStart": "#FF1473",
+        "middleButtonGradientEnd": "#FF229F",
+        "amountTextColor": "#FF1B77"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "middleButtonGradientStart": "#FF180C",
+        "middleButtonGradientEnd": "#FF166F",
+        "amountTextColor": "#FF134E"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "middleButtonGradientStart": "#FF4400",
+        "middleButtonGradientEnd": "#FF7C02",
+        "amountTextColor": "#FF1A1D"
+      }
+    }
+  ]
+}

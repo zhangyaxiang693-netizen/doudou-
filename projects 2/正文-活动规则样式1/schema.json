@@ -1,0 +1,76 @@
+{
+  "id": "正文-活动规则样式1",
+  "name": "正文-活动规则样式1",
+  "title": "正文-活动规则样式1",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "活动规则正文组件，展示两段活动说明文案。",
+  "reactComponent": "正文-活动规则样式1",
+  "dimensions": {
+    "width": 596,
+    "height": 156
+  },
+  "heightMode": "auto",
+  "minHeight": 156,
+  "fonts": [
+    {
+      "text": "正文内容",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px / 149.24%",
+      "usage": "正文内容",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "参与下方抽奖",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "24px",
+      "lineHeight": "149.24%",
+      "usage": "正文强调",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "正文-活动规则样式1",
+      "活动规则样式1",
+      "活动规则",
+      "规则正文",
+      "正文内容",
+      "加粗文本"
+    ],
+    "textProps": [
+      "contentText",
+      "boldText"
+    ]
+  },
+  "props": [
+    {
+      "key": "contentText",
+      "name": "contentText",
+      "label": "正文内容",
+      "type": "text",
+      "control": "textarea",
+      "default": "活动期间下单「内容加热」「粉丝经营」目标，且达成累计现金消耗门槛后，点击「立即领」按钮即可获得优惠券，页面消耗数据于次日更新。\n每次达成消耗门槛后还有机会参与下方抽奖。",
+      "description": "活动规则正文内容，换行后会进入第二段容器。"
+    },
+    {
+      "key": "boldText",
+      "name": "boldText",
+      "label": "加粗文本",
+      "type": "text",
+      "control": "textarea",
+      "default": "参与下方抽奖",
+      "description": "正文中需要加粗的完整文本片段，多个片段可用换行、逗号、分号或竖线分隔。"
+    }
+  ]
+}

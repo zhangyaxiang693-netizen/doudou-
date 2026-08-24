@@ -1,0 +1,165 @@
+{
+  "id": "正文-活动规则样式2",
+  "name": "正文-活动规则样式2",
+  "title": "正文-活动规则样式2",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "活动规则正文组件，展示活动参与、奖励瓜分和发放规则。",
+  "reactComponent": "正文-活动规则样式2",
+  "dimensions": {
+    "width": 596,
+    "height": 716
+  },
+  "heightMode": "auto",
+  "minHeight": 716,
+  "fonts": [
+    {
+      "text": "如何参与？",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "28px",
+      "lineHeight": "normal",
+      "usage": "标题内容",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "活动规则正文",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px / 138%",
+      "usage": "正文内容",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "正文-活动规则样式2",
+      "活动规则样式2",
+      "活动规则",
+      "规则正文",
+      "第一段标题",
+      "第一段正文",
+      "第二段标题",
+      "第二段正文",
+      "第三段标题",
+      "第三段正文",
+      "加粗文本"
+    ],
+    "textProps": [
+      "firstTitleText",
+      "firstBodyText",
+      "secondTitleText",
+      "secondBodyText",
+      "thirdTitleText",
+      "thirdBodyText",
+      "boldText"
+    ]
+  },
+  "props": [
+    {
+      "key": "firstTitleText",
+      "name": "firstTitleText",
+      "label": "第一段标题",
+      "type": "string",
+      "default": "如何参与？",
+      "description": "第一段规则标题文案。"
+    },
+    {
+      "key": "firstBodyText",
+      "name": "firstBodyText",
+      "label": "第一段正文",
+      "type": "text",
+      "control": "textarea",
+      "default": "1、报名活动：在2月5日-2月18日活动期间, 点击报名按钮即可参与。\n2、投放达标：报名后,  投放DOU+「点赞评论量 / 视频播放量 / 粉丝量」目标且累计现金消耗达到瓜分门槛。\n累计现金消耗≥68元, 可瓜分15万元流量券\n累计现金消耗≥300元, 可再瓜分10万元流量券\n累计现金消耗≥800元, 可再瓜分8万元流量券",
+      "description": "第一段规则正文。"
+    },
+    {
+      "key": "secondTitleText",
+      "name": "secondTitleText",
+      "label": "第二段标题",
+      "type": "string",
+      "default": "奖励如何瓜分？",
+      "description": "第二段规则标题文案。"
+    },
+    {
+      "key": "secondBodyText",
+      "name": "secondBodyText",
+      "label": "第二段正文",
+      "type": "text",
+      "control": "textarea",
+      "default": "18号活动结束后,  平台将对应档位奖池的总金额,  平均分给所有成功报名且完成该档位消耗任务的用户。\n瓜分公式: 个人可得奖励 = 该档位总奖池➗该档位达标总人数。",
+      "description": "第二段规则正文。"
+    },
+    {
+      "key": "thirdTitleText",
+      "name": "thirdTitleText",
+      "label": "第三段标题",
+      "type": "string",
+      "default": "奖励如何发放？",
+      "description": "第三段规则标题文案。"
+    },
+    {
+      "key": "thirdBodyText",
+      "name": "thirdBodyText",
+      "label": "第三段正文",
+      "type": "text",
+      "control": "textarea",
+      "default": "奖励将在活动结束后 (2.18起) 的7个工作日内,  以 \"DOU+流量优惠券\" 形式自动发放至您的DOU+账户,  请注意查收并使用。",
+      "description": "第三段规则正文。"
+    },
+    {
+      "key": "boldText",
+      "name": "boldText",
+      "label": "加粗文本",
+      "type": "text",
+      "control": "textarea",
+      "default": "报名后,  投放DOU+「点赞评论量 / 视频播放量 / 粉丝量」目标\nDOU+流量优惠券",
+      "description": "正文中需要加粗的完整文本片段，多个片段可用换行、逗号、分号或竖线分隔。"
+    },
+    {
+      "key": "iconVariant",
+      "name": "iconVariant",
+      "label": "icon",
+      "type": "string",
+      "default": "current",
+      "description": "内部主题图标切换字段：current / red / yellow。"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "iconVariant": "current"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "iconVariant": "red"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "iconVariant": "yellow"
+      }
+    }
+  ]
+}

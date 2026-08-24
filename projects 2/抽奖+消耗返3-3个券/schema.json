@@ -1,0 +1,250 @@
+{
+  "id": "抽奖+消耗返3-3个券",
+  "name": "抽奖+消耗返3-3个券",
+  "title": "抽奖+消耗返3-3个券",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "抽奖消耗返券组件，展示三档消耗金额和两张满赠券。",
+  "reactComponent": "抽奖+消耗返3-3个券",
+  "dimensions": {
+    "width": 600,
+    "height": 233
+  },
+  "fonts": [
+    {
+      "text": "30",
+      "family": "Douyin Number ABC",
+      "weight": 800,
+      "size": "42px",
+      "lineHeight": "35.92px",
+      "usage": "金额",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-ExtraBold.otf"
+      }
+    },
+    {
+      "text": "元",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "金额单位",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.otf"
+      }
+    },
+    {
+      "text": "满赠券",
+      "family": "Douyin Sans",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "满赠券文案",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Sans Regular / 400",
+        "note": "当前字体包只有 DouyinSansBold.ttf，不能作为 400 字重精确源。"
+      }
+    },
+    {
+      "text": "消耗  30  元",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "30px",
+      "usage": "消耗金额",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "抽奖+消耗返3-3个券",
+      "抽奖",
+      "消耗返",
+      "消耗返券",
+      "满赠券",
+      "3个券"
+    ],
+    "textProps": [
+      "amountText1",
+      "amountText2",
+      "consumeAmountText1",
+      "consumeAmountText2",
+      "consumeAmountText3"
+    ]
+  },
+  "props": [
+    {
+      "key": "amountText1",
+      "name": "amountText1",
+      "label": "金额1",
+      "type": "string",
+      "default": "30",
+      "description": "第一张券金额数字，组件固定显示“元”单位。"
+    },
+    {
+      "key": "amountText2",
+      "name": "amountText2",
+      "label": "金额2",
+      "type": "string",
+      "default": "30",
+      "description": "第二张券金额数字，组件固定显示“元”单位。"
+    },
+    {
+      "key": "consumeAmountText1",
+      "name": "consumeAmountText1",
+      "label": "消耗金额1",
+      "type": "string",
+      "default": "30",
+      "description": "第一个底部消耗金额数字，组件固定显示“消耗”和“元”。"
+    },
+    {
+      "key": "consumeAmountText2",
+      "name": "consumeAmountText2",
+      "label": "消耗金额2",
+      "type": "string",
+      "default": "30",
+      "description": "第二个底部消耗金额数字，组件固定显示“消耗”和“元”。"
+    },
+    {
+      "key": "consumeAmountText3",
+      "name": "consumeAmountText3",
+      "label": "消耗金额3",
+      "type": "string",
+      "default": "30",
+      "description": "第三个底部消耗金额数字，组件固定显示“消耗”和“元”。"
+    },
+    {
+      "key": "frameUnionGradientStart",
+      "name": "frameUnionGradientStart",
+      "label": "Frame 2147239858 的 Union 渐变开始",
+      "type": "color",
+      "default": "#FF237B"
+    },
+    {
+      "key": "frameUnionGradientEnd",
+      "name": "frameUnionGradientEnd",
+      "label": "Frame 2147239858 的 Union 渐变结束",
+      "type": "color",
+      "default": "#FF5EAE"
+    },
+    {
+      "key": "iconGradientStart",
+      "name": "iconGradientStart",
+      "label": "icon 渐变开始",
+      "type": "color",
+      "default": "#FF1478"
+    },
+    {
+      "key": "iconGradientEnd",
+      "name": "iconGradientEnd",
+      "label": "icon 渐变结束",
+      "type": "color",
+      "default": "#FF5DAA"
+    },
+    {
+      "key": "redPacketUnionGradientStart",
+      "name": "redPacketUnionGradientStart",
+      "label": "红包主体的 Union 渐变开始",
+      "type": "color",
+      "default": "#FF237B"
+    },
+    {
+      "key": "redPacketUnionGradientEnd",
+      "name": "redPacketUnionGradientEnd",
+      "label": "红包主体的 Union 渐变结束",
+      "type": "color",
+      "default": "#FF5EAE"
+    },
+    {
+      "key": "redPacketEllipseColor",
+      "name": "redPacketEllipseColor",
+      "label": "红包主体半圆 Ellipse 44511919 和 Ellipse 44511920",
+      "type": "color",
+      "default": "#FFC4E5"
+    },
+    {
+      "key": "backgroundPanelColor",
+      "name": "backgroundPanelColor",
+      "label": "背景板",
+      "type": "color",
+      "default": "#FFC5E5"
+    },
+    {
+      "key": "couponLabelColor",
+      "name": "couponLabelColor",
+      "label": "满赠券文案",
+      "type": "color",
+      "default": "#FF62A0"
+    },
+    {
+      "key": "amountTextColor",
+      "name": "amountTextColor",
+      "label": "30元文案",
+      "type": "color",
+      "default": "#FF1372"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "frameUnionGradientStart": "#FF237B",
+        "frameUnionGradientEnd": "#FF5EAE",
+        "iconGradientStart": "#FF1478",
+        "iconGradientEnd": "#FF5DAA",
+        "redPacketUnionGradientStart": "#FF237B",
+        "redPacketUnionGradientEnd": "#FF5EAE",
+        "redPacketEllipseColor": "#FFC4E5",
+        "backgroundPanelColor": "#FFC5E5",
+        "couponLabelColor": "#FF62A0",
+        "amountTextColor": "#FF1372"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "frameUnionGradientStart": "#FF180C",
+        "frameUnionGradientEnd": "#FF166F",
+        "iconGradientStart": "#FF224F",
+        "iconGradientEnd": "#FF3D58",
+        "redPacketUnionGradientStart": "#FF4070",
+        "redPacketUnionGradientEnd": "#FF4B5E",
+        "redPacketEllipseColor": "#FFA6BD",
+        "backgroundPanelColor": "#FFA6BD",
+        "couponLabelColor": "#FF6265",
+        "amountTextColor": "#FF134E"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "frameUnionGradientStart": "#FF4641",
+        "frameUnionGradientEnd": "#FF6737",
+        "iconGradientStart": "#FF3E25",
+        "iconGradientEnd": "#FF5E33",
+        "redPacketUnionGradientStart": "#FF4343",
+        "redPacketUnionGradientEnd": "#FF6A36",
+        "redPacketEllipseColor": "#FF9597",
+        "backgroundPanelColor": "#FF9597",
+        "couponLabelColor": "#FF8F4A",
+        "amountTextColor": "#FF1A1D"
+      }
+    }
+  ]
+}
