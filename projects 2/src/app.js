@@ -1392,6 +1392,7 @@ const state = {
   spaceDown: false,
   canvasPanDrag: null,
   adminComponentVerifier: {
+    type: "atom",
     schemaId: "账户优惠券提示",
     parentThemeId: "pink",
     variantId: "default_pink",
@@ -2526,6 +2527,8 @@ function syncPrizeLibraryControl(select) {
       : "";
     const nameAttr = select.dataset.adminPrizeProp
       ? `data-admin-prize-name-prop="${escapeAttr(select.dataset.adminPrizeProp)}"`
+      : select.dataset.adminMoleculeBlueprintProp
+        ? `data-admin-molecule-prize-name-prop="${escapeAttr(select.dataset.adminMoleculeBlueprintProp)}"`
       : select.dataset.blueprintPrizeValue
         ? `data-blueprint-prize-name-value="${escapeAttr(select.dataset.blueprintPrizeValue)}"`
         : select.dataset.nodePropInput
@@ -2554,6 +2557,18 @@ function getAdminVerifierSchema() {
   return findAtomSchema(state.adminComponentVerifier?.schemaId) || atomSchemas[0] || null;
 }
 
+function getAdminVerifierType() {
+  const verifier = state.adminComponentVerifier || {};
+  if (verifier.type === "molecule") return "molecule";
+  if (moleculeSchemas.some((item) => item.id === verifier.schemaId)) return "molecule";
+  return "atom";
+}
+
+function getAdminVerifierMolecule() {
+  const selected = moleculeSchemas.find((item) => item.id === state.adminComponentVerifier?.schemaId);
+  return selected || moleculeSchemas.find((item) => item.id !== "MoleculeContainer") || null;
+}
+
 function ensureAdminVerifierState(schema) {
   const verifier = state.adminComponentVerifier || {};
   const schemaId = schema?.id || atomSchemas[0]?.id || "账户优惠券提示";
@@ -2574,6 +2589,7 @@ function ensureAdminVerifierState(schema) {
     ? verifier.variantId
     : fallbackVariantId;
   state.adminComponentVerifier = {
+    type: "atom",
     schemaId,
     parentThemeId: sameSchema ? verifier.parentThemeId || getVariantThemeId(schema, variantId) : getVariantThemeId(schema, variantId),
     variantId,
@@ -2594,6 +2610,43 @@ function getAdminVerifierProps(schema, verifier) {
     ...(variant?.props || {}),
     ...(verifier.blueprint || {}),
   };
+}
+
+function getMoleculeBlueprintKey(childIndex, propKey) {
+  return `${childIndex}.${propKey}`;
+}
+
+function getMoleculeVerifierFields(molecule, verifier) {
+  return (molecule?.children || []).flatMap(([schemaId, overrides = {}], childIndex) => {
+    const schema = findAtomSchema(schemaId);
+    const childName = schema?.name || schemaId;
+    return getPropEntries(schema)
+      .filter(([key, field]) => {
+        const value = overrides[key] ?? field.default;
+        return isPrizePropField(field) || isCopyPropField(key, field, value);
+      })
+      .map(([key, field]) => ({
+        childIndex,
+        key,
+        field,
+        childName,
+        value: verifier?.blueprint?.[getMoleculeBlueprintKey(childIndex, key)] ?? overrides[key] ?? field.default ?? "",
+      }));
+  });
+}
+
+function createAdminVerifierMoleculeNode(molecule, verifier) {
+  const node = createMoleculeNode(molecule.id);
+  if (!node) return null;
+  (node.children || []).forEach((child, childIndex) => {
+    Object.entries(verifier?.blueprint || {}).forEach(([compoundKey, value]) => {
+      const [index, propKey] = compoundKey.split(".");
+      if (Number(index) === childIndex && propKey && propKey in child.props) {
+        child.props[propKey] = value;
+      }
+    });
+  });
+  return node;
 }
 
 function getMoleculeBlueprintFieldCount(molecule) {
@@ -2664,8 +2717,10 @@ function renderAdminComponentVerifier() {
   const center = $(".activity-center");
   if (!center) return;
 
-  const schema = getAdminVerifierSchema();
-  if (!schema) {
+  const verifierType = getAdminVerifierType();
+  const schema = verifierType === "atom" ? getAdminVerifierSchema() : null;
+  const molecule = verifierType === "molecule" ? getAdminVerifierMolecule() : null;
+  if (verifierType === "atom" && !schema) {
     center.innerHTML = `
       <section class="admin-shell">
         <nav class="admin-nav">
@@ -2681,23 +2736,44 @@ function renderAdminComponentVerifier() {
     return;
   }
 
-  const verifier = ensureAdminVerifierState(schema);
-  const props = getAdminVerifierProps(schema, verifier);
-  const textPropKeys = Array.isArray(schema.blueprint?.textProps) ? schema.blueprint.textProps : [];
-  const textProps = getPropEntries(schema).filter(([key]) => textPropKeys.includes(key));
-  const blueprintVariableLabel = textProps.some(([, field]) => isPrizePropField(field))
-    ? `${textProps.length} 个蓝图变量`
-    : `${textProps.length} 个文字变量`;
-  const colorProps = getPropEntries(schema).filter(([, field]) => field.type === "color");
-    const fontEntries = getSchemaFontEntries(schema);
-    const missingFontCount = fontEntries.filter((font) => font.source?.status && font.source.status !== "exact").length;
-  const variants = normalizeVariants(schema);
+  const verifier = verifierType === "atom"
+    ? ensureAdminVerifierState(schema)
+    : {
+        type: "molecule",
+        schemaId: molecule?.id || "",
+        blueprint: state.adminComponentVerifier?.schemaId === molecule?.id
+          ? { ...(state.adminComponentVerifier?.blueprint || {}) }
+          : {},
+      };
+  if (verifierType === "molecule") state.adminComponentVerifier = verifier;
+
+  const props = verifierType === "atom" ? getAdminVerifierProps(schema, verifier) : {};
+  const textPropKeys = verifierType === "atom" && Array.isArray(schema.blueprint?.textProps) ? schema.blueprint.textProps : [];
+  const textProps = verifierType === "atom"
+    ? getPropEntries(schema).filter(([key]) => textPropKeys.includes(key))
+    : getMoleculeVerifierFields(molecule, verifier);
+  const blueprintVariableLabel = verifierType === "molecule"
+    ? `${textProps.length} 个组合蓝图变量`
+    : textProps.some(([, field]) => isPrizePropField(field))
+      ? `${textProps.length} 个蓝图变量`
+      : `${textProps.length} 个文字变量`;
+  const colorProps = verifierType === "atom" ? getPropEntries(schema).filter(([, field]) => field.type === "color") : [];
+  const fontEntries = verifierType === "atom" ? getSchemaFontEntries(schema) : [];
+  const missingFontCount = fontEntries.filter((font) => font.source?.status && font.source.status !== "exact").length;
+  const variants = verifierType === "atom" ? normalizeVariants(schema) : [];
   const theme = guidedPageThemePresets.find((item) => item.id === verifier.parentThemeId) || guidedPageThemePresets[0];
-  const width = Number(schema.dimensions?.width || 702);
-  const height = Number(schema.dimensions?.height || 160);
-  const isAutoHeight = schema.heightMode === "auto";
-  const preview = renderAtomPreview(schema.id, props);
-    const exportPreview = renderAtomPreview(schema.id, getCutExportProps(schema.id, props));
+  const width = verifierType === "atom" ? Number(schema.dimensions?.width || 702) : 702;
+  const height = verifierType === "atom" ? Number(schema.dimensions?.height || 160) : 240;
+  const isAutoHeight = verifierType === "atom" ? schema.heightMode === "auto" : true;
+  const moleculeNode = verifierType === "molecule" && molecule ? createAdminVerifierMoleculeNode(molecule, verifier) : null;
+  const preview = verifierType === "atom" ? renderAtomPreview(schema.id, props) : moleculeNode ? renderComponent(moleculeNode, { editable: false }) : "";
+  const exportPreview = verifierType === "atom"
+    ? renderAtomPreview(schema.id, getCutExportProps(schema.id, props))
+    : preview;
+  const selectedName = verifierType === "atom" ? schema.name : molecule?.name || "分子组件";
+  const componentOptions = verifierType === "atom"
+    ? atomSchemas
+    : moleculeSchemas.filter((item) => item.id !== "MoleculeContainer");
 
   center.innerHTML = `
     <section class="admin-shell admin-verifier-shell">
@@ -2709,19 +2785,28 @@ function renderAdminComponentVerifier() {
       <header class="admin-hero admin-verifier-head">
         <span>COMPONENT QA</span>
         <div class="admin-verifier-title-row">
-          <h1>${escapeHtml(schema.name)}</h1>
-          <label class="admin-verifier-component-select">
-            <span>验收组件</span>
-            <select data-admin-select-component>
-              ${atomSchemas.map((item) => `
-                <option value="${escapeAttr(item.id)}" ${item.id === schema.id ? "selected" : ""}>
+          <h1>${escapeHtml(selectedName)}</h1>
+          <div class="admin-verifier-select-row">
+            <label class="admin-verifier-component-select admin-verifier-type-select">
+              <span>组件类型</span>
+              <select data-admin-verifier-type>
+                <option value="atom" ${verifierType === "atom" ? "selected" : ""}>原子组件</option>
+                <option value="molecule" ${verifierType === "molecule" ? "selected" : ""}>分子组件</option>
+              </select>
+            </label>
+            <label class="admin-verifier-component-select">
+              <span>验收组件</span>
+              <select data-admin-select-component>
+                ${componentOptions.map((item) => `
+                <option value="${escapeAttr(item.id)}" ${item.id === verifier.schemaId ? "selected" : ""}>
                   ${escapeHtml(item.name || item.id)}
                 </option>
               `).join("")}
-            </select>
-          </label>
+              </select>
+            </label>
+          </div>
         </div>
-        <p>固定检查蓝图输入、组件文案、父级色系联动和最终导出切图。</p>
+        <p>${verifierType === "molecule" ? "分子组件直接调用原子组合；在这里切换分子并检查组合蓝图与最终预览。" : "固定检查蓝图输入、组件文案、父级色系联动和最终导出切图。"}</p>
       </header>
 
       <section class="admin-verifier-grid">
@@ -2732,7 +2817,7 @@ function renderAdminComponentVerifier() {
               <span>${blueprintVariableLabel}</span>
             </header>
             <div class="admin-verifier-fields">
-              ${textProps.map(([key, field]) => {
+              ${verifierType === "atom" ? textProps.map(([key, field]) => {
                 const value = verifier.blueprint[key] ?? field.default ?? "";
                 return `
                   <label>
@@ -2760,11 +2845,39 @@ function renderAdminComponentVerifier() {
                       `}
                   </label>
                 `;
+              }).join("") : textProps.map(({ childIndex, childName, key, field, value }) => {
+                const compoundKey = getMoleculeBlueprintKey(childIndex, key);
+                return `
+                  <label>
+                    <span>${escapeHtml(`${childName} · ${field.label || key}`)}</span>
+                    ${isPrizePropField(field)
+                      ? renderPrizeLibrarySelect(
+                          value,
+                          `data-admin-molecule-blueprint-prop="${escapeAttr(compoundKey)}"`,
+                          `${childName} ${field.label || key}`,
+                          `data-admin-molecule-prize-name-prop="${escapeAttr(compoundKey)}"`,
+                        )
+                      : isTextareaPropField(field)
+                        ? `
+                          <textarea
+                            rows="${getBlueprintTextareaRows(value)}"
+                            data-admin-molecule-blueprint-prop="${escapeAttr(compoundKey)}"
+                          >${escapeHtml(value)}</textarea>
+                        `
+                        : `
+                          <input
+                            type="text"
+                            data-admin-molecule-blueprint-prop="${escapeAttr(compoundKey)}"
+                            value="${escapeAttr(value)}"
+                          />
+                        `}
+                  </label>
+                `;
               }).join("")}
             </div>
           </section>
 
-          <section class="admin-verifier-block">
+          ${verifierType === "atom" ? `<section class="admin-verifier-block">
             <header>
               <strong>父级色系</strong>
               <span>${escapeHtml(theme.name)}</span>
@@ -2787,9 +2900,9 @@ function renderAdminComponentVerifier() {
                 `;
               }).join("")}
             </div>
-          </section>
+          </section>` : ""}
 
-          <section class="admin-verifier-block">
+          ${verifierType === "atom" ? `<section class="admin-verifier-block">
             <header>
               <strong>颜色变量</strong>
               <span>${colorProps.length} 个</span>
@@ -2803,9 +2916,9 @@ function renderAdminComponentVerifier() {
                 </div>
               `).join("")}
             </div>
-          </section>
+          </section>` : ""}
 
-            <section class="admin-verifier-block">
+            ${verifierType === "atom" ? `<section class="admin-verifier-block">
               <header>
                 <strong>字体</strong>
                 <span>${missingFontCount ? `${missingFontCount} 项缺失` : `${fontEntries.length} 项通过`}</span>
@@ -2836,7 +2949,7 @@ function renderAdminComponentVerifier() {
                   `;
                 }).join("")}
               </div>
-            </section>
+            </section>` : ""}
         </aside>
 
         <main class="admin-verifier-stage">
@@ -2866,7 +2979,6 @@ function renderAdminComponentVerifier() {
           </section>
         </main>
       </section>
-      ${renderAdminMoleculeVerifierSection()}
     </section>
   `;
 
@@ -2874,13 +2986,23 @@ function renderAdminComponentVerifier() {
 }
 
 function refreshAdminVerifierPreview() {
+  const liveTarget = document.querySelector(".admin-verifier-component");
+  const exportTarget = document.querySelector("[data-admin-export-cut-capture]");
+  if (getAdminVerifierType() === "molecule") {
+    const molecule = getAdminVerifierMolecule();
+    const node = molecule ? createAdminVerifierMoleculeNode(molecule, state.adminComponentVerifier) : null;
+    const preview = node ? renderComponent(node, { editable: false }) : "";
+    if (liveTarget) liveTarget.innerHTML = preview;
+    if (exportTarget) exportTarget.innerHTML = preview;
+    mountPreviewDetailReactMaterials();
+    return;
+  }
+
   const schema = getAdminVerifierSchema();
   if (!schema) return;
   const verifier = ensureAdminVerifierState(schema);
   const liveProps = getAdminVerifierProps(schema, verifier);
   const exportProps = getCutExportProps(schema.id, liveProps);
-  const liveTarget = document.querySelector(".admin-verifier-component");
-  const exportTarget = document.querySelector("[data-admin-export-cut-capture]");
   if (liveTarget) liveTarget.innerHTML = renderAtomPreview(schema.id, liveProps);
   if (exportTarget) exportTarget.innerHTML = renderAtomPreview(schema.id, exportProps);
   mountPreviewDetailReactMaterials();
@@ -10828,8 +10950,8 @@ function bindEvents() {
     if (event.target.closest("[data-admin-export-cut]")) {
       const target = document.querySelector("[data-admin-export-cut-capture]");
       if (target) {
-          const schema = getAdminVerifierSchema();
-          const fileName = `${schema?.name || schema?.id || "组件切图"}.png`;
+        const selected = getAdminVerifierType() === "molecule" ? getAdminVerifierMolecule() : getAdminVerifierSchema();
+        const fileName = `${selected?.name || selected?.id || "组件切图"}.png`;
         exportElementToPngBlob(target, { pixelRatio: 2 })
             .then((blob) => downloadBlob(fileName, blob))
           .catch((error) => {
@@ -11524,6 +11646,14 @@ function bindEvents() {
       return;
     }
 
+    const adminMoleculeBlueprintInput = event.target.closest("[data-admin-molecule-blueprint-prop]");
+    if (adminMoleculeBlueprintInput) {
+      const key = adminMoleculeBlueprintInput.dataset.adminMoleculeBlueprintProp;
+      state.adminComponentVerifier.blueprint[key] = adminMoleculeBlueprintInput.value;
+      refreshAdminVerifierPreview();
+      return;
+    }
+
     const lineageTitle = event.target.closest("[data-guided-lineage-title]");
     if (lineageTitle) {
       const found = getSelectedNodeInfo();
@@ -11882,6 +12012,18 @@ function bindEvents() {
       return;
     }
 
+    const adminMoleculePrizeNameInput = event.target.closest("[data-admin-molecule-prize-name-prop]");
+    if (adminMoleculePrizeNameInput) {
+      const key = adminMoleculePrizeNameInput.dataset.adminMoleculePrizeNameProp;
+      if (!key) return;
+      state.adminComponentVerifier.blueprint[key] = serializePrizeValueWithName(
+        state.adminComponentVerifier.blueprint[key],
+        adminMoleculePrizeNameInput.value,
+      );
+      refreshAdminVerifierPreview();
+      return;
+    }
+
     const blueprintPrizeNameInput = event.target.closest("[data-blueprint-prize-name-value]");
     if (blueprintPrizeNameInput) {
       const [contextId, moduleId, rowIndex] = blueprintPrizeNameInput.dataset.blueprintPrizeNameValue.split("|");
@@ -11946,19 +12088,66 @@ function bindEvents() {
   });
 
   document.addEventListener("change", (event) => {
+    const adminVerifierType = event.target.closest("[data-admin-verifier-type]");
+    if (adminVerifierType) {
+      if (adminVerifierType.value === "molecule") {
+        const molecule = moleculeSchemas.find((item) => item.id !== "MoleculeContainer");
+        state.adminComponentVerifier = {
+          type: "molecule",
+          schemaId: molecule?.id || "",
+          blueprint: {},
+        };
+      } else {
+        const schema = atomSchemas[0];
+        const variants = normalizeVariants(schema);
+        const variantId = variants[0]?.id || null;
+        state.adminComponentVerifier = {
+          type: "atom",
+          schemaId: schema.id,
+          parentThemeId: getVariantThemeId(schema, variantId),
+          variantId,
+          blueprint: {},
+        };
+      }
+      render();
+      return;
+    }
+
     const adminComponentSelect = event.target.closest("[data-admin-select-component]");
     if (adminComponentSelect) {
+      if (getAdminVerifierType() === "molecule") {
+        const molecule = moleculeSchemas.find((item) => item.id === adminComponentSelect.value);
+        if (!molecule) return;
+        state.adminComponentVerifier = {
+          type: "molecule",
+          schemaId: molecule.id,
+          blueprint: {},
+        };
+        render();
+        return;
+      }
+
       const schema = findAtomSchema(adminComponentSelect.value);
       if (!schema) return;
       const variants = normalizeVariants(schema);
       const variantId = variants[0]?.id || null;
       state.adminComponentVerifier = {
+        type: "atom",
         schemaId: schema.id,
         parentThemeId: getVariantThemeId(schema, variantId),
         variantId,
         blueprint: {},
       };
       render();
+      return;
+    }
+
+    const adminMoleculePrizeSelect = event.target.closest("[data-admin-molecule-blueprint-prop]");
+    if (adminMoleculePrizeSelect) {
+      const key = adminMoleculePrizeSelect.dataset.adminMoleculeBlueprintProp;
+      state.adminComponentVerifier.blueprint[key] = adminMoleculePrizeSelect.value;
+      syncPrizeLibraryControl(adminMoleculePrizeSelect);
+      refreshAdminVerifierPreview();
       return;
     }
 

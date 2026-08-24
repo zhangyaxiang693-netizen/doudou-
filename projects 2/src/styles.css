@@ -13275,10 +13275,20 @@ button:hover {
   margin: 0;
 }
 
+.admin-verifier-select-row {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+}
+
 .admin-verifier-component-select {
   display: grid;
   flex: 0 0 240px;
   gap: 6px;
+}
+
+.admin-verifier-type-select {
+  flex-basis: 128px;
 }
 
 .admin-verifier-component-select span {
@@ -13639,6 +13649,11 @@ button:hover {
   .admin-verifier-component-select {
     width: min(100%, 320px);
     flex-basis: auto;
+  }
+
+  .admin-verifier-select-row {
+    display: grid;
+    width: min(100%, 320px);
   }
 
   .admin-verifier-grid {
