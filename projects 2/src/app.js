@@ -158,7 +158,101 @@ function _mergeSchemas(hardcoded, dynamic) {
 
 const atomSchemas = _mergeSchemas(_hardcodedAtomSchemas, _dynamicSchemas);
 
-const moleculeSchemas = [];
+const BUILT_IN_MOLECULE_SCHEMAS = [
+  {
+    id: "核心权益模块-bigday发券-样式1",
+    name: "核心权益模块-bigday发券-样式1",
+    type: "molecule",
+    description: "由标题、Bigday 发券样式 3、补充说明组成。",
+    children: [
+      ["模块标题-正常", {}],
+      ["发券-样式3", {}],
+      ["说明文-补充说明", {}],
+    ],
+  },
+  {
+    id: "核心权益模块-bigday发券-样式2",
+    name: "核心权益模块-bigday发券-样式2",
+    type: "molecule",
+    description: "由标题、通知、Bigday 发券样式 4 组成。",
+    children: [
+      ["模块标题-正常", {}],
+      ["通知", {}],
+      ["发券-样式4", {}],
+    ],
+  },
+  {
+    id: "核心玩法模块-消返-1-3列",
+    name: "核心玩法模块-消返-1-3列",
+    type: "molecule",
+    description: "由标题、3 列抽奖消返、数据条、活动规则样式 1 组成。",
+    children: [
+      ["模块标题-正常", {}],
+      ["抽奖+消耗返3-3个券", {}],
+      ["横排按钮数据条", {}],
+      ["正文-活动规则样式1", {}],
+    ],
+  },
+  {
+    id: "核心玩法模块-抽奖消返-3列",
+    name: "核心玩法模块-抽奖消返-3列",
+    type: "molecule",
+    description: "由标题、3 列抽奖消返、数据条、活动规则样式 3 组成。",
+    children: [
+      ["模块标题-正常", {}],
+      ["抽奖+消耗返3-3个券", {}],
+      ["横排按钮数据条", {}],
+      ["正文-活动规则样式3", {}],
+    ],
+  },
+  {
+    id: "核心玩法模块-抽奖消返-4列",
+    name: "核心玩法模块-抽奖消返-4列",
+    type: "molecule",
+    description: "由标题、4 列消耗返、数据条、活动规则样式 3 组成。",
+    children: [
+      ["模块标题-正常", {}],
+      ["消耗返样式4个券", {}],
+      ["横排按钮数据条", {}],
+      ["正文-活动规则样式3", {}],
+    ],
+  },
+  {
+    id: "核心玩法模块-抽奖-未报名",
+    name: "核心玩法模块-抽奖-未报名",
+    type: "molecule",
+    description: "由标题、通知、九宫格抽奖报名前组成。",
+    children: [
+      ["模块标题-正常", {}],
+      ["通知", {}],
+      ["抽奖九宫格-报名前", {}],
+    ],
+  },
+  {
+    id: "核心玩法模块-抽奖-已报名",
+    name: "核心玩法模块-抽奖-已报名",
+    type: "molecule",
+    description: "由标题、通知、九宫格抽奖报名后组成。",
+    children: [
+      ["模块标题-正常", {}],
+      ["通知", {}],
+      ["抽奖九宫格-报名后", {}],
+    ],
+  },
+  {
+    id: "投稿赢流量-样式2",
+    name: "投稿赢流量-样式2",
+    type: "molecule",
+    description: "由标题和活动规则样式 2 组成。",
+    children: [
+      ["模块标题-正常", {}],
+      ["正文-活动规则样式2", {}],
+    ],
+  },
+];
+
+const BUILT_IN_MOLECULE_IDS = BUILT_IN_MOLECULE_SCHEMAS.map((item) => item.id);
+const moleculeSchemas = [...BUILT_IN_MOLECULE_SCHEMAS];
 
 const MOLECULE_STORAGE_KEY = "builder_molecule_templates_empty_v1";
 function loadMoleculeTemplates() {
@@ -178,8 +272,7 @@ function loadMoleculeTemplates() {
 }
 function saveMoleculeTemplatesToStorage() {
   try {
-    const builtInIds = [];
-    const userTemplates = moleculeSchemas.filter((item) => !builtInIds.includes(item.id));
+    const userTemplates = moleculeSchemas.filter((item) => !BUILT_IN_MOLECULE_IDS.includes(item.id));
     localStorage.setItem(MOLECULE_STORAGE_KEY, JSON.stringify(userTemplates));
   } catch (e) {
     console.warn("保存分子模板失败", e);
@@ -2118,7 +2211,7 @@ function renderMaterialList() {
         const preview = item.type === "molecule" ? renderMoleculePreview(item) : renderAtomPreview(item.id);
         const badge = "";
         const realClass = "";
-        const builtInMoleculeIds = ["MoleculeContainer", "TaskListModule"];
+        const builtInMoleculeIds = ["MoleculeContainer", "TaskListModule", ...BUILT_IN_MOLECULE_IDS];
         const isDeletableMolecule = item.type === "molecule" && !builtInMoleculeIds.includes(item.id);
         const deleteBtn = isDeletableMolecule
           ? `<button class="material-delete-btn" data-delete-molecule="${item.id}" title="删除">×</button>`
@@ -2428,12 +2521,15 @@ function syncPrizeLibraryControl(select) {
     : "<i></i>";
   let input = control.querySelector(".prize-library-name-input");
   if (!input && selectedPrize) {
+    const childIndexAttr = select.dataset.nodePropChildIndex !== undefined
+      ? ` data-node-prop-child-index="${escapeAttr(select.dataset.nodePropChildIndex)}"`
+      : "";
     const nameAttr = select.dataset.adminPrizeProp
       ? `data-admin-prize-name-prop="${escapeAttr(select.dataset.adminPrizeProp)}"`
       : select.dataset.blueprintPrizeValue
         ? `data-blueprint-prize-name-value="${escapeAttr(select.dataset.blueprintPrizeValue)}"`
         : select.dataset.nodePropInput
-          ? `data-node-prize-name-input="${escapeAttr(select.dataset.nodePropInput)}"`
+          ? `data-node-prize-name-input="${escapeAttr(select.dataset.nodePropInput)}"${childIndexAttr}`
           : "";
     if (nameAttr) {
       select.insertAdjacentHTML(
@@ -2498,6 +2594,58 @@ function getAdminVerifierProps(schema, verifier) {
     ...(variant?.props || {}),
     ...(verifier.blueprint || {}),
   };
+}
+
+function getMoleculeBlueprintFieldCount(molecule) {
+  return (molecule.children || []).reduce((sum, [schemaId, overrides = {}]) => {
+    const schema = findAtomSchema(schemaId);
+    const fields = getPropEntries(schema).filter(([key, field]) => {
+      const value = overrides[key] ?? field.default;
+      return isPrizePropField(field) || isCopyPropField(key, field, value);
+    });
+    return sum + fields.length;
+  }, 0);
+}
+
+function renderAdminMoleculeVerifierSection() {
+  const molecules = moleculeSchemas.filter((item) => item.id !== "MoleculeContainer");
+  if (!molecules.length) return "";
+
+  return `
+    <section class="admin-template-panel admin-molecule-verifier-section">
+      <div class="admin-section-head">
+        <div>
+          <h2>分子组件验收</h2>
+          <p>分子组件由原子组件组合而成；原子本身更新后，引用它的分子组件会同步更新。</p>
+        </div>
+        <span>${molecules.length} 个分子</span>
+      </div>
+      <div class="admin-molecule-grid">
+        ${molecules.map((molecule) => {
+          const childNames = (molecule.children || [])
+            .map(([schemaId]) => findAtomSchema(schemaId)?.name || schemaId)
+            .join(" / ");
+          const isBuiltIn = BUILT_IN_MOLECULE_IDS.includes(molecule.id);
+          return `
+            <article class="admin-molecule-card">
+              <div class="admin-molecule-preview">
+                ${renderMoleculePreview(molecule)}
+              </div>
+              <div class="admin-molecule-meta">
+                <strong>${escapeHtml(molecule.name)}</strong>
+                <span>${escapeHtml(childNames)}</span>
+                <code>${getMoleculeBlueprintFieldCount(molecule)} 个组合蓝图变量</code>
+              </div>
+              <div class="admin-molecule-actions">
+                <button type="button" data-admin-edit-molecule="${escapeAttr(molecule.id)}">进入画布验收</button>
+                ${isBuiltIn ? "" : `<button type="button" class="danger" data-delete-molecule="${escapeAttr(molecule.id)}">删除</button>`}
+              </div>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `;
 }
 
 function getSchemaFontEntries(schema) {
@@ -2718,6 +2866,7 @@ function renderAdminComponentVerifier() {
           </section>
         </main>
       </section>
+      ${renderAdminMoleculeVerifierSection()}
     </section>
   `;
 
@@ -8787,6 +8936,10 @@ function renderContextControls() {
   let toolbarHtml = "";
   if (node.type === "molecule" && node.children?.length > 0) {
     toolbarHtml += `
+      <button class="tool-button" data-toggle-props aria-label="变量">
+        <span class="variant-icon">P</span>
+        <span class="tool-tip">编辑分子变量</span>
+      </button>
       <button class="tool-button" data-save-molecule aria-label="保存为分子">
         <span style="font-size:14px;font-weight:700;">+M</span>
         <span class="tool-tip">保存为分子模板</span>
@@ -8827,7 +8980,7 @@ function renderContextControls() {
   if (state.variantPanelOpen && node.type === "atom") renderVariantInspector(found);
   else variantsPanel.classList.remove("open");
 
-  if (state.propsPanelOpen && node.type === "atom") renderPropsInspector(found);
+  if (state.propsPanelOpen && (node.type === "atom" || node.type === "molecule")) renderPropsInspector(found);
   else richtextPanel.classList.remove("open");
 
   positionContextControls();
@@ -8836,6 +8989,11 @@ function renderContextControls() {
 function renderPropsInspector(found) {
   const panel = $(".richtext-editor");
   const { node } = found;
+  if (node.type === "molecule") {
+    renderMoleculePropsInspector(panel, node);
+    return;
+  }
+
   const schema = findAtomSchema(node.schemaId);
   const props = (schema?.props || []).filter((item) => !item.isCssVar);
 
@@ -8867,33 +9025,84 @@ function renderPropsInspector(found) {
   panel.classList.add("open");
 }
 
-function renderNodePropControl(node, field) {
+function renderMoleculePropsInspector(panel, node) {
+  const children = node.children || [];
+  const editableChildren = children
+    .map((child, index) => {
+      const schema = findAtomSchema(child.schemaId);
+      const props = (schema?.props || []).filter((item) => !item.isCssVar);
+      return { child, index, props };
+    })
+    .filter((item) => item.props.length);
+
+  if (!editableChildren.length) {
+    panel.innerHTML = `
+      <div class="inspector-head">
+        <div>
+          <strong>分子变量</strong>
+          <span>${escapeHtml(node.name)}</span>
+        </div>
+      </div>
+      <p class="inspector-note">这个分子内部暂时没有可编辑变量。</p>
+    `;
+    panel.classList.add("open");
+    return;
+  }
+
+  const total = editableChildren.reduce((sum, item) => sum + item.props.length, 0);
+  panel.innerHTML = `
+    <div class="inspector-head">
+      <div>
+        <strong>分子变量</strong>
+        <span>${escapeHtml(node.name)} · ${total} 项</span>
+      </div>
+    </div>
+    <div class="node-prop-list molecule-prop-list">
+      ${editableChildren
+        .map(
+          ({ child, index, props }) => `
+            <section class="molecule-prop-group">
+              <header>${escapeHtml(index + 1)}. ${escapeHtml(child.name || child.schemaId)}</header>
+              ${props.map((field) => renderNodePropControl(child, field, { childIndex: index })).join("")}
+            </section>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+  panel.classList.add("open");
+}
+
+function renderNodePropControl(node, field, options = {}) {
   const key = field.key || field.name;
   const value = node.props?.[key] ?? field.default ?? "";
   const type = field.type || "string";
   const id = `${node.id}_${key}`;
+  const childIndexAttr = Number.isInteger(options.childIndex)
+    ? ` data-node-prop-child-index="${options.childIndex}"`
+    : "";
   let control = "";
 
   if (type === "boolean") {
     control = `
       <label class="node-prop-switch">
-        <input type="checkbox" data-node-prop-input="${escapeAttr(key)}" ${value ? "checked" : ""} />
+        <input type="checkbox" data-node-prop-input="${escapeAttr(key)}"${childIndexAttr} ${value ? "checked" : ""} />
         <span>${value ? "开启" : "关闭"}</span>
       </label>
     `;
   } else if (type === "color") {
-    control = `<input id="${escapeAttr(id)}" type="color" data-node-prop-input="${escapeAttr(key)}" value="${String(value).startsWith("#") ? escapeAttr(String(value)) : "#ffffff"}" />`;
+    control = `<input id="${escapeAttr(id)}" type="color" data-node-prop-input="${escapeAttr(key)}"${childIndexAttr} value="${String(value).startsWith("#") ? escapeAttr(String(value)) : "#ffffff"}" />`;
   } else if (type === "number") {
-    control = `<input id="${escapeAttr(id)}" type="number" data-node-prop-input="${escapeAttr(key)}" value="${escapeAttr(String(value))}" />`;
+    control = `<input id="${escapeAttr(id)}" type="number" data-node-prop-input="${escapeAttr(key)}"${childIndexAttr} value="${escapeAttr(String(value))}" />`;
   } else if (isPrizePropField(field)) {
     control = renderPrizeLibrarySelect(
       value,
-      `data-node-prop-input="${escapeAttr(key)}"`,
+      `data-node-prop-input="${escapeAttr(key)}"${childIndexAttr}`,
       `${node.name} ${field.label || key}`,
-      `data-node-prize-name-input="${escapeAttr(key)}"`,
+      `data-node-prize-name-input="${escapeAttr(key)}"${childIndexAttr}`,
     );
   } else {
-    control = `<textarea id="${escapeAttr(id)}" data-node-prop-input="${escapeAttr(key)}" rows="${String(value).length > 48 ? 3 : 1}">${escapeHtml(String(value))}</textarea>`;
+    control = `<textarea id="${escapeAttr(id)}" data-node-prop-input="${escapeAttr(key)}"${childIndexAttr} rows="${String(value).length > 48 ? 3 : 1}">${escapeHtml(String(value))}</textarea>`;
   }
 
   return `
@@ -11645,9 +11854,14 @@ function bindEvents() {
       const found = getSelectedNodeInfo();
       const key = nodePrizeNameInput.dataset.nodePrizeNameInput;
       if (!found || !key) return;
-      const value = serializePrizeValueWithName(found.node.props[key], nodePrizeNameInput.value);
-      found.node.props[key] = value;
-      const activeVariant = found.node.variants?.find((item) => item.id === found.node.activeVariantId);
+      const childIndex = nodePrizeNameInput.dataset.nodePropChildIndex;
+      const targetNode = childIndex === undefined
+        ? found.node
+        : found.node.children?.[Number(childIndex)];
+      if (!targetNode?.props) return;
+      const value = serializePrizeValueWithName(targetNode.props[key], nodePrizeNameInput.value);
+      targetNode.props[key] = value;
+      const activeVariant = targetNode.variants?.find((item) => item.id === targetNode.activeVariantId);
       if (activeVariant && key in activeVariant.props) activeVariant.props[key] = value;
       renderCanvas();
       renderStructureTree();
@@ -11699,7 +11913,13 @@ function bindEvents() {
     const found = getSelectedNodeInfo();
     if (!found) return;
 
-    const schema = findAtomSchema(found.node.schemaId);
+    const childIndex = input.dataset.nodePropChildIndex;
+    const targetNode = childIndex === undefined
+      ? found.node
+      : found.node.children?.[Number(childIndex)];
+    if (!targetNode?.props) return;
+
+    const schema = findAtomSchema(targetNode.schemaId);
     const field = (schema?.props || []).find((item) => (item.key || item.name) === input.dataset.nodePropInput);
     if (!field) return;
 
@@ -11714,8 +11934,8 @@ function bindEvents() {
       value = input.value;
     }
 
-    found.node.props[input.dataset.nodePropInput] = value;
-    const activeVariant = found.node.variants?.find((item) => item.id === found.node.activeVariantId);
+    targetNode.props[input.dataset.nodePropInput] = value;
+    const activeVariant = targetNode.variants?.find((item) => item.id === targetNode.activeVariantId);
     if (activeVariant && input.dataset.nodePropInput in activeVariant.props) {
       activeVariant.props[input.dataset.nodePropInput] = value;
     }
@@ -11787,7 +12007,11 @@ function bindEvents() {
     const nodePropInput = event.target.closest("[data-node-prop-input]");
     if (nodePropInput) {
       const found = getSelectedNodeInfo();
-      const schema = found ? findAtomSchema(found.node.schemaId) : null;
+      const childIndex = nodePropInput.dataset.nodePropChildIndex;
+      const targetNode = childIndex === undefined
+        ? found?.node
+        : found?.node.children?.[Number(childIndex)];
+      const schema = targetNode ? findAtomSchema(targetNode.schemaId) : null;
       const field = (schema?.props || []).find((item) => (item.key || item.name) === nodePropInput.dataset.nodePropInput);
       if (isPrizePropField(field)) syncPrizeLibraryControl(nodePropInput);
       nodePropInput.dispatchEvent(new Event("input", { bubbles: true }));
@@ -12114,8 +12338,8 @@ function mount() {
               <button class="library-tab" data-library="templates">模板库</button>
             </div>
             <div class="tabs">
-              <button class="tab active" data-tab="atom">基础组件</button>
-              <button class="tab" data-tab="molecule">模块组件</button>
+              <button class="tab active" data-tab="atom">原子组件</button>
+              <button class="tab" data-tab="molecule">分子组件</button>
             </div>
             <div class="material-list"></div>
           </section>
