@@ -3227,6 +3227,9 @@ button:hover {
 
 .component.molecule.molecule-container.user-education-case-style1-module .molecule-child:nth-child(1) {
   margin-bottom: 32px;
+  margin-right: auto;
+  margin-left: 0;
+  transform: translateX(-16px);
 }
 
 .component.molecule.molecule-container.user-education-case-style1-module .molecule-child:nth-child(2) {
@@ -3258,6 +3261,11 @@ button:hover {
   margin-bottom: 32px;
 }
 
+.component.molecule.molecule-container.user-education-guide-module .molecule-child:nth-child(1) {
+  margin-right: auto;
+  margin-left: 0;
+}
+
 .component.molecule.molecule-container.ai-smart-invest-module .molecule-child {
   margin-bottom: 0;
 }
@@ -3265,6 +3273,11 @@ button:hover {
 .component.molecule.molecule-container.ai-smart-invest-module .molecule-child:nth-child(1),
 .component.molecule.molecule-container.ai-smart-invest-module .molecule-child:nth-child(2) {
   margin-bottom: 32px;
+}
+
+.component.molecule.molecule-container.ai-smart-invest-module .molecule-child:nth-child(1) {
+  margin-right: auto;
+  margin-left: 0;
 }
 
 .component.molecule.molecule-container.core-benefit-coupon-style2-module .molecule-child {
@@ -3282,6 +3295,8 @@ button:hover {
 
 .component.molecule.molecule-container.placement-lottery-module .molecule-child:nth-child(1) {
   margin-bottom: 32px;
+  margin-right: auto;
+  margin-left: 0;
 }
 
 .component.molecule.molecule-container.placement-lottery-module .molecule-child:nth-child(2) {
@@ -3311,7 +3326,7 @@ button:hover {
 .component.molecule.molecule-container.node-guide-module .molecule-child:nth-child(1) {
   margin-bottom: 16px;
   margin-right: auto;
-  margin-left: 10px;
+  margin-left: 0;
 }
 
 .component.molecule.molecule-container.node-guide-module .molecule-child:nth-child(2) {
