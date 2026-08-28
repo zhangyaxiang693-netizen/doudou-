@@ -1,9 +1,6 @@
 /* eslint-disable*/
 import React from 'react'
 import styles from './index.module.scss'
-import image1Url from './assets/image_1.svg'
-import image2Url from './assets/image_2.svg'
-import image3Url from './assets/image_3.svg'
 
 export type IGeneratedComponent = {
   titleText?: string
@@ -28,15 +25,16 @@ const defaultText = {
   thirdBody: '现金消耗全程累计，投得越多，好礼越多',
 }
 
-const variantIconUrls = {
-  red: 'data:image/svg+xml;utf8,<svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="6.5" cy="6.5" rx="6.5" ry="6.5" fill="%23FF1F54"/></svg>',
-  yellow: 'data:image/svg+xml;utf8,<svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="6.5" cy="6.5" rx="6.5" ry="6.5" fill="%23FE199D"/></svg>',
+const variantDotColor = {
+  current: '#FF1474',
+  red: '#FF180E',
+  yellow: '#FF4501',
 }
 
-function getVariantIcon(iconVariant?: IGeneratedComponent['iconVariant']) {
-  if (iconVariant === 'red') return variantIconUrls.red
-  if (iconVariant === 'yellow') return variantIconUrls.yellow
-  return ''
+function getVariantDotColor(iconVariant?: IGeneratedComponent['iconVariant']) {
+  if (iconVariant === 'red') return variantDotColor.red
+  if (iconVariant === 'yellow') return variantDotColor.yellow
+  return variantDotColor.current
 }
 
 function parseTextList(value: string) {
@@ -113,14 +111,14 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const thirdBodyText = props.thirdBodyText || defaultText.thirdBody
   const highlightText = props.highlightText ?? defaultText.highlight
   const paragraphCount = parseParagraphCount(props.paragraphCount)
-  const variantIcon = getVariantIcon(props.iconVariant)
+  const dotColor = getVariantDotColor(props.iconVariant)
 
   return (
     <div className={styles.page}>
       <div className={styles.text}>{firstTitleText}</div>
       <div className={styles.wrap}>
         <div className={styles.container}>
-          <img src={variantIcon || image1Url} className={styles.image} />
+          <span className={styles.image} style={{ backgroundColor: dotColor }} />
           <div className={styles.text1}>
             {renderHighlightedText(firstBodyText, highlightText)}
           </div>
@@ -129,9 +127,9 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <>
             {secondTitleText ? <div className={styles.text}>{secondTitleText}</div> : null}
             <div className={styles.container2}>
-              <img
-                src={variantIcon || image2Url}
+              <span
                 className={styles.image2}
+                style={{ backgroundColor: dotColor }}
               />
               <div className={styles.text3}>
                 {renderHighlightedText(secondBodyText, highlightText)}
@@ -143,9 +141,9 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <>
             {thirdTitleText ? <div className={styles.text}>{thirdTitleText}</div> : null}
             <div className={styles.container1}>
-              <img
-                src={variantIcon || image3Url}
+              <span
                 className={styles.image1}
+                style={{ backgroundColor: dotColor }}
               />
               <div className={styles.text2}>
                 {renderHighlightedText(thirdBodyText, highlightText)}

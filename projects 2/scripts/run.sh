@@ -11,10 +11,12 @@ if [ -z "$EXPOSE_PORT" ]; then
   EXPOSE_PORT="${DEPLOY_RUN_PORT:-5000}"
 fi
 
-# Kill existing process on the port (never touch 9000)
+# Stop the existing preview process on macOS (never touch 9000).
 if [ "$EXPOSE_PORT" != "9000" ]; then
-  fuser -k "${EXPOSE_PORT}/tcp" 2>/dev/null || true
-  sleep 1
+  EXISTING_PID="$(lsof -tiTCP:"$EXPOSE_PORT" -sTCP:LISTEN 2>/dev/null || true)"
+  if [ -n "$EXISTING_PID" ]; then
+    kill "$EXISTING_PID"
+  fi
 fi
 
 export PORT="$EXPOSE_PORT"

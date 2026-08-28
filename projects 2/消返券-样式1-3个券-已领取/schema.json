@@ -1,0 +1,184 @@
+{
+  "id": "消返券-样式1-3个券-已领取",
+  "name": "消返券-样式1-3个券-已领取",
+  "title": "消返券-样式1-3个券-已领取",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "消返券样式1（3个券家族）的单券已领取独立版，单张优惠券卡片展示，含金额、使用条件、腰封渐变及内卡装饰。蓝图自动同步：金额、使用条件。三色父级绑定：默认粉色 / 蓝色(sky) / 橘色(apricot)，含背景卡片、腰封、印章配色。",
+  "reactComponent": "消返券-样式1-3个券-已领取",
+  "dimensions": {
+    "width": 162,
+    "height": 192
+  },
+  "fonts": [
+    {
+      "text": "满68元可用",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "满减使用条件",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    },
+    {
+      "text": "10",
+      "family": "Douyin Number ABC",
+      "weight": 800,
+      "size": "50px",
+      "lineHeight": "42px",
+      "usage": "券金额",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-ExtraBold.ttf"
+      }
+    },
+    {
+      "text": "元",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "38px",
+      "usage": "券金额单位",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "消返券-样式1-3个券-已领取",
+      "消返券已领取",
+      "已领取",
+      "消耗返单个券已领取",
+      "优惠券已领取",
+      "已领",
+      "金额",
+      "满多少可用"
+    ],
+    "textProps": [
+      "amountText",
+      "conditionText"
+    ]
+  },
+  "props": [
+    {
+      "key": "amountText",
+      "name": "amountText",
+      "label": "券金额",
+      "type": "string",
+      "default": "10"
+    },
+    {
+      "key": "conditionText",
+      "name": "conditionText",
+      "label": "使用条件（满多少可用）",
+      "type": "string",
+      "default": "满68元可用"
+    },
+    {
+      "key": "cardBgColor",
+      "name": "cardBgColor",
+      "label": "券背景卡片底色",
+      "type": "color",
+      "default": "#FFC5E5"
+    },
+    {
+      "key": "decorCircleColor",
+      "name": "decorCircleColor",
+      "label": "装饰圆填充色",
+      "type": "color",
+      "default": "#FFC4E5"
+    },
+    {
+      "key": "innerStrokeColor",
+      "name": "innerStrokeColor",
+      "label": "内卡装饰线描边色",
+      "type": "color",
+      "default": "#FFD9E5"
+    },
+    {
+      "key": "innerFillColor",
+      "name": "innerFillColor",
+      "label": "内卡花纹填充色",
+      "type": "color",
+      "default": "#FF62A0"
+    },
+    {
+      "key": "waistbandStart",
+      "name": "waistbandStart",
+      "label": "腰封装饰色（渐变开始）",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "waistbandEnd",
+      "name": "waistbandEnd",
+      "label": "腰封装饰色（渐变结束）",
+      "type": "color",
+      "default": "#FF229F"
+    },
+    {
+      "key": "stampTextColor",
+      "name": "stampTextColor",
+      "label": "已领取印章文字颜色",
+      "type": "color",
+      "default": "#FF9ECA"
+    },
+    {
+      "key": "stampRingColor",
+      "name": "stampRingColor",
+      "label": "已领取印章圆圈边框颜色",
+      "type": "color",
+      "default": "#FFE6EF"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "cardBgColor": "#FFC5E5",
+        "decorCircleColor": "#FFC4E5",
+        "innerStrokeColor": "#FFD9E5",
+        "innerFillColor": "#FF62A0",
+        "waistbandStart": "#FF1473",
+        "waistbandEnd": "#FF229F",
+        "stampTextColor": "#FF9ECA",
+        "stampRingColor": "#FFE6EF"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "waistbandStart": "#FF190E",
+        "waistbandEnd": "#FF176E",
+        "cardBgColor": "#FFA5BD",
+        "stampTextColor": "#FFB0B2",
+        "stampRingColor": "#FFECEC"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "waistbandStart": "#FF4501",
+        "waistbandEnd": "#FF7C02",
+        "cardBgColor": "#FF9395",
+        "stampTextColor": "#FFC7A4",
+        "stampRingColor": "#FFF3EC"
+      }
+    }
+  ]
+}

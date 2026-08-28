@@ -1,0 +1,132 @@
+{
+  "id": "内容诊断-样式1-点击前",
+  "name": "内容诊断-样式1-点击前",
+  "title": "内容诊断-样式1-点击前",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "内容诊断入口组件，展示潜力视频提示和生成报告按钮。",
+  "reactComponent": "内容诊断-样式1-点击前",
+  "dimensions": {
+    "width": 702,
+    "height": 105.2
+  },
+  "fonts": [
+    {
+      "text": "发现你有一条潜力视频！",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "28px",
+      "lineHeight": "normal",
+      "usage": "内容",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "立即生成报告",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "按钮文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "内容诊断",
+      "内容诊断样式1",
+      "内容诊断-样式-点击后",
+      "潜力视频",
+      "生成报告",
+      "立即生成报告"
+    ],
+    "textProps": [
+      "contentText",
+      "buttonText"
+    ]
+  },
+  "states": [
+    {
+      "id": "default",
+      "name": "点击前",
+      "schemaId": "内容诊断-样式1-点击前",
+      "preserveProps": true
+    },
+    {
+      "id": "clicked",
+      "name": "点击后",
+      "schemaId": "内容诊断-样式-点击后",
+      "preserveProps": true
+    }
+  ],
+  "props": [
+    {
+      "key": "contentText",
+      "name": "contentText",
+      "label": "内容",
+      "type": "string",
+      "default": "发现你有一条潜力视频！",
+      "description": "左侧内容提示文案。"
+    },
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "立即生成报告",
+      "description": "右侧按钮展示文案。"
+    },
+    {
+      "key": "buttonBorderColor",
+      "name": "buttonBorderColor",
+      "label": "按钮边缘色",
+      "type": "color",
+      "default": "#FF62A0"
+    },
+    {
+      "key": "buttonTextColor",
+      "name": "buttonTextColor",
+      "label": "按钮字体颜色",
+      "type": "color",
+      "default": "#FF1B77"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "buttonBorderColor": "#FF62A0",
+        "buttonTextColor": "#FF1B77"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "buttonBorderColor": "#FF1914",
+        "buttonTextColor": "#FF1914"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "buttonBorderColor": "#FF4A01",
+        "buttonTextColor": "#FF4A01"
+      }
+    }
+  ]
+}

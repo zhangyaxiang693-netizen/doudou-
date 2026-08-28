@@ -20,7 +20,7 @@
       "usage": "金额",
       "source": {
         "status": "exact",
-        "file": "DouyinNumberABC-ExtraBold.otf"
+        "file": "DouyinNumberABC-ExtraBold.ttf"
       }
     },
     {
@@ -32,7 +32,7 @@
       "usage": "金额单位",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-BOLD.otf"
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
       }
     },
     {
@@ -57,7 +57,7 @@
       "usage": "消耗金额",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     }
   ],

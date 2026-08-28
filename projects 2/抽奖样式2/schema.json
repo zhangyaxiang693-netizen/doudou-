@@ -1,0 +1,64 @@
+{
+  "id": "抽奖样式2",
+  "name": "抽奖样式2",
+  "title": "抽奖样式2",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "三列抽奖奖品组件，奖品位由蓝图奖品库变量填入。",
+  "reactComponent": "抽奖样式2",
+  "dimensions": {
+    "width": 626,
+    "height": 208
+  },
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "抽奖样式2",
+      "抽奖",
+      "奖品",
+      "奖品库"
+    ],
+    "textProps": [
+      "prize1",
+      "prize2",
+      "prize3"
+    ],
+    "prizeProps": [
+      {
+        "prop": "prize1"
+      },
+      {
+        "prop": "prize2"
+      },
+      {
+        "prop": "prize3"
+      }
+    ]
+  },
+  "props": [
+    {
+      "key": "prize1",
+      "name": "prize1",
+      "label": "奖品1",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize2",
+      "name": "prize2",
+      "label": "奖品2",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize3",
+      "name": "prize3",
+      "label": "奖品3",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    }
+  ]
+}

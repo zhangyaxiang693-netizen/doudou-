@@ -1,0 +1,109 @@
+.page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+.wrap {
+  margin-bottom: -26px;
+  position: relative;
+  width: 130px;
+  height: 46px;
+}
+.image {
+  width: 130px;
+  height: 46px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.text {
+  position: absolute;
+  top: 3px;
+  left: 17px;
+  font-family: "Douyin Sans";
+  font-size: 24px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(205, 123, 42, 1);
+  line-height: 40px;
+  font-weight: 400;
+}
+.wrap1 {
+  width: 626px;
+  border-radius: 40px;
+  box-sizing: border-box;
+  background: rgba(247, 247, 250, 1);
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 32px;
+  padding-right: 24px;
+  padding-bottom: 32px;
+  padding-left: 24px;
+}
+.container {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.content {
+  width: 446px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.image1 {
+  width: 118px;
+  height: 118px;
+  margin-right: 20px;
+}
+.main {
+  width: 308px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.text1 {
+  margin-bottom: 4px;
+  width: 308px;
+  font-family: "Source Han Sans CN";
+  font-size: 28px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(45, 45, 45, 1);
+  line-height: 42px;
+  font-weight: 500;
+}
+.text2 {
+  width: 308px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  white-space: nowrap;
+  color: rgba(81, 81, 81, 1);
+  line-height: 36px;
+  font-weight: 400;
+}
+.text3 {
+  width: 545px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  text-align: justify;
+  color: rgba(129, 129, 129, 1);
+  line-height: 36px;
+  font-weight: 400;
+}

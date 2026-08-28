@@ -1,0 +1,155 @@
+{
+  "id": "诊断建议-样式2",
+  "name": "诊断建议-样式2",
+  "title": "诊断建议-样式2",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "诊断建议组件，展示优质视频提示、视频封面和平台判定标签。",
+  "reactComponent": "诊断建议-样式2",
+  "dimensions": {
+    "width": 626,
+    "height": 299
+  },
+  "fonts": [
+    {
+      "text": "你有1条",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "normal",
+      "usage": "提示前缀",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    },
+    {
+      "text": "优质视频内容",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "24px",
+      "lineHeight": "normal",
+      "usage": "提示重点",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "，表现优于同类，现在加热有机会放大流量！",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "normal",
+      "usage": "提示后缀",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    },
+    {
+      "text": "一起过圣诞",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "38px",
+      "usage": "视频标题",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "平台判定标签：",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "标签前缀",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    },
+    {
+      "text": "潜力视频",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "30px",
+      "usage": "标签文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "诊断建议-样式2",
+      "诊断建议样式2",
+      "优质视频内容",
+      "平台判定标签",
+      "潜力视频"
+    ],
+    "textProps": [
+      "noticePrefixText",
+      "noticeHighlightText",
+      "noticeSuffixText",
+      "videoTitle",
+      "tagPrefixText",
+      "tagText"
+    ]
+  },
+  "props": [
+    {
+      "key": "noticePrefixText",
+      "name": "noticePrefixText",
+      "label": "提示前缀",
+      "type": "string",
+      "default": "你有1条",
+      "description": "顶部提示前缀文案。"
+    },
+    {
+      "key": "noticeHighlightText",
+      "name": "noticeHighlightText",
+      "label": "提示重点",
+      "type": "string",
+      "default": "优质视频内容",
+      "description": "顶部提示加粗重点文案。"
+    },
+    {
+      "key": "noticeSuffixText",
+      "name": "noticeSuffixText",
+      "label": "提示后缀",
+      "type": "string",
+      "default": "，表现优于同类，现在加热有机会放大流量！",
+      "description": "顶部提示后缀文案。"
+    },
+    {
+      "key": "videoTitle",
+      "name": "videoTitle",
+      "label": "视频标题",
+      "type": "string",
+      "default": "一起过圣诞",
+      "description": "视频标题文案。"
+    },
+    {
+      "key": "tagPrefixText",
+      "name": "tagPrefixText",
+      "label": "标签前缀",
+      "type": "string",
+      "default": "平台判定标签：",
+      "description": "平台判定标签前缀文案。"
+    },
+    {
+      "key": "tagText",
+      "name": "tagText",
+      "label": "标签文案",
+      "type": "string",
+      "default": "潜力视频",
+      "description": "平台判定标签文案。"
+    }
+  ]
+}

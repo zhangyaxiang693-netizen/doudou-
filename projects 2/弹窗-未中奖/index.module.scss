@@ -1,0 +1,89 @@
+.page {
+  width: 576px;
+  height: 634px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.wrap {
+  position: relative;
+  width: 576px;
+  height: 634px;
+}
+.container {
+  position: absolute;
+  top: 139px;
+  left: 0px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 576px;
+  height: 495px;
+}
+.content {
+  position: relative;
+  width: 576px;
+  height: 495px;
+}
+.image {
+  width: 576px;
+  height: 495px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.text {
+  position: absolute;
+  top: 265px;
+  left: 100.48px;
+  opacity: 0.65;
+  font-family: "OPPOSans";
+  font-size: 30px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(45, 45, 45, 1);
+  line-height: 34px;
+  font-weight: 400;
+}
+.text1 {
+  position: absolute;
+  top: 196px;
+  left: 123px;
+  font-family: "MFBenHeiNoncommercial";
+  font-size: 46px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(45, 45, 45, 1);
+  line-height: 40px;
+  letter-spacing: 0.02em;
+  font-weight: 400;
+}
+.main {
+  position: absolute;
+  top: 80.09px;
+  left: 137.09px;
+  width: 300.96px;
+  height: 71.16px;
+}
+.image1 {
+  width: 300.96px;
+  height: 71.16px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image2 {
+  width: 152.99px;
+  height: 40.19px;
+  position: absolute;
+  top: 19px;
+  left: 73.99px;
+}
+.image3 {
+  width: 242.95px;
+  height: 262.05px;
+  position: absolute;
+  top: 0px;
+  left: 175.96px;
+}

@@ -1,0 +1,173 @@
+{
+  "id": "消返券-样式1-3个券-立即领单个",
+  "name": "消返券-样式1-3个券-立即领单个",
+  "title": "消返券-样式1-3个券-立即领单个",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "消返券样式1（3个券家族）的单券立即可领独立版，单张优惠券卡片展示，包含金额、使用条件、立即领按钮。",
+  "reactComponent": "消返券-样式1-3个券-立即领单个",
+  "dimensions": {
+    "width": 600,
+    "height": 192.2
+  },
+  "fonts": [
+    {
+      "text": "满50元可用",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "满减使用条件",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    },
+    {
+      "text": "50",
+      "family": "Douyin Number ABC",
+      "weight": 800,
+      "size": "50px",
+      "lineHeight": "42px",
+      "usage": "券金额",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-ExtraBold.ttf"
+      }
+    },
+    {
+      "text": "元",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "38px",
+      "usage": "券金额单位",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "立即领",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "32px",
+      "usage": "按钮文字",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "消返券-样式1-3个券-立即领单个",
+      "消返券",
+      "消返券样式1",
+      "消耗返单个券",
+      "立即领",
+      "单个券",
+      "优惠券",
+      "金额",
+      "满多少可用"
+    ],
+    "textProps": [
+      "amountText",
+      "conditionText"
+    ]
+  },
+  "props": [
+    {
+      "key": "amountText",
+      "name": "amountText",
+      "label": "券金额",
+      "type": "string",
+      "default": "50"
+    },
+    {
+      "key": "conditionText",
+      "name": "conditionText",
+      "label": "使用条件（满多少可用）",
+      "type": "string",
+      "default": "满50元可用"
+    },
+    {
+      "key": "cardGradientStart",
+      "name": "cardGradientStart",
+      "label": "券背景色开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "cardGradientEnd",
+      "name": "cardGradientEnd",
+      "label": "券背景色结束",
+      "type": "color",
+      "default": "#FF229F"
+    },
+    {
+      "key": "buttonBackground",
+      "name": "buttonBackground",
+      "label": "立即领按钮背景色",
+      "type": "color",
+      "default": "rgba(255, 94, 164, 1)"
+    },
+    {
+      "key": "buttonTextColor",
+      "name": "buttonTextColor",
+      "label": "按钮文字颜色",
+      "type": "color",
+      "default": "rgba(255, 158, 202, 1)"
+    },
+    {
+      "key": "waveAccentColor",
+      "name": "waveAccentColor",
+      "label": "券身装饰线颜色",
+      "type": "color",
+      "default": "#FF62A0"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "cardGradientStart": "#FF1473",
+        "cardGradientEnd": "#FF229F",
+        "buttonBackground": "rgba(255, 94, 164, 1)",
+        "buttonTextColor": "rgba(255, 158, 202, 1)",
+        "waveAccentColor": "#FF62A0"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "cardGradientStart": "#FF180E",
+        "cardGradientEnd": "#FF166E",
+        "buttonBackground": "#FF8290",
+        "buttonTextColor": "#FFB8C9",
+        "waveAccentColor": "#FF6068"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "cardGradientStart": "#FF4401",
+        "cardGradientEnd": "#FF7C02",
+        "buttonBackground": "#FF8571",
+        "buttonTextColor": "#FFC9B5",
+        "waveAccentColor": "#FF8C3E"
+      }
+    }
+  ]
+}

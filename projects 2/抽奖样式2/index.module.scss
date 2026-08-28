@@ -1,0 +1,231 @@
+.page {
+  width: 626px;
+  height: 208px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+.wrap {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.container {
+  width: 198px;
+  height: 208px;
+  border-radius: 32px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 238, 243, 1) 0%,
+    rgba(255, 238, 243, 0) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+.text {
+  margin-bottom: 8px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(45, 45, 45, 1);
+  line-height: 36px;
+  font-weight: 400;
+}
+.content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.main {
+  position: relative;
+  width: 118.26px;
+  height: 112.67px;
+}
+.image {
+  width: 118.26px;
+  height: 112.67px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.text1 {
+  position: absolute;
+  top: 52.91px;
+  left: 25.92px;
+  transform: rotate(12.803485594259467deg);
+  font-family: "MFBenHeiNoncommercial";
+  font-size: 35.04px;
+  white-space: nowrap;
+  color: rgba(255, 97, 165, 1);
+  line-height: 38.22px;
+  font-weight: 400;
+}
+.text1__seg0 {
+  font-size: 35.04px;
+}
+.image1 {
+  width: 89.65px;
+  height: 25.89px;
+}
+.wrap1 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  margin-left: 16px;
+}
+.container1 {
+  width: 198px;
+  height: 208px;
+  border-radius: 32px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 238, 243, 1) 0%,
+    rgba(255, 238, 243, 0) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+.text2 {
+  margin-bottom: 11px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(45, 45, 45, 1);
+  line-height: 36px;
+  font-weight: 400;
+}
+.content1 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 11px;
+}
+.main1 {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  width: 143.56px;
+  height: 103.47px;
+}
+.image2 {
+  width: 143.56px;
+  height: 103.47px;
+}
+.image3 {
+  width: 89.65px;
+  height: 25.89px;
+}
+.wrap2 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  margin-left: 16px;
+}
+.container2 {
+  width: 198px;
+  height: 208px;
+  border-radius: 32px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 238, 243, 1) 0%,
+    rgba(255, 238, 243, 0) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+.text3 {
+  margin-bottom: 8px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(45, 45, 45, 1);
+  line-height: 36px;
+  font-weight: 400;
+}
+.content2 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.main2 {
+  position: relative;
+  width: 145.69px;
+  height: 107.66px;
+}
+.image4 {
+  width: 145.69px;
+  height: 107.66px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.text4 {
+  position: absolute;
+  top: 32.71px;
+  left: 56.1px;
+  transform: rotate(13.240536145650218deg);
+  font-family: "Douyin Sans";
+  font-size: 38.44px;
+  white-space: nowrap;
+  color: rgba(255, 149, 0, 1);
+  line-height: 100%;
+  letter-spacing: -1.8px;
+  font-weight: 400;
+}
+.text4__seg0 {
+  font-size: 38.44px;
+  letter-spacing: -1.8px;
+}
+.image5 {
+  width: 19.65px;
+  height: 71.09px;
+  position: absolute;
+  top: 8.67px;
+  left: 24.85px;
+}
+.image6 {
+  width: 89.65px;
+  height: 25.89px;
+}

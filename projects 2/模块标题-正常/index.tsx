@@ -1,26 +1,62 @@
 /* eslint-disable*/
 import React from 'react'
 import styles from './index.module.scss'
-import image1Url from './assets/image_1.svg'
-import image2Url from './assets/image_2.svg'
-import image3Url from './assets/image_3.svg'
-import iconRedUrl from '../icon库/04-coupon/asset-coin-red.svg'
-import iconYellowUrl from '../icon库/04-coupon/asset-coin-pink.svg'
+import iconPinkUrl from '../icon库/粉色系/Property 1=券.svg'
+import iconBlueUrl from '../icon库/蓝色系/Property 1=券-1.svg'
+import iconOrangeUrl from '../icon库/橘色系/Property 1=券-2.svg'
+import alarmPinkUrl from '../icon库/粉色系/Property 1=限时.svg'
+import alarmBlueUrl from '../icon库/蓝色系/Property 1=限时-1.svg'
+import alarmOrangeUrl from '../icon库/橘色系/Property 1=限时-2.svg'
+import calendarPinkUrl from '../icon库/粉色系/Property 1=日历.svg'
+import calendarBlueUrl from '../icon库/蓝色系/Property 1=日历-1.svg'
+import calendarOrangeUrl from '../icon库/橘色系/Property 1=日历-2.svg'
+import giftPinkUrl from '../icon库/粉色系/Property 1=礼盒.svg'
+import giftBlueUrl from '../icon库/蓝色系/Property 1=礼盒-1.svg'
+import giftOrangeUrl from '../icon库/橘色系/Property 1=礼盒-2.svg'
+import folderPinkUrl from '../icon库/粉色系/Property 1=案例.svg'
+import folderBlueUrl from '../icon库/蓝色系/Property 1=案例-1.svg'
+import folderOrangeUrl from '../icon库/橘色系/Property 1=案例-2.svg'
+import firePinkUrl from '../icon库/粉色系/Property 1=火.svg'
+import fireBlueUrl from '../icon库/蓝色系/Property 1=火-1.svg'
+import fireOrangeUrl from '../icon库/橘色系/Property 1=火-2.svg'
+import tipPinkUrl from '../icon库/粉色系/Property 1=提示.svg'
+import tipBlueUrl from '../icon库/蓝色系/Property 1=提示-1.svg'
+import tipOrangeUrl from '../icon库/橘色系/Property 1=提示-2.svg'
 
 export type IGeneratedComponent = {
   titleText?: string
   iconVariant?: 'current' | 'red' | 'yellow'
+  iconType?: 'coupon' | 'alarm' | 'calendar' | 'gift' | 'folder' | 'fire' | 'tip'
 }
 
-function getVariantIcon(iconVariant?: IGeneratedComponent['iconVariant']) {
-  if (iconVariant === 'red') return iconRedUrl
-  if (iconVariant === 'yellow') return iconYellowUrl
-  return ''
+function getVariantIcon(
+  iconVariant?: IGeneratedComponent['iconVariant'],
+  iconType?: IGeneratedComponent['iconType'],
+) {
+  let set: { current: string; red: string; yellow: string }
+  if (iconType === 'alarm') {
+    set = { current: alarmPinkUrl, red: alarmBlueUrl, yellow: alarmOrangeUrl }
+  } else if (iconType === 'calendar') {
+    set = { current: calendarPinkUrl, red: calendarBlueUrl, yellow: calendarOrangeUrl }
+  } else if (iconType === 'gift') {
+    set = { current: giftPinkUrl, red: giftBlueUrl, yellow: giftOrangeUrl }
+  } else if (iconType === 'folder') {
+    set = { current: folderPinkUrl, red: folderBlueUrl, yellow: folderOrangeUrl }
+  } else if (iconType === 'fire') {
+    set = { current: firePinkUrl, red: fireBlueUrl, yellow: fireOrangeUrl }
+  } else if (iconType === 'tip') {
+    set = { current: tipPinkUrl, red: tipBlueUrl, yellow: tipOrangeUrl }
+  } else {
+    set = { current: iconPinkUrl, red: iconBlueUrl, yellow: iconOrangeUrl }
+  }
+  if (iconVariant === 'red') return set.red
+  if (iconVariant === 'yellow') return set.yellow
+  return set.current
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
   const titleText = props.titleText || '端午消耗返冲刺赢大额券'
-  const variantIcon = getVariantIcon(props.iconVariant)
+  const variantIcon = getVariantIcon(props.iconVariant, props.iconType)
 
   return (
     <div className={styles.page}>
@@ -29,27 +65,10 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <div className={styles.content}>
             <div className={styles.main}>
               <div className={styles.section}>
-                {variantIcon ? (
-                  <img
-                    src={variantIcon}
-                    className={styles.image}
-                  />
-                ) : (
-                  <>
-                    <img
-                      src={image1Url}
-                      className={styles.image}
-                    />
-                    <img
-                      src={image2Url}
-                      className={styles.image1}
-                    />
-                    <img
-                      src={image3Url}
-                      className={styles.image2}
-                    />
-                  </>
-                )}
+                <img
+                  src={variantIcon}
+                  className={styles.image}
+                />
               </div>
             </div>
           </div>

@@ -6,8 +6,14 @@ import CouponIssueStyle1 from "../发券-样式1";
 import CouponIssueStyle2 from "../发券-样式2";
 import CouponIssueStyle3 from "../发券-样式3";
 import CouponIssueStyle4 from "../发券-样式4";
+import CouponIssueStyle4Booked from "../发券-样式4-已预约";
+import CouponIssueStyle4GrabNow from "../发券-样式4-立即抢";
+import CouponIssueStyle4Ended from "../发券-样式4-已结束";
 import LotteryConsumeReturn3Coupons from "../抽奖+消耗返3-3个券";
 import ConsumeReturnStyle4Coupons from "../消耗返样式4个券";
+import ConsumeReturn2 from "../消耗返-样式1-3个券";
+import SingleConsumeReturnGrabNow from "../消返券-样式1-3个券-立即领单个";
+import SingleConsumeReturnClaimed from "../消返券-样式1-3个券-已领取";
 import PromptNotice from "../提示";
 import NotificationNotice from "../通知";
 import SupplementalNote from "../说明文-补充说明";
@@ -21,8 +27,32 @@ import FramedBodyStyle2 from "../正文-带底框样式2";
 import FramedBodyStyle3 from "../正文-带底框样式3";
 import LotteryGridBeforeSignup from "../抽奖九宫格-报名前";
 import LotteryGridAfterSignup from "../抽奖九宫格-报名后";
+import LotteryStyle2 from "../抽奖样式2";
 import TaskBarStyle1 from "../任务条-样式1";
+import TaskBarStyle1Clicked from "../任务条-样式1-点击后";
 import TaskBarStyle2 from "../任务条-样式2";
+import RuleVisualButton3 from "../按钮-3-规则可视";
+import RuleVisualButton3Clicked from "../按钮-3-规则可视-点击后";
+import BigButton from "../大按钮";
+import TrafficSubmissionStyle2 from "../投稿赢流量-样式2";
+import TrafficSupportCoupon from "../流量扶持券";
+import ContentDiagnosisStyle1Before from "../内容诊断-样式1-点击前";
+import DiagnosisSuggestionStyle1 from "../诊断建议-样式1";
+import DiagnosisSuggestionStyle2 from "../诊断建议-样式2";
+import ViewMore from "../查看更多";
+import ContentButton from "../内容按钮";
+import AccountDiagnosis from "../内容诊断-账号诊断";
+import ContentCaseStyle2 from "../内容案例-样式2";
+import ContentCaseStyle1 from "../内容案例-样式1";
+import UserEducationBody from "../正文-用户教育";
+import NodeGuideContent from "../节点指南-内容";
+import SmartInvestContent from "../智投星内容";
+import OfficialAssistant from "../官方小助手";
+import BottomButton from "../置底按钮";
+import LotteryLosePopup from "../弹窗-未中奖";
+import LotteryWinPopup from "../弹窗-中奖";
+import TitleDrawCount from "../标题+抽奖次数";
+import NoActivityNotice from "../无活动提示";
 
 const roots = new WeakMap();
 
@@ -32,8 +62,14 @@ const componentMap = {
   "发券-样式2": CouponIssueStyle2,
   "发券-样式3": CouponIssueStyle3,
   "发券-样式4": CouponIssueStyle4,
+  "发券-样式4-已预约": CouponIssueStyle4Booked,
+  "发券-样式4-立即抢": CouponIssueStyle4GrabNow,
+  "发券-样式4-已结束": CouponIssueStyle4Ended,
   "抽奖+消耗返3-3个券": LotteryConsumeReturn3Coupons,
   "消耗返样式4个券": ConsumeReturnStyle4Coupons,
+  "消耗返-样式1-3个券": ConsumeReturn2,
+  "消返券-样式1-3个券-立即领单个": SingleConsumeReturnGrabNow,
+  "消返券-样式1-3个券-已领取": SingleConsumeReturnClaimed,
   "提示": PromptNotice,
   "通知": NotificationNotice,
   "说明文-补充说明": SupplementalNote,
@@ -47,8 +83,32 @@ const componentMap = {
   "正文-带底框样式3": FramedBodyStyle3,
   "抽奖九宫格-报名前": LotteryGridBeforeSignup,
   "抽奖九宫格-报名后": LotteryGridAfterSignup,
+  "抽奖样式2": LotteryStyle2,
   "任务条-样式1": TaskBarStyle1,
+  "任务条-样式1-点击后": TaskBarStyle1Clicked,
   "任务条-样式2": TaskBarStyle2,
+  "按钮-3-规则可视": RuleVisualButton3,
+  "按钮-3-规则可视-点击后": RuleVisualButton3Clicked,
+  "大按钮": BigButton,
+  "投稿赢流量-样式2": TrafficSubmissionStyle2,
+  "流量扶持券": TrafficSupportCoupon,
+  "内容诊断-样式1-点击前": ContentDiagnosisStyle1Before,
+  "诊断建议-样式1": DiagnosisSuggestionStyle1,
+  "诊断建议-样式2": DiagnosisSuggestionStyle2,
+  "查看更多": ViewMore,
+  "内容按钮": ContentButton,
+  "内容诊断-账号诊断": AccountDiagnosis,
+  "内容案例-样式2": ContentCaseStyle2,
+  "内容案例-样式1": ContentCaseStyle1,
+  "正文-用户教育": UserEducationBody,
+  "节点指南-内容": NodeGuideContent,
+  "智投星内容": SmartInvestContent,
+  "官方小助手": OfficialAssistant,
+  "置底按钮": BottomButton,
+    "弹窗-未中奖": LotteryLosePopup,
+    "弹窗-中奖": LotteryWinPopup,
+  "标题+抽奖次数": TitleDrawCount,
+  "无活动提示": NoActivityNotice,
 };
 
 function parseProps(element) {

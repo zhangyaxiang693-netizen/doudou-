@@ -1,0 +1,236 @@
+{
+  "id": "发券-样式4-已预约",
+  "name": "发券-样式4-已预约",
+  "title": "发券-样式4-已预约",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "三列优惠券发放组件（已预约态），展示数量、金额、使用条件和按钮。按钮文案默认「已预约」。",
+  "reactComponent": "发券-样式4-已预约",
+  "dimensions": {
+    "width": 618,
+    "height": 333
+  },
+  "fonts": [
+    {
+      "text": "限量10个",
+      "family": "Douyin Sans",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "40px",
+      "usage": "数量文案",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Sans Regular / 400",
+        "note": "当前字体包只有 DouyinSansBold.ttf，组件仍按原始 font-family 和 font-weight 声明渲染。"
+      }
+    },
+    {
+      "text": "880",
+      "family": "Douyin Number ABC",
+      "weight": 500,
+      "size": "62px",
+      "lineHeight": "62px",
+      "usage": "金额",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-Medium.ttf"
+      }
+    },
+    {
+      "text": "满100元可用",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "使用条件",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    },
+    {
+      "text": "已预约",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "32px",
+      "usage": "按钮文字",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "发券-样式4-已预约",
+      "发券-样式4",
+      "发券",
+      "优惠券",
+      "DOU+福利券",
+      "已预约",
+      "预约后",
+      "数量文案",
+      "金额",
+      "使用条件",
+      "按钮文字"
+    ],
+    "textProps": [
+      "firstQuantityText",
+      "firstAmountText",
+      "firstConditionText",
+      "firstButtonText",
+      "secondQuantityText",
+      "secondAmountText",
+      "secondConditionText",
+      "secondButtonText",
+      "thirdQuantityText",
+      "thirdAmountText",
+      "thirdConditionText",
+      "thirdButtonText"
+    ]
+  },
+  "props": [
+    {
+      "key": "firstQuantityText",
+      "name": "firstQuantityText",
+      "label": "第一张数量文案",
+      "type": "string",
+      "default": "限量10个"
+    },
+    {
+      "key": "firstAmountText",
+      "name": "firstAmountText",
+      "label": "第一张金额",
+      "type": "string",
+      "default": "880"
+    },
+    {
+      "key": "firstConditionText",
+      "name": "firstConditionText",
+      "label": "第一张使用条件",
+      "type": "string",
+      "default": "满100元可用"
+    },
+    {
+      "key": "firstButtonText",
+      "name": "firstButtonText",
+      "label": "第一张按钮文字",
+      "type": "string",
+      "default": "已预约"
+    },
+    {
+      "key": "secondQuantityText",
+      "name": "secondQuantityText",
+      "label": "第二张数量文案",
+      "type": "string",
+      "default": "限量30个"
+    },
+    {
+      "key": "secondAmountText",
+      "name": "secondAmountText",
+      "label": "第二张金额",
+      "type": "string",
+      "default": "88"
+    },
+    {
+      "key": "secondConditionText",
+      "name": "secondConditionText",
+      "label": "第二张使用条件",
+      "type": "string",
+      "default": "满100元可用"
+    },
+    {
+      "key": "secondButtonText",
+      "name": "secondButtonText",
+      "label": "第二张按钮文字",
+      "type": "string",
+      "default": "已预约"
+    },
+    {
+      "key": "thirdQuantityText",
+      "name": "thirdQuantityText",
+      "label": "第三张数量文案",
+      "type": "string",
+      "default": "限量50个"
+    },
+    {
+      "key": "thirdAmountText",
+      "name": "thirdAmountText",
+      "label": "第三张金额",
+      "type": "string",
+      "default": "8"
+    },
+    {
+      "key": "thirdConditionText",
+      "name": "thirdConditionText",
+      "label": "第三张使用条件",
+      "type": "string",
+      "default": "满100元可用"
+    },
+    {
+      "key": "thirdButtonText",
+      "name": "thirdButtonText",
+      "label": "第三张按钮文字",
+      "type": "string",
+      "default": "已预约"
+    },
+    {
+      "key": "titleBackgroundColor",
+      "name": "titleBackgroundColor",
+      "label": "标题底色",
+      "type": "color",
+      "default": "#FF62A0"
+    },
+    {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮颜色开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮颜色结束",
+      "type": "color",
+      "default": "#FF229F"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "titleBackgroundColor": "#FF62A0",
+        "buttonGradientStart": "#FF1473",
+        "buttonGradientEnd": "#FF229F"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "titleBackgroundColor": "#FF6265",
+        "buttonGradientStart": "#FF180E",
+        "buttonGradientEnd": "#FF166E"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "titleBackgroundColor": "#FF8F4A",
+        "buttonGradientStart": "#FF4500",
+        "buttonGradientEnd": "#FF7C03"
+      }
+    }
+  ]
+}

@@ -20,7 +20,7 @@
       "usage": "第一段正文",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     },
     {
@@ -32,7 +32,7 @@
       "usage": "第二段正文",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     },
     {
@@ -44,7 +44,7 @@
       "usage": "第三段正文",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     }
   ],

@@ -1,0 +1,92 @@
+.page {
+  position: relative;
+  width: 702px;
+  height: 193px;
+}
+.wrap {
+  width: 702px;
+  border-radius: 40px;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 1);
+  min-height: 193px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image {
+  width: 149px;
+  height: 149px;
+  border-radius: 28px;
+  overflow: hidden;
+  position: absolute;
+  top: 22px;
+  left: 22px;
+}
+.wrap1 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding-right: 10px;
+  padding-left: 10px;
+  position: absolute;
+  top: 44px;
+  left: 176px;
+}
+.text {
+  font-family: "Source Han Sans CN";
+  font-size: 30px;
+  white-space: nowrap;
+  color: rgba(45, 45, 45, 1);
+  line-height: normal;
+  font-weight: 700;
+}
+.text__seg0 {
+  font-size: 30px;
+}
+.wrap2 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding-right: 10px;
+  padding-left: 10px;
+  position: absolute;
+  top: 95px;
+  left: 176px;
+}
+.text1 {
+  font-family: "Source Han Sans CN Regular";
+  font-size: 26px;
+  white-space: nowrap;
+  color: rgba(45, 45, 45, 1);
+  line-height: normal;
+  font-weight: 400;
+}
+.wrap3 {
+  width: 176px;
+  height: 70px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  background: rgba(45, 45, 45, 1);
+  position: absolute;
+  top: 66.9px;
+  left: 504.64px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.text2 {
+  font-family: "Source Han Sans CN";
+  font-size: 26px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 255, 255, 1);
+  line-height: 32px;
+  font-weight: 700;
+  flex-shrink: 0;
+}

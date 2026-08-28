@@ -49,10 +49,20 @@
     {
       "key": "iconVariant",
       "name": "iconVariant",
-      "label": "icon",
+      "label": "icon色系",
       "type": "string",
+      "enum": ["current", "red", "yellow"],
       "default": "current",
-      "description": "内部主题图标切换字段：current / red / yellow。"
+      "description": "内部主题图标切换：current（粉色系）/ red（蓝色系）/ yellow（橘色系）。"
+    },
+    {
+      "key": "iconType",
+      "name": "iconType",
+      "label": "icon类型",
+      "type": "string",
+      "enum": ["coupon", "alarm", "calendar", "gift", "folder", "fire", "tip"],
+      "default": "coupon",
+      "description": "图标形状切换：coupon（券形图标）/ alarm（闹钟图标）/ calendar（日历图标）/ gift（礼物礼盒图标）/ folder（文件夹案例图标）/ fire（火苗图标）/ tip（提示图标）。"
     }
   ],
   "variants": [

@@ -20,7 +20,7 @@
       "usage": "总计",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-BOLD.otf"
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
       }
     },
     {
@@ -32,7 +32,7 @@
       "usage": "立即使用",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-BOLD.otf"
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
       }
     },
     {
@@ -44,7 +44,7 @@
       "usage": "金额",
       "source": {
         "status": "exact",
-        "file": "DouyinNumberABC-ExtraBold.otf"
+        "file": "DouyinNumberABC-ExtraBold.ttf"
       }
     },
     {
@@ -56,7 +56,7 @@
       "usage": "元",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-BOLD.otf"
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
       }
     },
     {
@@ -81,7 +81,7 @@
       "usage": "标题中文",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-BOLD.otf"
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
       }
     },
     {
@@ -93,7 +93,7 @@
       "usage": "共有文案",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     },
     {
@@ -105,7 +105,7 @@
       "usage": "券数量数字",
       "source": {
         "status": "exact",
-        "file": "DouyinNumberABC-Bold.otf"
+        "file": "DouyinNumberABC-Bold.ttf"
       }
     },
     {
@@ -117,7 +117,7 @@
       "usage": "张券文案",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     },
     {
@@ -129,7 +129,7 @@
       "usage": "倒计时前缀",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     },
     {
@@ -141,7 +141,7 @@
       "usage": "倒计时数字",
       "source": {
         "status": "exact",
-        "file": "DouyinNumberABC-Bold.otf"
+        "file": "DouyinNumberABC-Bold.ttf"
       }
     },
     {
@@ -153,7 +153,7 @@
       "usage": "小时文案",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     }
   ],

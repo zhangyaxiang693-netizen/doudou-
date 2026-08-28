@@ -1,7 +1,12 @@
 import { getFontEmbedCSS, toBlob as exportNodeToBlob } from "html-to-image";
 
+const GUIDED_CUT_EXPORT_WIDTH = 750;
+const GUIDED_CUT_EXPORT_BOTTOM_SPACE = 32;
+const GUIDED_TASK_BAR_EXPORT_BOTTOM_SPACE = 16;
+
 const _schemaModules = import.meta.glob('../*/schema.json', { eager: true, as: 'json' });
 const _cssVarModules = import.meta.glob('../*/index.module.scss', { eager: true, query: '?raw', import: 'default' });
+const _themeHeaderImageModules = import.meta.glob("../色系头图/*.png", { eager: true, query: "?url", import: "default" });
 const navigationBarSvgUrl = new URL("../导航栏/顶栏.svg", import.meta.url).href;
 const contentModuleImageUrl = new URL("../内容模块.png", import.meta.url).href;
 const contentModuleImage2Url = new URL("../内容模块2.png", import.meta.url).href;
@@ -53,7 +58,7 @@ const mockPrizeLibrary = [
   },
   {
     id: "coupon_pack",
-    name: "券包",
+    name: "1314元心动券包",
     image: new URL("../九宫格-奖品库/券包.png", import.meta.url).href,
   },
   {
@@ -68,13 +73,52 @@ const mockPrizeLibrary = [
   },
   {
     id: "points",
-    name: "积分",
+    name: "内容诊断积分",
     image: new URL("../九宫格-奖品库/积分.png", import.meta.url).href,
   },
 ];
 
+const COMPONENT_DISPLAY_NAME_BY_ID = {
+  "核心权益模块-bigday发券-样式1": "核心权益｜big-day发券",
+  "核心权益模块-bigday发券-样式1-已报名": "核心权益｜big-day发券（已报名）",
+  "核心权益模块-bigday发券-样式2": "核心权益｜预约抢券",
+  "核心权益模块-发券-样式2": "核心权益｜发券",
+  "核心玩法模块-抽奖消返-3列": "核心玩法｜消耗返（三档）",
+  "核心玩法模块-抽奖消返-4列": "核心玩法｜消耗返",
+  "核心玩法模块-抽奖-未报名": "核心玩法｜抽奖-九宫格（报名前）",
+  "核心玩法模块-抽奖-已报名": "核心玩法｜抽奖-九宫格（已报名）",
+  投放抽奖: "核心玩法｜投放抽奖",
+  任务列表: "核心玩法｜任务",
+  投稿赢流量: "内容增长｜投稿赢流量",
+  "投稿赢流量-样式3": "内容增长｜流量扶持券",
+  "内容诊断-样式-点击后": "内容诊断｜生成报告后",
+  "内容诊断-优质视频提示": "内容诊断｜优质视频提示",
+  "诊断建议-样式1": "诊断建议",
+  "诊断建议-样式2": "诊断建议",
+  "用户教育案例-样式1": "用户教育｜案例展示",
+  "用户教育案例-样式2": "用户教育｜案例加行动按钮",
+  "用户教育-攻略": "用户教育｜投放攻略",
+  AI智投: "产品教育｜AI 智投",
+  节点指南: "节点营销｜行业内容指南",
+  官方小助手模块: "用户教育｜官方小助手",
+  "模块标题-正常": "模块标题",
+  "任务条-样式1-点击后": "任务条｜已完成状态",
+  "内容诊断-样式1-点击前": "内容诊断｜入口卡片",
+  "内容诊断-账号诊断": "内容诊断｜账号问题提示",
+  "发券-样式1": "优惠券｜横幅领券",
+  横排按钮数据条: "消耗与抽奖数据",
+  大按钮: "按钮",
+  置底按钮: "底部行动按钮",
+  账户优惠券提示: "账户优惠券提醒",
+};
+
+function getGlobalComponentDisplayName(schemaId, fallback = "") {
+  return COMPONENT_DISPLAY_NAME_BY_ID[schemaId] || fallback || schemaId || "模块";
+}
+
 function _normalizeDynamicSchema(path, rawSchema) {
   const dirName = path.split('/').slice(-2)[0];
+  const schemaId = rawSchema.id || dirName;
   const props = (rawSchema.props || []).map((p) => ({
     ...p,
     key: p.name || p.key,
@@ -85,14 +129,18 @@ function _normalizeDynamicSchema(path, rawSchema) {
   }));
   return {
     ...rawSchema,
-    id: rawSchema.id || dirName,
-    name: rawSchema.title || rawSchema.name || dirName,
+    id: schemaId,
+    name: getGlobalComponentDisplayName(
+      schemaId,
+      rawSchema.title || rawSchema.name || dirName,
+    ),
     type: 'atom',
     description: rawSchema.description || '',
     reactComponent: rawSchema.reactComponent || dirName,
     dimensions: rawSchema.dimensions || null,
     props,
     category: rawSchema.category || '未分类',
+      canvasOnly: Boolean(rawSchema.canvasOnly),
   };
 }
 
@@ -158,16 +206,91 @@ function _mergeSchemas(hardcoded, dynamic) {
 
 const atomSchemas = _mergeSchemas(_hardcodedAtomSchemas, _dynamicSchemas);
 
+const ATOM_MODULE_BADGE_IDS = new Set([
+  "任务条-样式1-点击后",
+  "内容诊断-样式1-点击前",
+  "内容诊断-账号诊断",
+  "发券-样式1",
+  "置底按钮",
+  "账户优惠券提示",
+]);
+
+function isModuleLevelAtom(schema) {
+  return ATOM_MODULE_BADGE_IDS.has(schema?.id);
+}
+
+function getAdminVerifierComponentOptionMarkup(verifierType, componentOptions, selectedSchemaId) {
+  const renderOption = (item, labelPrefix = "") => `
+    <option value="${escapeAttr(item.id)}" ${item.id === selectedSchemaId ? "selected" : ""}>
+      ${escapeHtml(`${labelPrefix}${item.name || item.id}`)}
+    </option>
+  `;
+
+  if (verifierType !== "atom") {
+    return componentOptions.map((item) => renderOption(item)).join("");
+  }
+
+  const moduleLevelOptions = componentOptions.filter(isModuleLevelAtom);
+  const normalOptions = componentOptions.filter((item) => !isModuleLevelAtom(item));
+  return `
+    <optgroup label="模块级原子">
+      ${moduleLevelOptions.map((item) => renderOption(item, "模块级｜")).join("")}
+    </optgroup>
+    <optgroup label="普通原子">
+      ${normalOptions.map((item) => renderOption(item)).join("")}
+    </optgroup>
+  `;
+}
+
 const BUILT_IN_MOLECULE_SCHEMAS = [
   {
     id: "核心权益模块-bigday发券-样式1",
     name: "核心权益模块-bigday发券-样式1",
     type: "molecule",
-    description: "由标题、Bigday 发券样式 3、补充说明组成。",
+    description: "由标题、Bigday 发券样式 3、规则可视按钮、补充说明组成。支持「报名前 / 已报名」双状态切换，状态绑定的蓝图与画布预览自动同步。",
+    className: "bigday-coupon-style1",
     children: [
       ["模块标题-正常", {}],
       ["发券-样式3", {}],
+      ["按钮-3-规则可视", {}],
       ["说明文-补充说明", {}],
+    ],
+    states: [
+      {
+        id: "default",
+        name: "报名前",
+        schemaId: "核心权益模块-bigday发券-样式1",
+      },
+      {
+        id: "postSignup",
+        name: "已报名",
+        schemaId: "核心权益模块-bigday发券-样式1-已报名",
+      },
+    ],
+  },
+  {
+    id: "核心权益模块-bigday发券-样式1-已报名",
+    name: "核心权益模块-bigday发券-样式1-已报名",
+    type: "molecule",
+    description: "【已报名状态】标题、Bigday 发券样式 3、点击后规则可视按钮（浅粉 #FF9ECA / 蓝 #FF8290 / 橘 #FF8571 三色系自动切换）、补充说明组成。与「样式1-报名前」共享双状态切换，原子组件的蓝图会自动组合为分子的蓝图并随原子同步变化。",
+    className: "bigday-coupon-style1",
+    children: [
+      ["模块标题-正常", {}],
+      ["发券-样式3", {}],
+      ["按钮-3-规则可视-点击后", {}],
+      ["说明文-补充说明", {}],
+    ],
+    states: [
+      {
+        id: "default",
+        name: "报名前",
+        schemaId: "核心权益模块-bigday发券-样式1",
+      },
+      {
+        id: "postSignup",
+        name: "已报名",
+        schemaId: "核心权益模块-bigday发券-样式1-已报名",
+      },
     ],
   },
   {
@@ -175,84 +298,248 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     name: "核心权益模块-bigday发券-样式2",
     type: "molecule",
     description: "由标题、通知、Bigday 发券样式 4 组成。",
+    className: "bigday-coupon-style2",
     children: [
-      ["模块标题-正常", {}],
+      ["模块标题-正常", { iconType: "alarm" }],
       ["通知", {}],
       ["发券-样式4", {}],
-    ],
-  },
-  {
-    id: "核心玩法模块-消返-1-3列",
-    name: "核心玩法模块-消返-1-3列",
-    type: "molecule",
-    description: "由标题、3 列抽奖消返、数据条、活动规则样式 1 组成。",
-    children: [
-      ["模块标题-正常", {}],
-      ["抽奖+消耗返3-3个券", {}],
-      ["横排按钮数据条", {}],
-      ["正文-活动规则样式1", {}],
     ],
   },
   {
     id: "核心玩法模块-抽奖消返-3列",
     name: "核心玩法模块-抽奖消返-3列",
     type: "molecule",
-    description: "由标题、3 列抽奖消返、数据条、活动规则样式 3 组成。",
+    description: "由标题、3 列抽奖消返、数据条、活动规则样式 3、大按钮组成。",
+    className: "lottery-consumption-return-3col",
     children: [
       ["模块标题-正常", {}],
       ["抽奖+消耗返3-3个券", {}],
       ["横排按钮数据条", {}],
       ["正文-活动规则样式3", {}],
+      ["大按钮", {}],
     ],
   },
   {
     id: "核心玩法模块-抽奖消返-4列",
     name: "核心玩法模块-抽奖消返-4列",
     type: "molecule",
-    description: "由标题、4 列消耗返、数据条、活动规则样式 3 组成。",
+    description: "由标题、4 列消耗返、数据条、活动规则样式 3、大按钮组成。",
+    className: "lottery-consumption-return-4col",
     children: [
       ["模块标题-正常", {}],
       ["消耗返样式4个券", {}],
       ["横排按钮数据条", {}],
       ["正文-活动规则样式3", {}],
+      ["大按钮", {}],
     ],
   },
   {
     id: "核心玩法模块-抽奖-未报名",
     name: "核心玩法模块-抽奖-未报名",
     type: "molecule",
-    description: "由标题、通知、九宫格抽奖报名前组成。",
+    description: "由标题+抽奖次数、提示、九宫格抽奖报名前、大按钮组成。",
+    className: "lottery-unregistered-module",
     children: [
-      ["模块标题-正常", {}],
-      ["通知", {}],
+      ["标题+抽奖次数", {}],
+      ["提示", {}],
       ["抽奖九宫格-报名前", {}],
+      ["大按钮", { buttonText: "立即报名" }],
     ],
   },
   {
     id: "核心玩法模块-抽奖-已报名",
     name: "核心玩法模块-抽奖-已报名",
     type: "molecule",
-    description: "由标题、通知、九宫格抽奖报名后组成。",
+    description: "由标题+抽奖次数、提示、九宫格抽奖报名后组成。",
+    className: "lottery-registered-module",
     children: [
-      ["模块标题-正常", {}],
-      ["通知", {}],
+      ["标题+抽奖次数", {}],
+      ["提示", {}],
       ["抽奖九宫格-报名后", {}],
     ],
   },
   {
-    id: "投稿赢流量-样式2",
-    name: "投稿赢流量-样式2",
+    id: "投稿赢流量",
+    name: "投稿赢流量",
     type: "molecule",
-    description: "由标题和活动规则样式 2 组成。",
+    description: "由标题、投稿赢流量样式 2、大按钮、活动规则样式 2 组成。",
+    className: "traffic-submission-module",
+    children: [
+      ["模块标题-正常", { iconType: "folder", titleText: "话题投稿赢流量" }],
+      ["投稿赢流量-样式2", {}],
+      ["大按钮", { buttonText: "立即投稿" }],
+      ["正文-活动规则样式2", {}],
+    ],
+  },
+  {
+    id: "投稿赢流量-样式3",
+    name: "投稿赢流量-样式3",
+    type: "molecule",
+    description: "由标题、流量扶持券、大按钮、活动规则样式 3 组成。",
+    className: "traffic-submission-style3-module",
+    children: [
+      ["模块标题-正常", { iconType: "folder" }],
+      ["流量扶持券", {}],
+      ["大按钮", { buttonText: "立即投稿" }],
+      ["正文-活动规则样式3", {}],
+    ],
+  },
+  {
+    id: "内容诊断-样式-点击后",
+    name: "内容诊断-样式-点击后",
+    type: "molecule",
+    description: "由模块标题、诊断建议、查看更多和内容按钮组成。",
+    className: "content-diagnosis-clicked-module",
+    states: [
+      { id: "default", name: "点击前", schemaId: "内容诊断-样式1-点击前", preserveProps: true },
+      { id: "clicked", name: "点击后", schemaId: "内容诊断-样式-点击后", preserveProps: true },
+    ],
     children: [
       ["模块标题-正常", {}],
-      ["正文-活动规则样式2", {}],
+      ["诊断建议-样式1", {}],
+      ["查看更多", {}],
+      ["内容按钮", {}],
+    ],
+  },
+  {
+    id: "内容诊断-优质视频提示",
+    name: "内容诊断-优质视频提示",
+    type: "molecule",
+    description: "由模块标题、诊断建议样式 2 和内容按钮组成。",
+    className: "content-diagnosis-quality-video-module",
+    children: [
+      ["模块标题-正常", {}],
+      ["诊断建议-样式2", {}],
+      ["内容按钮", {}],
+    ],
+  },
+  {
+    id: "用户教育案例-样式1",
+    name: "用户教育案例-样式1",
+    type: "molecule",
+    description: "由模块标题和内容案例样式 2 组成，内容案例在分子容器内横向滑动。",
+    className: "user-education-case-style1-module",
+    children: [
+      ["模块标题-正常", { iconType: "fire" }],
+      ["内容案例-样式2", {}],
+    ],
+  },
+  {
+    id: "用户教育案例-样式2",
+    name: "用户教育案例-样式2",
+    type: "molecule",
+    description: "由模块标题、内容案例样式 1 和大按钮组成。",
+    className: "user-education-case-style2-module",
+    children: [
+      ["模块标题-正常", { iconType: "folder" }],
+      ["内容案例-样式1", {}],
+      ["大按钮", { buttonText: "马上试试" }],
+    ],
+  },
+  {
+    id: "用户教育-攻略",
+    name: "用户教育-攻略",
+    type: "molecule",
+    description: "由模块标题、用户教育正文和大按钮组成。",
+    className: "user-education-guide-module",
+    children: [
+      ["模块标题-正常", { iconType: "tip" }],
+      ["正文-用户教育", {}],
+      ["大按钮", { buttonText: "立即投稿" }],
+    ],
+  },
+  {
+    id: "AI智投",
+    name: "AI智投",
+    type: "molecule",
+    description: "由模块标题、智投星内容和大按钮组成。",
+    className: "ai-smart-invest-module",
+    children: [
+      ["模块标题-正常", {}],
+      ["智投星内容", {}],
+      ["大按钮", { buttonText: "立即体验" }],
+    ],
+  },
+  {
+    id: "核心权益模块-发券-样式2",
+    name: "核心权益模块-发券-样式2",
+    type: "molecule",
+    description: "由模块标题、发券样式 2 和大按钮组成。",
+    className: "core-benefit-coupon-style2-module",
+    children: [
+      ["模块标题-正常", {}],
+      ["发券-样式2", {}],
+      ["大按钮", { buttonText: "立即使用" }],
+    ],
+  },
+  {
+    id: "投放抽奖",
+    name: "投放抽奖",
+    type: "molecule",
+    description: "由模块标题、抽奖样式 2、正文带底框样式 1 和大按钮组成。",
+    className: "placement-lottery-module",
+    children: [
+      ["模块标题-正常", { iconType: "gift" }],
+      ["抽奖样式2", {}],
+      ["正文-带底框样式1", {}],
+      ["大按钮", { buttonText: "去消耗" }],
+    ],
+  },
+  {
+    id: "节点指南",
+    name: "节点指南",
+    type: "molecule",
+    description: "由模块标题和节点指南内容组成，节点指南内容在分子内横向滑动。",
+    className: "node-guide-module",
+    children: [
+      ["模块标题-正常", { iconType: "fire" }],
+      ["节点指南-内容", {}],
+    ],
+  },
+  {
+    id: "官方小助手模块",
+    name: "官方小助手模块",
+    type: "molecule",
+    description: "由模块标题和官方小助手组成。",
+    className: "official-assistant-module",
+    children: [
+      ["模块标题-正常", {}],
+      ["官方小助手", {}],
+    ],
+  },
+  {
+    id: "任务列表",
+    name: "任务列表",
+    type: "molecule",
+    description: "由标题和可配置数量的任务条样式 1 组成。",
+    className: "task-list-module",
+    props: [
+      {
+        key: "taskCount",
+        name: "taskCount",
+        label: "任务数量",
+        type: "number",
+        default: 3,
+        min: 1,
+        description: "控制任务条-样式1的数量。",
+      },
+    ],
+    dynamicChildren: {
+      propKey: "taskCount",
+      childSchemaId: "任务条-样式1",
+      min: 1,
+    },
+    children: [
+      ["模块标题-正常", { iconType: "calendar" }],
     ],
   },
 ];
 
 const BUILT_IN_MOLECULE_IDS = BUILT_IN_MOLECULE_SCHEMAS.map((item) => item.id);
-const moleculeSchemas = [...BUILT_IN_MOLECULE_SCHEMAS];
+const moleculeSchemas = BUILT_IN_MOLECULE_SCHEMAS.map((schema) => ({
+  ...schema,
+  name: getGlobalComponentDisplayName(schema.id, schema.name),
+}));
 
 const MOLECULE_STORAGE_KEY = "builder_molecule_templates_empty_v1";
 function loadMoleculeTemplates() {
@@ -302,53 +589,132 @@ function deleteMoleculeOnServer(id) {
 loadMoleculeTemplates();
 
 const PAGE_TEMPLATE_STORAGE_KEY = "builder_page_templates_empty_v1";
-const LEGACY_PRD_PAGE_TEMPLATE_NAME = "页面1";
-const CONSUMPTION_RETURN_PAGE_TEMPLATE_NAME = "抽奖+消耗返";
-const COUPON_PAGE_TEMPLATE_NAME = "发券";
 const PRD_PAGE_TEMPLATE_ALIASES = {
-  发券: ["发券", "页面1"],
-  抽奖: ["抽奖"],
-  无激励单纯攻略: ["无激励单纯攻略"],
+  "模板1 只发券": ["模板1 只发券"],
+  "模板2 只抽奖": ["模板2 只抽奖"],
+  "模板3 抽奖 + 消耗返": ["模板3 抽奖 + 消耗返"],
+  "模板4 无激励攻略": ["模板4 无激励攻略"],
 };
+const PAGE_TEMPLATE_BUSINESS_STATES = {
+  "核心玩法模块-抽奖-未报名": {
+    label: "核心玩法｜抽奖-九宫格",
+    states: [
+      { id: "default", name: "报名前", schemaId: "核心玩法模块-抽奖-未报名" },
+      { id: "registered", name: "已报名", schemaId: "核心玩法模块-抽奖-已报名" },
+    ],
+  },
+  "内容诊断-样式1-点击前": {
+    label: "内容诊断｜入口卡片",
+    states: [
+      { id: "default", name: "点击前", schemaId: "内容诊断-样式1-点击前" },
+      { id: "clicked", name: "点击后", schemaId: "内容诊断-样式-点击后" },
+    ],
+  },
+  "内容诊断-样式-点击后": {
+    label: "内容诊断｜生成报告后",
+    states: [
+      { id: "default", name: "点击前", schemaId: "内容诊断-样式1-点击前" },
+      { id: "clicked", name: "点击后", schemaId: "内容诊断-样式-点击后" },
+    ],
+  },
+};
+const PAGE_TEMPLATE_DEFAULT_BUSINESS_STATES = {
+  "page-lottery-consumption-return|3": "registered",
+};
+const PAGE_TEMPLATE_MODULE_BUSINESS_STATES = {
+  "page-guide-no-incentive|1": {
+    label: "内容诊断",
+    states: [
+      {
+        id: "entry",
+        name: "入口卡片",
+        schemaId: "内容诊断-样式1-点击前",
+      },
+      {
+        id: "quality",
+        name: "优质视频提示",
+        schemaId: "内容诊断-优质视频提示",
+      },
+      {
+        id: "account",
+        name: "账号问题提示",
+        schemaId: "内容诊断-账号诊断",
+      },
+    ],
+  },
+};
+const PAGE_TEMPLATE_ENTRY_CARD_STATES = [
+  {
+    id: "default",
+    name: "点击前",
+    schemaId: "内容诊断-样式1-点击前",
+  },
+  {
+    id: "clicked",
+    name: "点击后",
+    schemaId: "内容诊断-样式-点击后",
+  },
+];
+const LOCKED_PAGE_TEMPLATE_BLUEPRINT_SCHEMA_IDS = new Set([
+  "用户教育案例-样式1",
+  "用户教育案例-样式2",
+  "AI智投",
+  "节点指南",
+]);
 const customPageTemplates = [];
 
 function normalizePageTemplateLookupName(value) {
   return String(value || "")
     .replace(/\s+/g, "")
+    .replace(/[【】\[\]（）()「」『』《》]/g, "")
     .replace(/＋/g, "+")
     .replace(/消耗返回/g, "消耗返")
     .toLowerCase();
 }
 
-function getCustomPageTemplateTimestamp(template) {
-  const match = String(template?.id || "").match(/custom_page_(\d+)/);
-  return Number(match?.[1] || 0);
-}
-
 function repairCustomPageTemplateNames(templates) {
   let repaired = false;
-  const consumptionReturnTemplates = templates.filter(
-    (item) =>
-      normalizePageTemplateLookupName(item?.name) ===
-      normalizePageTemplateLookupName(CONSUMPTION_RETURN_PAGE_TEMPLATE_NAME),
-  );
-  if (consumptionReturnTemplates.length > 1) {
-    const latest = [...consumptionReturnTemplates].sort(
-      (a, b) => getCustomPageTemplateTimestamp(b) - getCustomPageTemplateTimestamp(a),
-    )[0];
-    if (latest) {
-      latest.name = COUPON_PAGE_TEMPLATE_NAME;
+  const replaceNodeSchema = (template, fromSchemaId, toSchemaId) => {
+    const nodeIndex = (template.nodes || []).findIndex(
+      (node) => node?.schemaId === fromSchemaId,
+    );
+    if (nodeIndex < 0) return false;
+    const currentNode = template.nodes[nodeIndex];
+    const replacement = createMoleculeNode(toSchemaId);
+    if (!replacement) return false;
+    replacement.id = currentNode.id || replacement.id;
+    template.nodes[nodeIndex] = replacement;
+    return true;
+  };
+  templates.forEach((item) => {
+    const normalizedName = normalizePageTemplateLookupName(item?.name);
+    const matchedEntry = Object.entries(PRD_PAGE_TEMPLATE_ALIASES).find(
+      ([canonicalName, aliases]) =>
+        normalizePageTemplateLookupName(canonicalName) === normalizedName ||
+        aliases.some(
+          (alias) => normalizePageTemplateLookupName(alias) === normalizedName,
+        ),
+    );
+    if (matchedEntry && item.name !== matchedEntry[0]) {
+      item.name = matchedEntry[0];
       repaired = true;
     }
-  }
-
-  templates.forEach((item) => {
-    if (
-      normalizePageTemplateLookupName(item?.name) ===
-      normalizePageTemplateLookupName(LEGACY_PRD_PAGE_TEMPLATE_NAME)
-    ) {
-      item.name = COUPON_PAGE_TEMPLATE_NAME;
-      repaired = true;
+    const canonicalName = matchedEntry?.[0] || item.name;
+    if (canonicalName === "模板3 抽奖 + 消耗返") {
+      repaired =
+        replaceNodeSchema(
+          item,
+          "核心玩法模块-抽奖消返-3列",
+          "核心玩法模块-抽奖消返-4列",
+        ) || repaired;
+    }
+    if (canonicalName === "模板4 无激励攻略") {
+      repaired =
+        replaceNodeSchema(
+          item,
+          "用户教育案例-样式1",
+          "用户教育案例-样式2",
+        ) || repaired;
     }
   });
 
@@ -410,7 +776,9 @@ function findLatestCustomPageTemplateByName(name) {
 function findLatestCustomPageTemplateByPrdType(pageType) {
   const normalizedType = normalizePageTemplateLookupName(pageType);
   const aliasEntry = Object.entries(PRD_PAGE_TEMPLATE_ALIASES).find(
-    ([key]) => normalizePageTemplateLookupName(key) === normalizedType,
+    ([key, aliases]) =>
+      normalizePageTemplateLookupName(key) === normalizedType ||
+      aliases.some((alias) => normalizePageTemplateLookupName(alias) === normalizedType),
   );
   const lookupNames = aliasEntry?.[1] || [pageType];
   for (const name of lookupNames) {
@@ -428,7 +796,6 @@ function findLatestCustomPageTemplateByPrdType(pageType) {
         ...template,
         isCustom: false,
         canvasBackground: template.canvasBackground || template.background || "#ffffff",
-        nodes: (template.nodes || []).map(createTemplateNode).filter(Boolean),
       };
     }
   }
@@ -465,7 +832,7 @@ const pageBlueprintFormConfig = {
   moduleName: "页面基础信息",
   description: "先确认模板命中和活动基本信息。",
   sections: [
-    { title: "活动信息", fields: ["页面类型", "活动名称", "活动时间", { label: "活动目标", size: "wide" }] },
+    { title: "活动信息", fields: ["页面类型", "活动名称", "活动时间"] },
   ],
 };
 
@@ -485,7 +852,322 @@ const pageTemplates = [
     ],
     nodes: [],
   },
+  {
+    id: "page-coupon",
+    name: "模板1 只发券",
+    category: "页面模板",
+    description: "核心权益发券由用户填写，其余页面模块沿用默认内容。",
+    canvasBackground: "#FFE0E9",
+    background: "#FFE0E9",
+    viewportWidth: 750,
+    nodes: [
+      ["核心权益模块-发券-样式2", {}],
+      ["内容诊断-样式1-点击前", {}],
+      ["用户教育-攻略", {}],
+      ["用户教育案例-样式1", {}],
+      ["官方小助手模块", {}],
+      ["置底按钮", {}],
+    ],
+  },
+  {
+    id: "page-lottery",
+    name: "模板2 只抽奖",
+    category: "页面模板",
+    description: "核心权益发券和投放抽奖由用户填写，其余页面模块沿用默认内容。",
+    canvasBackground: "#FFE0E9",
+    background: "#FFE0E9",
+    viewportWidth: 750,
+    nodes: [
+      ["账户优惠券提示", {}],
+      ["核心权益模块-发券-样式2", {}],
+      ["投放抽奖", {}],
+      ["内容诊断-样式1-点击前", {}],
+      ["用户教育-攻略", {}],
+      ["用户教育案例-样式1", {}],
+      ["官方小助手模块", {}],
+      ["置底按钮", {}],
+    ],
+  },
+  {
+    id: "page-lottery-consumption-return",
+    name: "模板3 抽奖 + 消耗返",
+    category: "页面模板",
+    description: "Big-day 发券、四档消耗返、抽奖九宫格、任务和流量扶持券由用户填写，其余页面模块沿用默认内容。",
+    canvasBackground: "#FFE0E9",
+    background: "#FFE0E9",
+    viewportWidth: 750,
+    nodes: [
+      ["账户优惠券提示", {}],
+      ["核心权益模块-bigday发券-样式1", {}],
+      ["核心玩法模块-抽奖消返-4列", {}],
+      ["核心玩法模块-抽奖-未报名", {}],
+      ["任务列表", {}],
+      ["投稿赢流量-样式3", {}],
+      ["AI智投", {}],
+      ["节点指南", {}],
+      ["置底按钮", {}],
+    ],
+  },
+  {
+    id: "page-guide-no-incentive",
+    name: "模板4 无激励攻略",
+    category: "页面模板",
+    description: "无需填写 PRD，页面模块直接使用默认内容。",
+    canvasBackground: "#FFE0E9",
+    background: "#FFE0E9",
+    viewportWidth: 750,
+    nodes: [
+      ["账户优惠券提示", {}],
+      ["内容诊断-样式1-点击前", {}],
+      ["用户教育-攻略", {}],
+      ["用户教育案例-样式2", {}],
+      ["置底按钮", {}],
+    ],
+  },
 ];
+
+const PRD_PAGE_TEMPLATE_ID_BY_NAME = {
+  "模板1 只发券": "page-coupon",
+  "模板2 只抽奖": "page-lottery",
+  "模板3 抽奖 + 消耗返": "page-lottery-consumption-return",
+  "模板4 无激励攻略": "page-guide-no-incentive",
+};
+
+const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
+  "page-coupon": [
+    {
+      schemaIds: ["核心权益模块-发券-样式2"],
+      moduleName: "核心权益｜发券",
+      sections: [
+        {
+          title: "",
+          fields: [
+            ["0.titleText", "模块标题"],
+            ["1.amountText", "券金额"],
+            ["1.conditionText", "券使用条件"],
+            ["2.buttonText", "主按钮文案"],
+          ],
+        },
+      ],
+    },
+  ],
+  "page-lottery": [
+    {
+      schemaIds: ["核心权益模块-发券-样式2"],
+      moduleName: "核心权益｜发券",
+      sections: [
+        {
+          title: "",
+          fields: [
+            ["0.titleText", "模块标题"],
+            ["1.amountText", "券金额"],
+            ["1.conditionText", "券使用条件"],
+            ["2.buttonText", "主按钮文案"],
+          ],
+        },
+      ],
+    },
+    {
+      schemaIds: ["投放抽奖"],
+      moduleName: "核心玩法｜投放抽奖",
+      sections: [
+        {
+          title: "",
+          fields: [["0.titleText", "模块标题"]],
+        },
+        {
+          title: "奖品配置",
+          fields: [
+            ["1.prize1", "奖品1"],
+            ["1.prize2", "奖品2"],
+            ["1.prize3", "奖品3"],
+          ],
+        },
+        {
+          title: "参与规则",
+          fields: [
+            ["2.titleText", "规则标题"],
+            ["2.bodyText", "规则正文"],
+          ],
+        },
+        {
+          title: "行动按钮",
+          fields: [["3.buttonText", "主按钮文案"]],
+        },
+      ],
+    },
+  ],
+  "page-lottery-consumption-return": [
+    {
+      schemaIds: [
+        "核心权益模块-bigday发券-样式1",
+        "核心权益模块-bigday发券-样式1-已报名",
+      ],
+      moduleName: "核心权益｜big-day发券",
+      sections: [
+        {
+          title: "",
+          fields: [["0.titleText", "模块标题"]],
+        },
+        {
+          title: "券信息",
+          fields: [
+            ["1.amountText", "券金额"],
+            ["1.conditionText", "券使用条件"],
+            ["1.giftConditionText", "券门槛/赠送条件"],
+            ["1.specialText", "用户标签"],
+          ],
+        },
+        {
+          title: "参与规则",
+          fields: [
+            ["2.limitedText", "活动限制时间"],
+            ["2.actionText", "参与动作"],
+            ["2.orderText", "参与门槛"],
+            ["2.targetText", "投放目标说明"],
+          ],
+        },
+        {
+          title: "行动与说明",
+          fields: [
+            ["2.buttonText", "报名按钮文案"],
+            ["3.text", "补充说明"],
+          ],
+        },
+      ],
+    },
+    {
+      schemaIds: ["核心玩法模块-抽奖消返-4列"],
+      moduleName: "核心玩法｜消耗返",
+      sections: [
+        {
+          title: "",
+          fields: [["0.titleText", "模块标题"]],
+        },
+        {
+          title: "返券配置",
+          fields: [
+            ["1.amountText1", "返券1 · 金额"],
+            ["1.amountText2", "返券2 · 金额"],
+            ["1.amountText3", "返券3 · 金额"],
+            ["1.consumeAmountText1", "第1档 · 抽奖门槛"],
+            ["1.consumeAmountText2", "返券1 · 消耗门槛"],
+            ["1.consumeAmountText3", "返券2 · 消耗门槛"],
+            ["1.consumeAmountText4", "返券3 · 消耗门槛"],
+          ],
+        },
+        {
+          title: "活动规则",
+          fields: [
+            ["3.titleText", "标题"],
+            ["3.firstBodyText", "规则正文1"],
+            ["3.secondBodyText", "规则正文2"],
+            ["3.thirdBodyText", "规则正文3"],
+            ["3.highlightText", "高亮内容"],
+            ["3.paragraphCount", "规则段落数量"],
+          ],
+        },
+      ],
+    },
+    {
+      schemaIds: [
+        "核心玩法模块-抽奖-未报名",
+        "核心玩法模块-抽奖-已报名",
+      ],
+      moduleName: "核心玩法｜抽奖-九宫格",
+      preferredStateId: "registered",
+      sections: [
+        {
+          title: "",
+          fields: [["0.titleText", "标题"]],
+        },
+        {
+          title: "奖品配置",
+          fields: Array.from({ length: 8 }, (_, index) => [
+            `2.prize${index + 1}`,
+            `奖品${index + 1}`,
+          ]),
+        },
+      ],
+    },
+    {
+      schemaIds: ["任务列表"],
+      moduleName: "核心玩法｜任务",
+      sections: [
+        {
+          title: "",
+          fields: [["0.titleText", "模块标题"]],
+        },
+        ...Array.from({ length: 3 }, (_, index) => {
+          const taskNumber = index + 1;
+          return {
+            title: `任务${taskNumber}`,
+            fields: [
+              [`${taskNumber}.taskTitle`, "标题"],
+              [`${taskNumber}.taskSubtitle`, "说明"],
+              [`${taskNumber}.rewardCountText`, "奖励数量"],
+              [`${taskNumber}.completionText`, "完成次数说明"],
+            ],
+          };
+        }),
+      ],
+    },
+    {
+      schemaIds: ["投稿赢流量-样式3"],
+      moduleName: "内容增长｜流量扶持券",
+      sections: [
+        {
+          title: "奖励信息",
+          fields: [["1.supportText", "流量扶持金额"]],
+        },
+        {
+          title: "行动按钮",
+          fields: [["2.buttonText", "主按钮文案"]],
+        },
+        {
+          title: "活动规则",
+          fields: [
+            ["3.titleText", "活动规则标题"],
+            ["3.firstBodyText", "规则正文1"],
+            ["3.secondBodyText", "规则正文2"],
+            ["3.thirdBodyText", "规则正文3"],
+            ["3.highlightText", "重点说明"],
+            ["3.paragraphCount", "规则段落数量"],
+          ],
+        },
+      ],
+    },
+  ],
+  "page-guide-no-incentive": [],
+};
+
+function getCanonicalPrdPageTemplateId(pageTemplate) {
+  if (!pageTemplate) return "";
+  if (Object.prototype.hasOwnProperty.call(PRD_PAGE_TEMPLATE_INPUT_SPECS, pageTemplate.id)) {
+    return pageTemplate.id;
+  }
+  const normalizedName = normalizePageTemplateLookupName(pageTemplate.name);
+  const matchedName = Object.keys(PRD_PAGE_TEMPLATE_ID_BY_NAME).find((name) => {
+    if (normalizePageTemplateLookupName(name) === normalizedName) return true;
+    return (PRD_PAGE_TEMPLATE_ALIASES[name] || []).some(
+      (alias) => normalizePageTemplateLookupName(alias) === normalizedName,
+    );
+  });
+  return matchedName ? PRD_PAGE_TEMPLATE_ID_BY_NAME[matchedName] : "";
+}
+
+function getPrdPageTemplateInputSpecs(pageTemplate) {
+  const templateId = getCanonicalPrdPageTemplateId(pageTemplate);
+  return Object.prototype.hasOwnProperty.call(PRD_PAGE_TEMPLATE_INPUT_SPECS, templateId)
+    ? PRD_PAGE_TEMPLATE_INPUT_SPECS[templateId]
+    : null;
+}
+
+function getPrdPageTemplateModuleSpec(pageTemplate, schemaId) {
+  const specs = getPrdPageTemplateInputSpecs(pageTemplate);
+  if (!specs) return null;
+  return specs.find((spec) => spec.schemaIds.includes(schemaId)) || null;
+}
 
 const ACTIVITY_STORAGE_KEY = "builder_activity_data_empty_v1_";
 const PRD_TABLE_PACKAGE_ID = "saved-prd-table";
@@ -508,6 +1190,749 @@ function normalizePrdTableRows(rows) {
       value: String(row?.value ?? ""),
     }));
   return normalized.length ? normalized : [{ key: "", value: "" }];
+}
+
+const PRD_BLUEPRINT_PASTE_FIXED_COLUMNS = ["module", "field"];
+const PRD_BLUEPRINT_PASTE_FIXED_HEADERS = ["模块", "字段"];
+const PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS = ["默认版本", "版本2", "版本3", "版本4"];
+
+function createEmptyPrdBlueprintPasteRow() {
+  return { module: "", field: "", values: [] };
+}
+
+function normalizePrdBlueprintPasteVersions(versions, minColumns = 4) {
+  const normalized = Array.isArray(versions)
+    ? versions.map((version) => String(version || "").trim())
+    : [];
+  const fallback = [...PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS];
+  while (normalized.length < minColumns) {
+    normalized.push(fallback[normalized.length] || `版本${normalized.length + 1}`);
+  }
+  return normalized;
+}
+
+function normalizePrdBlueprintPasteRows(rows, minRows = 12, versionCount = null) {
+  const targetVersionCount = versionCount ?? Math.max(
+    PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS.length,
+    ...(Array.isArray(rows) ? rows.map((row) => row?.values?.length || 0) : [0]),
+  );
+  const normalized = Array.isArray(rows)
+    ? rows.map((row) => ({
+        module: String(row?.module ?? ""),
+        field: String(row?.field ?? ""),
+        values: Array.from({ length: targetVersionCount }, (_, index) =>
+          String(row?.values?.[index] ?? row?.[`value${index}`] ?? ""),
+        ),
+      }))
+    : [];
+  while (normalized.length < minRows) normalized.push(createEmptyPrdBlueprintPasteRow());
+  normalized.forEach((row) => {
+    while (row.values.length < targetVersionCount) row.values.push("");
+  });
+  return normalized;
+}
+
+function isPrdBlueprintPasteHeaderCells(cells = []) {
+  return PRD_BLUEPRINT_PASTE_FIXED_HEADERS.every((header, index) =>
+    normalizePageTemplateLookupName(cells[index]) === normalizePageTemplateLookupName(header),
+  );
+}
+
+function parsePrdBlueprintClipboardHtmlTables(html = "") {
+  if (!html.trim()) return [];
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  return [...doc.querySelectorAll("table")]
+    .map((table) =>
+      [...table.querySelectorAll("tr")]
+        .map((row) =>
+          [...row.querySelectorAll("th,td")].map((cell) => cell.textContent.trim()),
+        )
+        .filter((cells) => cells.some(Boolean)),
+    )
+    .filter((rows) => rows.length);
+}
+
+function parsePrdBlueprintClipboardTextTables(text = "") {
+  const blocks = String(text || "")
+    .replace(/\r\n?/g, "\n")
+    .split(/\n\s*\n/)
+    .map((block) =>
+      block
+        .split("\n")
+        .map((line) => line.split("\t").map((cell) => cell.trim()))
+        .filter((cells) => cells.some(Boolean)),
+    )
+    .filter((rows) => rows.length);
+  return blocks.length ? blocks : [];
+}
+
+function parsePrdBlueprintClipboardTables(clipboardData) {
+  const htmlTables = parsePrdBlueprintClipboardHtmlTables(
+    clipboardData?.getData("text/html") || "",
+  );
+  return htmlTables.length
+    ? htmlTables
+    : parsePrdBlueprintClipboardTextTables(
+        clipboardData?.getData("text/plain") || "",
+      );
+}
+
+function parsePrdBlueprintClipboardRows(clipboardData) {
+  return parsePrdBlueprintClipboardTables(clipboardData).flat();
+}
+
+function getPrdDocumentTableHeaderIndex(rows, headerLabel) {
+  const wanted = normalizePageTemplateLookupName(headerLabel);
+  return rows.findIndex(
+    (cells) => normalizePageTemplateLookupName(cells[0]) === wanted,
+  );
+}
+
+function getPrdDocumentSpecFieldLabels(spec) {
+  return new Set(
+    (spec?.sections || [])
+      .flatMap((section) => section.fields || [])
+      .map(([, label]) => normalizePageTemplateLookupName(label))
+      .filter(Boolean),
+  );
+}
+
+function getPrdDocumentTableModuleSpec(rows, headerIndex, templateName) {
+  const templateId = PRD_PAGE_TEMPLATE_ID_BY_NAME[templateName];
+  const specs = PRD_PAGE_TEMPLATE_INPUT_SPECS[templateId] || [];
+  const fieldNames = rows
+    .slice(headerIndex + 1)
+    .map((cells) => normalizePageTemplateLookupName(cells[0]))
+    .filter(Boolean);
+  return specs
+    .map((spec) => {
+      const labels = getPrdDocumentSpecFieldLabels(spec);
+      return {
+        spec,
+        score: fieldNames.filter((fieldName) => labels.has(fieldName)).length,
+      };
+    })
+    .sort((left, right) => right.score - left.score)[0];
+}
+
+function getPrdDocumentVersionHeaders(cells = []) {
+  return cells
+    .slice(1)
+    .map((value) => String(value || "").trim())
+    .filter(
+      (value) =>
+        value &&
+        !/^(填写示意|参考输入|默认值|示例)$/.test(value),
+    );
+}
+
+function parsePrdDocumentStandardTable(rows, templateName) {
+  const headerIndex = getPrdDocumentTableHeaderIndex(rows, "");
+  if (headerIndex < 0) return null;
+  const headers = getPrdDocumentVersionHeaders(rows[headerIndex]);
+  const moduleMatch = getPrdDocumentTableModuleSpec(
+    rows,
+    headerIndex,
+    templateName,
+  );
+  if (!moduleMatch?.score) return null;
+  const allowedFields = getPrdDocumentSpecFieldLabels(moduleMatch.spec);
+  const fields = rows
+    .slice(headerIndex + 1)
+    .map((cells) => ({
+      field: String(cells[0] || "").trim(),
+      values: headers.map((_, index) => String(cells[index + 1] || "").trim()),
+    }))
+    .filter(
+      (row) =>
+        allowedFields.has(normalizePageTemplateLookupName(row.field)) &&
+        row.values.some(Boolean),
+    );
+  return {
+    module: moduleMatch.spec.moduleName,
+    versions: headers,
+    fields,
+  };
+}
+
+function parsePrdDocumentReturnTier(value) {
+  const match = String(value || "")
+    .replace(/\s+/g, "")
+    .match(/送满([\d.]+)赠([\d.]+)/);
+  return {
+    threshold: match?.[1] || "",
+    reward: match?.[2] || "",
+  };
+}
+
+function parsePrdDocumentReturnStrategyTable(rows) {
+  const headerIndex = getPrdDocumentTableHeaderIndex(rows, "人群策略");
+  if (headerIndex < 0) return null;
+  const records = rows
+    .slice(headerIndex + 1)
+    .map((cells) => {
+      const name = String(cells[0] || "").trim();
+      const drawThreshold =
+        String(cells[1] || "").replace(/\s+/g, "").match(/(?:≥|>=|满)([\d.]+)/)?.[1] ||
+        "";
+      const tiers = [2, 3, 4].map((index) =>
+        parsePrdDocumentReturnTier(cells[index]),
+      );
+      return { name, drawThreshold, tiers };
+    })
+    .filter(
+      (record) =>
+        record.name &&
+        record.drawThreshold &&
+        record.tiers.some((tier) => tier.threshold || tier.reward),
+    );
+  if (!records.length) return null;
+  const fieldValues = [
+    ["第1档 · 抽奖门槛", records.map((record) => record.drawThreshold)],
+    ["返券1 · 金额", records.map((record) => record.tiers[0].reward)],
+    ["返券2 · 金额", records.map((record) => record.tiers[1].reward)],
+    ["返券3 · 金额", records.map((record) => record.tiers[2].reward)],
+    ["返券1 · 消耗门槛", records.map((record) => record.tiers[0].threshold)],
+    ["返券2 · 消耗门槛", records.map((record) => record.tiers[1].threshold)],
+    ["返券3 · 消耗门槛", records.map((record) => record.tiers[2].threshold)],
+  ];
+  return {
+    module: "核心玩法｜消耗返",
+    versions: records.map((record) => record.name),
+    fields: fieldValues.map(([field, values]) => ({ field, values })),
+  };
+}
+
+function parsePrdDocumentGuideTable(rows) {
+  const headerIndex = getPrdDocumentTableHeaderIndex(rows, "页面模块顺序");
+  if (headerIndex < 0) return null;
+  const diagnosisRow = rows
+    .slice(headerIndex + 1)
+    .find((cells) => String(cells[0] || "").trim() === "2");
+  const diagnosisName = (diagnosisRow || [])
+    .slice(1)
+    .map((value) => String(value || "").trim())
+    .find(Boolean);
+  const normalizedName = normalizePageTemplateLookupName(diagnosisName);
+  const stateId = normalizedName.includes(
+    normalizePageTemplateLookupName("优质视频提示"),
+  )
+    ? "quality"
+    : normalizedName.includes(normalizePageTemplateLookupName("账号问题提示"))
+      ? "account"
+      : "entry";
+  return { stateId };
+}
+
+function adaptPrdDocumentClipboardTables(
+  tables,
+  templateName,
+  existingVersions = [],
+  hasExistingData = false,
+) {
+  const hasDocumentTable = tables.some(
+    (rows) =>
+      getPrdDocumentTableHeaderIndex(rows, "") >= 0 ||
+      getPrdDocumentTableHeaderIndex(rows, "人群策略") >= 0 ||
+      getPrdDocumentTableHeaderIndex(rows, "页面模块顺序") >= 0,
+  );
+  if (!hasDocumentTable) return null;
+  if (!templateName) {
+    return { error: "请先选择本次粘贴对应的页面模板" };
+  }
+
+  const returnStrategy = tables
+    .map(parsePrdDocumentReturnStrategyTable)
+    .find(Boolean);
+  const guideTable = tables
+    .map(parsePrdDocumentGuideTable)
+    .find(Boolean);
+  const standardTables = tables
+    .map((rows) => parsePrdDocumentStandardTable(rows, templateName))
+    .filter(Boolean);
+  if (!standardTables.length && !returnStrategy && !guideTable) {
+    return { error: "未识别到该模板的模块字段，请确认复制了完整表格" };
+  }
+
+  const versions = returnStrategy
+    ? returnStrategy.versions
+    : guideTable
+      ? ["默认版本"]
+      : hasExistingData
+      ? normalizePrdBlueprintPasteVersions(existingVersions, 0)
+      : [...new Set(standardTables.flatMap((table) => table.versions))];
+  if (!versions.length) {
+    return { error: "表格中没有已填写的人群版本" };
+  }
+
+  const outputRows = [
+    ["模块", "字段", ...versions],
+    ["页面基础信息", "页面类型", templateName, ...versions.slice(1).map(() => "")],
+  ];
+  standardTables.forEach((table) => {
+    table.fields.forEach((field) => {
+      const values = versions.map((version, index) => {
+        const sourceIndex = table.versions.findIndex(
+          (sourceVersion) =>
+            normalizePageTemplateLookupName(sourceVersion) ===
+            normalizePageTemplateLookupName(version),
+        );
+        const mappedIndex = sourceIndex >= 0 ? sourceIndex : index;
+        return field.values[mappedIndex] || "";
+      });
+      outputRows.push([table.module, field.field, ...values]);
+    });
+  });
+  if (returnStrategy) {
+    returnStrategy.fields.forEach((field) => {
+      outputRows.push([returnStrategy.module, field.field, ...field.values]);
+    });
+  }
+  return {
+    rows: outputRows,
+    versions,
+    templateName,
+    guideStateId: guideTable?.stateId || "",
+  };
+}
+
+function detectPrdDocumentTemplateName(content = "") {
+  const normalizedContent = normalizePageTemplateLookupName(content);
+  const matched = Object.entries(PRD_PAGE_TEMPLATE_ALIASES).find(
+    ([templateName, aliases]) =>
+      [templateName, ...aliases].some((name) =>
+        normalizedContent.includes(normalizePageTemplateLookupName(name)),
+      ),
+  );
+  return matched?.[0] || "";
+}
+
+function mergeAdaptedPrdDocumentRows(
+  currentRows,
+  adapted,
+  targetModuleName = "",
+) {
+  const versions = adapted.versions;
+  const rows = normalizePrdBlueprintPasteRows(
+    currentRows,
+    0,
+    versions.length,
+  );
+  adapted.rows.slice(1).forEach((cells) => {
+    const moduleName = String(cells[0] || "").trim();
+    const fieldName = String(cells[1] || "").trim();
+    if (
+      targetModuleName &&
+      normalizePageTemplateLookupName(moduleName) !==
+        normalizePageTemplateLookupName(targetModuleName) &&
+      normalizePageTemplateLookupName(moduleName) !==
+        normalizePageTemplateLookupName("页面基础信息")
+    ) {
+      return;
+    }
+    const rowIndex = rows.findIndex(
+      (row) =>
+        normalizePageTemplateLookupName(row.module) ===
+          normalizePageTemplateLookupName(moduleName) &&
+        normalizePageTemplateLookupName(row.field) ===
+          normalizePageTemplateLookupName(fieldName),
+    );
+    if (rowIndex < 0) return;
+    rows[rowIndex].values = versions.map(
+      (_, index) => String(cells[index + 2] || "").trim(),
+    );
+  });
+  return rows;
+}
+
+function getPrdBlueprintPasteVersionsFromModal(modal) {
+  const versions = [...modal.querySelectorAll("[data-prd-blueprint-version-cell]")]
+    .map((cell) => cell.textContent.trim())
+    .filter(Boolean);
+  return versions.length
+    ? versions
+    : normalizePrdBlueprintPasteVersions(
+        state.prdBlueprintPasteVersions,
+        state.prdBlueprintPasteVersions.length,
+      );
+}
+
+function getPrdBlueprintPasteRowsFromModal(modal) {
+  const rows = normalizePrdBlueprintPasteRows(
+    state.prdBlueprintPasteRows,
+    0,
+    state.prdBlueprintPasteVersions.length,
+  );
+  [...modal.querySelectorAll("[data-prd-blueprint-paste-row]")].forEach((row) => {
+    const cells = [...row.querySelectorAll("[data-prd-blueprint-cell]")];
+    const rowIndex = Number(row.dataset.prdBlueprintPasteRow);
+    if (!Number.isInteger(rowIndex)) return;
+    rows[rowIndex] = {
+      module: cells[0]?.textContent.trim() || "",
+      field: cells[1]?.textContent.trim() || "",
+      values: cells.slice(2).map((cell) => cell.textContent.trim()),
+    };
+  });
+  return rows;
+}
+
+function getFilledPrdBlueprintPasteRows(rows = []) {
+  return normalizePrdBlueprintPasteRows(rows, 0).filter((row) =>
+    row.module.trim() || row.field.trim() || row.values.some((value) => value.trim()),
+  );
+}
+
+function mergePrdBlueprintPasteRows(currentRows, currentVersions, incomingCells, startRowIndex, startCellIndex) {
+  const hasHeader = isPrdBlueprintPasteHeaderCells(incomingCells[0] || []);
+  const incomingRows = hasHeader ? incomingCells.slice(1) : incomingCells;
+  const nextVersions = normalizePrdBlueprintPasteVersions(currentVersions);
+  if (hasHeader) {
+    const pastedVersions = incomingCells[0].slice(PRD_BLUEPRINT_PASTE_FIXED_COLUMNS.length).filter(Boolean);
+    pastedVersions.forEach((version, index) => {
+      nextVersions[index] = version;
+    });
+  }
+  const rows = normalizePrdBlueprintPasteRows(currentRows, 12, nextVersions.length);
+  incomingRows.forEach((cells, incomingRowIndex) => {
+    const targetIndex = startRowIndex + incomingRowIndex;
+    while (rows.length <= targetIndex) rows.push(createEmptyPrdBlueprintPasteRow());
+    cells.forEach((cellValue, incomingCellIndex) => {
+      const targetCellIndex = startCellIndex + incomingCellIndex;
+      if (targetCellIndex === 0) rows[targetIndex].module = cellValue || "";
+      if (targetCellIndex === 1) rows[targetIndex].field = cellValue || "";
+      if (targetCellIndex >= 2) {
+        const valueIndex = targetCellIndex - PRD_BLUEPRINT_PASTE_FIXED_COLUMNS.length;
+        while (nextVersions.length <= valueIndex) nextVersions.push(`版本${nextVersions.length + 1}`);
+        while (rows[targetIndex].values.length <= valueIndex) rows[targetIndex].values.push("");
+        rows[targetIndex].values[valueIndex] = cellValue || "";
+      }
+    });
+  });
+  return {
+    rows: normalizePrdBlueprintPasteRows(rows, 12, nextVersions.length),
+    versions: nextVersions,
+  };
+}
+
+function expandPrdBlueprintPasteRows(rows = [], versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS) {
+  const normalizedVersions = normalizePrdBlueprintPasteVersions(versions, 0);
+  return getFilledPrdBlueprintPasteRows(rows).flatMap((row) =>
+    row.values.map((value, index) => ({
+      module: row.module,
+      version: normalizedVersions[index] || `版本${index + 1}`,
+      field: row.field,
+      value,
+    })).filter((entry) => entry.value.trim()),
+  );
+}
+
+function getPrdBlueprintPastePageType(rows = [], versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS) {
+  const expandedRows = expandPrdBlueprintPasteRows(rows, versions);
+  const templateNames = Object.keys(PRD_PAGE_TEMPLATE_ALIASES);
+  const directTemplateName = templateNames.find((templateName) =>
+    expandedRows.some((row) =>
+      [row.module, row.field, row.value].some(
+        (value) =>
+          normalizePageTemplateLookupName(value) ===
+          normalizePageTemplateLookupName(templateName),
+      ),
+    ),
+  );
+  if (directTemplateName) return directTemplateName;
+  const pageTypeRow = expandedRows.find((row) =>
+    normalizePageTemplateLookupName(row.module) === normalizePageTemplateLookupName("页面基础信息") &&
+    /^(页面类型|活动类型|类型)$/.test(String(row.field || "").trim()),
+  );
+  return normalizePrdPageTypeValue(pageTypeRow?.value || "");
+}
+
+function getPageTemplateNodeModuleAliases(pageTemplate, moduleIndex) {
+  const node = materializePageTemplateNodes(pageTemplate)[moduleIndex];
+  const schema = findAtomSchema(node?.schemaId) ||
+    moleculeSchemas.find((item) => item.id === node?.schemaId || item.name === node?.schemaId);
+  const stateConfig = getPageTemplateBusinessStateConfig(
+    node?.schemaId,
+    pageTemplate?.id,
+    moduleIndex,
+  );
+  return [
+    node?.name,
+    node?.schemaId,
+    schema?.name,
+    schema?.id,
+    getGlobalComponentDisplayName(node?.schemaId, node?.name),
+    stateConfig?.label,
+  ].filter(Boolean);
+}
+
+function isPrdBlueprintDefaultVersion(versionName) {
+  const normalized = normalizePageTemplateLookupName(versionName || "默认版本");
+  return !normalized || normalized === normalizePageTemplateLookupName("默认版本");
+}
+
+function addImportedManualModuleVersion(moduleKey, versionName, manualVersions) {
+  if (!moduleKey || isPrdBlueprintDefaultVersion(versionName)) return;
+  if (!manualVersions[moduleKey]) manualVersions[moduleKey] = [];
+  if (
+    manualVersions[moduleKey].some((version) =>
+      normalizePageTemplateLookupName(version.name) === normalizePageTemplateLookupName(versionName),
+    )
+  ) {
+    return;
+  }
+  manualVersions[moduleKey].push({
+    id: `imported_${Date.now()}_${manualVersions[moduleKey].length + 1}`,
+    name: versionName,
+  });
+}
+
+function isPrdBlueprintTaskModuleName(moduleName) {
+  const normalized = getNormalizedPrdBlueprintModuleName(moduleName);
+  return normalized === normalizePageTemplateLookupName("任务列表") ||
+    normalized === normalizePageTemplateLookupName("任务列表模块") ||
+    normalized === normalizePageTemplateLookupName("核心玩法｜任务");
+}
+
+function getPrdBlueprintTaskNumberFromField(fieldName) {
+  const match = String(fieldName || "").match(/^任务\s*(\d+)/);
+  return match ? Number(match[1]) : 0;
+}
+
+function getPrdBlueprintTaskCountsByVersion(pasteRows = [], versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS) {
+  const explicitCounts = new Map();
+  const inferredCounts = new Map();
+  expandPrdBlueprintPasteRows(pasteRows, versions).forEach((row) => {
+    if (!isPrdBlueprintTaskModuleName(row.module)) return;
+    const versionName = row.version || "默认版本";
+    if (normalizePageTemplateLookupName(row.field) === normalizePageTemplateLookupName("任务数量")) {
+      const explicitCount = Number(row.value);
+      if (Number.isFinite(explicitCount) && explicitCount > 0) {
+        explicitCounts.set(versionName, Math.round(explicitCount));
+      }
+      return;
+    }
+    const taskNumber = getPrdBlueprintTaskNumberFromField(row.field);
+    if (taskNumber > 0 && String(row.value || "").trim()) {
+      inferredCounts.set(versionName, Math.max(inferredCounts.get(versionName) || 0, taskNumber));
+    }
+  });
+  const counts = new Map();
+  new Set([...explicitCounts.keys(), ...inferredCounts.keys()]).forEach((versionName) => {
+    counts.set(
+      versionName,
+      Math.max(
+        1,
+        Math.round(
+          explicitCounts.get(versionName) ||
+            inferredCounts.get(versionName) ||
+            0,
+        ),
+      ),
+    );
+  });
+  return counts;
+}
+
+function getPrdBlueprintMaxTaskCount(pasteRows = [], versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS) {
+  return Math.max(0, ...getPrdBlueprintTaskCountsByVersion(pasteRows, versions).values());
+}
+
+function buildPageTemplateSeedBlueprintFromPasteRows(pageTemplate, pasteRows, versions) {
+  const blueprint = {};
+  const nodes = materializePageTemplateNodes(pageTemplate);
+  const inferredTaskCount = getPrdBlueprintMaxTaskCount(pasteRows, versions);
+  if (inferredTaskCount > 0) {
+    const taskModuleIndex = nodes.findIndex((node, index) =>
+      getPageTemplateNodeModuleAliases(pageTemplate, index).some(isPrdBlueprintTaskModuleName),
+    );
+    if (taskModuleIndex >= 0) {
+      blueprint[getPageBlueprintKey(taskModuleIndex, "taskCount")] = inferredTaskCount;
+    }
+  }
+  expandPrdBlueprintPasteRows(pasteRows, versions).forEach((row) => {
+    if (normalizePageTemplateLookupName(row.field) !== normalizePageTemplateLookupName("任务数量")) return;
+    const moduleIndex = nodes.findIndex((node, index) =>
+      getPageTemplateNodeModuleAliases(pageTemplate, index).some((alias) =>
+        normalizePageTemplateLookupName(alias) === normalizePageTemplateLookupName(row.module),
+      ),
+    );
+    if (moduleIndex >= 0) blueprint[getPageBlueprintKey(moduleIndex, "taskCount")] = row.value;
+  });
+  return blueprint;
+}
+
+function getNormalizedPrdBlueprintModuleName(value) {
+  return normalizePageTemplateLookupName(value)
+    .replace(/核心玩法模块抽奖$/, "核心玩法模块抽奖未报名")
+    .replace(/任务列表模块$/, "任务列表");
+}
+
+function isPrdBlueprintModuleMatch(field, moduleName) {
+  const wanted = getNormalizedPrdBlueprintModuleName(moduleName);
+  return field.moduleAliases.some((alias) => getNormalizedPrdBlueprintModuleName(alias) === wanted);
+}
+
+function getPrdBlueprintFieldAliases(field) {
+  const label = String(field.label || "");
+  const key = String(field.key || "");
+  const childName = String(field.childName || "");
+  const sectionTitle = String(field.sectionTitle || "");
+  const aliases = new Set([
+    label,
+    key,
+    field.field?.name,
+    field.field?.label,
+    childName && label ? `${childName}｜${label}` : "",
+    childName && label ? `${childName}${label}` : "",
+    sectionTitle && label ? `${sectionTitle}｜${label}` : "",
+    sectionTitle && label ? `${sectionTitle}${label}` : "",
+  ].filter(Boolean));
+
+  const prizeMatch = label.match(/^奖品(\d+)$/);
+  if (prizeMatch) aliases.add(`奖品${prizeMatch[1]}名称`);
+
+  const taskNumber = Number(field.childIndex);
+  if (Number.isFinite(taskNumber) && taskNumber > 0 && /任务条/.test(childName)) {
+    const taskPrefix = `任务${taskNumber}`;
+    const taskAliasMap = {
+      任务标题: "标题",
+      任务副标题: "描述",
+      抽奖加成: "奖励数量",
+      完成次数文案: "每日次数",
+    };
+    const suffix = taskAliasMap[label];
+    if (suffix) aliases.add(`${taskPrefix}${suffix}`);
+  }
+
+  if (label === "标题内容") {
+    aliases.add("模块标题");
+    aliases.add("抽奖模块标题");
+    aliases.add("消耗返模块标题");
+    aliases.add("报名模块标题");
+  }
+
+  const consumptionAliasMap = {
+    金额1: ["第1档奖励金额"],
+    金额2: ["第2档奖励金额"],
+    满赠券文案: ["第3档奖励金额"],
+    "30元文案": ["抽奖入口文案", "第1个进度节点文案"],
+    消耗金额1: ["第2个进度节点文案"],
+    消耗金额2: ["第3个进度节点文案"],
+    消耗金额3: ["第4个进度节点文案"],
+  };
+  (consumptionAliasMap[label] || []).forEach((alias) => aliases.add(alias));
+
+  return [...aliases].map(normalizePageTemplateLookupName).filter(Boolean);
+}
+
+function isPrdBlueprintFieldMatch(field, fieldName) {
+  const wanted = normalizePageTemplateLookupName(fieldName);
+  if (!wanted) return false;
+  return getPrdBlueprintFieldAliases(field).includes(wanted);
+}
+
+function findPrdBlueprintMatchedField(fields, row) {
+  return fields.find((field) =>
+    isPrdBlueprintModuleMatch(field, row.module) &&
+    isPrdBlueprintFieldMatch(field, row.field),
+  );
+}
+
+function findPrdBlueprintTaskCountField(fields) {
+  return fields.find((field) =>
+    field.key === "taskCount" &&
+    field.moduleAliases?.some(isPrdBlueprintTaskModuleName),
+  );
+}
+
+function appendInferredTaskCountRows({ rows, fields, taskCountsByVersion, explicitTaskCountVersions, pageTemplate, manualVersions }) {
+  const taskCountField = findPrdBlueprintTaskCountField(fields);
+  if (!taskCountField) return;
+  taskCountsByVersion.forEach((count, versionName) => {
+    if (!count || explicitTaskCountVersions.has(versionName)) return;
+    if (isPrdBlueprintDefaultVersion(versionName)) {
+      rows.push({
+        key: getPageTemplateVariableRowKey(taskCountField),
+        value: String(count),
+      });
+      return;
+    }
+    const moduleKey = getPageTemplateVersionModuleKey(pageTemplate.id, taskCountField.moduleIndex);
+    addImportedManualModuleVersion(moduleKey, versionName, manualVersions);
+    rows.push({
+      key: getPageTemplateVariableVersionRowKey(taskCountField, versionName),
+      value: String(count),
+    });
+  });
+}
+
+function convertBlueprintPasteRowsToPrdRows(pasteRows = [], versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS) {
+  const dataRows = expandPrdBlueprintPasteRows(pasteRows, versions);
+  const directRows = dataRows
+    .filter((row) => normalizePageTemplateLookupName(row.module) === normalizePageTemplateLookupName("页面基础信息"))
+    .map((row) => ({ key: row.field, value: row.value }));
+  const pageType = getPrdBlueprintPastePageType(pasteRows, versions) || getPrdPageTemplateType(directRows);
+  const pageTemplate = pageType ? findLatestCustomPageTemplateByPrdType(pageType) : null;
+  const manualVersions = {};
+  if (!pageTemplate) {
+    const fallbackRows = dataRows
+      .filter((row) => normalizePageTemplateLookupName(row.module) !== normalizePageTemplateLookupName("页面基础信息"))
+      .map((row) => ({
+        key: [row.module, row.version || "默认版本", row.field].filter(Boolean).join("｜"),
+        value: row.value,
+      }));
+    return { rows: normalizePrdTableRows([...directRows, ...fallbackRows]), manualVersions };
+  }
+
+  const seedBlueprint = buildPageTemplateSeedBlueprintFromPasteRows(pageTemplate, pasteRows, versions);
+  const fields = getPrdPageTemplateInputFields(pageTemplate, { blueprint: seedBlueprint }).map((field) => ({
+    ...field,
+    moduleAliases: getPageTemplateNodeModuleAliases(pageTemplate, field.moduleIndex),
+  }));
+  const rows = [...directRows];
+  const taskCountsByVersion = getPrdBlueprintTaskCountsByVersion(pasteRows, versions);
+  const explicitTaskCountVersions = new Set(
+    dataRows
+      .filter((row) =>
+        isPrdBlueprintTaskModuleName(row.module) &&
+        normalizePageTemplateLookupName(row.field) === normalizePageTemplateLookupName("任务数量"),
+      )
+      .map((row) => row.version || "默认版本"),
+  );
+
+  appendInferredTaskCountRows({
+    rows,
+    fields,
+    taskCountsByVersion,
+    explicitTaskCountVersions,
+    pageTemplate,
+    manualVersions,
+  });
+
+  dataRows.forEach((row) => {
+    if (normalizePageTemplateLookupName(row.module) === normalizePageTemplateLookupName("页面基础信息")) return;
+    const matchedField = findPrdBlueprintMatchedField(fields, row);
+    if (!matchedField) {
+      rows.push({
+        key: [row.module, row.version || "默认版本", row.field].filter(Boolean).join("｜"),
+        value: row.value,
+      });
+      return;
+    }
+    const versionName = row.version || "默认版本";
+    if (isPrdBlueprintDefaultVersion(versionName)) {
+      rows.push({ key: getPageTemplateVariableRowKey(matchedField), value: row.value });
+      return;
+    }
+    const moduleKey = getPageTemplateVersionModuleKey(pageTemplate.id, matchedField.moduleIndex);
+    addImportedManualModuleVersion(moduleKey, versionName, manualVersions);
+    rows.push({
+      key: getPageTemplateVariableVersionRowKey(matchedField, versionName),
+      value: row.value,
+    });
+  });
+
+  return { rows: normalizePrdTableRows(rows), manualVersions };
 }
 
 function parsePrdPlainTextRows(value) {
@@ -597,6 +2022,7 @@ function findPrdNamedComponents(row) {
   const text = getPrdCombinedText(row);
   const normalizedText = normalizePrdComponentText(text);
   const atomMatches = atomSchemas
+      .filter((schema) => !schema.canvasOnly && !schema.blueprint?.excludeFromPrd)
     .filter((schema) => getPrdComponentAliases(schema).some((alias) => alias && normalizedText.includes(alias)))
     .map((schema) => schema.id);
   const moleculeMatches = moleculeSchemas
@@ -1169,6 +2595,16 @@ function parsePrdTaskListConfig(rows = []) {
 }
 
 function getPrdTaskListCount(rows = []) {
+  const explicitCount = normalizePrdTableRows(rows).reduce((count, row) => {
+    const parsed = parsePageTemplateVariableRowKey(row.key);
+    const isTaskCountRow =
+      parsed?.compoundKey === "taskCount" ||
+      normalizePageTemplateLookupName(row.key) === normalizePageTemplateLookupName("任务数量");
+    if (!isTaskCountRow) return count;
+    const numericValue = Number(row.value);
+    return Number.isFinite(numericValue) ? numericValue : count;
+  }, 0);
+  if (explicitCount > 0) return Math.max(1, Math.round(explicitCount));
   const parsedCount = parsePrdTaskListConfig(rows)?.tasks?.length || 0;
   const structuredCount = normalizePrdTableRows(rows).reduce((max, row) => {
     const match = String(row.key || "").match(/任务\s*(\d+)/);
@@ -1199,6 +2635,7 @@ function isPrdPageTypeField(row) {
   const value = String(row?.value || "").trim();
   return (
     /^(类型|页面类型|活动类型|模板类型)$/.test(key) ||
+    /^页面\d+$/.test(key) ||
     /(?:页面|活动|模板)?类型\s*[:：]/.test(String(row?.key || "")) ||
     /^(?:页面|活动|模板)?类型\s*[:：]/.test(value)
   );
@@ -1208,10 +2645,21 @@ function normalizePrdPageTypeValue(value) {
   return String(value || "")
     .split(/[\n\r,，;；]/)[0]
     .trim()
-    .replace(/^["'“‘]|["'”’]$/g, "");
+    .replace(/^["'“‘【\[]|["'”’】\]]$/g, "");
 }
 
 function getPrdPageTemplateType(rows = []) {
+  const templateNames = Object.keys(PRD_PAGE_TEMPLATE_ALIASES);
+  const directTemplateName = templateNames.find((templateName) =>
+    rows.some((row) =>
+      [row?.key, row?.value].some(
+        (value) =>
+          normalizePageTemplateLookupName(value) ===
+          normalizePageTemplateLookupName(templateName),
+      ),
+    ),
+  );
+  if (directTemplateName) return directTemplateName;
   for (const row of rows) {
     if (isPrdPageTypeField(row) && String(row?.value || "").trim()) {
       const directValue = String(row.value).replace(
@@ -1405,6 +2853,10 @@ const state = {
   prdFileModalOpen: false,
   prdTextInput: "",
   prdTextError: "",
+  prdBlueprintPasteRows: normalizePrdBlueprintPasteRows([]),
+  prdBlueprintPasteVersions: normalizePrdBlueprintPasteVersions([]),
+  prdBlueprintPasteTemplateName: "",
+  prdBlueprintPasteError: "",
   prdTableRows: [],
   prdTableBlueprint: null,
   prdTableBlueprintSignature: "",
@@ -1419,6 +2871,12 @@ const state = {
   guidedVisiblePageIds: [],
   guidedVisibleCompanionNodeIds: [],
   guidedStateMenuNodeId: null,
+  guidedAddTargetContext: null,
+  prdTemplateAddAfterIndex: null,
+  prdTemplateAddModal: null,
+  prdTemplateSelectedModuleIndex: null,
+  pageTemplateBlueprintStates: {},
+  pageTemplateChildStates: {},
   guidedLineageZoom: 1,
   guidedLineagePanX: 0,
   guidedLineagePanY: 0,
@@ -1439,78 +2897,182 @@ const colorChoices = ["#1677ff", "#101828", "#1f9d62", "#e5484d", "#f59e0b", "#f
 const guidedPageThemePresets = [
   {
     id: "pink",
-    name: "活力粉",
-    background: "#FFE0E9",
-    primary: "#FF1372",
-    secondary: "#FF8DB8",
+    name: "日常色系-粉色",
+    background: "#FFDFE9",
+    primary: "#FFDFE9",
+    secondary: "#FFDFE9",
+    variantThemeId: "pink",
     filter: "none",
   },
   {
-    id: "coral",
-    name: "珊瑚红",
-    background: "#FFF0F0",
-    primary: "#F04438",
-    secondary: "#FF9B8F",
-    filter: "hue-rotate(-18deg) saturate(0.94)",
-  },
-  {
-    id: "apricot",
-    name: "暖杏橙",
-    background: "#FFF4E8",
-    primary: "#F79009",
-    secondary: "#FDBA74",
-    filter: "hue-rotate(-48deg) saturate(0.88)",
-  },
-  {
-    id: "mint",
-    name: "清新绿",
-    background: "#ECFDF3",
-    primary: "#12B76A",
-    secondary: "#6CE9A6",
-    filter: "hue-rotate(92deg) saturate(0.72)",
+    id: "node-womens-day",
+    name: "节点色系-三八",
+    background: "#FEF6E5",
+    primary: "#FEF6E5",
+    secondary: "#FEF6E5",
+    variantThemeId: "pink",
+    filter: "none",
   },
   {
     id: "sky",
-    name: "晴空蓝",
-    background: "#EFF6FF",
-    primary: "#2E90FA",
-    secondary: "#84CAFF",
-    filter: "hue-rotate(178deg) saturate(0.7)",
+    name: "日常色系-蓝色",
+    background: "#CCE3FF",
+    primary: "#CCE3FF",
+    secondary: "#CCE3FF",
+    variantThemeId: "sky",
+    filter: "none",
   },
   {
-    id: "violet",
-    name: "柔雾紫",
-    background: "#F5F3FF",
-    primary: "#7F56D9",
-    secondary: "#BDB4FE",
-    filter: "hue-rotate(235deg) saturate(0.72)",
+    id: "daily-cyan",
+    name: "日常色系-青色",
+    background: "#D0F9FC",
+    primary: "#D0F9FC",
+    secondary: "#D0F9FC",
+    variantThemeId: "sky",
+    filter: "none",
   },
   {
-    id: "rose",
-    name: "浅玫瑰",
-    background: "#FFEAF2",
-    primary: "#E31B54",
-    secondary: "#FDA4AF",
-    filter: "hue-rotate(10deg) saturate(0.9)",
+    id: "daily-purple",
+    name: "日常色系-紫色",
+    background: "#E9CCFF",
+    primary: "#E9CCFF",
+    secondary: "#E9CCFF",
+    variantThemeId: "sky",
+    filter: "none",
   },
   {
-    id: "neutral",
-    name: "简洁白",
-    background: "#F8FAFC",
-    primary: "#344054",
-    secondary: "#98A2B3",
-    filter: "saturate(0.12)",
+    id: "daily-green",
+    name: "日常色系-绿色",
+    background: "#EFFCDE",
+    primary: "#EFFCDE",
+    secondary: "#EFFCDE",
+    variantThemeId: "sky",
+    filter: "none",
   },
   {
-    id: "night",
-    name: "深夜黑",
-    background: "#111827",
-    primary: "#475467",
-    secondary: "#98A2B3",
-    filter: "hue-rotate(178deg) saturate(0.34) brightness(0.9)",
+    id: "node-breath",
+    name: "节点色系-气息",
+    background: "#FFE8F7",
+    primary: "#FFE8F7",
+    secondary: "#FFE8F7",
+    variantThemeId: "sky",
+    filter: "none",
+  },
+  {
+    id: "node-anniversary",
+    name: "节点色系-周年庆",
+    background: "#FFE8E8",
+    primary: "#FFE8E8",
+    secondary: "#FFE8E8",
+    variantThemeId: "sky",
+    filter: "none",
+  },
+  {
+    id: "node-double-festival",
+    name: "节点色系-双旦",
+    background: "#E6F8FF",
+    primary: "#E6F8FF",
+    secondary: "#E6F8FF",
+    variantThemeId: "sky",
+    filter: "none",
+  },
+  {
+    id: "apricot",
+    name: "日常色系-卡其色",
+    background: "#FFE3CC",
+    primary: "#FFE3CC",
+    secondary: "#FFE3CC",
+    variantThemeId: "apricot",
+    filter: "none",
+  },
+  {
+    id: "daily-yellow",
+    name: "日常色系-黄色",
+    background: "#FFF6D1",
+    primary: "#FFF6D1",
+    secondary: "#FFF6D1",
+    variantThemeId: "apricot",
+    filter: "none",
+  },
+  {
+    id: "node-new-year",
+    name: "节点色系-新年",
+    background: "#FFE8E9",
+    primary: "#FFE8E9",
+    secondary: "#FFE8E9",
+    variantThemeId: "apricot",
+    filter: "none",
+  },
+  {
+    id: "node-mid-autumn",
+    name: "节点色系-中秋",
+    background: "#FFE8FA",
+    primary: "#FFE8FA",
+    secondary: "#FFE8FA",
+    variantThemeId: "apricot",
+    filter: "none",
+  },
+  {
+    id: "node-double-11",
+    name: "节点色系-双11",
+    background: "#FFF7E8",
+    primary: "#FFF7E8",
+    secondary: "#FFF7E8",
+    variantThemeId: "apricot",
+    filter: "none",
   },
 ];
 const canvasColorChoices = guidedPageThemePresets.map((theme) => theme.background);
+
+function getGuidedThemePreset(themeOrId) {
+  if (typeof themeOrId === "object" && themeOrId) return themeOrId;
+  return guidedPageThemePresets.find((theme) => theme.id === themeOrId) || null;
+}
+
+function getGuidedVariantThemeId(themeOrId) {
+  const theme = getGuidedThemePreset(themeOrId);
+  return theme?.variantThemeId || theme?.id || themeOrId || "pink";
+}
+
+function getGuidedThemeCategory(theme) {
+  return String(theme?.name || "").startsWith("节点色系-") ? "节点色系" : "日常色系";
+}
+
+function renderGuidedThemeButton(item, activeThemeId) {
+  return `
+    <button
+      class="${item.id === activeThemeId ? "active" : ""}"
+      data-guided-page-theme="${escapeAttr(item.id)}"
+      aria-label="使用${escapeAttr(item.name)}色系"
+      title="${escapeAttr(item.name)}"
+    >
+      <i style="background:linear-gradient(135deg, ${escapeAttr(item.primary)} 0 50%, ${escapeAttr(item.secondary)} 50% 100%)"></i>
+      <span>${escapeHtml(item.name)}</span>
+    </button>
+  `;
+}
+
+function getThemeHeaderImageUrl(themeOrId) {
+  const theme = getGuidedThemePreset(themeOrId);
+  const themeName = String(theme?.name || "");
+  if (!themeName) return "";
+  const match = Object.entries(_themeHeaderImageModules).find(([path]) => {
+    const fileName = decodeURIComponent(path.split("/").pop() || "").replace(/\.[^.]+$/, "");
+    return fileName === themeName;
+  });
+  return match?.[1] || "";
+}
+
+function renderGuidedPageThemeHeader(page) {
+  const theme = getGuidedPageTheme(page);
+  const imageUrl = getThemeHeaderImageUrl(theme);
+  if (!imageUrl) return "";
+  return `
+    <div class="guided-page-theme-header">
+      <img src="${escapeAttr(imageUrl)}" alt="" />
+    </div>
+  `;
+}
 
 function findAtomSchema(schemaId) {
   const normalized = String(schemaId || "").replace(/\s+/g, "").toLowerCase();
@@ -1624,6 +3186,52 @@ function defaultProps(schemaId, overrides = {}) {
   return { ...props, ...overrides };
 }
 
+function getMoleculeDefaultProps(schema) {
+  const props = {};
+  getPropEntries(schema).forEach(([key, field]) => {
+    props[key] = field.default ?? "";
+  });
+  return props;
+}
+
+function getDynamicChildCount(value, config = {}) {
+  const min = Number.isFinite(Number(config.min)) ? Number(config.min) : 0;
+  const max = Number.isFinite(Number(config.max))
+    ? Number(config.max)
+    : Number.MAX_SAFE_INTEGER;
+  const numericValue = Number(value);
+  const count = Number.isFinite(numericValue) ? Math.round(numericValue) : min;
+  return Math.min(max, Math.max(min, count));
+}
+
+function getMoleculeChildEntries(schema, props = {}) {
+  const entries = [...(schema?.children || [])];
+  const config = schema?.dynamicChildren;
+  if (!config?.childSchemaId || !config?.propKey) return entries;
+  const count = getDynamicChildCount(props[config.propKey], config);
+  for (let index = 0; index < count; index += 1) {
+    entries.push([config.childSchemaId, config.overrides || {}]);
+  }
+  return entries;
+}
+
+function syncDynamicMoleculeChildren(node) {
+  const schema = moleculeSchemas.find((item) => item.id === node?.schemaId);
+  const config = schema?.dynamicChildren;
+  if (!config?.childSchemaId || !config?.propKey) return;
+  const staticCount = (schema.children || []).length;
+  const count = getDynamicChildCount(node.props?.[config.propKey], config);
+  if (node.props) node.props[config.propKey] = count;
+  const staticChildren = (node.children || []).slice(0, staticCount);
+  const existingDynamicChildren = (node.children || [])
+    .slice(staticCount)
+    .filter((child) => child.schemaId === config.childSchemaId);
+  const dynamicChildren = Array.from({ length: count }, (_, index) =>
+    existingDynamicChildren[index] || createAtomNode(config.childSchemaId, config.overrides || {}),
+  );
+  node.children = [...staticChildren, ...dynamicChildren];
+}
+
 function getPropEntries(schema) {
   if (!schema) return [];
   if (Array.isArray(schema.props)) return schema.props.map((field) => [field.key, field]);
@@ -1639,10 +3247,81 @@ function normalizeVariants(schema) {
   }));
 }
 
+function findComponentSchema(schemaId) {
+  return findAtomSchema(schemaId) || moleculeSchemas.find((item) => item.id === schemaId || item.name === schemaId);
+}
+
+function createStateNodeFromSchema(stateSchema, overrides = {}, stateConfig = {}) {
+  if (stateSchema?.type === "molecule") {
+    const props = {
+      ...getMoleculeDefaultProps(stateSchema),
+      ...(stateConfig.props || {}),
+    };
+    return {
+      id: uid(),
+      schemaId: stateSchema.id,
+      name: stateSchema.name || stateSchema.id,
+      type: "molecule",
+      allowedChildren: stateSchema.allowedChildren || null,
+      className: stateSchema.className || "",
+      props,
+      children: getMoleculeChildEntries(stateSchema, props).map(([schemaId, childOverrides]) =>
+        createAtomNode(schemaId, childOverrides),
+      ),
+    };
+  }
+  const variants = normalizeVariants(stateSchema);
+  return {
+    id: uid(),
+    schemaId: stateSchema.id,
+    name: stateSchema.name || stateSchema.id,
+    type: "atom",
+    activeVariantId: variants[0]?.id || null,
+    variants,
+    props: defaultProps(stateSchema.id, {
+      ...overrides,
+      ...(stateConfig.props || {}),
+    }),
+  };
+}
+
+function createComponentStateEntries(schema, overrides = {}) {
+  return (schema?.states || [])
+    .map((stateConfig) => {
+      const stateSchemaId = stateConfig.schemaId || stateConfig.component;
+      const stateSchema = findComponentSchema(stateSchemaId);
+      if (!stateSchema) return null;
+      return {
+        id: stateConfig.id || stateSchema.id,
+        name: stateConfig.name || stateSchema.name || stateSchema.id,
+        component: stateSchema.id,
+        preserveProps: Boolean(stateConfig.preserveProps),
+        lockedPropKeys: [...(stateConfig.lockedPropKeys || [])],
+        node: createStateNodeFromSchema(stateSchema, overrides, stateConfig),
+      };
+    })
+    .filter(Boolean);
+}
+
+function getAtomSchemaStateOptions(schema) {
+  return (schema?.states || [])
+    .map((stateConfig) => {
+      const stateSchemaId = stateConfig.schemaId || stateConfig.component;
+      const stateSchema = findComponentSchema(stateSchemaId);
+      if (!stateSchema) return null;
+      return {
+        id: stateConfig.id || stateSchema.id,
+        name: stateConfig.name || stateSchema.name || stateSchema.id,
+        schemaId: stateSchema.id,
+      };
+    })
+    .filter(Boolean);
+}
+
 function createAtomNode(schemaId, overrides = {}) {
   const schema = findAtomSchema(schemaId);
   const variants = normalizeVariants(schema);
-  return {
+  const node = {
     id: uid(),
     schemaId: schema?.id || schemaId,
     name: schema?.name || schemaId,
@@ -1651,20 +3330,545 @@ function createAtomNode(schemaId, overrides = {}) {
     variants,
     props: defaultProps(schemaId, overrides),
   };
+  const guidedStates = createComponentStateEntries(schema, overrides);
+  if (guidedStates.length) {
+    node.guidedStates = guidedStates;
+    node.activeGuidedStateId =
+      guidedStates.find((entry) => entry.component === node.schemaId)?.id ||
+      guidedStates[0]?.id ||
+      null;
+  }
+  return node;
 }
 
 function createMoleculeNode(moleculeId) {
   const schema = moleculeSchemas.find((item) => item.id === moleculeId);
   if (!schema) return null;
-  return {
+  const props = getMoleculeDefaultProps(schema);
+  const node = {
     id: uid(),
     schemaId: moleculeId,
     name: schema.name,
     type: "molecule",
     allowedChildren: schema.allowedChildren || null,
     className: schema.className || "",
-    children: (schema.children || []).map(([schemaId, overrides]) => createAtomNode(schemaId, overrides)),
+    props,
+    children: getMoleculeChildEntries(schema, props).map(([schemaId, overrides]) => createAtomNode(schemaId, overrides)),
   };
+  const guidedStates = createComponentStateEntries(schema, props);
+  if (guidedStates.length) {
+    node.guidedStates = guidedStates;
+    node.activeGuidedStateId =
+      guidedStates.find((entry) => entry.component === node.schemaId)?.id ||
+      guidedStates[0]?.id ||
+      null;
+  }
+  return node;
+}
+
+function createPageTemplateMoleculeEntry(template, moleculeId) {
+  const schema = moleculeSchemas.find((item) => item.id === moleculeId);
+  if (!schema) return null;
+  if (template?.isCustom) {
+    const node = createMoleculeNode(moleculeId);
+    if (node) {
+      delete node.id;
+      node.name = schema.name;
+      node.isBlueprintInserted = true;
+    }
+    return node;
+  }
+  const entry = [moleculeId, {}];
+  entry.isBlueprintInserted = true;
+  return entry;
+}
+
+function getActivePrdPageTemplate() {
+  if (state.selectedDemoPackageId !== PRD_TABLE_PACKAGE_ID) return null;
+  const blueprint = getPrdTableBlueprint();
+  const pageType = blueprint?.pageType || "";
+  return pageType ? findLatestCustomPageTemplateByPrdType(pageType) : null;
+}
+
+function remapPrdTemplateRowsForInsertedModule(insertIndex) {
+  state.prdTableRows = normalizePrdTableRows(state.prdTableRows).map((row) => {
+    const parsed = parsePageTemplateVariableRowKey(row.key);
+    if (parsed && parsed.moduleIndex >= insertIndex) {
+      const nextIndex = parsed.moduleIndex + 1;
+      return {
+        ...row,
+        key: [
+          PAGE_TEMPLATE_VARIABLE_ROW_PREFIX,
+          String(nextIndex + 1),
+          getPageBlueprintKey(nextIndex, parsed.compoundKey),
+        ].join("｜"),
+      };
+    }
+    const parsedVersion = parsePageTemplateVariableVersionRowKey(row.key);
+    if (!parsedVersion || parsedVersion.moduleIndex < insertIndex) return row;
+    const nextIndex = parsedVersion.moduleIndex + 1;
+    return {
+      ...row,
+      key: [
+        PAGE_TEMPLATE_VARIABLE_VERSION_ROW_PREFIX,
+        String(nextIndex + 1),
+        parsedVersion.versionName,
+        getPageBlueprintKey(nextIndex, parsedVersion.compoundKey),
+      ].join("｜"),
+    };
+  });
+  remapPageTemplateIndexedStateMap("prdManualModuleVersions", insertIndex);
+  remapPageTemplateIndexedStateMap("pageTemplateBlueprintStates", insertIndex);
+  remapPageTemplateIndexedStateMap("pageTemplateChildStates", insertIndex);
+  state.prdTableBlueprint = null;
+  state.prdTableBlueprintSignature = "";
+}
+
+function remapPrdTemplateRowsForDeletedModule(deleteIndex) {
+  state.prdTableRows = normalizePrdTableRows(state.prdTableRows)
+    .map((row) => {
+      const parsed = parsePageTemplateVariableRowKey(row.key);
+      if (parsed) {
+        if (parsed.moduleIndex === deleteIndex) return null;
+        if (parsed.moduleIndex > deleteIndex) {
+          const nextIndex = parsed.moduleIndex - 1;
+          return {
+            ...row,
+            key: [
+              PAGE_TEMPLATE_VARIABLE_ROW_PREFIX,
+              String(nextIndex + 1),
+              getPageBlueprintKey(nextIndex, parsed.compoundKey),
+            ].join("｜"),
+          };
+        }
+        return row;
+      }
+      const parsedVersion = parsePageTemplateVariableVersionRowKey(row.key);
+      if (!parsedVersion) return row;
+      if (parsedVersion.moduleIndex === deleteIndex) return null;
+      if (parsedVersion.moduleIndex > deleteIndex) {
+        const nextIndex = parsedVersion.moduleIndex - 1;
+        return {
+          ...row,
+          key: [
+            PAGE_TEMPLATE_VARIABLE_VERSION_ROW_PREFIX,
+            String(nextIndex + 1),
+            parsedVersion.versionName,
+            getPageBlueprintKey(nextIndex, parsedVersion.compoundKey),
+          ].join("｜"),
+        };
+      }
+      return row;
+    })
+    .filter(Boolean);
+  remapPageTemplateIndexedStateMap("prdManualModuleVersions", deleteIndex, -1);
+  remapPageTemplateIndexedStateMap("pageTemplateBlueprintStates", deleteIndex, -1);
+  remapPageTemplateIndexedStateMap("pageTemplateChildStates", deleteIndex, -1);
+  state.prdTableBlueprint = null;
+  state.prdTableBlueprintSignature = "";
+}
+
+function swapPrdTemplateModuleRows(firstIndex, secondIndex) {
+  const remapIndex = (moduleIndex) => {
+    if (moduleIndex === firstIndex) return secondIndex;
+    if (moduleIndex === secondIndex) return firstIndex;
+    return moduleIndex;
+  };
+  state.prdTableRows = normalizePrdTableRows(state.prdTableRows).map((row) => {
+    const parsed = parsePageTemplateVariableRowKey(row.key);
+    if (parsed) {
+      const nextIndex = remapIndex(parsed.moduleIndex);
+      if (nextIndex === parsed.moduleIndex) return row;
+      return {
+        ...row,
+        key: [
+          PAGE_TEMPLATE_VARIABLE_ROW_PREFIX,
+          String(nextIndex + 1),
+          getPageBlueprintKey(nextIndex, parsed.compoundKey),
+        ].join("｜"),
+      };
+    }
+    const parsedVersion = parsePageTemplateVariableVersionRowKey(row.key);
+    if (!parsedVersion) return row;
+    const nextIndex = remapIndex(parsedVersion.moduleIndex);
+    if (nextIndex === parsedVersion.moduleIndex) return row;
+    return {
+      ...row,
+      key: [
+        PAGE_TEMPLATE_VARIABLE_VERSION_ROW_PREFIX,
+        String(nextIndex + 1),
+        parsedVersion.versionName,
+        getPageBlueprintKey(nextIndex, parsedVersion.compoundKey),
+      ].join("｜"),
+    };
+  });
+  swapPageTemplateIndexedStateMap("prdManualModuleVersions", firstIndex, secondIndex);
+  swapPageTemplateIndexedStateMap("pageTemplateBlueprintStates", firstIndex, secondIndex);
+  swapPageTemplateIndexedStateMap("pageTemplateChildStates", firstIndex, secondIndex);
+  state.prdTableBlueprint = null;
+  state.prdTableBlueprintSignature = "";
+}
+
+function remapPageTemplateIndexedStateMap(stateKey, targetIndex, delta = 1) {
+  const source = state[stateKey];
+  if (!source || typeof source !== "object") return;
+  const next = {};
+  Object.entries(source).forEach(([key, value]) => {
+    const parts = String(key).split("｜");
+    if (parts[0] === "page-template" && Number.isFinite(Number(parts[2]))) {
+      const moduleIndex = Number(parts[2]);
+      if (delta < 0 && moduleIndex === targetIndex) return;
+      const nextIndex = moduleIndex >= targetIndex ? moduleIndex + delta : moduleIndex;
+      next[[parts[0], parts[1], String(nextIndex)].join("｜")] = value;
+      return;
+    }
+    const pipeParts = String(key).split("|");
+    if (pipeParts.length >= 2 && Number.isFinite(Number(pipeParts[1]))) {
+      const moduleIndex = Number(pipeParts[1]);
+      if (delta < 0 && moduleIndex === targetIndex) return;
+      const nextIndex = moduleIndex >= targetIndex ? moduleIndex + delta : moduleIndex;
+      next[[pipeParts[0], String(nextIndex), ...pipeParts.slice(2)].join("|")] = value;
+      return;
+    }
+    next[key] = value;
+  });
+  state[stateKey] = next;
+}
+
+function swapPageTemplateIndexedStateMap(stateKey, firstIndex, secondIndex) {
+  const source = state[stateKey];
+  if (!source || typeof source !== "object") return;
+  const swapIndex = (moduleIndex) => {
+    if (moduleIndex === firstIndex) return secondIndex;
+    if (moduleIndex === secondIndex) return firstIndex;
+    return moduleIndex;
+  };
+  const next = {};
+  Object.entries(source).forEach(([key, value]) => {
+    const parts = String(key).split("｜");
+    if (parts[0] === "page-template" && Number.isFinite(Number(parts[2]))) {
+      const nextIndex = swapIndex(Number(parts[2]));
+      next[[parts[0], parts[1], String(nextIndex)].join("｜")] = value;
+      return;
+    }
+    const pipeParts = String(key).split("|");
+    if (pipeParts.length >= 2 && Number.isFinite(Number(pipeParts[1]))) {
+      const nextIndex = swapIndex(Number(pipeParts[1]));
+      next[[pipeParts[0], String(nextIndex), ...pipeParts.slice(2)].join("|")] = value;
+      return;
+    }
+    next[key] = value;
+  });
+  state[stateKey] = next;
+}
+
+function syncInsertedMoleculeToPageTemplate(page, insertIndex, moleculeId) {
+  const template = page?.sourcePageTemplateId
+    ? [...pageTemplates, ...customPageTemplates].find((item) => item.id === page.sourcePageTemplateId)
+    : getActivePrdPageTemplate();
+  if (!template?.nodes) return false;
+  const entry = createPageTemplateMoleculeEntry(template, moleculeId);
+  if (!entry) return false;
+  const boundedIndex = Math.max(0, Math.min(insertIndex, template.nodes.length));
+  remapPrdTemplateRowsForInsertedModule(boundedIndex);
+  template.nodes.splice(boundedIndex, 0, entry);
+  if (template.isCustom) saveCustomPageTemplatesToStorage();
+  return true;
+}
+
+function insertGuidedMoleculeAt(pageId, insertIndex, moleculeId, options = {}) {
+  const page = state.pages.find((item) => item.id === pageId) || activePage();
+  if (!page || page.isSystemFallback) return null;
+  const node = createMoleculeNode(moleculeId);
+  if (!node) return null;
+  const sortableNodes = (page.nodes || []).filter((item) => item.canvasPlacement !== "page-side");
+  const sideNodes = (page.nodes || []).filter((item) => item.canvasPlacement === "page-side");
+  const boundedIndex = Math.max(0, Math.min(insertIndex, sortableNodes.length));
+  if (options.syncTemplate !== false) {
+    syncInsertedMoleculeToPageTemplate(page, boundedIndex, moleculeId);
+  }
+  node.sourcePageTemplateId = page.sourcePageTemplateId || getActivePrdPageTemplate()?.id || "";
+  node.sourcePageTemplateNodeIndex = boundedIndex;
+  sortableNodes.splice(boundedIndex, 0, node);
+  sortableNodes.forEach((item, index) => {
+    if (item.sourcePageTemplateId === node.sourcePageTemplateId) {
+      item.sourcePageTemplateNodeIndex = index;
+    }
+  });
+  page.nodes = [...sortableNodes, ...sideNodes];
+  state.activePageId = page.id;
+  state.selectedId = node.id;
+  state.guidedPanelMode = null;
+  state.guidedStateMenuNodeId = null;
+  return node;
+}
+
+function getGuidedEditablePageFallback() {
+  const visibleIds = new Set(state.guidedVisiblePageIds || []);
+  return (
+    state.pages.find((page) => page.id === state.activePageId && !page.isSystemFallback) ||
+    state.pages.find((page) => visibleIds.has(page.id) && !page.isSystemFallback) ||
+    state.pages.find((page) => !page.isSystemFallback) ||
+    null
+  );
+}
+
+function insertMoleculeIntoPrdPageTemplate(templateId, insertIndex, moleculeId) {
+  const template = [...pageTemplates, ...customPageTemplates].find((item) => item.id === templateId);
+  if (!template?.nodes) return false;
+  const page = { sourcePageTemplateId: template.id };
+  const success = syncInsertedMoleculeToPageTemplate(page, insertIndex, moleculeId);
+  if (!success) return false;
+  state.prdTemplateAddAfterIndex = null;
+  state.prdTemplateAddModal = null;
+  state.prdTemplateSelectedModuleIndex = null;
+  return true;
+}
+
+function deleteMoleculeFromPrdPageTemplate(templateId, moduleIndex) {
+  const template = [...pageTemplates, ...customPageTemplates].find((item) => item.id === templateId);
+  if (!template?.nodes?.length) return false;
+  const boundedIndex = Number(moduleIndex);
+  if (!Number.isInteger(boundedIndex) || boundedIndex < 0 || boundedIndex >= template.nodes.length) return false;
+  template.nodes.splice(boundedIndex, 1);
+  remapPrdTemplateRowsForDeletedModule(boundedIndex);
+  if (template.isCustom) saveCustomPageTemplatesToStorage();
+  state.prdTemplateSelectedModuleIndex = null;
+  state.prdTemplateAddModal = null;
+  state.prdTemplateAddAfterIndex = null;
+  return true;
+}
+
+function moveMoleculeInPrdPageTemplate(templateId, moduleIndex, direction) {
+  const template = [...pageTemplates, ...customPageTemplates].find((item) => item.id === templateId);
+  if (!template?.nodes?.length) return false;
+  const currentIndex = Number(moduleIndex);
+  const delta = direction === "up" ? -1 : direction === "down" ? 1 : 0;
+  const nextIndex = currentIndex + delta;
+  if (
+    !Number.isInteger(currentIndex) ||
+    !delta ||
+    nextIndex < 0 ||
+    nextIndex >= template.nodes.length
+  ) {
+    return false;
+  }
+  const [entry] = template.nodes.splice(currentIndex, 1);
+  template.nodes.splice(nextIndex, 0, entry);
+  swapPrdTemplateModuleRows(currentIndex, nextIndex);
+  if (template.isCustom) saveCustomPageTemplatesToStorage();
+  state.prdTemplateSelectedModuleIndex = nextIndex;
+  state.prdTemplateAddModal = null;
+  state.prdTemplateAddAfterIndex = null;
+  return true;
+}
+
+function getPageTemplateBusinessStateConfig(schemaId, templateId = "", moduleIndex = -1) {
+  return (
+    PAGE_TEMPLATE_MODULE_BUSINESS_STATES[
+      getPageTemplateBusinessStateKey(templateId, moduleIndex)
+    ] ||
+    PAGE_TEMPLATE_BUSINESS_STATES[schemaId] ||
+    null
+  );
+}
+
+function getPageTemplateBusinessStateKey(templateId, moduleIndex) {
+  return `${templateId || ""}|${moduleIndex}`;
+}
+
+function isNoIncentiveEntryModule(templateId, moduleIndex) {
+  return getPageTemplateBusinessStateKey(templateId, moduleIndex) ===
+    "page-guide-no-incentive|1";
+}
+
+function getPageTemplateEntryCardStateKey(templateId, moduleIndex) {
+  return `${getPageTemplateBusinessStateKey(templateId, moduleIndex)}|entry-card`;
+}
+
+function getPageTemplateEntryCardStateId(templateId, moduleIndex) {
+  const saved = state.pageTemplateBlueprintStates?.[
+    getPageTemplateEntryCardStateKey(templateId, moduleIndex)
+  ];
+  return PAGE_TEMPLATE_ENTRY_CARD_STATES.some((item) => item.id === saved)
+    ? saved
+    : PAGE_TEMPLATE_ENTRY_CARD_STATES[0].id;
+}
+
+function getPageTemplateBusinessStateSchemaId(
+  templateId,
+  moduleIndex,
+  stateConfig,
+  activeStateId,
+) {
+  if (isNoIncentiveEntryModule(templateId, moduleIndex) && activeStateId === "entry") {
+    const entryStateId = getPageTemplateEntryCardStateId(templateId, moduleIndex);
+    return PAGE_TEMPLATE_ENTRY_CARD_STATES.find(
+      (item) => item.id === entryStateId,
+    )?.schemaId;
+  }
+  return stateConfig?.states?.find((item) => item.id === activeStateId)?.schemaId;
+}
+
+function getPageTemplateActiveBusinessStateId(templateId, moduleIndex, config) {
+  const key = getPageTemplateBusinessStateKey(templateId, moduleIndex);
+  const saved = state.pageTemplateBlueprintStates?.[key];
+  const configuredDefault = PAGE_TEMPLATE_DEFAULT_BUSINESS_STATES[key];
+  const template = [...pageTemplates, ...customPageTemplates].find(
+    (item) => item.id === templateId,
+  );
+  const sourceNode = materializePageTemplateNodes(template)[moduleIndex];
+  const preferredStateId = getPrdPageTemplateModuleSpec(
+    template,
+    sourceNode?.schemaId,
+  )?.preferredStateId;
+  return config?.states?.some((item) => item.id === saved)
+    ? saved
+    : config?.states?.some((item) => item.id === configuredDefault)
+      ? configuredDefault
+      : config?.states?.some((item) => item.id === preferredStateId)
+        ? preferredStateId
+        : config?.states?.[0]?.id || "default";
+}
+
+function createPageTemplateBusinessStateEntry(stateConfig) {
+  const stateSchema = findComponentSchema(stateConfig.schemaId);
+  if (!stateSchema) return null;
+  const stateNode = createStateNodeFromSchema(stateSchema, {}, stateConfig);
+  return {
+    id: stateConfig.id,
+    name: stateConfig.name,
+    component: stateConfig.schemaId,
+    node: stateNode,
+  };
+}
+
+function attachPageTemplateBusinessStates(nodes = [], templateId = "") {
+  nodes.forEach((node, nodeIndex) => {
+    const config = getPageTemplateBusinessStateConfig(
+      node.schemaId,
+      templateId,
+      nodeIndex,
+    );
+    if (!config?.states?.length) return;
+    const entries = config.states
+      .map((stateConfig) =>
+        createPageTemplateBusinessStateEntry({
+          ...stateConfig,
+          schemaId:
+            getPageTemplateBusinessStateSchemaId(
+              templateId,
+              nodeIndex,
+              config,
+              stateConfig.id,
+            ) || stateConfig.schemaId,
+        }),
+      )
+      .filter(Boolean);
+    if (!entries.length) return;
+    node.guidedStates = entries;
+    node.activeGuidedStateId = getPageTemplateActiveBusinessStateId(templateId, nodeIndex, config);
+  });
+}
+
+function persistPageTemplateBusinessState(node) {
+  if (!node?.sourcePageTemplateId || node.sourcePageTemplateNodeIndex === undefined || !node.activeGuidedStateId) return;
+  state.pageTemplateBlueprintStates = state.pageTemplateBlueprintStates || {};
+  state.pageTemplateBlueprintStates[
+    getPageTemplateBusinessStateKey(node.sourcePageTemplateId, node.sourcePageTemplateNodeIndex)
+  ] = node.activeGuidedStateId;
+}
+
+function setPageTemplateBlueprintBusinessState(templateId, moduleIndex, stateId) {
+  const key = getPageTemplateBusinessStateKey(templateId, moduleIndex);
+  state.pageTemplateBlueprintStates = state.pageTemplateBlueprintStates || {};
+  state.pageTemplateBlueprintStates[key] = stateId;
+  state.pages.forEach((page) => {
+    if (page.sourcePageTemplateId !== templateId) return;
+    const node = page.nodes?.find(
+      (item) => Number(item.sourcePageTemplateNodeIndex) === Number(moduleIndex),
+    );
+    if (node?.guidedStates?.length) applyGuidedBusinessState(node, stateId);
+  });
+}
+
+function setPageTemplateEntryCardState(templateId, moduleIndex, stateId) {
+  if (!PAGE_TEMPLATE_ENTRY_CARD_STATES.some((item) => item.id === stateId)) return;
+  state.pageTemplateBlueprintStates = state.pageTemplateBlueprintStates || {};
+  state.pageTemplateBlueprintStates[
+    getPageTemplateEntryCardStateKey(templateId, moduleIndex)
+  ] = stateId;
+  const stateOption = PAGE_TEMPLATE_ENTRY_CARD_STATES.find(
+    (item) => item.id === stateId,
+  );
+  state.pages.forEach((page) => {
+    if (page.sourcePageTemplateId !== templateId) return;
+    const node = page.nodes?.find(
+      (item) => Number(item.sourcePageTemplateNodeIndex) === Number(moduleIndex),
+    );
+    const entryState = node?.guidedStates?.find((item) => item.id === "entry");
+    const schema = findComponentSchema(stateOption?.schemaId);
+    if (!entryState || !schema) return;
+    entryState.component = stateOption.schemaId;
+    entryState.node = createStateNodeFromSchema(schema, {}, stateOption);
+    if (node.activeGuidedStateId === "entry") {
+      applyGuidedBusinessState(node, "entry");
+    }
+  });
+}
+
+function applyStoredPageTemplateBusinessStates(nodes = [], templateId = "") {
+  nodes.forEach((node, nodeIndex) => {
+    if (!node?.guidedStates?.length) return;
+    const activeStateId = getPageTemplateActiveBusinessStateId(
+      templateId || node.sourcePageTemplateId,
+      nodeIndex,
+      { states: node.guidedStates },
+    );
+    applyGuidedBusinessState(node, activeStateId);
+  });
+}
+
+function getPageTemplateChildStateKey(templateId, moduleIndex, childIndex) {
+  return `${templateId || ""}|${moduleIndex}|${childIndex}`;
+}
+
+function getPageTemplateChildStateId(templateId, moduleIndex, childIndex, stateOptions = []) {
+  const key = getPageTemplateChildStateKey(templateId, moduleIndex, childIndex);
+  const saved = state.pageTemplateChildStates?.[key];
+  return stateOptions.some((item) => item.id === saved)
+    ? saved
+    : stateOptions[0]?.id || null;
+}
+
+function setPageTemplateChildState(templateId, moduleIndex, childIndex, stateId) {
+  state.pageTemplateChildStates = state.pageTemplateChildStates || {};
+  state.pageTemplateChildStates[
+    getPageTemplateChildStateKey(templateId, moduleIndex, childIndex)
+  ] = stateId;
+  state.pages.forEach((page) => {
+    if (page.sourcePageTemplateId !== templateId) return;
+    const molecule = page.nodes?.find(
+      (item) => Number(item.sourcePageTemplateNodeIndex) === Number(moduleIndex),
+    );
+    const child = molecule?.children?.[Number(childIndex)];
+    if (child?.guidedStates?.length) applyGuidedBusinessState(child, stateId);
+  });
+}
+
+function applyStoredPageTemplateChildStates(nodes = [], templateId = "") {
+  nodes.forEach((node, moduleIndex) => {
+    (node?.children || []).forEach((child, childIndex) => {
+      if (!child?.guidedStates?.length) return;
+      const activeStateId = getPageTemplateChildStateId(
+        templateId || node.sourcePageTemplateId,
+        moduleIndex,
+        childIndex,
+        child.guidedStates,
+      );
+      if (activeStateId) applyGuidedBusinessState(child, activeStateId);
+    });
+  });
 }
 
 function openMoleculeTemplateEditor(moleculeId) {
@@ -1718,13 +3922,26 @@ function createTemplateNode(entry) {
   return molecule ? createMoleculeNode(schemaId) : createAtomNode(schemaId, overrides);
 }
 
+function materializePageTemplateNodes(template) {
+  if (!template?.nodes) return [];
+  if (template.isCustom) {
+    const normalizeNodeNames = (node) => {
+      node.name = getGlobalComponentDisplayName(node.schemaId, node.name);
+      (node.children || []).forEach(normalizeNodeNames);
+      return node;
+    };
+    return clone(template.nodes).map(normalizeNodeNames);
+  }
+  return template.nodes.map(createTemplateNode).filter(Boolean);
+}
+
 function createTemplatePage(template, overrides = {}) {
   return {
     id: `page_${Date.now()}_${Math.random().toString(16).slice(2)}`,
     name: overrides.name || template.name,
     dimension: overrides.dimension || "页面维度",
     tags: overrides.tags || [template.audience, template.goal],
-    nodes: template.nodes.map(createTemplateNode),
+    nodes: materializePageTemplateNodes(template),
     canvasBackground: template.background || "#ffffff",
     navBarEnabled: Boolean(overrides.navBarEnabled || template.navBarEnabled),
   };
@@ -1793,7 +4010,7 @@ function createActivityFromDraft() {
         if (page.templateId) {
           const template = [...pageTemplates, ...customPageTemplates].find((t) => t.id === page.templateId);
           if (template) {
-            nodes = JSON.parse(JSON.stringify(template.nodes || []));
+            nodes = materializePageTemplateNodes(template);
             canvasBackground = template.canvasBackground || template.background || "#ffffff";
             navBarEnabled = Boolean(template.navBarEnabled);
           }
@@ -1869,7 +4086,7 @@ function addPageFromPageTemplate(templateId, dimension) {
     name: template.name,
     dimension: dim,
     tags: [template.category],
-    nodes: (template.nodes || []).map(createTemplateNode),
+    nodes: materializePageTemplateNodes(template),
     canvasBackground: template.canvasBackground || template.background || "#ffffff",
     navBarEnabled: Boolean(template.navBarEnabled),
   };
@@ -2145,6 +4362,98 @@ function showSaveMoleculeDialog(moleculeId) {
   });
 }
 
+function getGuidedNodeOrderInfo(nodeId) {
+  const page = state.pages.find((item) =>
+    !item.isSystemFallback && (item.nodes || []).some((node) => node.id === nodeId),
+  );
+  if (!page) return null;
+  const sortableNodes = (page.nodes || []).filter((node) => node.canvasPlacement !== "page-side");
+  const index = sortableNodes.findIndex((node) => node.id === nodeId);
+  if (index < 0) return null;
+  return {
+    page,
+    sortableNodes,
+    index,
+    canMoveUp: index > 0,
+    canMoveDown: index < sortableNodes.length - 1,
+  };
+}
+
+function moveGuidedPageNodeByDirection(pageId, nodeId, direction) {
+  const page = state.pages.find((item) => item.id === pageId);
+  if (!page?.nodes?.length || page.isSystemFallback) return false;
+  const sortableNodes = page.nodes.filter((node) => node.canvasPlacement !== "page-side");
+  const sideNodes = page.nodes.filter((node) => node.canvasPlacement === "page-side");
+  const currentIndex = sortableNodes.findIndex((node) => node.id === nodeId);
+  if (currentIndex < 0) return false;
+  const delta = direction === "up" ? -1 : direction === "down" ? 1 : 0;
+  const nextIndex = currentIndex + delta;
+  if (nextIndex < 0 || nextIndex >= sortableNodes.length) return false;
+  const [node] = sortableNodes.splice(currentIndex, 1);
+  sortableNodes.splice(nextIndex, 0, node);
+  page.nodes = [...sortableNodes, ...sideNodes];
+  state.activePageId = page.id;
+  state.selectedId = node.id;
+  state.guidedPanelMode = null;
+  state.guidedStateMenuNodeId = null;
+  syncGuidedPageTemplateOrder(page);
+  return true;
+}
+
+function deleteGuidedPageNode(pageId, nodeId) {
+  const page = state.pages.find((item) => item.id === pageId) || activePage();
+  if (!page?.nodes?.length || page.isSystemFallback) return false;
+  const target = (page.nodes || []).find((node) => node.id === nodeId);
+  if (!target) return false;
+
+  const templateId = target.sourcePageTemplateId || page.sourcePageTemplateId;
+  const templateIndex = Number(target.sourcePageTemplateNodeIndex);
+  const groupId = target.moduleGroupId;
+  page.nodes = (page.nodes || []).filter((node) =>
+    groupId ? node.moduleGroupId !== groupId : node.id !== nodeId,
+  );
+
+  if (templateId && Number.isInteger(templateIndex)) {
+    deleteMoleculeFromPrdPageTemplate(templateId, templateIndex);
+    page.nodes.forEach((node) => {
+      if (node.sourcePageTemplateId === templateId && Number(node.sourcePageTemplateNodeIndex) > templateIndex) {
+        node.sourcePageTemplateNodeIndex = Number(node.sourcePageTemplateNodeIndex) - 1;
+      }
+    });
+  }
+
+  state.activePageId = page.id;
+  state.selectedId = null;
+  state.guidedPanelMode = null;
+  state.guidedStateMenuNodeId = null;
+  return true;
+}
+
+function syncGuidedPageTemplateOrder(page) {
+  if (!page.sourcePageTemplateId) return false;
+  const template = [...pageTemplates, ...customPageTemplates].find(
+    (item) => item.id === page.sourcePageTemplateId,
+  );
+  if (!template?.nodes?.length) return false;
+  const sortableNodes = (page.nodes || []).filter((node) => node.canvasPlacement !== "page-side");
+  const templateEntries = template.nodes || [];
+  const usedIndexes = new Set();
+  const orderedEntries = sortableNodes
+    .map((node) => {
+      const index = Number(node.sourcePageTemplateNodeIndex);
+      if (!Number.isInteger(index) || !templateEntries[index] || usedIndexes.has(index)) return null;
+      usedIndexes.add(index);
+      return templateEntries[index];
+    })
+    .filter(Boolean);
+  const remainingEntries = templateEntries.filter((_, index) => !usedIndexes.has(index));
+  template.nodes = [...orderedEntries, ...remainingEntries];
+  sortableNodes.forEach((node, index) => {
+    node.sourcePageTemplateNodeIndex = index;
+  });
+  return true;
+}
+
 function applyComponentColor(node, color) {
   if (node.type === "molecule") {
     node.children.forEach((child) => applyComponentColor(child, color));
@@ -2195,7 +4504,7 @@ function renderMaterialList() {
 
   const items =
     state.activeTab === "atom"
-      ? [...atomSchemas]
+      ? atomSchemas.filter((item) => !item.canvasOnly)
       : moleculeSchemas;
   if (!items.length) {
     list.innerHTML = `
@@ -2210,7 +4519,10 @@ function renderMaterialList() {
     .map(
       (item) => {
         const preview = item.type === "molecule" ? renderMoleculePreview(item) : renderAtomPreview(item.id);
-        const badge = "";
+        const badge =
+          state.activeTab === "atom" && ATOM_MODULE_BADGE_IDS.has(item.id)
+            ? '<span class="material-badge">模块级</span>'
+            : "";
         const realClass = "";
         const builtInMoleculeIds = ["MoleculeContainer", "TaskListModule", ...BUILT_IN_MOLECULE_IDS];
         const isDeletableMolecule = item.type === "molecule" && !builtInMoleculeIds.includes(item.id);
@@ -2366,12 +4678,12 @@ function renderActivityCenter() {
             <button class="prd-upload-target" data-demo-open-file-modal>
               <span class="prd-upload-target-icon">↑</span>
               <strong>上传活动 PRD</strong>
-              <em>选择文件，或粘贴 PRD 文本</em>
+              <em>粘贴蓝图表格、文本或文档链接</em>
             </button>
             <div class="prd-tool-footer">
               <span>DOCX</span>
               <span>PDF</span>
-              <span>文本粘贴</span>
+              <span>表格粘贴</span>
               <b>最大 20MB</b>
             </div>
           </div>
@@ -2559,7 +4871,9 @@ function getAdminVerifierSchema() {
 
 function getAdminVerifierType() {
   const verifier = state.adminComponentVerifier || {};
+  if (verifier.type === "page") return "page";
   if (verifier.type === "molecule") return "molecule";
+  if (pageTemplates.some((item) => item.id === verifier.schemaId)) return "page";
   if (moleculeSchemas.some((item) => item.id === verifier.schemaId)) return "molecule";
   return "atom";
 }
@@ -2567,6 +4881,12 @@ function getAdminVerifierType() {
 function getAdminVerifierMolecule() {
   const selected = moleculeSchemas.find((item) => item.id === state.adminComponentVerifier?.schemaId);
   return selected || moleculeSchemas.find((item) => item.id !== "MoleculeContainer") || null;
+}
+
+function getAdminVerifierPageTemplate() {
+  const templates = [...pageTemplates, ...customPageTemplates].filter((item) => item.id !== "blank-page");
+  const selected = templates.find((item) => item.id === state.adminComponentVerifier?.schemaId);
+  return selected || templates[0] || pageTemplates[0] || null;
 }
 
 function ensureAdminVerifierState(schema) {
@@ -2603,11 +4923,28 @@ function getAdminVerifierVariant(schema, verifier) {
   return variants.find((item) => item.id === verifier.variantId) || variants[0] || null;
 }
 
+function getAtomThemeOptions(schema) {
+  if (!schema) return [];
+  const themeIds = new Set();
+  normalizeVariants(schema).forEach((variant) => {
+    if (getThemeLinkedVariantProps(schema, variant).length) {
+      themeIds.add(getVariantThemeId(schema, variant.id));
+    }
+  });
+  return guidedPageThemePresets.filter((theme) => themeIds.has(getGuidedVariantThemeId(theme)));
+}
+
 function getAdminVerifierProps(schema, verifier) {
   const variant = getAdminVerifierVariant(schema, verifier);
+  const variantThemeId = getGuidedVariantThemeId(
+    verifier?.parentThemeId || (variant ? getVariantThemeId(schema, variant.id) : undefined)
+  );
+  const themeVariant = getSchemaThemeVariant(schema, variantThemeId);
+  const themeProps = Object.fromEntries(getThemeLinkedVariantProps(schema, themeVariant));
   return {
     ...getSchemaDefaultValues(schema),
     ...(variant?.props || {}),
+    ...themeProps,
     ...(verifier.blueprint || {}),
   };
 }
@@ -2616,14 +4953,54 @@ function getMoleculeBlueprintKey(childIndex, propKey) {
   return `${childIndex}.${propKey}`;
 }
 
+function getPageBlueprintKey(nodeIndex, localKey) {
+  return `${nodeIndex}|${localKey}`;
+}
+
+function buildLocalVerifierBlueprintForNode(node, nodeIndex, verifier) {
+  const blueprint = {};
+  if (node?.type === "molecule") {
+    Object.entries(node.props || {}).forEach(([key, value]) => {
+      blueprint[key] = value;
+    });
+    (node.children || []).forEach((child, childIndex) => {
+      Object.entries(child.props || {}).forEach(([key, value]) => {
+        blueprint[getMoleculeBlueprintKey(childIndex, key)] = value;
+      });
+    });
+  }
+  const prefix = `${nodeIndex}|`;
+  Object.entries(verifier?.blueprint || {}).forEach(([key, value]) => {
+    if (key.startsWith(prefix)) blueprint[key.slice(prefix.length)] = value;
+  });
+  return blueprint;
+}
+
 function getMoleculeVerifierFields(molecule, verifier) {
-  return (molecule?.children || []).flatMap(([schemaId, overrides = {}], childIndex) => {
+  const moleculeFields = getPropEntries(molecule).map(([key, field]) => ({
+    scope: "molecule",
+    key,
+    compoundKey: key,
+    field,
+    childName: molecule?.name || "分子",
+    value: verifier?.blueprint?.[key] ?? field.default ?? "",
+  }));
+  const moleculeProps = getMoleculeDefaultProps(molecule);
+  moleculeFields.forEach(({ key, value }) => {
+    moleculeProps[key] = value;
+  });
+  const childFields = getMoleculeChildEntries(molecule, moleculeProps).flatMap(([schemaId, overrides = {}], childIndex) => {
     const schema = findAtomSchema(schemaId);
+    const blueprintTextProps = new Set(
+      Array.isArray(schema?.blueprint?.textProps) ? schema.blueprint.textProps : [],
+    );
     const childName = schema?.name || schemaId;
     return getPropEntries(schema)
       .filter(([key, field]) => {
         const value = overrides[key] ?? field.default;
-        return isPrizePropField(field) || isCopyPropField(key, field, value);
+        return blueprintTextProps.has(key) ||
+          isPrizePropField(field) ||
+          isCopyPropField(key, field, value);
       })
       .map(([key, field]) => ({
         childIndex,
@@ -2633,11 +5010,208 @@ function getMoleculeVerifierFields(molecule, verifier) {
         value: verifier?.blueprint?.[getMoleculeBlueprintKey(childIndex, key)] ?? overrides[key] ?? field.default ?? "",
       }));
   });
+  return [...moleculeFields, ...childFields];
+}
+
+function getPageTemplateVerifierFields(template, verifier) {
+  return materializePageTemplateNodes(template).flatMap((node, nodeIndex) => {
+    const stateConfig = getPageTemplateBusinessStateConfig(
+      node?.schemaId,
+      template?.id,
+      nodeIndex,
+    );
+    const moduleSpec = getPrdPageTemplateModuleSpec(template, node?.schemaId);
+    const storedStateId = state.pageTemplateBlueprintStates?.[
+      getPageTemplateBusinessStateKey(template?.id, nodeIndex)
+    ];
+    const preferredStateId = moduleSpec?.preferredStateId;
+    const activeStateId = stateConfig?.states?.some((item) => item.id === storedStateId)
+      ? storedStateId
+      : stateConfig?.states?.some((item) => item.id === preferredStateId)
+        ? preferredStateId
+        : getPageTemplateActiveBusinessStateId(
+            template?.id,
+            nodeIndex,
+            stateConfig,
+          );
+    const activeSchemaId =
+      getPageTemplateBusinessStateSchemaId(
+        template?.id,
+        nodeIndex,
+        stateConfig,
+        activeStateId,
+      ) || node.schemaId;
+    const moduleName =
+      getGlobalComponentDisplayName(
+        activeSchemaId,
+        stateConfig?.label || node.name || `模块 ${nodeIndex + 1}`,
+      );
+    const activeMolecule = moleculeSchemas.find(
+      (item) => item.id === activeSchemaId,
+    );
+    if (activeMolecule) {
+      const localBlueprint = buildLocalVerifierBlueprintForNode(node, nodeIndex, verifier);
+      return getMoleculeVerifierFields(activeMolecule, { blueprint: localBlueprint }).map((field) => {
+        const localKey = field.compoundKey || getMoleculeBlueprintKey(field.childIndex, field.key);
+        const compoundKey = getPageBlueprintKey(nodeIndex, localKey);
+        return {
+          ...field,
+          moduleIndex: nodeIndex,
+          moduleName,
+          moduleSchemaId: activeSchemaId,
+          sourceModuleSchemaId: node.schemaId,
+          compoundKey,
+          value: verifier?.blueprint?.[compoundKey] ?? field.value,
+        };
+      });
+    }
+
+    const schema = findAtomSchema(activeSchemaId);
+    const blueprintTextProps = new Set(
+      Array.isArray(schema?.blueprint?.textProps) ? schema.blueprint.textProps : [],
+    );
+    return getPropEntries(schema)
+      .filter(([key, field]) => {
+        const value = node.props?.[key] ?? field.default;
+        return blueprintTextProps.has(key) ||
+          isPrizePropField(field) ||
+          isCopyPropField(key, field, value);
+      })
+      .map(([key, field]) => {
+        const compoundKey = getPageBlueprintKey(nodeIndex, key);
+        return {
+          scope: "atom",
+          moduleIndex: nodeIndex,
+          moduleName,
+          moduleSchemaId: activeSchemaId,
+          sourceModuleSchemaId: node.schemaId,
+          childName: moduleName,
+          key,
+          compoundKey,
+          field,
+          value: verifier?.blueprint?.[compoundKey] ?? node.props?.[key] ?? field.default ?? "",
+        };
+      });
+  });
+}
+
+function getSchemaThemeVariant(schema, themeId) {
+  const variantThemeId = getGuidedVariantThemeId(themeId);
+  return normalizeVariants(schema).find((variant) => getVariantThemeId(schema, variant.id) === variantThemeId) || null;
+}
+
+function getThemeLinkedVariantProps(schema, variant) {
+  const fields = new Map(getPropEntries(schema));
+  return Object.entries(variant?.props || {}).filter(([key, value]) => {
+    const field = fields.get(key);
+    if (isPrizePropField(field)) return false;
+    return !isCopyPropField(key, field || { type: typeof value }, value);
+  });
+}
+
+function getMoleculePropsForVerifier(molecule, verifier) {
+  const props = getMoleculeDefaultProps(molecule);
+  Object.keys(props).forEach((key) => {
+    if (verifier?.blueprint?.[key] !== undefined) props[key] = verifier.blueprint[key];
+  });
+  return props;
+}
+
+function getMoleculeChildEntriesForVerifier(molecule, verifier) {
+  return getMoleculeChildEntries(molecule, getMoleculePropsForVerifier(molecule, verifier));
+}
+
+function getMoleculeChildStateControls(molecule, verifier = {}) {
+  let statefulIndex = 0;
+  return getMoleculeChildEntriesForVerifier(molecule, verifier)
+    .map(([schemaId], childIndex) => {
+      const schema = findAtomSchema(schemaId);
+      const stateOptions = getAtomSchemaStateOptions(schema);
+      if (stateOptions.length < 2) return null;
+      statefulIndex += 1;
+      const savedStateId = verifier?.childStates?.[childIndex];
+      const activeStateId = stateOptions.some((item) => item.id === savedStateId)
+        ? savedStateId
+        : stateOptions.find((item) => item.schemaId === schema?.id)?.id || stateOptions[0].id;
+      return {
+        childIndex,
+        label: molecule?.id === "任务列表"
+          ? `任务 ${statefulIndex}`
+          : `子组件 ${childIndex + 1} · ${schema?.name || schemaId}`,
+        activeStateId,
+        stateOptions,
+      };
+    })
+    .filter(Boolean);
+}
+
+function applyMoleculeChildStates(node, childStates = {}) {
+  Object.entries(childStates || {}).forEach(([childIndex, stateId]) => {
+    const child = node?.children?.[Number(childIndex)];
+    if (child?.guidedStates?.length) applyGuidedBusinessState(child, stateId);
+  });
+  return node;
+}
+
+function getMoleculeThemeOptions(molecule, verifier = null) {
+  const themeIds = new Set();
+  getMoleculeChildEntriesForVerifier(molecule, verifier).forEach(([schemaId]) => {
+    const schema = findAtomSchema(schemaId);
+    normalizeVariants(schema).forEach((variant) => {
+      if (getThemeLinkedVariantProps(schema, variant).length) {
+        themeIds.add(getVariantThemeId(schema, variant.id));
+      }
+    });
+  });
+  return guidedPageThemePresets.filter((theme) => themeIds.has(getGuidedVariantThemeId(theme)));
+}
+
+function applyMoleculeThemeToVerifier(molecule, verifier, themeId) {
+  if (!molecule || !verifier) return;
+  verifier.parentThemeId = themeId;
+  verifier.blueprint = { ...(verifier.blueprint || {}) };
+  getMoleculeChildEntriesForVerifier(molecule, verifier).forEach(([schemaId], childIndex) => {
+    const schema = findAtomSchema(schemaId);
+    const variant = getSchemaThemeVariant(schema, themeId);
+    if (!variant) return;
+    getThemeLinkedVariantProps(schema, variant).forEach(([key, value]) => {
+      verifier.blueprint[getMoleculeBlueprintKey(childIndex, key)] = value;
+    });
+  });
+}
+
+function applyThemeToMoleculeNodeChildren(node, themeId) {
+  if (!node || !themeId) return;
+  (node.children || []).forEach((child) => {
+    const schema = findAtomSchema(child.schemaId);
+    const variant = getSchemaThemeVariant(schema, themeId);
+    if (!variant) return;
+    child.activeVariantId = variant.id;
+    getThemeLinkedVariantProps(schema, variant).forEach(([key, value]) => {
+      if (child.props && key in child.props) child.props[key] = value;
+    });
+    if (child.children?.length) applyThemeToMoleculeNodeChildren(child, themeId);
+  });
+}
+
+function applyThemeToAtomNode(node, themeId) {
+  const schema = findAtomSchema(node?.schemaId);
+  const variant = getSchemaThemeVariant(schema, themeId);
+  if (!variant) return;
+  node.activeVariantId = variant.id;
+  getThemeLinkedVariantProps(schema, variant).forEach(([key, value]) => {
+    if (node.props && key in node.props) node.props[key] = value;
+  });
 }
 
 function createAdminVerifierMoleculeNode(molecule, verifier) {
   const node = createMoleculeNode(molecule.id);
   if (!node) return null;
+  const moleculePropKeys = new Set(getPropEntries(molecule).map(([key]) => key));
+  Object.entries(verifier?.blueprint || {}).forEach(([key, value]) => {
+    if (moleculePropKeys.has(key)) node.props[key] = value;
+  });
+  syncDynamicMoleculeChildren(node);
   (node.children || []).forEach((child, childIndex) => {
     Object.entries(verifier?.blueprint || {}).forEach(([compoundKey, value]) => {
       const [index, propKey] = compoundKey.split(".");
@@ -2646,11 +5220,115 @@ function createAdminVerifierMoleculeNode(molecule, verifier) {
       }
     });
   });
+  applyMoleculeChildStates(node, verifier?.childStates);
+  applyThemeToMoleculeNodeChildren(node, verifier?.parentThemeId);
   return node;
 }
 
+function applyCutExportRulesToNode(node) {
+  if (!node) return node;
+  if (node.type === "molecule") {
+    (node.children || []).forEach(applyCutExportRulesToNode);
+    return node;
+  }
+  const rule = getGuidedCutExportRule(node);
+  if (rule.hiddenPropKeys?.length && node.props) {
+    rule.hiddenPropKeys.forEach((key) => {
+      if (key in node.props) node.props[key] = "";
+    });
+  }
+  if (rule.exportPropOverrides) {
+    node.props = {
+      ...(node.props || {}),
+      ...rule.exportPropOverrides,
+    };
+  }
+  return node;
+}
+
+function createAdminVerifierMoleculeExportNode(molecule, verifier) {
+  const node = createAdminVerifierMoleculeNode(molecule, verifier);
+  return applyCutExportRulesToNode(node);
+}
+
+function createAdminVerifierPageNodes(template, verifier) {
+  const nodes = materializePageTemplateNodes(template);
+  attachPageTemplateBusinessStates(nodes, template?.id);
+  applyStoredPageTemplateBusinessStates(nodes, template?.id);
+  nodes.forEach((node, nodeIndex) => {
+    if (node.type === "molecule") {
+      const molecule = moleculeSchemas.find((item) => item.id === node.schemaId);
+      const moleculePropKeys = new Set(getPropEntries(molecule).map(([key]) => key));
+      Object.entries(verifier?.blueprint || {}).forEach(([compoundKey, value]) => {
+        const [index, localKey] = compoundKey.split("|");
+        if (Number(index) !== nodeIndex || !localKey || localKey.includes(".")) return;
+        if (moleculePropKeys.has(localKey)) node.props[localKey] = value;
+      });
+      syncDynamicMoleculeChildren(node);
+      applyThemeToMoleculeNodeChildren(node, verifier?.parentThemeId);
+      Object.entries(verifier?.blueprint || {}).forEach(([compoundKey, value]) => {
+        const [index, localKey] = compoundKey.split("|");
+        if (Number(index) !== nodeIndex || !localKey || !localKey.includes(".")) return;
+        const [childIndex, propKey] = localKey.split(".");
+        const child = node.children?.[Number(childIndex)];
+        if (child?.props && propKey in child.props) child.props[propKey] = value;
+      });
+      return;
+    }
+
+    applyThemeToAtomNode(node, verifier?.parentThemeId);
+    Object.entries(verifier?.blueprint || {}).forEach(([compoundKey, value]) => {
+      const [index, propKey] = compoundKey.split("|");
+      if (Number(index) === nodeIndex && propKey && node.props && propKey in node.props) {
+        node.props[propKey] = value;
+      }
+    });
+  });
+  return nodes;
+}
+
+function createAdminVerifierPageExportNodes(template, verifier) {
+  return createAdminVerifierPageNodes(template, verifier).map(applyCutExportRulesToNode);
+}
+
+function getPageTemplateThemeOptions(template, verifier = null) {
+  const themeIds = new Set();
+  createAdminVerifierPageNodes(template, verifier).forEach((node) => {
+    if (node.type === "molecule") {
+      getMoleculeThemeOptions(moleculeSchemas.find((item) => item.id === node.schemaId), {
+        blueprint: buildLocalVerifierBlueprintForNode(node, 0, null),
+      }).forEach((theme) => themeIds.add(getGuidedVariantThemeId(theme)));
+      return;
+    }
+    const schema = findAtomSchema(node.schemaId);
+    normalizeVariants(schema).forEach((variant) => {
+      if (getThemeLinkedVariantProps(schema, variant).length) {
+        themeIds.add(getVariantThemeId(schema, variant.id));
+      }
+    });
+  });
+  return guidedPageThemePresets.filter((theme) => themeIds.has(getGuidedVariantThemeId(theme)));
+}
+
+function renderPageTemplateVerifierPreview(template, verifier, exportMode = false) {
+  const nodes = exportMode
+    ? createAdminVerifierPageExportNodes(template, verifier)
+    : createAdminVerifierPageNodes(template, verifier);
+  const theme = guidedPageThemePresets.find((item) => item.id === verifier?.parentThemeId);
+  const background = theme?.background || template?.canvasBackground || template?.background || "#ffffff";
+  return `
+    <div
+      class="admin-verifier-page"
+      style="width:${Number(template?.viewportWidth || 750)}px;background:${escapeAttr(background)}"
+    >
+      ${nodes.map((node) => renderComponent(node, { editable: false })).join("")}
+    </div>
+  `;
+}
+
 function getMoleculeBlueprintFieldCount(molecule) {
-  return (molecule.children || []).reduce((sum, [schemaId, overrides = {}]) => {
+  const moleculeFieldCount = getPropEntries(molecule).length;
+  return moleculeFieldCount + getMoleculeChildEntries(molecule, getMoleculeDefaultProps(molecule)).reduce((sum, [schemaId, overrides = {}]) => {
     const schema = findAtomSchema(schemaId);
     const fields = getPropEntries(schema).filter(([key, field]) => {
       const value = overrides[key] ?? field.default;
@@ -2720,7 +5398,8 @@ function renderAdminComponentVerifier() {
   const verifierType = getAdminVerifierType();
   const schema = verifierType === "atom" ? getAdminVerifierSchema() : null;
   const molecule = verifierType === "molecule" ? getAdminVerifierMolecule() : null;
-  if (verifierType === "atom" && !schema) {
+  const pageTemplate = verifierType === "page" ? getAdminVerifierPageTemplate() : null;
+  if ((verifierType === "atom" && !schema) || (verifierType === "page" && !pageTemplate)) {
     center.innerHTML = `
       <section class="admin-shell">
         <nav class="admin-nav">
@@ -2738,42 +5417,114 @@ function renderAdminComponentVerifier() {
 
   const verifier = verifierType === "atom"
     ? ensureAdminVerifierState(schema)
-    : {
-        type: "molecule",
-        schemaId: molecule?.id || "",
-        blueprint: state.adminComponentVerifier?.schemaId === molecule?.id
-          ? { ...(state.adminComponentVerifier?.blueprint || {}) }
-          : {},
-      };
+    : verifierType === "molecule"
+      ? (() => {
+        const moleculeThemeOptions = getMoleculeThemeOptions(molecule);
+        const defaultThemeId = moleculeThemeOptions[0]?.id || "pink";
+        return {
+          type: "molecule",
+          schemaId: molecule?.id || "",
+          parentThemeId: state.adminComponentVerifier?.schemaId === molecule?.id
+            ? state.adminComponentVerifier?.parentThemeId || defaultThemeId
+            : defaultThemeId,
+          blueprint: state.adminComponentVerifier?.schemaId === molecule?.id
+            ? { ...(state.adminComponentVerifier?.blueprint || {}) }
+            : {},
+          childStates: state.adminComponentVerifier?.schemaId === molecule?.id
+            ? { ...(state.adminComponentVerifier?.childStates || {}) }
+            : {},
+        };
+      })()
+      : (() => {
+        const pageThemeOptions = getPageTemplateThemeOptions(pageTemplate, state.adminComponentVerifier);
+        const defaultThemeId = pageThemeOptions[0]?.id || "pink";
+        return {
+          type: "page",
+          schemaId: pageTemplate?.id || "",
+          parentThemeId: state.adminComponentVerifier?.schemaId === pageTemplate?.id
+            ? state.adminComponentVerifier?.parentThemeId || defaultThemeId
+            : defaultThemeId,
+          blueprint: state.adminComponentVerifier?.schemaId === pageTemplate?.id
+            ? { ...(state.adminComponentVerifier?.blueprint || {}) }
+            : {},
+        };
+      })();
   if (verifierType === "molecule") state.adminComponentVerifier = verifier;
+  if (verifierType === "page") state.adminComponentVerifier = verifier;
 
   const props = verifierType === "atom" ? getAdminVerifierProps(schema, verifier) : {};
   const textPropKeys = verifierType === "atom" && Array.isArray(schema.blueprint?.textProps) ? schema.blueprint.textProps : [];
   const textProps = verifierType === "atom"
     ? getPropEntries(schema).filter(([key]) => textPropKeys.includes(key))
-    : getMoleculeVerifierFields(molecule, verifier);
-  const blueprintVariableLabel = verifierType === "molecule"
-    ? `${textProps.length} 个组合蓝图变量`
-    : textProps.some(([, field]) => isPrizePropField(field))
-      ? `${textProps.length} 个蓝图变量`
-      : `${textProps.length} 个文字变量`;
-  const colorProps = verifierType === "atom" ? getPropEntries(schema).filter(([, field]) => field.type === "color") : [];
+    : verifierType === "molecule"
+      ? getMoleculeVerifierFields(molecule, verifier)
+      : getPageTemplateVerifierFields(pageTemplate, verifier);
+  const blueprintVariableLabel = verifierType === "page"
+    ? `${textProps.length} 个页面组合变量`
+    : verifierType === "molecule"
+      ? `${textProps.length} 个组合蓝图变量`
+      : textProps.some(([, field]) => isPrizePropField(field))
+        ? `${textProps.length} 个蓝图变量`
+        : `${textProps.length} 个文字变量`;
   const fontEntries = verifierType === "atom" ? getSchemaFontEntries(schema) : [];
   const missingFontCount = fontEntries.filter((font) => font.source?.status && font.source.status !== "exact").length;
   const variants = verifierType === "atom" ? normalizeVariants(schema) : [];
+  const atomStateOptions = verifierType === "atom" ? getAtomSchemaStateOptions(schema) : [];
+  const moleculeChildStateControls = verifierType === "molecule"
+    ? getMoleculeChildStateControls(molecule, verifier)
+    : [];
+  const moleculeThemeOptions = verifierType === "molecule" ? getMoleculeThemeOptions(molecule, verifier) : [];
+  const atomThemeOptions = verifierType === "atom" ? getAtomThemeOptions(schema) : [];
+  const pageThemeOptions = verifierType === "page" ? getPageTemplateThemeOptions(pageTemplate, verifier) : [];
   const theme = guidedPageThemePresets.find((item) => item.id === verifier.parentThemeId) || guidedPageThemePresets[0];
-  const width = verifierType === "atom" ? Number(schema.dimensions?.width || 702) : 702;
-  const height = verifierType === "atom" ? Number(schema.dimensions?.height || 160) : 240;
+  const width = verifierType === "page"
+    ? Number(pageTemplate?.viewportWidth || 750)
+    : verifierType === "atom"
+      ? Number(schema.dimensions?.width || 702)
+      : 702;
+  const exportWidth = GUIDED_CUT_EXPORT_WIDTH;
+  const exportBottomSpace = verifierType === "atom" && isTaskBarStyle1ExportNode(schema)
+    ? GUIDED_TASK_BAR_EXPORT_BOTTOM_SPACE
+    : GUIDED_CUT_EXPORT_BOTTOM_SPACE;
+  const height = verifierType === "page"
+    ? 1334
+    : verifierType === "atom"
+      ? Number(schema.dimensions?.height || 160)
+      : 240;
+  const exportHeight = height + exportBottomSpace;
   const isAutoHeight = verifierType === "atom" ? schema.heightMode === "auto" : true;
   const moleculeNode = verifierType === "molecule" && molecule ? createAdminVerifierMoleculeNode(molecule, verifier) : null;
-  const preview = verifierType === "atom" ? renderAtomPreview(schema.id, props) : moleculeNode ? renderComponent(moleculeNode, { editable: false }) : "";
+  const moleculeExportNode = verifierType === "molecule" && molecule ? createAdminVerifierMoleculeExportNode(molecule, verifier) : null;
+  const preview = verifierType === "atom"
+    ? renderAtomPreview(schema.id, props)
+    : verifierType === "page"
+      ? renderPageTemplateVerifierPreview(pageTemplate, verifier)
+      : moleculeNode ? renderComponent(moleculeNode, { editable: false }) : "";
   const exportPreview = verifierType === "atom"
     ? renderAtomPreview(schema.id, getCutExportProps(schema.id, props))
-    : preview;
-  const selectedName = verifierType === "atom" ? schema.name : molecule?.name || "分子组件";
+    : verifierType === "page"
+      ? renderPageTemplateVerifierPreview(pageTemplate, verifier, true)
+      : moleculeExportNode ? renderComponent(moleculeExportNode, { editable: false }) : "";
+  const selectedName = verifierType === "atom"
+    ? schema.name
+    : verifierType === "page"
+      ? pageTemplate?.name || "页面模板"
+      : molecule?.name || "分子组件";
+  const selectedBadge =
+    verifierType === "atom" && ATOM_MODULE_BADGE_IDS.has(schema.id)
+      ? '<span class="admin-verifier-title-badge">模块级原子</span>'
+      : "";
   const componentOptions = verifierType === "atom"
     ? atomSchemas
-    : moleculeSchemas.filter((item) => item.id !== "MoleculeContainer");
+    : verifierType === "page"
+      ? [...pageTemplates, ...customPageTemplates].filter((item) => item.id !== "blank-page")
+      : moleculeSchemas.filter((item) => item.id !== "MoleculeContainer");
+  const componentSelectLabel = verifierType === "page" ? "验收页面" : "验收组件";
+  const verifierIntro = verifierType === "page"
+    ? "页面模板调用分子组合；在这里切换页面并检查继承来的分子变量和 750 宽页面预览。"
+    : verifierType === "molecule"
+      ? "分子组件直接调用原子组合；在这里切换分子并检查组合蓝图与最终预览。"
+      : "固定检查蓝图输入、组件文案、父级色系联动和最终导出切图。";
 
   center.innerHTML = `
     <section class="admin-shell admin-verifier-shell">
@@ -2785,28 +5536,28 @@ function renderAdminComponentVerifier() {
       <header class="admin-hero admin-verifier-head">
         <span>COMPONENT QA</span>
         <div class="admin-verifier-title-row">
-          <h1>${escapeHtml(selectedName)}</h1>
+          <div class="admin-verifier-title-main">
+            <h1>${escapeHtml(selectedName)}</h1>
+            ${selectedBadge}
+          </div>
           <div class="admin-verifier-select-row">
             <label class="admin-verifier-component-select admin-verifier-type-select">
               <span>组件类型</span>
               <select data-admin-verifier-type>
                 <option value="atom" ${verifierType === "atom" ? "selected" : ""}>原子组件</option>
                 <option value="molecule" ${verifierType === "molecule" ? "selected" : ""}>分子组件</option>
+                <option value="page" ${verifierType === "page" ? "selected" : ""}>页面模板</option>
               </select>
             </label>
             <label class="admin-verifier-component-select">
-              <span>验收组件</span>
+              <span>${componentSelectLabel}</span>
               <select data-admin-select-component>
-                ${componentOptions.map((item) => `
-                <option value="${escapeAttr(item.id)}" ${item.id === verifier.schemaId ? "selected" : ""}>
-                  ${escapeHtml(item.name || item.id)}
-                </option>
-              `).join("")}
+                ${getAdminVerifierComponentOptionMarkup(verifierType, componentOptions, verifier.schemaId)}
               </select>
             </label>
           </div>
         </div>
-        <p>${verifierType === "molecule" ? "分子组件直接调用原子组合；在这里切换分子并检查组合蓝图与最终预览。" : "固定检查蓝图输入、组件文案、父级色系联动和最终导出切图。"}</p>
+        <p>${verifierIntro}</p>
       </header>
 
       <section class="admin-verifier-grid">
@@ -2845,8 +5596,8 @@ function renderAdminComponentVerifier() {
                       `}
                   </label>
                 `;
-              }).join("") : textProps.map(({ childIndex, childName, key, field, value }) => {
-                const compoundKey = getMoleculeBlueprintKey(childIndex, key);
+              }).join("") : verifierType === "molecule" ? textProps.map(({ childIndex, childName, key, compoundKey: explicitKey, field, value }) => {
+                const compoundKey = explicitKey || getMoleculeBlueprintKey(childIndex, key);
                 return `
                   <label>
                     <span>${escapeHtml(`${childName} · ${field.label || key}`)}</span>
@@ -2864,6 +5615,16 @@ function renderAdminComponentVerifier() {
                             data-admin-molecule-blueprint-prop="${escapeAttr(compoundKey)}"
                           >${escapeHtml(value)}</textarea>
                         `
+                      : field.type === "number"
+                        ? `
+                          <input
+                            type="number"
+                            min="${escapeAttr(field.min ?? "")}"
+                            max="${escapeAttr(field.max ?? "")}"
+                            data-admin-molecule-blueprint-prop="${escapeAttr(compoundKey)}"
+                            value="${escapeAttr(value)}"
+                          />
+                        `
                         : `
                           <input
                             type="text"
@@ -2873,14 +5634,97 @@ function renderAdminComponentVerifier() {
                         `}
                   </label>
                 `;
+              }).join("") : textProps.map(({ moduleName, childName, compoundKey, field, value }) => {
+                const label = moduleName === childName
+                  ? `${moduleName} · ${field.label || compoundKey}`
+                  : `${moduleName} · ${childName} · ${field.label || compoundKey}`;
+                return `
+                  <label>
+                    <span>${escapeHtml(label)}</span>
+                    ${isPrizePropField(field)
+                      ? renderPrizeLibrarySelect(
+                          value,
+                          `data-admin-page-blueprint-prop="${escapeAttr(compoundKey)}"`,
+                          `${label}`,
+                          `data-admin-page-prize-name-prop="${escapeAttr(compoundKey)}"`,
+                        )
+                      : isTextareaPropField(field)
+                        ? `
+                          <textarea
+                            rows="${getBlueprintTextareaRows(value)}"
+                            data-admin-page-blueprint-prop="${escapeAttr(compoundKey)}"
+                          >${escapeHtml(value)}</textarea>
+                        `
+                      : field.type === "number"
+                        ? `
+                          <input
+                            type="number"
+                            min="${escapeAttr(field.min ?? "")}"
+                            max="${escapeAttr(field.max ?? "")}"
+                            data-admin-page-blueprint-prop="${escapeAttr(compoundKey)}"
+                            value="${escapeAttr(value)}"
+                          />
+                        `
+                        : `
+                          <input
+                            type="text"
+                            data-admin-page-blueprint-prop="${escapeAttr(compoundKey)}"
+                            value="${escapeAttr(value)}"
+                          />
+                        `}
+                  </label>
+                `;
               }).join("")}
             </div>
           </section>
 
+          ${verifierType === "molecule" && moleculeChildStateControls.length ? `<section class="admin-verifier-block">
+            <header>
+              <strong>子组件状态</strong>
+              <span>${moleculeChildStateControls.length} 个可切换组件</span>
+            </header>
+            <div class="admin-verifier-child-states">
+              ${moleculeChildStateControls.map((control) => `
+                <section>
+                  <strong>${escapeHtml(control.label)}</strong>
+                  <div class="admin-verifier-state-switch">
+                    ${control.stateOptions.map((item) => `
+                      <button
+                        type="button"
+                        class="${item.id === control.activeStateId ? "active" : ""}"
+                        data-admin-molecule-child-state="${escapeAttr(`${control.childIndex}|${item.id}`)}"
+                      >${escapeHtml(item.name)}</button>
+                    `).join("")}
+                  </div>
+                </section>
+              `).join("")}
+            </div>
+          </section>` : ""}
+
+          ${verifierType === "atom" && atomStateOptions.length > 1 ? `<section class="admin-verifier-block">
+            <header>
+              <strong>查看状态</strong>
+              <span>${escapeHtml(atomStateOptions.find((item) => item.schemaId === schema.id)?.name || "当前状态")}</span>
+            </header>
+            <div class="admin-verifier-variants">
+              ${atomStateOptions.map((item) => `
+                <button
+                  class="${item.schemaId === schema.id ? "active" : ""}"
+                  type="button"
+                  data-admin-preview-state="${escapeAttr(item.schemaId)}"
+                >
+                  <i></i>
+                  <span>${escapeHtml(item.name)}</span>
+                  <em>${escapeHtml(item.schemaId)}</em>
+                </button>
+              `).join("")}
+            </div>
+          </section>` : ""}
+
           ${verifierType === "atom" ? `<section class="admin-verifier-block">
             <header>
-              <strong>父级色系</strong>
-              <span>${escapeHtml(theme.name)}</span>
+              <strong>组件变体</strong>
+              <span>${variants.length} 项变体</span>
             </header>
             <div class="admin-verifier-variants">
               ${variants.map((variant) => {
@@ -2900,20 +5744,61 @@ function renderAdminComponentVerifier() {
                 `;
               }).join("")}
             </div>
-          </section>` : ""}
-
-          ${verifierType === "atom" ? `<section class="admin-verifier-block">
+          </section>${atomThemeOptions.length ? `<section class="admin-verifier-block">
             <header>
-              <strong>颜色变量</strong>
-              <span>${colorProps.length} 个</span>
+              <strong>父级色系</strong>
+              <span>${escapeHtml(theme.name)}</span>
             </header>
-            <div class="admin-verifier-color-list">
-              ${colorProps.map(([key, field]) => `
-                <div>
-                  <i style="background:${escapeAttr(props[key] || field.default || "#ffffff")}"></i>
-                  <span>${escapeHtml(field.label || key)}</span>
-                  <code>${escapeHtml(props[key] || field.default || "")}</code>
-                </div>
+            <div class="admin-verifier-variants">
+              ${atomThemeOptions.map((item) => `
+                <button
+                  class="${item.id === verifier.parentThemeId ? "active" : ""}"
+                  type="button"
+                  data-admin-preview-page-theme="${escapeAttr(item.id)}"
+                  style="--admin-variant-start:${escapeAttr(item.primary)};--admin-variant-end:${escapeAttr(item.secondary)}"
+                >
+                  <i></i>
+                  <span>${escapeHtml(item.name)}</span>
+                  <em>父级联动</em>
+                </button>
+              `).join("")}
+            </div>
+          </section>` : ""}` : moleculeThemeOptions.length ? `<section class="admin-verifier-block">
+            <header>
+              <strong>父级色系</strong>
+              <span>${escapeHtml(theme.name)}</span>
+            </header>
+            <div class="admin-verifier-variants">
+              ${moleculeThemeOptions.map((item) => `
+                <button
+                  class="${item.id === verifier.parentThemeId ? "active" : ""}"
+                  type="button"
+                  data-admin-preview-molecule-theme="${escapeAttr(item.id)}"
+                  style="--admin-variant-start:${escapeAttr(item.primary)};--admin-variant-end:${escapeAttr(item.secondary)}"
+                >
+                  <i></i>
+                  <span>${escapeHtml(item.name)}</span>
+                  <em>父级联动</em>
+                </button>
+              `).join("")}
+            </div>
+          </section>` : pageThemeOptions.length ? `<section class="admin-verifier-block">
+            <header>
+              <strong>父级色系</strong>
+              <span>${escapeHtml(theme.name)}</span>
+            </header>
+            <div class="admin-verifier-variants">
+              ${pageThemeOptions.map((item) => `
+                <button
+                  class="${item.id === verifier.parentThemeId ? "active" : ""}"
+                  type="button"
+                  data-admin-preview-page-theme="${escapeAttr(item.id)}"
+                  style="--admin-variant-start:${escapeAttr(item.primary)};--admin-variant-end:${escapeAttr(item.secondary)}"
+                >
+                  <i></i>
+                  <span>${escapeHtml(item.name)}</span>
+                  <em>页面联动</em>
+                </button>
               `).join("")}
             </div>
           </section>` : ""}
@@ -2965,7 +5850,7 @@ function renderAdminComponentVerifier() {
             <header>
               <div>
                 <strong>导出切图样子</strong>
-                <span>${isAutoHeight ? `${width}px 宽，自适应高度` : `${width} x ${height}px`}，透明背景</span>
+                <span>${isAutoHeight ? `${exportWidth}px 宽，底部留白 ${exportBottomSpace}px` : `${exportWidth} x ${exportHeight}px`}，透明背景</span>
               </div>
               <button type="button" data-admin-export-cut>下载 PNG</button>
             </header>
@@ -2973,7 +5858,7 @@ function renderAdminComponentVerifier() {
               <div
                 class="admin-export-capture"
                 data-admin-export-cut-capture
-                style="width:${width}px;${isAutoHeight ? `min-height:${height}px` : `height:${height}px`}"
+                style="width:${exportWidth}px;${isAutoHeight ? `min-height:${exportHeight}px` : `height:${exportHeight}px`};padding-bottom:${exportBottomSpace}px;box-sizing:border-box;"
                 >${exportPreview}</div>
             </div>
           </section>
@@ -2988,12 +5873,23 @@ function renderAdminComponentVerifier() {
 function refreshAdminVerifierPreview() {
   const liveTarget = document.querySelector(".admin-verifier-component");
   const exportTarget = document.querySelector("[data-admin-export-cut-capture]");
+  if (getAdminVerifierType() === "page") {
+    const pageTemplate = getAdminVerifierPageTemplate();
+    if (!pageTemplate) return;
+    if (liveTarget) liveTarget.innerHTML = renderPageTemplateVerifierPreview(pageTemplate, state.adminComponentVerifier);
+    if (exportTarget) exportTarget.innerHTML = renderPageTemplateVerifierPreview(pageTemplate, state.adminComponentVerifier, true);
+    mountPreviewDetailReactMaterials();
+    return;
+  }
+
   if (getAdminVerifierType() === "molecule") {
     const molecule = getAdminVerifierMolecule();
     const node = molecule ? createAdminVerifierMoleculeNode(molecule, state.adminComponentVerifier) : null;
+    const exportNode = molecule ? createAdminVerifierMoleculeExportNode(molecule, state.adminComponentVerifier) : null;
     const preview = node ? renderComponent(node, { editable: false }) : "";
+    const exportPreview = exportNode ? renderComponent(exportNode, { editable: false }) : "";
     if (liveTarget) liveTarget.innerHTML = preview;
-    if (exportTarget) exportTarget.innerHTML = preview;
+    if (exportTarget) exportTarget.innerHTML = exportPreview;
     mountPreviewDetailReactMaterials();
     return;
   }
@@ -3048,7 +5944,199 @@ function renderPrdDemoFlow() {
   `;
 }
 
+function createPrdBlueprintPasteTemplateRows(templateName, versions) {
+  const templateId = PRD_PAGE_TEMPLATE_ID_BY_NAME[templateName];
+  const specs = PRD_PAGE_TEMPLATE_INPUT_SPECS[templateId] || [];
+  return [
+    {
+      module: "页面基础信息",
+      field: "页面类型",
+      values: versions.map((_, index) => (index === 0 ? templateName : "")),
+    },
+    ...specs.flatMap((spec) =>
+      spec.sections.flatMap((section) =>
+        section.fields.map(([, label]) => ({
+          module: spec.moduleName,
+          field: label,
+          values: versions.map(() => ""),
+        })),
+      ),
+    ),
+  ];
+}
+
+function renderPrdBlueprintStandardModuleTable(group, versions) {
+  return `
+    <section
+      class="prd-blueprint-module-paste"
+      data-prd-blueprint-module-table="${escapeAttr(group.module)}"
+    >
+      <header>
+        <strong>${escapeHtml(group.module)}</strong>
+        <span>粘贴该模块表格</span>
+      </header>
+      <div
+        class="prd-blueprint-module-grid"
+        style="--prd-blueprint-version-count:${versions.length};--prd-blueprint-min-width:${180 + versions.length * 180}px"
+      >
+        <div class="prd-blueprint-module-head">
+          <span>填写项</span>
+          ${versions.map((version) => `<span>${escapeHtml(version)}</span>`).join("")}
+        </div>
+        ${group.rows.map(({ row, rowIndex }) => `
+          <div
+            class="prd-blueprint-module-row"
+            data-prd-blueprint-paste-row="${rowIndex}"
+            data-prd-blueprint-paste-module="${escapeAttr(row.module)}"
+          >
+            <div class="prd-blueprint-hidden-cell" data-prd-blueprint-cell="0">${escapeHtml(row.module)}</div>
+            <div
+              class="prd-blueprint-paste-cell"
+              contenteditable="true"
+              data-prd-blueprint-cell="1"
+              data-prd-blueprint-row-index="${rowIndex}"
+              data-prd-blueprint-cell-index="1"
+            >${escapeHtml(row.field)}</div>
+            ${versions.map((_, versionIndex) => `
+              <div
+                class="prd-blueprint-paste-cell"
+                contenteditable="true"
+                data-prd-blueprint-cell="${versionIndex + 2}"
+                data-prd-blueprint-row-index="${rowIndex}"
+                data-prd-blueprint-cell-index="${versionIndex + 2}"
+              >${escapeHtml(row.values[versionIndex] || "")}</div>
+            `).join("")}
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function getPrdBlueprintPasteFieldValue(rows, moduleName, fieldName, versionIndex) {
+  const row = rows.find(
+    (item) =>
+      normalizePageTemplateLookupName(item.row.module) ===
+        normalizePageTemplateLookupName(moduleName) &&
+      normalizePageTemplateLookupName(item.row.field) ===
+        normalizePageTemplateLookupName(fieldName),
+  );
+  return row?.row.values?.[versionIndex] || "";
+}
+
+function renderPrdBlueprintReturnStrategyTable(group, versions) {
+  const moduleName = group.module;
+  return `
+    <section
+      class="prd-blueprint-module-paste is-return-strategy"
+      data-prd-blueprint-module-table="${escapeAttr(moduleName)}"
+    >
+      <header>
+        <strong>返券配置</strong>
+        <span>粘贴人群策略表</span>
+      </header>
+      <div class="prd-blueprint-return-paste-grid">
+        <div class="prd-blueprint-return-paste-head">
+          <span>人群策略</span>
+          <span>第1档 · 抽奖任务</span>
+          <span>第2档 · 消耗返（门槛1）</span>
+          <span>第3档 · 消耗返（门槛2）</span>
+          <span>第4档 · 消耗返（门槛3）</span>
+        </div>
+        ${versions.map((version, versionIndex) => {
+          const drawThreshold = getPrdBlueprintPasteFieldValue(
+            group.rows,
+            moduleName,
+            "第1档 · 抽奖门槛",
+            versionIndex,
+          );
+          const tiers = [1, 2, 3].map((tier) => ({
+            threshold: getPrdBlueprintPasteFieldValue(
+              group.rows,
+              moduleName,
+              `返券${tier} · 消耗门槛`,
+              versionIndex,
+            ),
+            reward: getPrdBlueprintPasteFieldValue(
+              group.rows,
+              moduleName,
+              `返券${tier} · 金额`,
+              versionIndex,
+            ),
+          }));
+          return `
+            <div class="prd-blueprint-return-paste-row">
+              <div contenteditable="true" data-prd-return-strategy-paste-target>${escapeHtml(version)}</div>
+              <div contenteditable="true" data-prd-return-strategy-paste-target>${escapeHtml(drawThreshold ? `累计现金消耗≥${drawThreshold}元` : "")}</div>
+              ${tiers.map((tier) => `
+                <div contenteditable="true" data-prd-return-strategy-paste-target>${escapeHtml(
+                  tier.threshold && tier.reward
+                    ? `送满${tier.threshold}赠${tier.reward}`
+                    : "",
+                )}</div>
+              `).join("")}
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderPrdBlueprintModulePasteTables(rows, versions, templateName) {
+  if (!templateName) {
+    return `<div class="prd-blueprint-paste-empty">请先选择页面模板</div>`;
+  }
+  const templateId = PRD_PAGE_TEMPLATE_ID_BY_NAME[templateName];
+  const specs = PRD_PAGE_TEMPLATE_INPUT_SPECS[templateId] || [];
+  if (!specs.length) {
+    return `<div class="prd-blueprint-paste-empty">该模板没有需要粘贴的变量表格</div>`;
+  }
+  const indexedRows = rows.map((row, rowIndex) => ({ row, rowIndex }));
+  return specs.map((spec) => {
+    const moduleRows = indexedRows.filter(
+      (item) =>
+        normalizePageTemplateLookupName(item.row.module) ===
+        normalizePageTemplateLookupName(spec.moduleName),
+    );
+    const returnFieldNames = new Set(
+      spec.sections
+        .filter((section) => section.title === "返券配置")
+        .flatMap((section) =>
+          section.fields.map(([, label]) => normalizePageTemplateLookupName(label)),
+        ),
+    );
+    const standardRows = moduleRows.filter(
+      (item) =>
+        !returnFieldNames.has(normalizePageTemplateLookupName(item.row.field)),
+    );
+    const standardTable = renderPrdBlueprintStandardModuleTable(
+      { module: spec.moduleName, rows: standardRows },
+      versions,
+    );
+    if (!returnFieldNames.size) return standardTable;
+    return `
+      ${renderPrdBlueprintReturnStrategyTable(
+        { module: spec.moduleName, rows: moduleRows },
+        versions,
+      )}
+      ${standardTable}
+    `;
+  }).join("");
+}
+
 function renderPrdFileModal() {
+  const pasteVersionCount = state.prdBlueprintPasteVersions.length ||
+    PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS.length;
+  const pasteVersions = normalizePrdBlueprintPasteVersions(
+    state.prdBlueprintPasteVersions,
+    pasteVersionCount,
+  );
+  const blueprintRows = normalizePrdBlueprintPasteRows(
+    state.prdBlueprintPasteRows,
+    0,
+    pasteVersions.length,
+  );
   return `
     <div class="prd-file-modal" data-demo-file-modal>
       <section role="dialog" aria-modal="true" aria-labelledby="prd-file-modal-title">
@@ -3059,32 +6147,11 @@ function renderPrdFileModal() {
           </div>
           <button data-demo-close-file-modal aria-label="关闭">×</button>
         </header>
-        <div class="prd-text-import">
-          <div class="prd-text-import-head">
-            <div>
-              <strong>粘贴 PRD 文本</strong>
-              <span>支持“字段：内容”格式，也可以直接粘贴完整正文</span>
-            </div>
-            <em>文本</em>
-          </div>
-          <textarea
-            rows="6"
-            placeholder="例如：&#10;类型：抽奖+消耗返&#10;活动名称：夏日消耗返活动&#10;活动目标：提升报名与现金消耗"
-            data-prd-text-input
-          >${escapeHtml(state.prdTextInput)}</textarea>
-          <div class="prd-text-import-actions">
-            <span class="${state.prdTextError ? "error" : ""}">
-              ${escapeHtml(state.prdTextError || "粘贴后将转换为可编辑的 PRD 信息表")}
-            </span>
-            <button type="button" data-prd-text-submit>使用文本 PRD</button>
-          </div>
-        </div>
-        <div class="prd-file-divider"><span>或输入飞书文档链接</span></div>
         <div class="prd-feishu-import">
           <div class="prd-text-import-head">
             <div>
               <strong>飞书文档链接</strong>
-              <span>目前仅支持公开文档，非公开文档后续支持</span>
+              <span>支持企业内部文档，应用需拥有文档阅读权限</span>
             </div>
             <em>链接</em>
           </div>
@@ -3099,8 +6166,64 @@ function renderPrdFileModal() {
           </div>
           <div class="prd-feishu-import-note">
             <span class="${state.prdFeishuError ? "error" : ""}">
-              ${escapeHtml(state.prdFeishuError || "请使用已公开分享的飞书文档链接")}
+              ${escapeHtml(state.prdFeishuError || "支持 docx、doc 和 wiki 链接")}
             </span>
+          </div>
+        </div>
+        <div class="prd-file-divider"><span>或粘贴蓝图表格</span></div>
+        <div class="prd-blueprint-paste">
+          <div class="prd-text-import-head">
+            <div>
+              <strong>粘贴蓝图表格</strong>
+              <span>选择一个模板后，可直接粘贴 PRD 文档中的模块表格</span>
+            </div>
+            <em>表格</em>
+          </div>
+          <label class="prd-blueprint-template-select">
+            <span>页面模板</span>
+            <select data-prd-blueprint-template-select>
+              <option value="">请选择模板</option>
+              ${Object.keys(PRD_PAGE_TEMPLATE_ALIASES).map((templateName) => `
+                <option
+                  value="${escapeAttr(templateName)}"
+                  ${state.prdBlueprintPasteTemplateName === templateName ? "selected" : ""}
+                >${escapeHtml(templateName)}</option>
+              `).join("")}
+            </select>
+          </label>
+          <div class="prd-blueprint-module-paste-list">
+            ${renderPrdBlueprintModulePasteTables(
+              blueprintRows,
+              pasteVersions,
+              state.prdBlueprintPasteTemplateName,
+            )}
+          </div>
+          <div class="prd-text-import-actions">
+            <span class="${state.prdBlueprintPasteError ? "error" : ""}">
+              ${escapeHtml(state.prdBlueprintPasteError || "支持文档原表格式；返券策略表会自动转换为纵向版本")}
+            </span>
+            <button type="button" data-prd-blueprint-table-submit>使用蓝图表格</button>
+          </div>
+        </div>
+        <div class="prd-file-divider"><span>或粘贴普通文本</span></div>
+        <div class="prd-text-import">
+          <div class="prd-text-import-head">
+            <div>
+              <strong>粘贴 PRD 文本</strong>
+              <span>支持“字段：内容”格式，也可以直接粘贴完整正文</span>
+            </div>
+            <em>文本</em>
+          </div>
+          <textarea
+            rows="6"
+            placeholder="例如：&#10;模板3 抽奖 + 消耗返&#10;活动名称：夏日消耗返活动&#10;核心权益｜big-day发券：..."
+            data-prd-text-input
+          >${escapeHtml(state.prdTextInput)}</textarea>
+          <div class="prd-text-import-actions">
+            <span class="${state.prdTextError ? "error" : ""}">
+              ${escapeHtml(state.prdTextError || "粘贴后将转换为可编辑的 PRD 信息表")}
+            </span>
+            <button type="button" data-prd-text-submit>使用文本 PRD</button>
           </div>
         </div>
         <footer>
@@ -3127,7 +6250,10 @@ function startPrdParsing() {
   if (prdParseTimer) clearTimeout(prdParseTimer);
   state.view = "prd-demo";
   state.prdFileModalOpen = false;
-  state.prdDemoStep = "parsing";
+  state.prdDemoStep = "analysis";
+  state.prdTemplateSelectedModuleIndex = null;
+  state.prdTemplateAddModal = null;
+  state.prdTemplateAddAfterIndex = null;
   if (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID) {
     state.selectedBlueprintAudienceId =
       getPrdTableBlueprint().audiences[0]?.id || "prd-table-page";
@@ -3137,11 +6263,6 @@ function startPrdParsing() {
     state.selectedBlueprintAudienceId = demoActivityPackage.audiences[0].id;
   }
   render();
-  prdParseTimer = window.setTimeout(() => {
-    if (state.view !== "prd-demo" || state.prdDemoStep !== "parsing") return;
-    state.prdDemoStep = "analysis";
-    render();
-  }, 1500);
 }
 
 function renderPrdAnalysisStep() {
@@ -3177,8 +6298,7 @@ function renderPrdTemplateMappingBlueprint(blueprint) {
   const returningClass = state.blueprintReturningFromPreview
     ? " is-returned-from-preview"
     : "";
-  const hasModuleBoundForm =
-    pageTemplate && getPageTemplateBlueprintFormModules(moduleItems).length > 1;
+  const hasPageTemplate = Boolean(pageTemplate);
 
   return `
     <section class="blueprint-confirm blueprint-overview${returningClass}">
@@ -3186,7 +6306,7 @@ function renderPrdTemplateMappingBlueprint(blueprint) {
         <div>
           <span>PRD 解析结果</span>
           <h1>确认活动策略</h1>
-          <p>${hasModuleBoundForm ? "按页面模板模块列出需要填写的文字变量，用户补齐后再进入预览。" : `左侧是「${escapeHtml(pageType || "未识别类型")}」命中的页面模板模块；右侧是 PRD 输入表格里的具体信息，有值展示、没值留空。`}</p>
+          <p>${hasPageTemplate ? "页面模板已命中；下方直接展开页面继承的分子变量，有 PRD 值自动带入，没值留空。" : `左侧是「${escapeHtml(pageType || "未识别类型")}」命中的页面模板模块；右侧是 PRD 输入表格里的具体信息，有值展示、没值留空。`}</p>
         </div>
         <button class="blueprint-side-generate" data-demo-generate-activity>
           <span>确认并预览</span>
@@ -3194,11 +6314,11 @@ function renderPrdTemplateMappingBlueprint(blueprint) {
         </button>
       </header>
 
-      ${hasModuleBoundForm ? `
+      ${hasPageTemplate ? `
         ${renderPageBlueprintBasicInfo({ templateName: pageTemplate.name })}
-        ${renderModuleBoundBlueprintTable({
+        ${renderPageTemplateInheritedVariableTable({
           templateName: pageTemplate.name,
-          moduleItems,
+          pageTemplate,
         })}
       ` : `
         <section class="prd-template-map">
@@ -3322,17 +6442,680 @@ function renderModuleBoundBlueprintTable({ templateName, moduleItems }) {
   `;
 }
 
+const PAGE_TEMPLATE_VARIABLE_ROW_PREFIX = "页面模板变量";
+const PAGE_TEMPLATE_VARIABLE_VERSION_ROW_PREFIX = "页面模板变量版本";
+const pageTemplateModulePreviewImages = {
+  账户优惠券提示: "/page-module-previews/账户优惠券提示.png",
+  "核心权益模块-bigday发券-样式1": "/page-module-previews/bigday-coupon-style1.png",
+  "核心权益模块-bigday发券-样式1-已报名": "/page-module-previews/bigday-coupon-style1.png",
+  "核心权益模块-bigday发券-样式2": "/page-module-previews/核心权益模块-bigday发券-样式2.png",
+  "核心权益模块-发券-样式2": "/page-module-previews/核心权益模块-发券-样式2.png",
+  "核心玩法模块-抽奖消返-3列": "/page-module-previews/lottery-consumption-return-3col.png",
+  "核心玩法模块-抽奖消返-4列": "/page-module-previews/核心玩法模块-抽奖消返-4列.png",
+  "核心玩法模块-抽奖-未报名": "/page-module-previews/lottery-unregistered.png",
+  "核心玩法模块-抽奖-已报名": "/page-module-previews/核心玩法模块-抽奖-已报名.png",
+  任务列表: "/page-module-previews/task-list.png",
+  "投稿赢流量-样式3": "/page-module-previews/投稿赢流量-样式3.png",
+  "内容诊断-样式1-点击前": "/page-module-previews/内容诊断.png",
+  "内容诊断-样式-点击后": "/page-module-previews/内容诊断.png",
+  "内容诊断-优质视频提示": "/page-module-previews/内容诊断.png",
+  "内容诊断-账号诊断": "/page-module-previews/内容诊断.png",
+  "用户教育-攻略": "/page-module-previews/用户教育-攻略.png",
+  "用户教育案例-样式1": "/page-module-previews/用户教育案例-样式1.png",
+  "用户教育案例-样式2": "/page-module-previews/用户教育案例-样式1.png",
+  置底按钮: "/page-module-previews/置底按钮.png",
+  "官方小助手模块": "/page-module-previews/官方小助手模块.png",
+  "AI智投": "/page-module-previews/AI智投%20.png",
+  "节点指南": "/page-module-previews/节点指南.png",
+  "投放抽奖": "/page-module-previews/投放抽奖.png",
+};
+
+function getPageTemplateStatePreviewSrc(config, activeStateId, fallbackSrc) {
+  const schemaId = config?.states?.find((item) => item.id === activeStateId)?.schemaId;
+  return pageTemplateModulePreviewImages[schemaId] || fallbackSrc || "";
+}
+
+function getPageTemplateVariableRowKey(field) {
+  return [
+    PAGE_TEMPLATE_VARIABLE_ROW_PREFIX,
+    String((field.moduleIndex ?? 0) + 1),
+    field.compoundKey,
+  ].join("｜");
+}
+
+function getPageTemplateVersionModuleKey(templateId, moduleIndex) {
+  return ["page-template", templateId, String(moduleIndex)].join("｜");
+}
+
+function parsePageTemplateVersionModuleKey(moduleKey) {
+  const [type, templateId, moduleIndex] = String(moduleKey || "").split("｜");
+  if (type !== "page-template") return null;
+  const parsedIndex = Number(moduleIndex);
+  if (!templateId || !Number.isFinite(parsedIndex)) return null;
+  return { templateId, moduleIndex: parsedIndex };
+}
+
+function getPageTemplateVariableVersionRowKey(field, versionName) {
+  return [
+    PAGE_TEMPLATE_VARIABLE_VERSION_ROW_PREFIX,
+    String((field.moduleIndex ?? 0) + 1),
+    versionName,
+    field.compoundKey,
+  ].join("｜");
+}
+
+function parsePageTemplateVariableVersionRowKey(key) {
+  const parts = String(key || "").split("｜");
+  if (parts[0] !== PAGE_TEMPLATE_VARIABLE_VERSION_ROW_PREFIX || parts.length < 4) return null;
+  const moduleIndex = Number(parts[1]) - 1;
+  const versionName = parts[2];
+  let compoundKey = parts.slice(3).join("｜");
+  const pageKeyMatch = compoundKey.match(/^(\d+)\|(.+)$/);
+  if (pageKeyMatch) {
+    const embeddedModuleIndex = Number(pageKeyMatch[1]);
+    if (
+      Number.isFinite(embeddedModuleIndex) &&
+      (embeddedModuleIndex === moduleIndex || embeddedModuleIndex === moduleIndex + 1)
+    ) {
+      compoundKey = pageKeyMatch[2];
+    }
+  }
+  if (!Number.isFinite(moduleIndex) || !versionName || !compoundKey) return null;
+  return { moduleIndex, versionName, compoundKey };
+}
+
+function getPageTemplateVariableLabel(field) {
+  return field.field?.label || field.key || field.compoundKey;
+}
+
+function getPageTemplateFieldLocalCompoundKey(field) {
+  const compoundKey = String(field?.compoundKey || field?.key || "");
+  const pageKeyMatch = compoundKey.match(/^(\d+)\|(.+)$/);
+  if (!pageKeyMatch) return compoundKey;
+  const embeddedModuleIndex = Number(pageKeyMatch[1]);
+  return Number.isFinite(embeddedModuleIndex) &&
+    embeddedModuleIndex === Number(field?.moduleIndex)
+    ? pageKeyMatch[2]
+    : compoundKey;
+}
+
+function getInitialPageTemplateVariableValue(field) {
+  const fieldLabel = field.field?.label || field.key || field.compoundKey;
+  const fullLabel = field.moduleName === field.childName
+    ? `${field.moduleName} · ${fieldLabel}`
+    : `${field.moduleName} · ${field.childName} · ${fieldLabel}`;
+  const candidates = [
+    field.label,
+    fieldLabel,
+    field.key,
+    fullLabel,
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    const value = getStructuredPrdValue(state.prdTableRows, candidate);
+    if (value) return value;
+  }
+  return "";
+}
+
+function getPageTemplateVariableRowValue(field) {
+  const rowKey = getPageTemplateVariableRowKey(field);
+  const existingIndex = findPrdTableRowIndexByKey(rowKey);
+  if (existingIndex >= 0) return state.prdTableRows[existingIndex]?.value || "";
+  return getInitialPageTemplateVariableValue(field) || field.value || "";
+}
+
+function getPageTemplateVariableVersionRowValue(field, versionName) {
+  const rowKey = getPageTemplateVariableVersionRowKey(field, versionName);
+  const existingIndex = findPrdTableRowIndexByKey(rowKey);
+  if (existingIndex >= 0) return state.prdTableRows[existingIndex]?.value || "";
+  return getPageTemplateVariableRowValue(field);
+}
+
+function ensurePageTemplateVariableVersionRow(field, versionName) {
+  const rowKey = getPageTemplateVariableVersionRowKey(field, versionName);
+  const existingIndex = findPrdTableRowIndexByKey(rowKey);
+  if (existingIndex >= 0) return existingIndex;
+  state.prdTableRows.push({
+    key: rowKey,
+    value: getPageTemplateVariableRowValue(field),
+  });
+  return state.prdTableRows.length - 1;
+}
+
+function ensurePageTemplateVariableRow(field) {
+  const existingIndex = findPrdTableRowIndexByKey(field.rowKey);
+  if (existingIndex >= 0) return existingIndex;
+  state.prdTableRows.push({
+    key: field.rowKey,
+    value: field.value || "",
+  });
+  return state.prdTableRows.length - 1;
+}
+
+function getPageTemplateVariableBlueprintFromRows(rows = []) {
+  const blueprint = {};
+  const explicitTaskCountsByModule = new Map();
+  const inferredTaskCountsByModule = new Map();
+  normalizePrdTableRows(rows).forEach((row) => {
+    const parsed = parsePageTemplateVariableRowKey(row.key);
+    const value = String(row.value || "").trim();
+    const parsedVersion = parsePageTemplateVariableVersionRowKey(row.key);
+    const parsedRow = parsed || parsedVersion;
+    if (!parsedRow || !value) return;
+    if (parsed) blueprint[getPageBlueprintKey(parsed.moduleIndex, parsed.compoundKey)] = value;
+    const explicitTaskCount = parsedRow.compoundKey === "taskCount" ? Number(value) : 0;
+    const taskChildMatch = String(parsedRow.compoundKey || "").match(/^(\d+)\.(?:taskTitle|taskSubtitle|rewardCountText|completionText)$/);
+    const inferredTaskCount = taskChildMatch ? Number(taskChildMatch[1]) : 0;
+    if (Number.isFinite(explicitTaskCount) && explicitTaskCount > 0) {
+      explicitTaskCountsByModule.set(
+        parsedRow.moduleIndex,
+        Math.max(
+          explicitTaskCountsByModule.get(parsedRow.moduleIndex) || 0,
+          explicitTaskCount,
+        ),
+      );
+    }
+    if (Number.isFinite(inferredTaskCount) && inferredTaskCount > 0) {
+      inferredTaskCountsByModule.set(
+        parsedRow.moduleIndex,
+        Math.max(
+          inferredTaskCountsByModule.get(parsedRow.moduleIndex) || 0,
+          inferredTaskCount,
+        ),
+      );
+    }
+  });
+  const taskModuleIndexes = new Set([
+    ...explicitTaskCountsByModule.keys(),
+    ...inferredTaskCountsByModule.keys(),
+  ]);
+  taskModuleIndexes.forEach((moduleIndex) => {
+    const taskCount =
+      explicitTaskCountsByModule.get(moduleIndex) ||
+      inferredTaskCountsByModule.get(moduleIndex) ||
+      1;
+    const key = getPageBlueprintKey(moduleIndex, "taskCount");
+    blueprint[key] = String(Math.max(1, Math.round(taskCount)));
+  });
+  return blueprint;
+}
+
+function getPrdPageTemplateInputFields(pageTemplate, verifier) {
+  const fields = getPageTemplateVerifierFields(pageTemplate, verifier);
+  const specs = getPrdPageTemplateInputSpecs(pageTemplate);
+  const orderedFields = specs === null
+    ? fields.map((field) => ({
+        field,
+        fieldSpec: {
+          moduleName: field.moduleName,
+          sectionTitle: "",
+          label: getPageTemplateVariableLabel(field),
+        },
+      }))
+    : specs.flatMap((moduleSpec) =>
+        moduleSpec.sections.flatMap((section) =>
+          section.fields.map(([localKey, label]) => {
+            const field = fields.find((candidate) => {
+              const sourceSchemaId =
+                candidate.sourceModuleSchemaId || candidate.moduleSchemaId;
+              return moduleSpec.schemaIds.includes(sourceSchemaId) &&
+                getPageTemplateFieldLocalCompoundKey(candidate) === localKey;
+            });
+            return field
+              ? {
+                  field,
+                  fieldSpec: {
+                    moduleName: moduleSpec.moduleName,
+                    sectionTitle: section.title,
+                    label,
+                  },
+                }
+              : null;
+          }).filter(Boolean),
+        ),
+      );
+  return orderedFields.map(({ field, fieldSpec }) => ({
+    ...field,
+    ...fieldSpec,
+  }));
+}
+
+function getPageTemplateVariableFields(pageTemplate) {
+  const verifier = {
+    blueprint: getPageTemplateVariableBlueprintFromRows(state.prdTableRows),
+  };
+  const allFields = getPageTemplateVerifierFields(pageTemplate, verifier);
+  const prdInputFields = getPrdPageTemplateInputFields(pageTemplate, verifier);
+  const prdFieldByKey = new Map(
+    prdInputFields.map((field) => [field.compoundKey, field]),
+  );
+  const orderedFields = [
+    ...prdInputFields,
+    ...allFields.filter((field) => !prdFieldByKey.has(field.compoundKey)),
+  ];
+  return orderedFields.map((field) => {
+    const prdField = prdFieldByKey.get(field.compoundKey);
+    const normalizedField = { ...field };
+    normalizedField.moduleName = prdField?.moduleName || field.moduleName;
+    normalizedField.sectionTitle = prdField
+      ? prdField.sectionTitle
+      : field.childName && field.childName !== field.moduleName
+        ? field.childName
+        : "模块内容";
+    if (
+      !prdField &&
+      normalizedField.moduleSchemaId === "任务列表" &&
+      Number(field.childIndex) >= 1
+    ) {
+      normalizedField.sectionTitle = `任务${field.childIndex}`;
+    }
+    normalizedField.label =
+      prdField?.label || getPageTemplateVariableLabel(field);
+    normalizedField.isPrdKey = Boolean(prdField);
+    normalizedField.rowKey = getPageTemplateVariableRowKey(normalizedField);
+    normalizedField.value = getPageTemplateVariableRowValue(normalizedField);
+    return normalizedField;
+  });
+}
+
+function buildPageTemplateVariableSections(fields, getRowIndex) {
+  const sections = [];
+  fields.forEach((field) => {
+    const title = field.sectionTitle || "";
+    let section = sections.find((item) => item.title === title);
+    if (!section) {
+      section = { title, fields: [] };
+      sections.push(section);
+    }
+    section.fields.push({
+      ...field,
+      rowIndex: getRowIndex(field),
+    });
+  });
+  const getSectionPriority = (section) => {
+    if (section.fields.some((field) => field.key === "taskCount")) return 0;
+    if (
+      section.fields.some(
+        (field) => getPageTemplateFieldLocalCompoundKey(field) === "0.titleText",
+      )
+    ) {
+      return 1;
+    }
+    return 2;
+  };
+  sections.sort(
+    (left, right) => getSectionPriority(left) - getSectionPriority(right),
+  );
+  return sections;
+}
+
+function getPageTemplateVariableGroups(pageTemplate) {
+  const nodes = materializePageTemplateNodes(pageTemplate);
+  const editableFields = getPageTemplateVariableFields(pageTemplate);
+  return nodes.map((node, moduleIndex) => {
+    const moduleFields = editableFields.filter(
+      (field) => Number(field.moduleIndex) === moduleIndex,
+    );
+    const sourceSchemaId = node.schemaId;
+    const stateConfig = getPageTemplateBusinessStateConfig(
+      sourceSchemaId,
+      pageTemplate.id,
+      moduleIndex,
+    );
+    const activeSchemaId =
+      moduleFields[0]?.moduleSchemaId ||
+      getPageTemplateBusinessStateSchemaId(
+        pageTemplate.id,
+        moduleIndex,
+        stateConfig,
+        getPageTemplateActiveBusinessStateId(
+          pageTemplate.id,
+          moduleIndex,
+          stateConfig,
+        ),
+      ) ||
+      sourceSchemaId;
+    const activeStateId =
+      stateConfig?.states?.find((item) => item.schemaId === activeSchemaId)?.id ||
+      getPageTemplateActiveBusinessStateId(
+        pageTemplate.id,
+        moduleIndex,
+        stateConfig,
+      );
+    const moduleSpec =
+      getPrdPageTemplateModuleSpec(pageTemplate, sourceSchemaId) ||
+      getPrdPageTemplateModuleSpec(pageTemplate, activeSchemaId);
+    const previewSrc =
+      pageTemplateModulePreviewImages[activeSchemaId] ||
+      pageTemplateModulePreviewImages[sourceSchemaId] ||
+      "";
+    return {
+      templateId: pageTemplate.id,
+      moduleIndex,
+      moduleSchemaId: activeSchemaId,
+      sourceModuleSchemaId: sourceSchemaId,
+      moduleName:
+        moduleSpec?.moduleName ||
+        getGlobalComponentDisplayName(
+          activeSchemaId,
+          stateConfig?.label || node.name,
+        ),
+      previewSrc: getPageTemplateStatePreviewSrc(
+        stateConfig,
+        activeStateId,
+        previewSrc,
+      ),
+      stateOptions: stateConfig?.states || [],
+      activeStateId,
+      fields: moduleFields,
+      isPrdInputModule: moduleFields.some((field) => field.isPrdKey),
+      isContentLocked: LOCKED_PAGE_TEMPLATE_BLUEPRINT_SCHEMA_IDS.has(activeSchemaId),
+      versionModuleKey: getPageTemplateVersionModuleKey(
+        pageTemplate.id,
+        moduleIndex,
+      ),
+    };
+  }).map((group) => {
+    const manualVersions = getManualModuleBlueprintVersions(group.versionModuleKey);
+    const versions = [
+      {
+        id: "base",
+        name: "默认版本",
+        isBase: true,
+        sections: buildPageTemplateVariableSections(
+          group.fields,
+          ensurePageTemplateVariableRow,
+        ),
+      },
+      ...manualVersions.map((version) => ({
+        ...version,
+        sections: buildPageTemplateVariableSections(
+          group.fields,
+          (field) => ensurePageTemplateVariableVersionRow(field, version.name),
+        ),
+      })),
+    ];
+    const molecule = moleculeSchemas.find((item) => item.id === group.moduleSchemaId);
+    if (!molecule) return { ...group, versions };
+    const blueprint = {};
+    group.fields.forEach((field) => {
+      const localKey = getPageTemplateFieldLocalCompoundKey(field);
+      if (!String(localKey || "").includes(".")) {
+        blueprint[localKey] = field.value;
+      }
+    });
+    const childStateControls = getMoleculeChildStateControls(molecule, { blueprint }).map((control) => ({
+      ...control,
+      activeStateId: getPageTemplateChildStateId(
+        group.templateId,
+        group.moduleIndex,
+        control.childIndex,
+        control.stateOptions,
+      ),
+    }));
+    return { ...group, versions, childStateControls };
+  });
+}
+
+function renderPageTemplateInheritedVariableTable({ pageTemplate }) {
+  const groups = getPageTemplateVariableGroups(pageTemplate);
+  return `
+    <section class="prd-variable-table">
+      <div class="prd-variable-module-list">
+        ${groups.map(renderPageTemplateVariableGroup).join("")}
+      </div>
+    </section>
+    ${renderPrdTemplateMoleculeAddModal()}
+  `;
+}
+
+function renderPageTemplateVariableGroup(group, index = 0) {
+  const hasMultipleVersions = (group.versions || []).length > 1;
+  const isSelected =
+    state.prdTemplateSelectedModuleIndex !== null &&
+    state.prdTemplateSelectedModuleIndex !== undefined &&
+    Number(state.prdTemplateSelectedModuleIndex) === Number(group.moduleIndex);
+  return `
+    <section
+      class="prd-variable-module-row ${hasMultipleVersions ? "has-versions" : ""} ${isSelected ? "is-selected" : ""}"
+      data-prd-template-module-row="${escapeAttr(`${group.templateId}|${group.moduleIndex}`)}"
+    >
+      ${
+        isSelected
+          ? `
+            <div class="prd-module-insert-rail" aria-label="添加分子模块">
+              <button
+                type="button"
+                class="prd-module-order-btn"
+                data-prd-move-template-module="${escapeAttr(`${group.templateId}|${group.moduleIndex}|up`)}"
+                aria-label="上移模块"
+              >↑</button>
+              <button
+                type="button"
+                class="prd-module-order-btn"
+                data-prd-move-template-module="${escapeAttr(`${group.templateId}|${group.moduleIndex}|down`)}"
+                aria-label="下移模块"
+              >↓</button>
+              <button
+                type="button"
+                data-prd-open-add-component="${escapeAttr(`${group.templateId}|${group.moduleIndex}|before`)}"
+              >上方添加</button>
+              <button
+                type="button"
+                data-prd-open-add-component="${escapeAttr(`${group.templateId}|${Number(group.moduleIndex) + 1}|after`)}"
+              >下方添加</button>
+              <button
+                type="button"
+                class="prd-module-delete-float-btn"
+                data-prd-delete-template-module="${escapeAttr(`${group.templateId}|${group.moduleIndex}`)}"
+              >删除模块</button>
+            </div>
+          `
+          : ""
+      }
+      <article class="prd-variable-module-name">
+        <strong>${escapeHtml(group.moduleName)}</strong>
+        ${renderPageTemplateStateSwitch(group)}
+        ${renderPageTemplateEntryCardStateSwitch(group)}
+        ${renderPageTemplateChildStateControls(group)}
+        ${renderPageTemplateModulePreview(group)}
+      </article>
+      <div class="prd-variable-section-list">
+        ${
+          group.isContentLocked
+            ? `<div class="prd-locked-module-note">固定内容</div>`
+            : renderModuleBoundBlueprintVersionMatrix(group)
+        }
+      </div>
+    </section>
+  `;
+}
+
+function renderPrdTemplateMoleculeAddModal() {
+  const target = state.prdTemplateAddModal;
+  if (!target) return "";
+  const options = getGuidedMoleculeOptions();
+  return `
+    <div class="prd-template-add-modal" data-prd-add-modal>
+      <section class="prd-template-add-dialog" role="dialog" aria-modal="true" aria-label="选择分子组件">
+        <header>
+          <div>
+            <span>选择分子模块</span>
+            <strong>${target.direction === "before" ? "添加到当前模块上方" : "添加到当前模块下方"}</strong>
+          </div>
+          <button type="button" data-prd-close-add-component aria-label="关闭">×</button>
+        </header>
+        <div class="prd-template-add-grid">
+          ${options.map((item) => `
+            <button
+              type="button"
+              class="prd-template-add-card"
+              data-prd-template-insert-molecule="${escapeAttr(item.id)}"
+              data-prd-template-id="${escapeAttr(target.templateId)}"
+              data-prd-template-insert-index="${escapeAttr(target.insertIndex)}"
+            >
+              <div class="prd-template-add-preview ${item.imageUrl ? "is-content" : ""}">
+                <div class="prd-template-add-preview-inner ${item.imageUrl ? "is-content" : ""}">
+                  ${renderGuidedMoleculePreview(item)}
+                </div>
+              </div>
+              <div class="prd-template-add-card-meta">
+                <span>预存分子</span>
+                <strong>${escapeHtml(item.name)}</strong>
+              </div>
+            </button>
+          `).join("")}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function renderPageTemplateChildStateControls(group) {
+  if (group?.moduleSchemaId === "任务列表") return "";
+  if (!group?.childStateControls?.length) return "";
+  return `
+    <section class="prd-variable-section prd-child-state-section">
+      <strong>任务状态</strong>
+      <div class="prd-child-state-list">
+        ${group.childStateControls.map((control) => `
+          <div class="prd-child-state-row">
+            <span>${escapeHtml(control.label)}</span>
+            <div class="prd-module-state-switch" aria-label="${escapeAttr(`${control.label}状态切换`)}">
+              ${control.stateOptions.map((item) => `
+                <button
+                  type="button"
+                  class="${item.id === control.activeStateId ? "active" : ""}"
+                  data-prd-template-child-state="${escapeAttr(`${group.templateId}|${group.moduleIndex}|${control.childIndex}|${item.id}`)}"
+                >${escapeHtml(item.name)}</button>
+              `).join("")}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderPageTemplateStateSwitch(group) {
+  if (!group?.stateOptions?.length) return "";
+  const multiStateClass = group.stateOptions.length > 2 ? " is-multi" : "";
+  return `
+    <div class="prd-module-state-switch${multiStateClass}" aria-label="模块状态切换">
+      ${group.stateOptions
+        .map((item) => `
+          <button
+            type="button"
+            class="${item.id === group.activeStateId ? "active" : ""}"
+            data-prd-template-state="${escapeAttr(`${group.templateId}|${group.moduleIndex}|${item.id}`)}"
+          >${escapeHtml(item.name)}</button>
+        `)
+        .join("")}
+    </div>
+  `;
+}
+
+function renderPageTemplateEntryCardStateSwitch(group) {
+  if (
+    !isNoIncentiveEntryModule(group?.templateId, group?.moduleIndex) ||
+    group?.activeStateId !== "entry"
+  ) {
+    return "";
+  }
+  const activeStateId = getPageTemplateEntryCardStateId(
+    group.templateId,
+    group.moduleIndex,
+  );
+  return `
+    <div
+      class="prd-module-state-switch is-secondary"
+      aria-label="入口卡片状态切换"
+    >
+      ${PAGE_TEMPLATE_ENTRY_CARD_STATES.map((item) => `
+        <button
+          type="button"
+          class="${item.id === activeStateId ? "active" : ""}"
+          data-prd-template-entry-state="${escapeAttr(`${group.templateId}|${group.moduleIndex}|${item.id}`)}"
+        >${escapeHtml(item.name)}</button>
+      `).join("")}
+    </div>
+  `;
+}
+
+function createPageTemplateBlueprintPreviewNode(group) {
+  const molecule = moleculeSchemas.find((item) => item.id === group?.moduleSchemaId);
+  const atom = findAtomSchema(group?.moduleSchemaId);
+  const node = molecule
+    ? createMoleculeNode(molecule.id)
+    : atom
+      ? createAtomNode(atom.id)
+      : null;
+  if (!node) return null;
+
+  const fields = group?.versions?.[0]?.sections?.flatMap((section) => section.fields || []) || [];
+  fields.forEach((field) => {
+    const localKey = getPageTemplateFieldLocalCompoundKey(field);
+    const value = state.prdTableRows[field.rowIndex]?.value ?? field.value;
+    const [childIndexText, childPropKey] = String(localKey || "").split(".");
+    if (childPropKey) {
+      const child = node.children?.[Number(childIndexText)];
+      if (child?.props && childPropKey in child.props) child.props[childPropKey] = value;
+      return;
+    }
+    if (node.props && localKey in node.props) node.props[localKey] = value;
+  });
+  return node;
+}
+
+function renderPageTemplateModulePreview(group) {
+  const livePreviewSchemaIds = new Set([
+    "内容诊断-样式-点击后",
+    "内容诊断-优质视频提示",
+    "内容诊断-账号诊断",
+  ]);
+  if (livePreviewSchemaIds.has(group?.moduleSchemaId)) {
+    const node = createPageTemplateBlueprintPreviewNode(group);
+    if (node) {
+      return `
+        <div class="prd-module-preview is-live" aria-label="${escapeAttr(`${group.moduleName}预览`)}">
+          <div class="prd-module-preview-live-stage">
+            ${renderComponent(node, { editable: false })}
+          </div>
+        </div>
+      `;
+    }
+  }
+  if (!group?.previewSrc) return "";
+  return `
+    <div class="prd-module-preview" aria-hidden="true">
+      <img src="${escapeAttr(group.previewSrc)}" alt="" loading="lazy" />
+    </div>
+  `;
+}
+
+function renderPageTemplateVariableField(field) {
+  const value = field.value || "";
+  const isLong = isTextareaPropField(field.field) || String(value).length > 18;
+  return `
+    <label class="prd-variable-field ${isLong ? "is-wide" : ""}">
+      <span>${escapeHtml(field.label)}</span>
+      <textarea
+        rows="${getBlueprintTextareaRows(value)}"
+        data-prd-template-variable-row="${escapeAttr(field.rowKey)}"
+        data-prd-template-variable-key="${escapeAttr(getPageTemplateFieldLocalCompoundKey(field))}"
+        data-prd-template-variable-label="${escapeAttr(field.label || "")}"
+      >${escapeHtml(value)}</textarea>
+    </label>
+  `;
+}
+
 function renderPageBlueprintBasicInfo({ templateName }) {
   const form = hydrateModuleBoundBlueprintForm(pageBlueprintFormConfig, { templateName });
   const fields = form.versions?.[0]?.sections?.[0]?.fields || [];
   return `
     <section class="prd-basic-info-panel">
       <header>
-        <div>
-          <span>活动基础信息</span>
-          <strong>先确认页面类型与活动信息</strong>
-        </div>
-        <em>独立于页面模块，不参与模块编排</em>
+        <strong>基础信息</strong>
       </header>
       <div class="prd-basic-info-grid">
         ${fields.map(renderPageBlueprintBasicInfoField).join("")}
@@ -3526,6 +7309,96 @@ function addManualModuleBlueprintVersion(moduleName) {
   state.prdTableBlueprintSignature = "";
 }
 
+function renameManualModuleBlueprintVersion(moduleName, versionId, nextName) {
+  const versions = state.prdManualModuleVersions?.[moduleName] || [];
+  const version = versions.find((item) => item.id === versionId);
+  if (!version) return;
+  const prevName = version.name;
+  const normalizedName = String(nextName || "").trim() || prevName || "自定义版本";
+  if (normalizedName === prevName) return;
+  version.name = normalizedName;
+  renameManualModuleVersionRows(moduleName, prevName, normalizedName);
+  document.querySelectorAll("[data-prd-version-name]").forEach((input) => {
+    if (
+      input.dataset.prdVersionModuleKey === moduleName &&
+      input.dataset.prdVersionId === versionId &&
+      input.value !== normalizedName
+    ) {
+      input.value = normalizedName;
+    }
+  });
+  state.prdTableBlueprint = null;
+  state.prdTableBlueprintSignature = "";
+}
+
+function deleteManualModuleBlueprintVersion(moduleName, versionId) {
+  const versions = state.prdManualModuleVersions?.[moduleName] || [];
+  const version = versions.find((item) => item.id === versionId);
+  if (!version) return false;
+  state.prdManualModuleVersions[moduleName] = versions.filter((item) => item.id !== versionId);
+  deleteManualModuleVersionRows(moduleName, version.name);
+  state.prdTableBlueprint = null;
+  state.prdTableBlueprintSignature = "";
+  return true;
+}
+
+function renameManualModuleVersionRows(moduleName, prevName, nextName) {
+  const pageModule = parsePageTemplateVersionModuleKey(moduleName);
+  state.prdTableRows = normalizePrdTableRows(state.prdTableRows).map((row) => {
+    const key = String(row.key || "");
+    if (pageModule) {
+      const parsed = parsePageTemplateVariableVersionRowKey(key);
+      if (
+        parsed &&
+        parsed.moduleIndex === pageModule.moduleIndex &&
+        normalizePageTemplateLookupName(parsed.versionName) === normalizePageTemplateLookupName(prevName)
+      ) {
+        return {
+          ...row,
+          key: key.replace(
+            `${PAGE_TEMPLATE_VARIABLE_VERSION_ROW_PREFIX}｜${pageModule.moduleIndex + 1}｜${prevName}｜`,
+            `${PAGE_TEMPLATE_VARIABLE_VERSION_ROW_PREFIX}｜${pageModule.moduleIndex + 1}｜${nextName}｜`,
+          ),
+        };
+      }
+      return row;
+    }
+    const prefixes = [
+      {
+        prev: `${moduleName}｜${prevName}｜`,
+        next: `${moduleName}｜${nextName}｜`,
+      },
+      {
+        prev: `${moduleName}｜默认维度｜${prevName}｜`,
+        next: `${moduleName}｜默认维度｜${nextName}｜`,
+      },
+    ];
+    const matchedPrefix = prefixes.find((prefix) => key.startsWith(prefix.prev));
+    return matchedPrefix
+      ? { ...row, key: `${matchedPrefix.next}${key.slice(matchedPrefix.prev.length)}` }
+      : row;
+  });
+}
+
+function deleteManualModuleVersionRows(moduleName, versionName) {
+  const pageModule = parsePageTemplateVersionModuleKey(moduleName);
+  state.prdTableRows = normalizePrdTableRows(state.prdTableRows).filter((row) => {
+    const key = String(row.key || "");
+    if (pageModule) {
+      const parsed = parsePageTemplateVariableVersionRowKey(key);
+      return !(
+        parsed &&
+        parsed.moduleIndex === pageModule.moduleIndex &&
+        normalizePageTemplateLookupName(parsed.versionName) === normalizePageTemplateLookupName(versionName)
+      );
+    }
+    return !(
+      key.startsWith(`${moduleName}｜${versionName}｜`) ||
+      key.startsWith(`${moduleName}｜默认维度｜${versionName}｜`)
+    );
+  });
+}
+
 function getConsumptionProgressVersionDefaults(props = {}) {
   return {
     抽奖入口文案: props.lotteryText,
@@ -3585,9 +7458,15 @@ function renderModuleBoundBlueprintVersionMatrix(group) {
   const versions = group.versions || [];
   const baseSections = versions[0]?.sections || [];
   const dimensionGroups = getBlueprintVersionDimensionGroups(versions);
-  return `
+  const versionModuleKey = group.versionModuleKey || group.moduleName;
+  const usesConsumptionReturnMatrix =
+    group.moduleSchemaId === "核心玩法模块-抽奖消返-4列";
+  const hasLongCopy = group.fields.some(
+    (field) => String(field.value || "").trim().length >= 36,
+  );
+  const renderStandardMatrix = (sections, showAddVersion = true) => `
     <section
-      class="prd-variable-version-matrix"
+      class="prd-variable-version-matrix${hasLongCopy ? " has-long-copy" : ""}"
       style="--prd-version-count:${versions.length}"
     >
       ${dimensionGroups.length > 1 ? `
@@ -3602,18 +7481,212 @@ function renderModuleBoundBlueprintVersionMatrix(group) {
         </div>
       ` : ""}
       <div class="prd-variable-matrix-head">
-        <span>字段</span>
-        ${versions.map((version) => `
-          <strong>
-            ${escapeHtml(version.name)}
-            ${version.dimensionTitle ? `<em>${escapeHtml(version.dimensionTitle)}</em>` : ""}
-          </strong>
-        `).join("")}
+        <span class="prd-variable-matrix-actions">
+          ${
+            group.isContentLocked || !showAddVersion
+              ? "配置项"
+              : `
+                <button
+                  type="button"
+                  class="prd-variable-matrix-add-version"
+                  data-prd-add-module-version="${escapeAttr(versionModuleKey)}"
+                  aria-label="新增版本"
+                >＋ 版本</button>
+              `
+          }
+        </span>
+        ${versions.map((version) =>
+          renderModuleBoundBlueprintMatrixHeadCell(
+            version,
+            versionModuleKey,
+            group.isContentLocked,
+          ),
+        ).join("")}
       </div>
-      ${baseSections.map((section, sectionIndex) =>
-        renderModuleBoundBlueprintMatrixSection(section, sectionIndex, versions),
+      ${sections.map(({ section, sectionIndex }) =>
+        renderModuleBoundBlueprintMatrixSection(
+          section,
+          sectionIndex,
+          versions,
+          group.isContentLocked,
+        ),
       ).join("")}
     </section>
+  `;
+
+  const indexedSections = baseSections.map((section, sectionIndex) => ({
+    section,
+    sectionIndex,
+  }));
+  if (!usesConsumptionReturnMatrix) {
+    return renderStandardMatrix(indexedSections);
+  }
+
+  const returnSection = indexedSections.find(
+    ({ section }) => section.title === "返券配置",
+  );
+  const standardSections = indexedSections.filter(
+    ({ section }) => section.title !== "返券配置",
+  );
+  return `
+    <section class="prd-variable-version-matrix prd-consumption-return-table">
+      ${renderConsumptionReturnBlueprintMatrix(
+        returnSection?.sectionIndex ?? 0,
+        versions,
+        group.isContentLocked,
+        versionModuleKey,
+      )}
+    </section>
+    ${renderStandardMatrix(standardSections, false)}
+  `;
+}
+
+function renderConsumptionReturnBlueprintMatrix(
+  sectionIndex,
+  versions,
+  isContentLocked = false,
+  versionModuleKey = "",
+) {
+  const getField = (version, key) =>
+    version.sections?.[sectionIndex]?.fields?.find((field) => field.key === key);
+  const renderField = (field, label) => {
+    if (!field) return "";
+    const row = state.prdTableRows[field.rowIndex] || { value: "" };
+    return `
+      <label class="prd-consumption-return-input">
+        <span>${escapeHtml(label)}</span>
+        <textarea
+          rows="1"
+          aria-label="${escapeAttr(field.label)}"
+          ${isContentLocked ? "readonly" : ""}
+          data-prd-table-row="${field.rowIndex}"
+        >${escapeHtml(row.value || "")}</textarea>
+      </label>
+    `;
+  };
+  const renderCouponCell = (version, thresholdKey, amountKey) => `
+    <div class="prd-consumption-return-cell">
+      ${renderField(getField(version, thresholdKey), "满")}
+      ${renderField(getField(version, amountKey), "赠")}
+    </div>
+  `;
+  const renderVersionCell = (version) => {
+    if (!version.isManual) {
+      return `
+        <div class="prd-consumption-return-version">
+          <strong>${escapeHtml(version.name)}</strong>
+          ${version.dimensionTitle ? `<span>${escapeHtml(version.dimensionTitle)}</span>` : ""}
+        </div>
+      `;
+    }
+    return `
+      <div class="prd-consumption-return-version is-manual">
+        <input
+          type="text"
+          value="${escapeAttr(version.name)}"
+          aria-label="版本名称"
+          ${isContentLocked ? "readonly" : ""}
+          data-prd-version-name
+          data-prd-version-module-key="${escapeAttr(versionModuleKey)}"
+          data-prd-version-id="${escapeAttr(version.id)}"
+        />
+        ${
+          isContentLocked
+            ? ""
+            : `
+              <button
+                type="button"
+                aria-label="删除版本"
+                title="删除版本"
+                data-prd-delete-module-version="${escapeAttr(version.id)}"
+                data-prd-version-module-key="${escapeAttr(versionModuleKey)}"
+              >×</button>
+            `
+        }
+      </div>
+    `;
+  };
+
+  return `
+    <section class="prd-variable-matrix-section prd-consumption-return-section">
+      <div class="prd-variable-matrix-section-head">
+        <strong class="prd-consumption-return-title">
+          返券配置
+          <b>PRD</b>
+        </strong>
+      </div>
+      <div class="prd-consumption-return-matrix">
+        <div class="prd-consumption-return-head">
+          <strong class="prd-consumption-return-version-head">
+            <span>版本</span>
+            ${
+              isContentLocked
+                ? ""
+                : `
+                  <button
+                    type="button"
+                    class="prd-variable-matrix-add-version"
+                    data-prd-add-module-version="${escapeAttr(versionModuleKey)}"
+                    aria-label="新增返券配置版本"
+                  >＋ 版本</button>
+                `
+            }
+          </strong>
+          <strong>第1档 · 抽奖任务</strong>
+          <strong>第2档 · 消耗返（门槛1）</strong>
+          <strong>第3档 · 消耗返（门槛2）</strong>
+          <strong>第4档 · 消耗返（门槛3）</strong>
+        </div>
+        ${versions.map((version) => `
+          <div class="prd-consumption-return-row">
+            ${renderVersionCell(version)}
+            <div class="prd-consumption-return-cell is-draw">
+              ${renderField(getField(version, "consumeAmountText1"), "累计消耗")}
+            </div>
+            ${renderCouponCell(version, "consumeAmountText2", "amountText1")}
+            ${renderCouponCell(version, "consumeAmountText3", "amountText2")}
+            ${renderCouponCell(version, "consumeAmountText4", "amountText3")}
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderModuleBoundBlueprintMatrixHeadCell(version, versionModuleKey, isContentLocked = false) {
+  if (!version.isManual) {
+    return `
+      <strong>
+        ${escapeHtml(version.name)}
+        ${version.dimensionTitle ? `<em>${escapeHtml(version.dimensionTitle)}</em>` : ""}
+      </strong>
+    `;
+  }
+  return `
+    <strong class="prd-variable-version-head is-manual">
+      <input
+        type="text"
+        value="${escapeAttr(version.name)}"
+        aria-label="版本名称"
+        ${isContentLocked ? "readonly" : ""}
+        data-prd-version-name
+        data-prd-version-module-key="${escapeAttr(versionModuleKey)}"
+        data-prd-version-id="${escapeAttr(version.id)}"
+      />
+      ${
+        isContentLocked
+          ? ""
+          : `
+            <button
+              type="button"
+              aria-label="删除版本"
+              title="删除版本"
+              data-prd-delete-module-version="${escapeAttr(version.id)}"
+              data-prd-version-module-key="${escapeAttr(versionModuleKey)}"
+            >×</button>
+          `
+      }
+    </strong>
   `;
 }
 
@@ -3631,42 +7704,156 @@ function getBlueprintVersionDimensionGroups(versions = []) {
   return groups;
 }
 
-function renderModuleBoundBlueprintMatrixSection(section, sectionIndex, versions) {
+function renderModuleBoundBlueprintMatrixSection(
+  section,
+  sectionIndex,
+  versions,
+  isContentLocked = false,
+) {
   const className = section.className ? ` ${section.className}` : "";
+  const sectionTitle = section.title === "模块内容" ? "" : section.title;
+  const paragraphCountField = (section.fields || []).find(
+    (field) => field.key === "paragraphCount",
+  );
+  const taskCountField = (section.fields || []).find(
+    (field) => field.key === "taskCount",
+  );
+  const paragraphCount = paragraphCountField
+    ? clamp(
+        Number(state.prdTableRows[paragraphCountField.rowIndex]?.value || paragraphCountField.value || 4),
+        1,
+        4,
+      )
+    : 4;
+  const paragraphCountRowIndexes = paragraphCountField
+    ? versions
+        .map((version) =>
+          version.sections?.[sectionIndex]?.fields?.find(
+            (field) => field.key === "paragraphCount",
+          )?.rowIndex,
+        )
+        .filter((rowIndex) => Number.isInteger(rowIndex))
+    : [];
+  const paragraphOrderByPrefix = {
+    first: 1,
+    second: 2,
+    third: 3,
+    fourth: 4,
+  };
+  const paragraphControls = paragraphCountField
+    ? `
+      <div class="prd-paragraph-stepper" aria-label="段落数量">
+        <button
+          type="button"
+          data-prd-paragraph-count-delta="-1"
+          data-prd-paragraph-count-rows="${escapeAttr(paragraphCountRowIndexes.join(","))}"
+          aria-label="减少一段"
+          ${paragraphCount <= 1 ? "disabled" : ""}
+        >−</button>
+        <span>${paragraphCount}</span>
+        <button
+          type="button"
+          data-prd-paragraph-count-delta="1"
+          data-prd-paragraph-count-rows="${escapeAttr(paragraphCountRowIndexes.join(","))}"
+          aria-label="增加一段"
+          ${paragraphCount >= 4 ? "disabled" : ""}
+        >＋</button>
+      </div>
+    `
+    : "";
+  const taskCount = taskCountField
+    ? Math.max(
+        1,
+        Math.round(
+          Number(
+            state.prdTableRows[taskCountField.rowIndex]?.value ||
+              taskCountField.value ||
+              3,
+          ),
+        ),
+      )
+    : 3;
+  const taskCountRowIndexes = taskCountField
+    ? versions
+        .map((version) =>
+          version.sections?.[sectionIndex]?.fields?.find(
+            (field) => field.key === "taskCount",
+          )?.rowIndex,
+        )
+        .filter((rowIndex) => Number.isInteger(rowIndex))
+    : [];
+  const taskCountControls = taskCountField
+    ? `
+      <div class="prd-paragraph-stepper" aria-label="任务数量">
+        <button
+          type="button"
+          data-prd-task-count-delta="-1"
+          data-prd-task-count-rows="${escapeAttr(taskCountRowIndexes.join(","))}"
+          aria-label="减少一个任务"
+          ${taskCount <= 1 ? "disabled" : ""}
+        >−</button>
+        <span>${taskCount}</span>
+        <button
+          type="button"
+          data-prd-task-count-delta="1"
+          data-prd-task-count-rows="${escapeAttr(taskCountRowIndexes.join(","))}"
+          aria-label="增加一个任务"
+        >＋</button>
+      </div>
+    `
+    : "";
+  const displaySectionTitle = sectionTitle || (taskCountField ? "任务数量" : "");
   return `
     <section class="prd-variable-matrix-section${className}">
-      <strong>${escapeHtml(section.title)}</strong>
+      ${
+        displaySectionTitle
+          ? `<div class="prd-variable-matrix-section-head"><strong>${escapeHtml(displaySectionTitle)}</strong>${paragraphControls}${taskCountControls}</div>`
+          : ""
+      }
       <div class="prd-variable-matrix-rows">
-        ${(section.fields || []).map((field, fieldIndex) =>
-          renderModuleBoundBlueprintMatrixRow(field, {
+        ${(section.fields || []).map((field, fieldIndex) => {
+          if (field.key === "paragraphCount" || field.key === "taskCount") return "";
+          const paragraphPrefix = Object.keys(paragraphOrderByPrefix).find((prefix) =>
+            String(field.key || "").startsWith(prefix),
+          );
+          if (paragraphPrefix && paragraphOrderByPrefix[paragraphPrefix] > paragraphCount) return "";
+          return renderModuleBoundBlueprintMatrixRow(field, {
             sectionIndex,
             fieldIndex,
             versions,
-          }),
-        ).join("")}
+            isContentLocked,
+          });
+        }).join("")}
       </div>
     </section>
   `;
 }
 
-function renderModuleBoundBlueprintMatrixRow(baseField, { sectionIndex, fieldIndex, versions }) {
+function renderModuleBoundBlueprintMatrixRow(
+  baseField,
+  { sectionIndex, fieldIndex, versions, isContentLocked = false },
+) {
   return `
-    <div class="prd-variable-matrix-row">
-      <span>${escapeHtml(baseField.label)}</span>
+    <div class="prd-variable-matrix-row ${baseField.isPrdKey ? "is-prd-key" : ""}">
+      <span>
+        ${escapeHtml(baseField.label)}
+        ${baseField.isPrdKey ? "<b>PRD</b>" : ""}
+      </span>
       ${versions.map((version) => {
         const field = version.sections?.[sectionIndex]?.fields?.[fieldIndex] || baseField;
-        return renderModuleBoundBlueprintMatrixCell(field);
+        return renderModuleBoundBlueprintMatrixCell(field, isContentLocked);
       }).join("")}
     </div>
   `;
 }
 
-function renderModuleBoundBlueprintMatrixCell(field) {
+function renderModuleBoundBlueprintMatrixCell(field, isContentLocked = false) {
   const row = state.prdTableRows[field.rowIndex] || { value: "" };
   return `
     <textarea
       rows="${Math.min(2, getBlueprintTextareaRows(row.value))}"
       aria-label="${escapeAttr(field.label)}"
+      ${isContentLocked ? "readonly" : ""}
       data-prd-table-row="${field.rowIndex}"
     >${escapeHtml(row.value || "")}</textarea>
   `;
@@ -3689,9 +7876,10 @@ function renderModuleBoundBlueprintVersion(version) {
 
 function renderModuleBoundBlueprintSection(section) {
   const className = section.className ? ` ${section.className}` : "";
+  const sectionTitle = section.title === "模块内容" ? "" : section.title;
   return `
     <section class="prd-variable-section${className}">
-      <strong>${escapeHtml(section.title)}</strong>
+      ${sectionTitle ? `<strong>${escapeHtml(sectionTitle)}</strong>` : ""}
       <div class="prd-variable-field-grid">
         ${section.fields.map(renderModuleBoundBlueprintField).join("")}
       </div>
@@ -3751,7 +7939,10 @@ function getTemplateTopLevelModuleItems(nodes = []) {
         id: node.id || `template-module-${index + 1}`,
         schemaId: node.schemaId,
         order: index + 1,
-        name: node.name || schema?.name || node.schemaId || `模块 ${index + 1}`,
+        name: getGlobalComponentDisplayName(
+          node.schemaId,
+          node.name || schema?.name || `模块 ${index + 1}`,
+        ),
         kind: isMolecule ? "分子模块" : "原子组件",
         detail: isMolecule
           ? `${(node.children || []).length} 个子组件`
@@ -4124,7 +8315,7 @@ function getBlueprintComponentDisplayName(component) {
   if (normalized === "ContentModuleImage" || normalized === "DoublePromotion") return "优质案例";
   const schema = findAtomSchema(normalized) ||
     moleculeSchemas.find((item) => item.name === normalized || item.id === normalized);
-  return schema?.name || normalized;
+  return getGlobalComponentDisplayName(schema?.id || normalized, schema?.name || normalized);
 }
 
 function renderBlueprintModuleSkeleton(slot, module) {
@@ -5263,9 +9454,24 @@ function getMoleculePropRows(module) {
   if (!module.component?.startsWith("molecule:")) return null;
   const moleculeName = module.component.slice("molecule:".length);
   const molecule = findDemoMoleculeByName(moleculeName);
-  if (!molecule?.children?.length) return null;
+  if (!molecule) return null;
+  const moleculeRows = getPropEntries(molecule).map(([key, field]) => {
+    const existing = module.rows.find((row) => row.moleculePropKey === key || row.propKey === key);
+    return {
+      field: field.label || key,
+      value: existing?.value ?? String(field.default ?? ""),
+      moleculePropKey: key,
+      propKey: key,
+    };
+  });
+  const moleculeProps = getMoleculeDefaultProps(molecule);
+  moleculeRows.forEach((row) => {
+    moleculeProps[row.moleculePropKey] = row.value;
+  });
+  const childEntries = getMoleculeChildEntries(molecule, moleculeProps);
+  if (!childEntries.length) return moleculeRows.length ? moleculeRows : null;
 
-  return molecule.children.flatMap(([schemaId, overrides = {}], childIndex) => {
+  const childRows = childEntries.flatMap(([schemaId, overrides = {}], childIndex) => {
     const schema = findAtomSchema(schemaId);
     const childName = schema?.name || schemaId;
     const propEntries = schema
@@ -5289,6 +9495,7 @@ function getMoleculePropRows(module) {
         };
       });
   });
+  return [...moleculeRows, ...childRows];
 }
 
 function isCopyPropField(key, field, value) {
@@ -5531,8 +9738,15 @@ function buildDemoGeneratedActivity() {
           return moduleNodes;
         });
     const nodes = prdPageTemplate
-      ? clone(prdPageTemplate.nodes || [])
+      ? materializePageTemplateNodes(prdPageTemplate)
       : generatedNodes;
+    if (prdPageTemplate) {
+      nodes.forEach((node, nodeIndex) => {
+        node.sourcePageTemplateId = prdPageTemplate.id;
+        node.sourcePageTemplateNodeIndex = nodeIndex;
+      });
+      attachPageTemplateBusinessStates(nodes, prdPageTemplate.id);
+    }
     replaceGuidedLotteryNodesWithInteractive(nodes);
     if (prdPageTemplate) {
       bindPrdModuleVariantsToTemplateNodes(
@@ -5541,9 +9755,11 @@ function buildDemoGeneratedActivity() {
         prdTableBlueprint?.consumptionProgressConfig,
         prdTableBlueprint?.taskListConfig,
         state.prdTableRows,
+        prdPageTemplate.id,
       );
+      applyStoredPageTemplateBusinessStates(nodes, prdPageTemplate.id);
+      applyStoredPageTemplateChildStates(nodes, prdPageTemplate.id);
     }
-    ensureGuidedLotteryPopupNodes(nodes);
     const audience = isPrdTablePackage
       ? context
       : isTimePackage
@@ -5565,6 +9781,7 @@ function buildDemoGeneratedActivity() {
         ? ["自定义模板", prdPageTemplate.name]
         : context.modules.map((module) => module.name),
       sourceContextId: context.id,
+      sourcePageTemplateId: prdPageTemplate?.id || "",
       canvasBackground,
       navBarEnabled: prdPageTemplate
         ? Boolean(prdPageTemplate.navBarEnabled)
@@ -5572,7 +9789,8 @@ function buildDemoGeneratedActivity() {
       nodes,
     };
   });
-  state.activity = {
+    const lotteryPopupPage = ensureGuidedLotteryPopupNodes(pages);
+    state.activity = {
     name: isPrdTablePackage ? prdTableBlueprint.activityName : demoPrdBlueprint.activityName,
     note: isPrdTablePackage
       ? prdPageTemplate
@@ -5580,13 +9798,16 @@ function buildDemoGeneratedActivity() {
         : "PRD 文本 → 页面模块"
       : "PRD mock → 活动包 → 人群页面",
   };
-  const fallbackPage = createGuidedFallbackPage();
-  state.pages = [...pages, fallbackPage];
-  state.activePageId = pages[0]?.id || fallbackPage.id;
-  state.guidedVisiblePageIds = [
-    ...(pages[0] ? [pages[0].id] : []),
-    fallbackPage.id,
-  ];
+  const fallbackPages = createGuidedFallbackPages(getGuidedPageTheme(pages[0]));
+  state.pages = [...pages, ...fallbackPages];
+  state.activePageId = pages[0]?.id || fallbackPages[0].id;
+    state.guidedVisiblePageIds = [
+      ...new Set([
+        ...(pages[0] ? [pages[0].id] : []),
+        ...(lotteryPopupPage && lotteryPopupPage.id !== pages[0]?.id ? [lotteryPopupPage.id] : []),
+        ...fallbackPages.map((page) => page.id),
+      ]),
+    ];
   state.guidedVisibleCompanionNodeIds = pages.flatMap((page) =>
     (page.nodes || [])
       .filter((node) => node.canvasPlacement === "page-side")
@@ -5602,23 +9823,51 @@ function buildDemoGeneratedActivity() {
   state.currentTemplateId = null;
 }
 
-function createGuidedFallbackPage() {
-  return {
-    id: `page_fallback_${Date.now()}`,
-    name: "兜底页面",
-    dimension: "兜底页面",
-    tags: ["系统页面", "兜底状态"],
-    canvasBackground: "#FFE0E9",
-    colorThemeId: "pink",
-    navBarEnabled: false,
-    isSystemFallback: true,
-    nodes: [],
-  };
+function createGuidedFallbackPages(parentTheme = guidedPageThemePresets[0]) {
+  const timestamp = Date.now();
+  const theme = getGuidedThemePreset(parentTheme) || guidedPageThemePresets[0];
+  const pages = [
+    {
+      id: `page_fallback_hot_${timestamp}`,
+      name: "活动火爆",
+      dimension: "兜底页面",
+      tags: ["系统页面", "活动火爆"],
+      canvasBackground: theme.background,
+      colorThemeId: theme.id,
+      navBarEnabled: false,
+      isSystemFallback: true,
+      fallbackBottomSpace: 358,
+      fallbackPageHeight: 1602,
+      nodes: [createAtomNode("无活动提示")],
+    },
+    {
+      id: `page_fallback_case_${timestamp}`,
+      name: "内容案例",
+      dimension: "兜底页面",
+      tags: ["系统页面", "内容案例"],
+      canvasBackground: theme.background,
+      colorThemeId: theme.id,
+      navBarEnabled: false,
+      isSystemFallback: true,
+      fallbackBottomSpace: 154,
+      fallbackPageHeight: 1859,
+      nodes: [createMoleculeNode("用户教育案例-样式1")],
+    },
+  ];
+  pages.forEach((page) => applyThemeBoundVariantsToNodes(page.nodes, theme.id));
+  return pages;
 }
 
-function isLotteryGridNode(node) {
-  return false;
-}
+  function isLotteryGridNode(node) {
+    return [
+      "LotteryGridInteractive",
+      "LotteryGrid",
+      "抽奖九宫格-报名前",
+      "抽奖九宫格-报名后",
+      "抽奖样式2",
+      "抽奖公告九宫格",
+    ].includes(node?.schemaId);
+  }
 
 function createLotteryAnnouncementMoleculeFromNode(sourceNode) {
   return sourceNode;
@@ -5628,40 +9877,156 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
   return nodes;
 }
 
-function collectInteractiveLotteryGridNodes(nodes = [], result = []) {
-  nodes.forEach((node) => {
-    if (node?.schemaId === "LotteryGridInteractive") result.push(node);
-    collectInteractiveLotteryGridNodes(node?.children || [], result);
-  });
-  return result;
-}
+  function collectInteractiveLotteryGridNodes(nodes = [], result = []) {
+    nodes.forEach((node) => {
+      if (isLotteryGridNode(node)) result.push(node);
+      collectInteractiveLotteryGridNodes(node?.children || [], result);
+      (node?.guidedStates || []).forEach((entry) => {
+        if (entry.node) collectInteractiveLotteryGridNodes([entry.node], result);
+      });
+    });
+    return result;
+  }
 
-function createGuidedLotteryPopupNode(lotteryNode) {
-  const prizeName = lotteryNode?.props?.prize1 || "抖仔盲盒";
-  const resultTitle = lotteryNode?.props?.resultTitle || "恭喜抽中{prize}！";
-  const popupNode = createAtomNode("抽奖弹窗", {
-    hintText: lotteryNode?.props?.resultHintText || "快去填写地址吧~",
-    titleText: resultTitle.replace(/\{prize\}/g, prizeName),
-    buttonText: lotteryNode?.props?.resultButtonText || "填写地址",
-    badgeText: lotteryNode?.props?.resultBadgeText || "？",
-  });
-  popupNode.name = "抽奖结果弹窗";
-  popupNode.canvasPlacement = "page-side";
-  popupNode.sourceLotteryNodeId = lotteryNode?.id || null;
-  return popupNode;
-}
+  function getLotteryPrizeText(lotteryNode, index) {
+    return getLotteryPrize(lotteryNode, index).name;
+  }
 
-function ensureGuidedLotteryPopupNodes(nodes = []) {
-  const existingSourceIds = new Set(
-    nodes
-      .filter((node) => node.canvasPlacement === "page-side")
-      .map((node) => node.sourceLotteryNodeId)
-      .filter(Boolean),
-  );
-  collectInteractiveLotteryGridNodes(nodes).forEach((lotteryNode) => {
-    if (existingSourceIds.has(lotteryNode.id)) return;
-    nodes.push(createGuidedLotteryPopupNode(lotteryNode));
-  });
+  function getLotteryPrize(lotteryNode, index) {
+    const props = lotteryNode?.props || {};
+    const nameValue = String(props[`prize${index}Name`] || "").trim();
+    const parsed = parsePrizeValue(props[`prize${index}`]);
+    const style2Fallbacks = [
+      { name: "抖仔限量盲盒", sourceName: "DOU仔周边" },
+      { name: "剪映VIP月卡", sourceName: "剪映VIP" },
+      { name: "DOU+流量券", sourceName: "6元流量券" },
+    ];
+    const fallbackPrizeNames = lotteryNode?.schemaId === "抽奖九宫格-报名前"
+      ? ["DOU仔周边", "6元流量券", "内容诊断积分", "DOU+官方推荐机会", "1314元心动券包"]
+      : ["1314元心动券包", "6元流量券", "10元流量券", "DOU仔周边", "DOU仔周边", "5元流量券", "DOU+官方推荐机会", "内容诊断积分"];
+    const fallbackName = fallbackPrizeNames[index - 1];
+    const style2Fallback = lotteryNode?.schemaId === "抽奖样式2"
+      ? style2Fallbacks[index - 1]
+      : null;
+    const fallback =
+      mockPrizeLibrary.find((item) => item.name === (style2Fallback?.sourceName || fallbackName)) ||
+      mockPrizeLibrary[index - 1] ||
+      {};
+    return {
+      name: nameValue || parsed?.name || style2Fallback?.name || fallback.name || `奖品${index}`,
+      image: parsed?.image || fallback.image || "",
+    };
+  }
+
+  function getLotteryPrizeCount(lotteryNode) {
+    const schema = findAtomSchema(lotteryNode?.schemaId);
+    const configuredCount = schema?.blueprint?.prizeProps?.length;
+    if (configuredCount) return configuredCount;
+    return Math.max(
+      1,
+      ...Array.from({ length: 8 }, (_, index) => index + 1)
+        .filter((index) => lotteryNode?.props?.[`prize${index}`] !== undefined),
+    );
+  }
+
+  function splitLotteryPrizeText(prizeText) {
+    const value = String(prizeText || "").trim();
+    const match = value.match(/^(\d+(?:\.\d+)?)(.*)$/);
+    if (!match) return { amountText: "", prizeText: value };
+    return {
+      amountText: match[1],
+      prizeText: match[2] || value,
+    };
+  }
+
+  function getLotteryPopupWinProps(lotteryNode) {
+    const prizeCount = getLotteryPrizeCount(lotteryNode);
+    const selectedPrizeIndex = clamp(
+      Number(lotteryNode?.props?.selectedPrizeIndex || 1),
+      1,
+      prizeCount,
+    );
+    const prizeProps = {};
+    for (let index = 1; index <= prizeCount; index += 1) {
+      const prize = getLotteryPrize(lotteryNode, index);
+      prizeProps[`prize${index}`] = serializePrizeOption(prize);
+      prizeProps[`prize${index}Text`] = prize.name;
+    }
+    const selectedPrizeText = prizeProps[`prize${selectedPrizeIndex}Text`] || "元心动券包";
+    const splitPrize = splitLotteryPrizeText(selectedPrizeText);
+    return {
+      titleText: "恭喜抽中",
+      amountText: lotteryNode?.props?.resultAmountText || splitPrize.amountText,
+      selectedPrizeIndex,
+      prizeCount,
+      prizeText: splitPrize.prizeText,
+      ...prizeProps,
+    };
+  }
+
+  function syncGuidedLotteryPopupNode(popupNode, lotteryNode) {
+    if (!popupNode || !lotteryNode) return;
+    const winProps = getLotteryPopupWinProps(lotteryNode);
+    const currentSelectedPrizeIndex =
+      popupNode.props?.selectedPrizeIndex ||
+      popupNode.guidedStates?.find((entry) => entry.id === "win")?.node?.props?.selectedPrizeIndex;
+    if (currentSelectedPrizeIndex) {
+      winProps.selectedPrizeIndex = clamp(
+        Number(currentSelectedPrizeIndex) || 1,
+        1,
+        winProps.prizeCount,
+      );
+      const selectedPrize = splitLotteryPrizeText(
+        winProps[`prize${winProps.selectedPrizeIndex}Text`] || winProps.prizeText,
+      );
+      winProps.amountText = selectedPrize.amountText;
+      winProps.prizeText = selectedPrize.prizeText;
+    }
+    popupNode.props = { ...(popupNode.props || {}), ...winProps };
+  }
+
+  function createGuidedLotteryPopupNode(lotteryNode) {
+    const winProps = getLotteryPopupWinProps(lotteryNode);
+    const popupNode = createAtomNode("弹窗-中奖", winProps);
+    popupNode.name = "弹窗-中奖";
+    popupNode.canvasPlacement = "page-side";
+    popupNode.sourceLotteryNodeId = lotteryNode?.id || null;
+    popupNode.isLotteryResultPopup = true;
+    return popupNode;
+  }
+
+  function syncGuidedLotteryPopupsForPage(page) {
+    const lotteryNode = findLotteryGridNode(page?.nodes || []);
+    if (!lotteryNode) return;
+    (page?.nodes || [])
+      .filter((node) => node.isLotteryResultPopup)
+      .forEach((popupNode) => syncGuidedLotteryPopupNode(popupNode, lotteryNode));
+  }
+
+  function refreshAfterGuidedNodePropChange() {
+    syncGuidedLotteryPopupsForPage(activePage());
+    if (state.view === "guided-preview") {
+      renderGuidedPreview();
+      return;
+  }
+    renderCanvas();
+    renderStructureTree();
+    renderPageSaveFloat();
+    renderContextControls();
+  }
+
+  function ensureGuidedLotteryPopupNodes(pages = []) {
+    let firstPopupPage = null;
+    pages.forEach((page) => {
+      page.nodes = (page.nodes || []).filter((node) => !node.isLotteryResultPopup);
+      const lotteryNode = findLotteryGridNode(page.nodes);
+      if (!lotteryNode) return;
+      const popupNode = createGuidedLotteryPopupNode(lotteryNode);
+      applyThemeBoundVariantsToNodes([popupNode], getGuidedPageTheme(page).id);
+      page.nodes.push(popupNode);
+      if (!firstPopupPage) firstPopupPage = page;
+    });
+    return firstPopupPage;
 }
 
 function findLotteryGridNode(nodes = []) {
@@ -5669,6 +10034,10 @@ function findLotteryGridNode(nodes = []) {
     if (isLotteryGridNode(node)) return node;
     const nested = findLotteryGridNode(node.children || []);
     if (nested) return nested;
+      for (const stateEntry of node.guidedStates || []) {
+        const stateNested = findLotteryGridNode(stateEntry.node ? [stateEntry.node] : []);
+        if (stateNested) return stateNested;
+      }
   }
   return null;
 }
@@ -5870,7 +10239,7 @@ const structuredModuleVersionPropMaps = {
     追投预算比例: "budgetPercentText",
   },
   置底按钮: {
-    底部按钮文案: "text",
+    底部按钮文案: "buttonText",
   },
 };
 
@@ -6161,6 +10530,124 @@ function assignStructuredProps(node, props) {
   });
 }
 
+function parsePageTemplateVariableRowKey(key) {
+  const parts = String(key || "").split("｜");
+  if (parts[0] !== PAGE_TEMPLATE_VARIABLE_ROW_PREFIX || parts.length < 3) return null;
+  const moduleIndex = Number(parts[1]) - 1;
+  let compoundKey = parts.slice(2).join("｜");
+  const pageKeyMatch = compoundKey.match(/^(\d+)\|(.+)$/);
+  if (pageKeyMatch) {
+    const embeddedModuleIndex = Number(pageKeyMatch[1]);
+    if (
+      Number.isFinite(embeddedModuleIndex) &&
+      (embeddedModuleIndex === moduleIndex || embeddedModuleIndex === moduleIndex + 1)
+    ) {
+      compoundKey = pageKeyMatch[2];
+    }
+  }
+  if (!Number.isFinite(moduleIndex) || !compoundKey) return null;
+  return { moduleIndex, compoundKey };
+}
+
+function applyPageTemplateVariableValuesToNode(node, values) {
+  if (!node || !values) return;
+  if (node.type !== "molecule") {
+    values.forEach((value, compoundKey) => {
+      if (node.props && compoundKey in node.props) node.props[compoundKey] = value;
+    });
+    return;
+  }
+
+  values.forEach((value, compoundKey) => {
+    if (!compoundKey.includes(".") && node.props && compoundKey in node.props) {
+      node.props[compoundKey] = value;
+    }
+  });
+  syncDynamicMoleculeChildren(node);
+
+  values.forEach((value, compoundKey) => {
+    if (!compoundKey.includes(".")) return;
+    const [childIndex, propKey] = compoundKey.split(".");
+    const child = node.children?.[Number(childIndex)];
+    if (child?.props && propKey in child.props) {
+      child.props[propKey] = value;
+      (child.guidedStates || []).forEach((entry) => {
+        if (entry.node?.props && propKey in entry.node.props) {
+          entry.node.props[propKey] = value;
+        }
+      });
+    }
+  });
+}
+
+function applyPageTemplateVariableRowsToNodes(nodes = [], rows = []) {
+  const valuesByModule = new Map();
+  normalizePrdTableRows(rows).forEach((row) => {
+    const parsed = parsePageTemplateVariableRowKey(row.key);
+    const value = String(row.value || "").trim();
+    if (!parsed || !value) return;
+    if (!valuesByModule.has(parsed.moduleIndex)) valuesByModule.set(parsed.moduleIndex, new Map());
+    valuesByModule.get(parsed.moduleIndex).set(parsed.compoundKey, value);
+  });
+
+  valuesByModule.forEach((values, moduleIndex) => {
+    const node = nodes[moduleIndex];
+    applyPageTemplateVariableValuesToNode(node, values);
+    (node?.guidedStates || []).forEach((entry) => {
+      applyPageTemplateVariableValuesToNode(entry.node, values);
+    });
+  });
+}
+
+function applyPageTemplateVariableVersionRowsToNodes(nodes = [], rows = [], pageTemplateId = "") {
+  if (!pageTemplateId) return;
+  const valuesByModuleAndVersion = new Map();
+  normalizePrdTableRows(rows).forEach((row) => {
+    const parsed = parsePageTemplateVariableVersionRowKey(row.key);
+    if (!parsed) return;
+    if (!valuesByModuleAndVersion.has(parsed.moduleIndex)) {
+      valuesByModuleAndVersion.set(parsed.moduleIndex, new Map());
+    }
+    const valuesByVersion = valuesByModuleAndVersion.get(parsed.moduleIndex);
+    if (!valuesByVersion.has(parsed.versionName)) {
+      valuesByVersion.set(parsed.versionName, new Map());
+    }
+    valuesByVersion.get(parsed.versionName).set(parsed.compoundKey, row.value ?? "");
+  });
+
+  nodes.forEach((node, moduleIndex) => {
+    const versionModuleKey = getPageTemplateVersionModuleKey(pageTemplateId, moduleIndex);
+    const manualVersions = getManualModuleBlueprintVersions(versionModuleKey);
+    if (!manualVersions.length) return;
+    const valuesByVersion = valuesByModuleAndVersion.get(moduleIndex) || new Map();
+    const variants = [
+      {
+        id: "base",
+        title: "默认版本",
+        dimensionTitle: "蓝图版本",
+        node: cloneNodeForLineage(node),
+      },
+      ...manualVersions.map((version) => {
+        const variantNode = cloneNodeForLineage(node);
+        const values = valuesByVersion.get(version.name) || new Map();
+        applyPageTemplateVariableValuesToNode(variantNode, values);
+        (variantNode.guidedStates || []).forEach((entry) => {
+          applyPageTemplateVariableValuesToNode(entry.node, values);
+        });
+        return {
+          id: version.id,
+          title: version.name,
+          dimensionTitle: "蓝图版本",
+          node: variantNode,
+        };
+      }),
+    ];
+    node.guidedLineageVariants = variants;
+    node.activeLineageVariantId = "base";
+    node.guidedLineageGraph = buildGuidedLineageGraphByDimensions(node.name || node.schemaId || "模块", variants);
+  });
+}
+
 function applyLotteryConsumptionStructuredFields(nodes, rows = []) {
   const value = (label) => getStructuredPrdValue(rows, label);
 
@@ -6180,6 +10667,7 @@ function applyLotteryConsumptionStructuredFields(nodes, rows = []) {
     "LotteryGridInteractive",
     "抽奖九宫格-报名前",
     "抽奖九宫格-报名后",
+    "抽奖样式2",
   ]), {
     prize1Name: value("奖品1名称"),
     prize2Name: value("奖品2名称"),
@@ -6248,7 +10736,7 @@ function applyLotteryConsumptionStructuredFields(nodes, rows = []) {
   });
 
   assignStructuredProps(findTemplateNodeBySchemaId(nodes, ["StickyBottomButton", "置底按钮"]), {
-    text: value("底部按钮文案"),
+    buttonText: value("底部按钮文案"),
   });
 }
 
@@ -6258,6 +10746,7 @@ function bindPrdModuleVariantsToTemplateNodes(
   consumptionProgressConfig = null,
   taskListConfig = null,
   structuredRows = [],
+  pageTemplateId = "",
 ) {
   const lotteryModule = modules.find(
     (module) =>
@@ -6308,6 +10797,13 @@ function bindPrdModuleVariantsToTemplateNodes(
   bindConsumptionProgressVariants(nodes, consumptionProgressConfig);
   applyLotteryConsumptionStructuredFields(nodes, structuredRows);
   bindStructuredModuleVersionFields(nodes, structuredRows);
+  applyPageTemplateVariableRowsToNodes(nodes, structuredRows);
+  applyPageTemplateVariableVersionRowsToNodes(nodes, structuredRows, pageTemplateId);
+  const stateNodes = nodes.flatMap((node) => (node.guidedStates || []).map((entry) => entry.node).filter(Boolean));
+  if (stateNodes.length) {
+    applyLotteryConsumptionStructuredFields(stateNodes, structuredRows);
+    bindStructuredModuleVersionFields(stateNodes, structuredRows);
+  }
 }
 
 function findDemoMoleculeByName(name) {
@@ -6408,6 +10904,12 @@ function applyConsumptionReturnValues(node, module) {
 }
 
 function applyMoleculeBlueprintValues(node, module) {
+  module.rows.forEach((row) => {
+    if (row.moleculePropKey && node.props && row.moleculePropKey in node.props) {
+      node.props[row.moleculePropKey] = Number.isFinite(Number(row.value)) ? Number(row.value) : row.value;
+    }
+  });
+  syncDynamicMoleculeChildren(node);
   module.rows.forEach((row) => {
     if (typeof row.childIndex !== "number" || !row.propKey) return;
     const child = node.children?.[row.childIndex];
@@ -6658,6 +11160,10 @@ function renderGuidedPreview() {
           <span aria-hidden="true">◐</span>
           页面配色
         </button>
+        <button class="guided-add-entry" data-guided-open-add>
+          <span aria-hidden="true">＋</span>
+          增加组件
+        </button>
         <button class="guided-export-entry guided-export-entry-floating" data-guided-open-export>
           <span>↓</span>
           导出切图
@@ -6679,7 +11185,7 @@ function renderGuidedPreview() {
       </section>
       <div class="guided-operation-host" aria-live="polite">
         ${
-          state.guidedPanelMode && (selected || state.guidedPanelMode === "page")
+          state.guidedPanelMode && (selected || state.guidedPanelMode === "page" || state.guidedPanelMode === "add")
             ? renderGuidedFloatingPanel(selected)
             : ""
         }
@@ -6699,6 +11205,15 @@ function renderGuidedPreview() {
     state.selectedId = null;
     state.guidedStateMenuNodeId = null;
     state.guidedPanelMode = "page";
+    updateGuidedNodeSelection(null);
+    updateGuidedPanel({ enter: true });
+  });
+  $(".guided-add-entry")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    state.selectedId = null;
+    state.guidedStateMenuNodeId = null;
+    state.guidedPanelMode = "add";
+    state.guidedAddTargetContext = null;
     updateGuidedNodeSelection(null);
     updateGuidedPanel({ enter: true });
   });
@@ -6800,6 +11315,9 @@ function returnToBlueprintWithTransition() {
   state.blueprintReturningFromPreview = false;
   state.selectedId = null;
   state.guidedPanelMode = null;
+  state.prdTemplateSelectedModuleIndex = null;
+  state.prdTemplateAddModal = null;
+  state.prdTemplateAddAfterIndex = null;
   render();
   window.scrollTo(0, 0);
 }
@@ -6826,7 +11344,7 @@ function renderGuidedSidebarItems(visiblePageIds, options = {}) {
         </button>
       `;
       const companionItems = (page.nodes || [])
-        .filter((node) => node.canvasPlacement === "page-side")
+          .filter((node) => node.canvasPlacement === "page-side")
         .map((node) => {
           const companionVisible =
             pageVisible && visibleCompanionIds.has(node.id);
@@ -6969,16 +11487,33 @@ function renderGuidedPagePreview(pageData) {
       node.canvasPlacement === "page-side" &&
       (state.guidedVisibleCompanionNodeIds || []).includes(node.id),
   );
+  const pieces = [];
+  if (!pageNodes.length && isActive && state.dropPageId === pageData.id && state.dropIndex === 0) {
+    pieces.push('<div class="drop-marker guided-drop-marker"></div>');
+  }
+  pageNodes.forEach((node, index) => {
+    if (isActive && state.dropPageId === pageData.id && state.dropIndex === index) {
+      pieces.push('<div class="drop-marker guided-drop-marker"></div>');
+    }
+    pieces.push(renderGuidedNode(node));
+  });
+  if (isActive && state.dropPageId === pageData.id && state.dropIndex === pageNodes.length) {
+    pieces.push('<div class="drop-marker guided-drop-marker"></div>');
+  }
+  const fallbackLayoutStyle = pageData.isSystemFallback
+    ? `--guided-fallback-bottom-space:${Number(pageData.fallbackBottomSpace || 0)}px;min-height:${Number(pageData.fallbackPageHeight || 1334)}px;`
+    : "";
   return `
-    <section class="guided-page-shell ${companionNodes.length ? "has-side-companion" : ""} ${pageData.isSystemFallback ? "is-system-fallback" : ""} ${isActive ? "active" : ""} ${pageSelected ? "has-selected-page" : ""}">
+    <section class="guided-page-shell ${companionNodes.length ? "has-side-companion" : ""} ${pageData.isSystemFallback ? "is-system-fallback" : ""} ${isActive ? "active" : ""} ${pageSelected ? "has-selected-page" : ""}" data-page-shell="${pageData.id}">
       <div class="phone guided-phone">
         <div
           class="page guided-theme-page ${pageData.isSystemFallback ? "guided-fallback-page" : ""}"
           data-page-id="${pageData.id}"
           data-page-theme="${escapeAttr(getGuidedPageTheme(pageData).id)}"
-          style="${escapeAttr(getGuidedPageThemeStyle(pageData))}"
+          style="${escapeAttr(`${getGuidedPageThemeStyle(pageData)}${fallbackLayoutStyle}`)}"
         >
-          ${pageNodes.map((node) => renderGuidedNode(node)).join("")}
+          ${renderGuidedPageThemeHeader(pageData)}
+          ${pieces.join("")}
           ${pageData.navBarEnabled ? renderPageNavBarOverlay() : ""}
         </div>
       </div>
@@ -6986,7 +11521,7 @@ function renderGuidedPagePreview(pageData) {
         companionNodes.length
           ? `
             <aside
-              class="guided-page-companion"
+              class="guided-page-companion ${companionNodes.some((node) => node.isLotteryResultPopup) ? "is-left" : ""}"
               data-page-id="${pageData.id}"
               aria-label="会场弹窗静态组件"
             >
@@ -7007,11 +11542,14 @@ function renderGuidedFallbackExportPage(entry) {
   const page = state.pages.find((item) => item.id === entry.pageId);
   const nodes = page?.nodes?.length ? page.nodes : [];
   const background = page?.canvasBackground || "#FFE0E9";
+  const bottomSpace = Number(page?.fallbackBottomSpace || 0);
+  const pageHeight = Number(page?.fallbackPageHeight || entry.dimensions?.height || 1334);
   return `
     <div
       class="page guided-theme-page guided-fallback-page guided-export-fallback-page"
-      style="background:${escapeAttr(background)};--guided-page-theme-filter:${escapeAttr(entry.pageTheme?.filter || "none")}"
+      style="height:${pageHeight}px;background:${escapeAttr(background)};--guided-page-theme-filter:${escapeAttr(entry.pageTheme?.filter || "none")};--guided-fallback-bottom-space:${bottomSpace}px"
     >
+      ${renderGuidedPageThemeHeader(page)}
       ${nodes.map((node) => renderComponent(node, { editable: false })).join("")}
     </div>
   `;
@@ -7045,18 +11583,58 @@ function renderPlacementCaseCarousel(node) {
   `;
 }
 
+function isGuidedHorizontalCarouselNode(node) {
+  return (
+    node?.schemaId === "节点指南" ||
+    node?.schemaId === "用户教育案例-样式1"
+  );
+}
+
+function slideGuidedHorizontalCarousel(nodeId) {
+  const nodeEl = document.querySelector(`.guided-node[data-node-id="${CSS.escape(nodeId)}"]`);
+  const carousel =
+    nodeEl?.querySelector(".component.molecule.node-guide-module .molecule-child:nth-child(2)") ||
+    nodeEl?.querySelector(
+      ".component.molecule.user-education-case-style1-module .molecule-child:nth-child(2)",
+    ) ||
+    nodeEl?.querySelector(".placement-case-carousel");
+  const scrollbar = nodeEl?.querySelector("[data-placement-case-scrollbar]");
+  if (!carousel) return;
+
+  const firstItem = carousel.querySelector(".placement-case-carousel-item");
+  const track = carousel.querySelector(".placement-case-carousel-track");
+  const gap = track ? (Number.parseFloat(getComputedStyle(track).columnGap || getComputedStyle(track).gap || "0") || 0) : 0;
+  const step = firstItem
+    ? firstItem.getBoundingClientRect().width + gap
+    : Math.max(1, carousel.scrollWidth / 4);
+  const maxScrollLeft = Math.max(0, carousel.scrollWidth - carousel.clientWidth);
+  const shouldReset = carousel.scrollLeft + step >= maxScrollLeft - 2;
+  const nextScrollLeft = shouldReset ? 0 : Math.min(maxScrollLeft, carousel.scrollLeft + step);
+
+  carousel.scrollTo({ left: nextScrollLeft, behavior: "smooth" });
+  if (scrollbar) {
+    scrollbar.value = maxScrollLeft ? String((nextScrollLeft / maxScrollLeft) * Number(scrollbar.max || 1000)) : "0";
+  }
+}
+
 function renderGuidedNode(node) {
   const selected = state.selectedId === node.id ? "selected" : "";
   const kind = getModuleKind(node.schemaId);
   const isHero = kind === "hero";
   const isSideCompanion = node.canvasPlacement === "page-side";
+  const isHorizontalCarousel = isGuidedHorizontalCarouselNode(node);
+  const orderInfo = isSideCompanion ? null : getGuidedNodeOrderInfo(node.id);
   const canvasLayout = node.schemaId === "投放案例" ? "placement-case-canvas" : "";
   const content =
     node.schemaId === "投放案例"
       ? renderPlacementCaseCarousel(node)
       : renderComponent(node);
   const stateEntries = getGuidedStateEntries(node);
-  const showStateMenu = state.guidedStateMenuNodeId === node.id && stateEntries.length;
+  const childStateGroups = getGuidedChildStateGroups(node);
+  const hasStateOptions = hasGuidedStateOptions(node);
+  const showStateMenu =
+    state.guidedStateMenuNodeId === node.id &&
+    hasStateOptions;
   return `
     <section
       class="node-wrap root guided-node ${canvasLayout} ${selected}"
@@ -7066,10 +11644,43 @@ function renderGuidedNode(node) {
       tabindex="0"
     >
       <div class="guided-node-kind">${escapeHtml(isSideCompanion ? "弹窗原子" : moduleKindLabels[kind] || "模块")}</div>
+      ${
+        orderInfo
+          ? `
+            <div class="guided-node-order-actions" aria-label="调整模块顺序">
+              <button
+                type="button"
+                data-guided-order="up"
+                data-guided-node="${escapeAttr(node.id)}"
+                data-guided-page="${escapeAttr(orderInfo.page.id)}"
+                ${orderInfo.canMoveUp ? "" : "disabled"}
+                aria-label="上移模块"
+              >↑</button>
+              <button
+                type="button"
+                data-guided-order="down"
+                data-guided-node="${escapeAttr(node.id)}"
+                data-guided-page="${escapeAttr(orderInfo.page.id)}"
+                ${orderInfo.canMoveDown ? "" : "disabled"}
+                aria-label="下移模块"
+              >↓</button>
+            </div>
+          `
+          : ""
+      }
       <div class="guided-node-actions">
-        <button data-guided-action="global" data-guided-node="${node.id}" aria-label="编辑全局信息">
-          <span>◎</span><i>查看模块变量</i>
+        <button data-guided-action="global" data-guided-node="${node.id}" aria-label="${node.isLotteryResultPopup ? "查看变量" : "编辑全局信息"}">
+          <span>◎</span><i>${node.isLotteryResultPopup ? "查看变量" : "查看模块变量"}</i>
         </button>
+          ${
+            node.isLotteryResultPopup
+              ? ""
+              : `
+                <button class="is-danger" data-guided-action="delete" data-guided-node="${node.id}" aria-label="删除模块">
+                  <span>×</span><i>删除模块</i>
+                </button>
+              `
+          }
         ${
           isSideCompanion
             ? ""
@@ -7083,35 +11694,76 @@ function renderGuidedNode(node) {
               <button data-guided-action="replace" data-guided-node="${node.id}" aria-label="更改模块">
                 <span>↻</span><i>更改模块</i>
               </button>
-              <button data-guided-action="states" data-guided-node="${node.id}" aria-label="查看状态">
-                <span>◇</span><i>查看状态</i>
-              </button>
               ${
-                showStateMenu
+                isHorizontalCarousel
                   ? `
-                    <div class="guided-node-state-popover">
-                      ${stateEntries
-                        .map(
-                          (entry) => `
-                            <button
-                              class="${node.activeGuidedStateId === entry.id ? "active" : ""}"
-                              data-guided-inline-state="${escapeAttr(entry.id)}"
-                              data-guided-node="${node.id}"
-                            >
-                              ${entry.id === "default" ? "点击前" : "点击后"}
-                            </button>
-                          `,
-                        )
-                        .join("")}
-                    </div>
+                    <button data-guided-action="slide" data-guided-node="${node.id}" aria-label="横滑查看">
+                      <span>↔</span><i>横滑查看</i>
+                    </button>
                   `
                   : ""
+              }
+              ${
+                hasStateOptions
+                  ? `
+                    <button data-guided-action="states" data-guided-node="${node.id}" aria-label="查看状态">
+                      <span>◇</span><i>查看状态</i>
+                    </button>
+                  `
+                  : ""
+              }
+              ${
+                showStateMenu ? renderGuidedInlineStatePopover(node, stateEntries, childStateGroups) : ""
               }
             `
         }
       </div>
       <div class="guided-node-theme-content">${content}</div>
     </section>
+  `;
+}
+
+function getGuidedInlineStateLabel(entry) {
+  return entry.id === "default" ? "点击前" : entry.id === "clicked" || entry.id === "registered" ? "点击后" : entry.name;
+}
+
+function renderGuidedInlineStatePopover(node, stateEntries = [], childStateGroups = []) {
+  if (childStateGroups.length) {
+    return `
+      <div class="guided-node-state-popover is-child-state-list">
+        ${childStateGroups.map((group) => `
+          <div class="guided-node-child-state-row">
+            <span>${escapeHtml(group.label)}</span>
+            <div>
+              ${group.stateEntries.map((entry) => `
+                <button
+                  type="button"
+                  class="${group.child.activeGuidedStateId === entry.id ? "active" : ""}"
+                  data-guided-child-state-node="${escapeAttr(group.child.id)}"
+                  data-guided-child-state="${escapeAttr(entry.id)}"
+                >${escapeHtml(getGuidedInlineStateLabel(entry))}</button>
+              `).join("")}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+  return `
+    <div class="guided-node-state-popover">
+      ${stateEntries
+        .map(
+          (entry) => `
+            <button
+              type="button"
+              class="${node.activeGuidedStateId === entry.id ? "active" : ""}"
+              data-guided-inline-state="${escapeAttr(entry.id)}"
+              data-guided-node="${node.id}"
+            >${escapeHtml(getGuidedInlineStateLabel(entry))}</button>
+          `,
+        )
+        .join("")}
+    </div>
   `;
 }
 
@@ -7138,7 +11790,8 @@ function updateGuidedPanel(options = {}) {
   if (!host) return;
   const selected = state.selectedId ? findNode(state.nodes, state.selectedId)?.node : null;
   const shouldRenderPagePanel = state.guidedPanelMode === "page" && activePage();
-  host.innerHTML = state.guidedPanelMode && (selected || shouldRenderPagePanel)
+  const shouldRenderAddPanel = state.guidedPanelMode === "add";
+  host.innerHTML = state.guidedPanelMode && (selected || shouldRenderPagePanel || shouldRenderAddPanel)
     ? renderGuidedFloatingPanel(selected, options)
     : "";
   window.renderReactMaterials?.();
@@ -7186,6 +11839,44 @@ function getGuidedGlobalEntries(node) {
 }
 
 function renderGuidedGlobalEditor(node) {
+  if (node?.isLotteryResultPopup) {
+    const prizeCount = clamp(Number(node.props?.prizeCount || 1), 1, 8);
+    const selectedPrizeIndex = clamp(
+      Number(node.props?.selectedPrizeIndex || 1),
+      1,
+      prizeCount,
+    );
+    const prizes = Array.from({ length: prizeCount }, (_, index) => {
+      const prizeIndex = index + 1;
+      const parsed = parsePrizeValue(node.props?.[`prize${prizeIndex}`]);
+      return {
+        index: prizeIndex,
+        name:
+          node.props?.[`prize${prizeIndex}Text`] ||
+          parsed?.name ||
+          `奖品${prizeIndex}`,
+        image: parsed?.image || "",
+      };
+    });
+    return `
+      <div class="guided-popup-prize-list">
+        ${prizes.map((prize) => `
+          <button
+            type="button"
+            class="guided-popup-prize-row ${prize.index === selectedPrizeIndex ? "is-current" : ""}"
+            data-guided-popup-prize-index="${prize.index}"
+            data-guided-node="${escapeAttr(node.id)}"
+            aria-pressed="${prize.index === selectedPrizeIndex}"
+          >
+            <span>${prize.index}</span>
+            ${prize.image ? `<img src="${escapeAttr(prize.image)}" alt="" />` : '<i aria-hidden="true"></i>'}
+            <strong>${escapeHtml(prize.name)}</strong>
+            ${prize.index === selectedPrizeIndex ? "<em>当前展示</em>" : ""}
+          </button>
+        `).join("")}
+      </div>
+    `;
+  }
   return renderGuidedLineageEditor(node);
 }
 
@@ -7511,6 +12202,10 @@ function applyLineageVariantToNode(target, variant) {
     sourceInputScope: target.sourceInputScope,
     moduleGroupId: target.moduleGroupId,
     moduleGroupRole: target.moduleGroupRole,
+      canvasPlacement: target.canvasPlacement,
+      sourceLotteryNodeId: target.sourceLotteryNodeId,
+      isLotteryResultPopup: target.isLotteryResultPopup,
+      activeGuidedStateId: target.activeGuidedStateId,
     guidedStates: target.guidedStates,
     guidedLineageVariants: target.guidedLineageVariants,
     guidedLineageDimensions: target.guidedLineageDimensions,
@@ -7839,13 +12534,7 @@ function renderGuidedLineageCard(node, variant, base, graphNode) {
 
 function getGuidedMoleculeOptions() {
   const saved = moleculeSchemas.filter((item) => item.id !== "MoleculeContainer");
-  const fallbackNames = ["九宫格", "消耗返1"];
-  return [
-    ...saved.map((item) => ({ id: item.id, name: item.name, schema: item })),
-    ...fallbackNames
-      .filter((name) => !saved.some((item) => String(item.name).includes(name)))
-      .map((name) => ({ id: `fallback:${name}`, name, schema: null })),
-  ];
+  return saved.map((item) => ({ id: item.id, name: item.name, schema: item }));
 }
 
 function getGuidedContentOptions() {
@@ -7881,23 +12570,10 @@ function createGuidedModuleReplacement(optionId, found) {
     return [node];
   }
 
-  const isFallback = optionId.startsWith("fallback:");
-  const optionName = isFallback
-    ? optionId.slice("fallback:".length)
-    : moleculeSchemas.find((item) => item.id === optionId)?.name || "";
+  const optionName = moleculeSchemas.find((item) => item.id === optionId)?.name || "";
   let node;
-  if (isFallback) {
-    const childSchemaId = optionName === "九宫格" ? "LotteryGridInteractive" : "TaskModule";
-    node = {
-      id: uid(),
-      schemaId: `demo_${optionName}`,
-      name: optionName,
-      type: "molecule",
-      children: [createAtomNode(childSchemaId)],
-    };
-  } else {
-    node = createMoleculeNode(optionId);
-  }
+  node = createMoleculeNode(optionId);
+  if (!node) return [];
 
   const oldGroupNodes = found.node.moduleGroupId
     ? state.nodes.filter((item) => item.moduleGroupId === found.node.moduleGroupId)
@@ -7949,6 +12625,30 @@ function getGuidedStateEntries(node) {
   return node.guidedStates || [];
 }
 
+function hasGuidedStateOptions(node) {
+  return getGuidedStateEntries(node).length > 1 || getGuidedChildStateGroups(node).length > 0;
+}
+
+function getGuidedChildStateGroups(node) {
+  if (node?.type !== "molecule") return [];
+  let statefulIndex = 0;
+  return (node.children || [])
+    .map((child, childIndex) => {
+      const stateEntries = getGuidedStateEntries(child);
+      if (stateEntries.length < 2) return null;
+      statefulIndex += 1;
+      return {
+        child,
+        childIndex,
+        label: node.schemaId === "任务列表"
+          ? `任务 ${statefulIndex}`
+          : `子组件 ${childIndex + 1} · ${child.name || child.schemaId}`,
+        stateEntries,
+      };
+    })
+    .filter(Boolean);
+}
+
 function applyGuidedBusinessState(node, stateId) {
   const stateEntry = node?.guidedStates?.find((item) => item.id === stateId);
   if (!node || !stateEntry) return false;
@@ -7956,7 +12656,17 @@ function applyGuidedBusinessState(node, stateId) {
   node.schemaId = stateNode.schemaId;
   node.name = stateEntry.name;
   node.type = stateNode.type;
-  node.props = clone(stateNode.props);
+  node.allowedChildren = clone(stateNode.allowedChildren || null);
+  node.className = stateNode.className || "";
+  const nextProps = clone(stateNode.props);
+  if (stateEntry.preserveProps) {
+    const lockedPropKeys = new Set(stateEntry.lockedPropKeys || []);
+    Object.entries(node.props || {}).forEach(([key, value]) => {
+      if (!lockedPropKeys.has(key) && key in nextProps) nextProps[key] = value;
+    });
+  }
+  node.props = nextProps;
+  node.children = clone(stateNode.children || []);
   node.variants = clone(stateNode.variants || []);
   node.activeVariantId = stateNode.activeVariantId || null;
   node.activeGuidedStateId = stateEntry.id;
@@ -7966,6 +12676,11 @@ function applyGuidedBusinessState(node, stateId) {
 function renderGuidedMoleculePreview(item) {
   if (item.imageUrl) {
     return `<img class="guided-content-option-image" src="${escapeAttr(item.imageUrl)}" alt="${escapeAttr(item.name)}" />`;
+  }
+  const node = createMoleculeNode(item.id);
+  if (node) {
+    node.id = `prd_add_preview_${item.id}`;
+    return renderComponent(node, { editable: false });
   }
   if (item.schema) return renderMoleculePreview(item.schema);
   return "";
@@ -7990,15 +12705,11 @@ function applyThemeBoundVariantsToNodes(nodes = [], themeId) {
   nodes.forEach((node) => {
     if (node.type === "atom") {
       const schema = findAtomSchema(node.schemaId);
-      const boundVariant = normalizeVariants(schema).find((variant) => {
-        const rawVariant = (schema?.variants || []).find(
-          (item) => (item.id || item.key) === variant.id,
-        );
-        return rawVariant?.themeBinding?.parentThemeId === themeId;
-      });
+      const boundVariant = getSchemaThemeVariant(schema, themeId);
       if (boundVariant) {
         node.activeVariantId = boundVariant.id;
-        node.props = { ...defaultProps(node.schemaId), ...(node.props || {}), ...boundVariant.props };
+        const themeProps = Object.fromEntries(getThemeLinkedVariantProps(schema, boundVariant));
+        node.props = { ...defaultProps(node.schemaId), ...(node.props || {}), ...themeProps };
       }
     }
     if (node.children?.length) applyThemeBoundVariantsToNodes(node.children, themeId);
@@ -8009,9 +12720,15 @@ function applyGuidedPageTheme(themeId) {
   const page = activePage();
   const theme = guidedPageThemePresets.find((item) => item.id === themeId);
   if (!page || !theme) return;
-  page.colorThemeId = theme.id;
-  page.canvasBackground = theme.background;
-  applyThemeBoundVariantsToNodes(page.nodes, theme.id);
+  state.pages.forEach((item) => {
+    item.colorThemeId = theme.id;
+    item.canvasBackground = theme.background;
+    applyThemeBoundVariantsToNodes(item.nodes, theme.id);
+  });
+  if (state.view === "guided-preview") {
+    renderGuidedPreview();
+    return;
+  }
   const pageEl = document.querySelector(`.guided-device-stage [data-page-id="${page.id}"]`);
   if (pageEl) {
     pageEl.style.background = theme.background;
@@ -8049,18 +12766,19 @@ function renderGuidedPageEditor(page) {
           </div>
         </div>
         <div class="guided-page-color-swatches">
-          ${guidedPageThemePresets
-            .map(
-              (item) => `
-                <button
-                  class="${item.id === theme.id ? "active" : ""}"
-                  style="background:linear-gradient(135deg, ${escapeAttr(item.primary)} 0 50%, ${escapeAttr(item.secondary)} 50% 100%)"
-                  data-guided-page-theme="${escapeAttr(item.id)}"
-                  aria-label="使用${escapeAttr(item.name)}色系"
-                  title="${escapeAttr(item.name)}"
-                ></button>
-              `,
-            )
+          ${["日常色系", "节点色系"]
+            .map((category) => {
+              const items = guidedPageThemePresets.filter((item) => getGuidedThemeCategory(item) === category);
+              if (!items.length) return "";
+              return `
+                <div class="guided-page-color-group">
+                  <strong>${escapeHtml(category)}</strong>
+                  <div>
+                    ${items.map((item) => renderGuidedThemeButton(item, theme.id)).join("")}
+                  </div>
+                </div>
+              `;
+            })
             .join("")}
         </div>
       </section>
@@ -8076,23 +12794,54 @@ function renderGuidedFloatingPanel(node, options = {}) {
       : mode === "states"
         ? "查看状态"
         : mode === "global"
-          ? "查看模块变量"
+          ? node?.isLotteryResultPopup
+            ? "查看变量"
+            : "查看模块变量"
           : mode === "page"
             ? "页面设置"
-            : "AI 修改头图";
+            : mode === "add"
+              ? "增加组件"
+              : "AI 修改头图";
   let body = "";
 
   if (mode === "page") {
     body = renderGuidedPageEditor(activePage());
   } else if (mode === "global") {
     body = renderGuidedGlobalEditor(node);
-  } else if (mode === "replace") {
-    const isContentModule = node.schemaId === "ContentModuleImage";
-    const options = isContentModule
-      ? getGuidedContentOptions()
-      : getGuidedMoleculeOptions();
+  } else if (mode === "add") {
+    const options = getGuidedMoleculeOptions();
     body = `
-      <p>${isContentModule ? "选择一个内容模块，替换后保留当前页面位置。" : "仅展示已保存的分子组件，替换后保留当前页面位置。"}</p>
+      <p>拖拽分子组件到页面模块之间；直接点击会追加到当前页面末尾。</p>
+      <div class="guided-molecule-options">
+        ${options
+          .map(
+            (item) => `
+              <div
+                class="guided-molecule-card"
+                role="button"
+                tabindex="0"
+                data-guided-add-molecule="${escapeAttr(item.id)}"
+                aria-label="增加${escapeAttr(item.name)}"
+              >
+                <div class="guided-molecule-preview ${item.imageUrl ? "is-content" : ""}">
+                  <div class="guided-molecule-preview-inner ${item.imageUrl ? "is-content" : ""}">
+                    ${renderGuidedMoleculePreview(item)}
+                  </div>
+                </div>
+                <div class="guided-molecule-card-meta">
+                  <span>预存分子</span>
+                  <strong>${escapeHtml(item.name)}</strong>
+                </div>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+    `;
+  } else if (mode === "replace") {
+    const options = getGuidedMoleculeOptions();
+    body = `
+      <p>选择一个预存分子模块，替换后保留当前页面位置。</p>
       <div class="guided-molecule-options">
         ${options
           .map(
@@ -8110,7 +12859,7 @@ function renderGuidedFloatingPanel(node, options = {}) {
                   </div>
                 </div>
                 <div class="guided-molecule-card-meta">
-                  <span>${item.imageUrl ? "内容模块" : item.schema ? "已保存分子" : "示意分子"}</span>
+                  <span>预存分子</span>
                   <strong>${escapeHtml(item.name)}</strong>
                 </div>
               </div>
@@ -8121,10 +12870,11 @@ function renderGuidedFloatingPanel(node, options = {}) {
     `;
   } else if (mode === "states") {
     const stateEntries = getGuidedStateEntries(node);
+    const childStateGroups = getGuidedChildStateGroups(node);
     const variantEntries = getGuidedVariantEntries(node);
-    body = stateEntries.length || variantEntries.length
+    body = stateEntries.length || childStateGroups.length || variantEntries.length
       ? `
-        <p>这里展示组件包含的全部状态。点击后状态会以弹窗内容形式呈现。</p>
+        <p>这里展示组件包含的全部状态，可逐个切换并立即同步预览。</p>
         ${
           stateEntries.length
             ? `
@@ -8150,6 +12900,35 @@ function renderGuidedFloatingPanel(node, options = {}) {
                     `,
                   )
                   .join("")}
+              </div>
+            `
+            : ""
+        }
+        ${
+          childStateGroups.length
+            ? `
+              <div class="guided-child-state-groups">
+                ${childStateGroups.map((group) => `
+                  <section class="guided-child-state-group">
+                    <header>
+                      <strong>${escapeHtml(group.label)}</strong>
+                      <span>${escapeHtml(group.child.name || group.child.schemaId)}</span>
+                    </header>
+                    <div class="guided-child-state-options">
+                      ${group.stateEntries.map((entry) => `
+                        <button
+                          type="button"
+                          class="${group.child.activeGuidedStateId === entry.id ? "active" : ""}"
+                          data-guided-child-state-node="${escapeAttr(group.child.id)}"
+                          data-guided-child-state="${escapeAttr(entry.id)}"
+                        >
+                          <strong>${escapeHtml(entry.name)}</strong>
+                          <span>${escapeHtml(entry.component)}</span>
+                        </button>
+                      `).join("")}
+                    </div>
+                  </section>
+                `).join("")}
               </div>
             `
             : ""
@@ -8188,19 +12967,29 @@ function renderGuidedFloatingPanel(node, options = {}) {
   const panelModeClass =
     mode === "replace"
       ? "is-replace"
+      : mode === "add"
+        ? "is-add"
       : mode === "page"
         ? "is-page"
+        : mode === "global" && node?.isLotteryResultPopup
+          ? "is-popup-variables"
         : "";
+  const headerLabel =
+    mode === "page"
+      ? activePage().dimension || activePage().name
+      : mode === "add"
+        ? activePage()?.name || "当前页面"
+        : node?.name || "";
 
   return `
       <aside
-        class="guided-floating-panel guided-operation-panel ${panelModeClass} ${options.enter ? "is-entering" : ""} ${mode === "global" ? `is-global is-lineage ${lineageVersionClass}` : ""}"
+        class="guided-floating-panel guided-operation-panel ${panelModeClass} ${options.enter ? "is-entering" : ""} ${mode === "global" && !node?.isLotteryResultPopup ? `is-global is-lineage ${lineageVersionClass}` : ""}"
         role="dialog"
         aria-label="${escapeAttr(title)}"
       >
       <header>
         <div>
-          <span>${escapeHtml(mode === "page" ? activePage().dimension || activePage().name : node.name)}</span>
+          <span>${escapeHtml(headerLabel)}</span>
           <h2>${title}</h2>
         </div>
         <button data-guided-close-panel aria-label="关闭">×</button>
@@ -8561,10 +13350,10 @@ function renderAtomPreview(schemaId, overrides = {}) {
 }
 
 function renderMoleculePreview(schema) {
-  const children = schema.children || [];
+  const children = getMoleculeChildEntries(schema, getMoleculeDefaultProps(schema));
   const moleculeClass = schema.className ? ` ${schema.className}` : "";
   const previewStyle =
-    schema.className === "task-list-module"
+    String(schema.className || "").split(/\s+/).includes("task-list-module")
       ? "background:transparent;border-radius:0;padding:0;min-height:100px;overflow:visible;"
       : "background:rgba(255,255,255,1);border-radius:12px;padding:12px;min-height:100px;";
   if (!children.length) {
@@ -8798,7 +13587,7 @@ function renderComponent(node, options = {}) {
 
   const schema = findAtomSchema(node.schemaId);
   const p = schema ? defaultProps(node.schemaId, node.props || {}) : (node.props || {});
-  if (schema?.id === "StickyBottomButton" || node.schemaId === "StickyBottomButton" || node.schemaId === "置底按钮" || node.name === "置底按钮") {
+  if (schema?.id === "StickyBottomButton" || node.schemaId === "StickyBottomButton") {
     return renderStickyBottomButtonFallback(p, editOptions);
   }
   if (schema?.reactComponent) {
@@ -8864,11 +13653,15 @@ function renderReactComponent(schema, props, editOptions) {
   const width = Number(schema.dimensions?.width || 700);
   const height = Number(schema.dimensions?.height || 300);
   const isAutoHeight = schema.heightMode === "auto";
+  const shouldShrinkWrapAutoHeight = [
+    "正文-活动规则样式3",
+    "正文-用户教育",
+  ].includes(schema.id);
   const fitSizeStyle = isAutoHeight
-    ? `--component-width:${width}px;--component-height:${height}px;min-height:${height}px;height:auto;`
+    ? `--component-width:${width}px;--component-height:${height}px;${shouldShrinkWrapAutoHeight ? "min-height:0;" : `min-height:${height}px;`}height:auto;`
     : `--component-width:${width}px;--component-height:${height}px`;
   const hostSizeStyle = isAutoHeight
-    ? `width:${width}px;min-height:${height}px;height:auto;`
+    ? `width:${width}px;${shouldShrinkWrapAutoHeight ? "min-height:0;" : `min-height:${height}px;`}height:auto;`
     : `width:${width}px;height:${height}px`;
   const lineagePrefix = editOptions.lineagePrefix || "";
   const lineageInitialProps =
@@ -9148,6 +13941,8 @@ function renderPropsInspector(found) {
 }
 
 function renderMoleculePropsInspector(panel, node) {
+  const moleculeSchema = moleculeSchemas.find((item) => item.id === node.schemaId);
+  const moleculeProps = (moleculeSchema?.props || []).filter((item) => !item.isCssVar);
   const children = node.children || [];
   const editableChildren = children
     .map((child, index) => {
@@ -9157,7 +13952,7 @@ function renderMoleculePropsInspector(panel, node) {
     })
     .filter((item) => item.props.length);
 
-  if (!editableChildren.length) {
+  if (!moleculeProps.length && !editableChildren.length) {
     panel.innerHTML = `
       <div class="inspector-head">
         <div>
@@ -9171,7 +13966,7 @@ function renderMoleculePropsInspector(panel, node) {
     return;
   }
 
-  const total = editableChildren.reduce((sum, item) => sum + item.props.length, 0);
+  const total = moleculeProps.length + editableChildren.reduce((sum, item) => sum + item.props.length, 0);
   panel.innerHTML = `
     <div class="inspector-head">
       <div>
@@ -9180,6 +13975,12 @@ function renderMoleculePropsInspector(panel, node) {
       </div>
     </div>
     <div class="node-prop-list molecule-prop-list">
+      ${moleculeProps.length ? `
+        <section class="molecule-prop-group">
+          <header>${escapeHtml(node.name || node.schemaId)}</header>
+          ${moleculeProps.map((field) => renderNodePropControl(node, field)).join("")}
+        </section>
+      ` : ""}
       ${editableChildren
         .map(
           ({ child, index, props }) => `
@@ -9404,6 +14205,11 @@ const guidedCutExportRules = {
       description: "",
     },
   },
+  "标题+抽奖次数": {
+    exportPropOverrides: {
+      drawCountText: "",
+    },
+  },
 };
 
 function getGuidedCutExportRule(node) {
@@ -9420,24 +14226,38 @@ function getCutExportProps(schemaId, props = {}) {
 }
 
 function getExportNodeTitle(node) {
-  return node?.schemaId || node?.name || "模块";
+  const schemaId = node?.schemaId || node?.name || "";
+  return getGlobalComponentDisplayName(schemaId, node?.name || schemaId || "模块");
 }
 
 function getExportEntryNode(entry) {
-  const rule = getGuidedCutExportRule(entry?.sourceNode || entry?.node);
   const node = cloneNodeForLineage(entry?.node || entry?.sourceNode || {});
-  if (rule.hiddenPropKeys?.length && node.props) {
-    rule.hiddenPropKeys.forEach((key) => {
-      if (key in node.props) node.props[key] = "";
-    });
+  return applyCutExportRulesToNode(node);
+}
+
+function isTaskBarStyle1ExportNode(node) {
+  const schemaId = node?.schemaId || node?.name || "";
+  return [
+    "任务条-样式1",
+    "任务条-样式1-点击后",
+    "TaskModule",
+  ].includes(schemaId);
+}
+
+function getGuidedCutExportBottomSpace(entry) {
+  if (
+    entry?.exportKind === "fallback-page" ||
+    entry?.exportKind === "case-showcase-shell" ||
+    entry?.exportKind === "case-showcase-card" ||
+    entry?.exportKind === "node-guide-title" ||
+    entry?.exportKind === "node-guide-card"
+  ) {
+    return 0;
   }
-  if (rule.exportPropOverrides) {
-    node.props = {
-      ...(node.props || {}),
-      ...rule.exportPropOverrides,
-    };
-  }
-  return node;
+  const node = entry?.node || entry?.sourceNode || {};
+  return node?.type === "atom" && isTaskBarStyle1ExportNode(node)
+    ? GUIDED_TASK_BAR_EXPORT_BOTTOM_SPACE
+    : GUIDED_CUT_EXPORT_BOTTOM_SPACE;
 }
 
 function sanitizeExportFilename(value) {
@@ -9447,19 +14267,481 @@ function sanitizeExportFilename(value) {
     .slice(0, 80);
 }
 
+function getExportFilenameSegments(value) {
+  const omittedLabels = new Set([
+    "默认维度",
+    "维度1",
+    "默认版本",
+    "默认状态",
+    "系统状态",
+  ]);
+  return String(value || "")
+    .split(/\s*·\s*/)
+    .map((item) => item.trim())
+    .filter((item) => item && !omittedLabels.has(item.replace(/\s+/g, "")));
+}
+
+function makeGuidedExportFilename(moduleTitle, nodeIndex, dimensionTitle, variantTitle) {
+  const segments = [
+    ...getExportFilenameSegments(moduleTitle),
+    ...getExportFilenameSegments(dimensionTitle),
+    ...getExportFilenameSegments(variantTitle),
+  ];
+  const uniqueSegments = segments.filter(
+    (segment, index) =>
+      segments.findIndex(
+        (candidate) =>
+          normalizePageTemplateLookupName(candidate) ===
+          normalizePageTemplateLookupName(segment),
+      ) === index,
+  );
+  const sequence = String(nodeIndex + 1).padStart(2, "0");
+  return `${sanitizeExportFilename(`${sequence}_${uniqueSegments.join("_") || "切图"}`)}.png`;
+}
+
 function getExportEntryDimensions(entry) {
+  const bottomSpace = getGuidedCutExportBottomSpace(entry);
   if (entry?.dimensions) {
     return {
-      width: Number(entry.dimensions.width || 750),
-      height: Number(entry.dimensions.height || 300),
+      width: Number(entry.dimensions.width || GUIDED_CUT_EXPORT_WIDTH),
+      height: Number(entry.dimensions.height || 300) + bottomSpace,
     };
   }
   const node = entry?.node || entry?.sourceNode || {};
+  const dimensions = getNodeEstimatedExportDimensions(node);
+  return {
+    ...dimensions,
+    width: GUIDED_CUT_EXPORT_WIDTH,
+    height: Number(dimensions.height || 300) + bottomSpace,
+  };
+}
+
+function getMoleculeChildExportMargin(node, index, childCount) {
+  if (index >= childCount - 1) return 0;
+  const classNames = String(node?.className || "").split(/\s+/);
+  if (classNames.includes("task-list-module")) return 16;
+  if (classNames.includes("bigday-coupon-style1")) return [32, 24, 16][index] ?? 0;
+  if (classNames.includes("bigday-coupon-style2")) return [24, 24][index] ?? 0;
+  if (
+    classNames.includes("consumption-return-style1-3col") ||
+    classNames.includes("lottery-consumption-return-3col") ||
+    classNames.includes("lottery-consumption-return-4col")
+  ) {
+    return [40, 32, 32, 40][index] ?? 0;
+  }
+  if (classNames.includes("lottery-unregistered-module")) return [24, 24, 24][index] ?? 0;
+  if (classNames.includes("lottery-registered-module")) return [24, 24][index] ?? 0;
+  if (classNames.includes("traffic-submission-module")) return [32, 32, 32][index] ?? 0;
+  if (classNames.includes("traffic-submission-style3-module")) return [32, 32, 32][index] ?? 0;
+  if (classNames.includes("content-diagnosis-clicked-module")) return [32, 24, 24][index] ?? 0;
+  if (classNames.includes("content-diagnosis-quality-video-module")) return [32, 32][index] ?? 0;
+  if (classNames.includes("user-education-case-style1-module")) return [32][index] ?? 0;
+  if (classNames.includes("user-education-case-style2-module")) return [32, 32][index] ?? 0;
+  if (classNames.includes("user-education-guide-module")) return [32, 32][index] ?? 0;
+  if (classNames.includes("ai-smart-invest-module")) return [32, 32][index] ?? 0;
+  if (classNames.includes("core-benefit-coupon-style2-module")) return [32, 32][index] ?? 0;
+  if (classNames.includes("placement-lottery-module")) return [32, 16, 32][index] ?? 0;
+  return 24;
+}
+
+function getNodeEstimatedExportDimensions(node) {
+  if (node?.type === "molecule") {
+    const children = node.children || [];
+    const childDimensions = children.map(getNodeEstimatedExportDimensions);
+    const classNames = String(node.className || "").split(/\s+/);
+    const paddingY = classNames.includes("task-list-module") ? 0 : 96;
+    if (classNames.includes("user-education-case-style1-module")) {
+      return {
+        width: 702,
+        height: Math.max(
+          120,
+          paddingY +
+            childDimensions.reduce(
+              (sum, dimension, index) =>
+                sum +
+                Number(dimension.height || 0) +
+                getMoleculeChildExportMargin(node, index, children.length),
+              0,
+            ),
+        ),
+      };
+    }
+    const width = Math.max(
+      702,
+      ...childDimensions.map((dimension) => Number(dimension.width || 0)),
+    );
+    const height = Math.max(
+      120,
+      paddingY +
+        childDimensions.reduce(
+          (sum, dimension, index) =>
+            sum +
+            Number(dimension.height || 0) +
+            getMoleculeChildExportMargin(node, index, children.length),
+          0,
+        ),
+    );
+    return { width, height };
+  }
   const schema = findAtomSchema(node.schemaId || node.name);
   return {
     width: Number(schema?.dimensions?.width || 750),
     height: Number(schema?.dimensions?.height || 300),
   };
+}
+
+function isTaskListExportNode(node) {
+  return (
+    node?.schemaId === "任务列表" ||
+    node?.name === "任务列表" ||
+    String(node?.className || "").split(/\s+/).includes("task-list-module")
+  );
+}
+
+function isUserEducationCaseShowcaseExportNode(node) {
+  return (
+    node?.schemaId === "用户教育案例-样式1" ||
+    node?.name === "用户教育案例-样式1" ||
+    String(node?.className || "").split(/\s+/).includes("user-education-case-style1-module")
+  );
+}
+
+function isNodeGuideExportNode(node) {
+  return (
+    node?.schemaId === "节点指南" ||
+    node?.name === "节点指南" ||
+    String(node?.className || "").split(/\s+/).includes("node-guide-module")
+  );
+}
+
+function isLotteryPopupExportNode(node) {
+  return (
+    node?.isLotteryResultPopup ||
+    node?.schemaId === "弹窗-中奖" ||
+    node?.name === "弹窗-中奖"
+  );
+}
+
+function createStatefulExportNode(node, stateEntry) {
+  const exportNode = cloneNodeForLineage(node);
+  if (stateEntry?.id) applyGuidedBusinessState(exportNode, stateEntry.id);
+  return exportNode;
+}
+
+function getExportStateEntries(node) {
+  const entries = getGuidedStateEntries(node);
+  return entries.length ? entries : [{ id: "default", name: "默认状态", node }];
+}
+
+function makeGuidedCutExportEntry({
+  page,
+  node,
+  nodeIndex,
+  exportNode,
+  dimensionTitle,
+  variantTitle,
+  idParts = [],
+  fileParts = [],
+  exportKind = "",
+  dimensions,
+}) {
+  const moduleTitle = getExportNodeTitle(node);
+  const moduleFolderTitle = `${String(nodeIndex + 1).padStart(2, "0")}_${moduleTitle}`;
+  const fileName = makeGuidedExportFilename(
+    moduleTitle,
+    nodeIndex,
+    dimensionTitle,
+    variantTitle,
+  );
+  return {
+    id: [page.id, node.id, ...idParts].map(sanitizeExportFilename).join("__"),
+    pageId: page.id,
+    pageName: page.name || `页面 ${state.pages.indexOf(page) + 1}`,
+    pageTheme: getGuidedPageTheme(page),
+    nodeId: node.id,
+    moduleTitle,
+    moduleFolderTitle,
+    dimensionTitle,
+    variantTitle,
+    sourceNode: node,
+    node: exportNode,
+    exportKind,
+    dimensions,
+    fileName,
+    filePath: [
+      sanitizeExportFilename(page.name || page.id || "页面"),
+      fileName,
+    ].join("/"),
+  };
+}
+
+function getGuidedNodeLineageExportVariants(node) {
+  const { base, graph } = ensureGuidedLineageTree(node);
+  return (graph.nodes || []).map((graphNode, variantIndex) => {
+    const variant = findLineageVariant(node, graphNode.variantId) || base;
+    return {
+      graphNode,
+      variant,
+      variantIndex,
+      dimensionTitle: getExportDimensionTitle(graph, graphNode),
+      variantTitle: variant.title || `版本 ${variantIndex + 1}`,
+    };
+  });
+}
+
+function getTaskListGuidedCutExportEntries(page, node, nodeIndex) {
+  return getGuidedNodeLineageExportVariants(node).flatMap(
+    ({ graphNode, variant, dimensionTitle, variantTitle }) => {
+      const taskGroups = getGuidedChildStateGroups(variant.node);
+      return taskGroups.flatMap((group, groupIndex) =>
+        getExportStateEntries(group.child).map((stateEntry) => {
+          const stateTitle = getGuidedInlineStateLabel(stateEntry);
+          const exportNode = stateEntry?.node
+            ? createStatefulExportNode(group.child, stateEntry)
+            : cloneNodeForLineage(group.child);
+          const taskTitle = group.label || `任务 ${groupIndex + 1}`;
+          return makeGuidedCutExportEntry({
+            page,
+            node: {
+              ...group.child,
+              id: `${node.id}_${variant.id}_${group.child.id}`,
+              name: `${getExportNodeTitle(node)} · ${taskTitle}`,
+            },
+            nodeIndex,
+            exportNode,
+            dimensionTitle,
+            variantTitle: `${variantTitle} · ${taskTitle} · ${stateTitle}`,
+            idParts: [
+              graphNode.dimensionId || "dimension",
+              variant.id || "variant",
+              `task-${group.childIndex + 1}`,
+              stateEntry.id || "default",
+            ],
+            fileParts: [taskTitle, variantTitle],
+          });
+        }),
+      );
+    },
+  );
+}
+
+function getCaseShowcaseGuidedCutExportEntries(page, node, nodeIndex) {
+  const cardSpecs = [
+    { title: "随拍", offsetX: 0, width: 347, height: 1026 },
+    { title: "旅行", offsetX: 387, width: 347, height: 1027 },
+    { title: "科普", offsetX: 774, width: 347, height: 1023 },
+  ];
+
+  return getGuidedNodeLineageExportVariants(node).flatMap(
+    ({ graphNode, variant, dimensionTitle, variantTitle, variantIndex }) => {
+      const moleculeNode = cloneNodeForLineage(variant.node);
+      const titleNode = moleculeNode.children?.[0];
+      const casesNode = moleculeNode.children?.[1];
+      if (!titleNode || !casesNode) {
+        return getStatefulGuidedCutExportEntries(page, node, nodeIndex);
+      }
+
+      const shellNode = {
+        ...moleculeNode,
+        children: [titleNode],
+      };
+      const shellHeight = getNodeEstimatedExportDimensions(moleculeNode).height;
+      const shellEntry = makeGuidedCutExportEntry({
+        page,
+        node,
+        nodeIndex,
+        exportNode: shellNode,
+        dimensionTitle,
+        variantTitle: `${variantTitle} · 标题底板`,
+        idParts: [
+          graphNode.dimensionId || "dimension",
+          variant.id || variantIndex,
+          "case-showcase-shell",
+        ],
+        fileParts: [variantTitle],
+        exportKind: "case-showcase-shell",
+        dimensions: {
+          width: GUIDED_CUT_EXPORT_WIDTH,
+          height: shellHeight,
+        },
+      });
+
+      const cardEntries = cardSpecs.map((card, cardIndex) => ({
+        ...makeGuidedCutExportEntry({
+          page,
+          node,
+          nodeIndex,
+          exportNode: cloneNodeForLineage(casesNode),
+          dimensionTitle,
+          variantTitle: `${variantTitle} · ${card.title}`,
+          idParts: [
+            graphNode.dimensionId || "dimension",
+            variant.id || variantIndex,
+            `case-showcase-card-${cardIndex + 1}`,
+          ],
+          fileParts: [variantTitle],
+          exportKind: "case-showcase-card",
+          dimensions: {
+            width: card.width,
+            height: card.height,
+          },
+        }),
+        caseCardIndex: cardIndex,
+        caseCardOffsetX: card.offsetX,
+      }));
+
+      return [shellEntry, ...cardEntries];
+    },
+  );
+}
+
+function getNodeGuideGuidedCutExportEntries(page, node, nodeIndex) {
+  const cardSpecs = [
+    { prop: "card1IndustryTitle", title: "服装配饰行业", offsetX: 0, offsetY: 0 },
+    { prop: "card2IndustryTitle", title: "文体娱乐行业", offsetX: 680, offsetY: 5.4 },
+    { prop: "card3IndustryTitle", title: "餐饮服务行业", offsetX: 1356.5, offsetY: 0 },
+    { prop: "card4IndustryTitle", title: "传媒资讯行业", offsetX: 2040, offsetY: 0 },
+  ];
+
+  return getGuidedNodeLineageExportVariants(node).flatMap(
+    ({ graphNode, variant, dimensionTitle, variantTitle, variantIndex }) => {
+      const moleculeNode = cloneNodeForLineage(variant.node);
+      const titleNode = moleculeNode.children?.[0];
+      const guideNode = moleculeNode.children?.[1];
+      if (!titleNode || !guideNode) {
+        return getStatefulGuidedCutExportEntries(page, node, nodeIndex);
+      }
+
+      const titleEntry = makeGuidedCutExportEntry({
+        page,
+        node,
+        nodeIndex,
+        exportNode: {
+          ...moleculeNode,
+          children: [titleNode],
+        },
+        dimensionTitle,
+        variantTitle: `${variantTitle} · 模块标题`,
+        idParts: [
+          graphNode.dimensionId || "dimension",
+          variant.id || variantIndex,
+          "node-guide-title",
+        ],
+        fileParts: [variantTitle],
+        exportKind: "node-guide-title",
+        dimensions: {
+          width: GUIDED_CUT_EXPORT_WIDTH,
+          height: 50.09,
+        },
+      });
+
+      const cardEntries = cardSpecs.map((card, cardIndex) => {
+        const cardTitle = String(guideNode.props?.[card.prop] || card.title)
+          .replace(/[「」]/g, "")
+          .trim();
+        return {
+          ...makeGuidedCutExportEntry({
+            page,
+            node,
+            nodeIndex,
+            exportNode: cloneNodeForLineage(guideNode),
+            dimensionTitle,
+            variantTitle: `${variantTitle} · ${cardTitle}`,
+            idParts: [
+              graphNode.dimensionId || "dimension",
+              variant.id || variantIndex,
+              `node-guide-card-${cardIndex + 1}`,
+            ],
+            fileParts: [variantTitle],
+            exportKind: "node-guide-card",
+            dimensions: {
+              width: 640,
+              height: 637.81,
+            },
+          }),
+          nodeGuideCardOffsetX: card.offsetX,
+          nodeGuideCardOffsetY: card.offsetY,
+        };
+      });
+
+      return [titleEntry, ...cardEntries];
+    },
+  );
+}
+
+function getLotteryPopupGuidedCutExportEntries(page, node, nodeIndex) {
+  const prizeCount = clamp(Number(node.props?.prizeCount || 1), 1, 8);
+  const winnerEntries = Array.from({ length: prizeCount }, (_, arrayIndex) => {
+    const prizeIndex = arrayIndex + 1;
+    const parsedPrize = parsePrizeValue(node.props?.[`prize${prizeIndex}`]);
+    const prizeName = String(
+      node.props?.[`prize${prizeIndex}Text`] ||
+      parsedPrize?.name ||
+      `奖品${prizeIndex}`,
+    ).trim();
+    const splitPrize = splitLotteryPrizeText(prizeName);
+    const exportNode = cloneNodeForLineage(node);
+    exportNode.props = {
+      ...(exportNode.props || {}),
+      selectedPrizeIndex: prizeIndex,
+      amountText: splitPrize.amountText,
+      prizeText: splitPrize.prizeText,
+    };
+    return makeGuidedCutExportEntry({
+      page,
+      node,
+      nodeIndex,
+      exportNode,
+      dimensionTitle: "抽奖结果",
+      variantTitle: `中奖${prizeIndex} · ${prizeName}`,
+      idParts: ["popup-win", prizeIndex],
+      fileParts: ["中奖"],
+    });
+  });
+
+  const loseNode = createAtomNode("弹窗-未中奖");
+  loseNode.id = `${node.id}_lose`;
+  applyThemeBoundVariantsToNodes([loseNode], getGuidedPageTheme(page).id);
+  const loseEntry = makeGuidedCutExportEntry({
+    page,
+    node: loseNode,
+    nodeIndex,
+    exportNode: loseNode,
+    dimensionTitle: "抽奖结果",
+    variantTitle: "未中奖",
+    idParts: ["popup-lose"],
+    fileParts: ["未中奖"],
+  });
+
+  return [...winnerEntries, loseEntry];
+}
+
+function getStatefulGuidedCutExportEntries(page, node, nodeIndex) {
+  return getGuidedNodeLineageExportVariants(node).flatMap(
+    ({ graphNode, variant, dimensionTitle, variantTitle, variantIndex }) => {
+      const stateEntries = getExportStateEntries(variant.node);
+      const hasExplicitState = getGuidedStateEntries(variant.node).length > 0;
+      return stateEntries.map((stateEntry) => {
+        const stateTitle = hasExplicitState ? getGuidedInlineStateLabel(stateEntry) : "";
+        const exportNode = hasExplicitState
+          ? createStatefulExportNode(variant.node, stateEntry)
+          : cloneNodeForLineage(variant.node);
+        return makeGuidedCutExportEntry({
+          page,
+          node,
+          nodeIndex,
+          exportNode,
+          dimensionTitle,
+          variantTitle: stateTitle ? `${variantTitle} · ${stateTitle}` : variantTitle,
+          idParts: [
+            graphNode.dimensionId || "dimension",
+            variant.id || variantIndex,
+            stateEntry.id || "default",
+          ],
+        });
+      });
+    },
+  );
 }
 
 function downloadDataUrl(filename, dataUrl) {
@@ -9496,8 +14778,10 @@ function getGuidedExportFontCss(element) {
 }
 
 async function exportElementToPngBlob(element, options = {}) {
-  const width = Math.ceil(element.scrollWidth || element.offsetWidth);
-  const height = Math.ceil(element.scrollHeight || element.offsetHeight);
+  const width = Number(options.width || GUIDED_CUT_EXPORT_WIDTH);
+  const height = Number(
+    options.height || Math.ceil(element.scrollHeight || element.offsetHeight),
+  );
   if (!width || !height) throw new Error("empty export component");
 
   const fontEmbedCSS = await getGuidedExportFontCss(element);
@@ -9534,6 +14818,12 @@ function getGuidedCutExportEntries() {
       const moduleFolderTitle = `01_${moduleTitle}`;
       const dimensionTitle = "系统状态";
       const variantTitle = page.name || "页面加载失败";
+      const fileName = makeGuidedExportFilename(
+        moduleTitle,
+        0,
+        dimensionTitle,
+        variantTitle,
+      );
       return [{
         id: [page.id, "fallback-page", "system", "default"]
           .map(sanitizeExportFilename)
@@ -9546,61 +14836,104 @@ function getGuidedCutExportEntries() {
         dimensionTitle,
         variantTitle,
         exportKind: "fallback-page",
-        dimensions: { width: 750, height: 1334 },
+        fileName,
+        dimensions: {
+          width: 750,
+          height: Number(page.fallbackPageHeight || 1334),
+        },
         filePath: [
           sanitizeExportFilename(page.name || page.id || "兜底页面"),
-          sanitizeExportFilename(moduleFolderTitle),
-          sanitizeExportFilename(dimensionTitle),
-          `${sanitizeExportFilename(variantTitle)}.png`,
+          fileName,
         ].join("/"),
       }];
     }
 
     return (page.nodes || []).flatMap((node, nodeIndex) => {
-      const { base, graph } = ensureGuidedLineageTree(node);
-      return (graph.nodes || []).map((graphNode, variantIndex) => {
-        const variant = findLineageVariant(node, graphNode.variantId) || base;
-        const dimensionTitle = getExportDimensionTitle(graph, graphNode);
-        const moduleTitle = getExportNodeTitle(node);
-        const moduleFolderTitle = `${String(nodeIndex + 1).padStart(2, "0")}_${moduleTitle}`;
-        const variantTitle = variant.title || `版本 ${variantIndex + 1}`;
-        return {
-          id: [
-            page.id,
-            node.id,
-            graphNode.dimensionId || "dimension",
-            variant.id || variantIndex,
-          ].map(sanitizeExportFilename).join("__"),
-          pageId: page.id,
-          pageName: page.name || `页面 ${state.pages.indexOf(page) + 1}`,
-          pageTheme: getGuidedPageTheme(page),
-          nodeId: node.id,
-          moduleTitle,
-          moduleFolderTitle,
-          dimensionTitle,
-          variantTitle,
-          sourceNode: node,
-          node: variant.node,
-          filePath: [
-            sanitizeExportFilename(page.name || page.id || "页面"),
-            sanitizeExportFilename(moduleFolderTitle),
-            sanitizeExportFilename(dimensionTitle),
-            `${sanitizeExportFilename(variantTitle)}.png`,
-          ].join("/"),
-        };
-      });
+      if (isLotteryPopupExportNode(node)) {
+        return getLotteryPopupGuidedCutExportEntries(page, node, nodeIndex);
+      }
+      if (isTaskListExportNode(node)) {
+        return getTaskListGuidedCutExportEntries(page, node, nodeIndex);
+      }
+      if (isUserEducationCaseShowcaseExportNode(node)) {
+        return getCaseShowcaseGuidedCutExportEntries(page, node, nodeIndex);
+      }
+      if (isNodeGuideExportNode(node)) {
+        return getNodeGuideGuidedCutExportEntries(page, node, nodeIndex);
+      }
+      return getStatefulGuidedCutExportEntries(page, node, nodeIndex);
     });
   });
 }
 
+function renderCaseShowcaseExportContent(entry) {
+  const node = getExportEntryNode(entry);
+  if (entry.exportKind === "case-showcase-shell") {
+    return `
+      <div
+        class="guided-export-themed-content guided-export-case-showcase-shell"
+        style="--guided-page-theme-filter:${escapeAttr(entry.pageTheme?.filter || "none")};--case-showcase-shell-height:${Number(entry.dimensions?.height || 1205)}px;"
+      >
+        ${renderComponent(node, { editable: false })}
+      </div>
+    `;
+  }
+  return `
+    <div
+      class="guided-export-themed-content guided-export-case-showcase-card"
+      data-case-card-index="${Number(entry.caseCardIndex || 0)}"
+      style="width:${Number(entry.dimensions?.width || 347)}px;height:${Number(entry.dimensions?.height || 1027)}px;--guided-page-theme-filter:${escapeAttr(entry.pageTheme?.filter || "none")};"
+    >
+      <div
+        class="guided-export-case-showcase-track"
+        style="transform:translateX(-${Number(entry.caseCardOffsetX || 0)}px);"
+      >
+        ${renderComponent(node, { editable: false })}
+      </div>
+    </div>
+  `;
+}
+
+function renderNodeGuideExportContent(entry) {
+  const node = getExportEntryNode(entry);
+  if (entry.exportKind === "node-guide-title") {
+    return `
+      <div
+        class="guided-export-themed-content guided-export-node-guide-title"
+        style="--guided-page-theme-filter:${escapeAttr(entry.pageTheme?.filter || "none")};"
+      >
+        ${renderComponent(node, { editable: false })}
+      </div>
+    `;
+  }
+  return `
+    <div
+      class="guided-export-themed-content guided-export-node-guide-card"
+      style="width:${Number(entry.dimensions?.width || 640)}px;height:${Number(entry.dimensions?.height || 637.81)}px;--guided-page-theme-filter:${escapeAttr(entry.pageTheme?.filter || "none")};"
+    >
+      <div
+        class="guided-export-node-guide-track"
+        style="transform:translate(${-Number(entry.nodeGuideCardOffsetX || 0)}px, -${Number(entry.nodeGuideCardOffsetY || 0)}px);"
+      >
+        ${renderComponent(node, { editable: false })}
+      </div>
+    </div>
+  `;
+}
+
 function renderGuidedExportPreview(entry) {
   const { width, height } = getExportEntryDimensions(entry);
+  const bottomSpace = getGuidedCutExportBottomSpace(entry);
   const previewScale = width > 720 ? 0.44 : 0.46;
   const previewWidth = Math.ceil(width * previewScale);
   const previewHeight = Math.ceil(height * previewScale);
   const content = entry.exportKind === "fallback-page"
     ? renderGuidedFallbackExportPage(entry)
-    : `
+    : entry.exportKind === "case-showcase-shell" || entry.exportKind === "case-showcase-card"
+      ? renderCaseShowcaseExportContent(entry)
+      : entry.exportKind === "node-guide-title" || entry.exportKind === "node-guide-card"
+        ? renderNodeGuideExportContent(entry)
+      : `
       <div
         class="guided-export-themed-content"
         style="--guided-page-theme-filter:${escapeAttr(entry.pageTheme?.filter || "none")}"
@@ -9611,12 +14944,12 @@ function renderGuidedExportPreview(entry) {
   return `
     <div
       class="guided-export-cut-frame"
-      style="width:${previewWidth}px;height:${previewHeight}px;"
+      style="width:${previewWidth}px;min-height:${previewHeight}px;"
     >
       <div
         class="guided-export-cut-preview"
         data-export-cut-id="${escapeAttr(entry.id)}"
-        style="width:${width}px;min-height:${height}px;--export-preview-scale:${previewScale};"
+        style="width:${width}px;min-height:${height}px;padding-bottom:${bottomSpace}px;box-sizing:border-box;--export-preview-scale:${previewScale};"
       >
         ${content}
       </div>
@@ -9775,7 +15108,14 @@ async function waitForExportPreviewReady() {
 async function captureGuidedExportEntry(entry, options = {}) {
   const element = findGuidedExportElement(entry.id);
   if (!element) throw new Error("找不到导出组件");
-  return exportElementToPngBlob(element, options);
+  const fixedDimensions =
+    entry.exportKind === "case-showcase-shell" ||
+    entry.exportKind === "case-showcase-card" ||
+    entry.exportKind === "node-guide-title" ||
+    entry.exportKind === "node-guide-card"
+      ? getExportEntryDimensions(entry)
+      : {};
+  return exportElementToPngBlob(element, { ...options, ...fixedDimensions });
 }
 
 async function downloadGuidedExportEntry(entryId) {
@@ -9784,7 +15124,7 @@ async function downloadGuidedExportEntry(entryId) {
   await waitForExportPreviewReady();
   try {
     const blob = await captureGuidedExportEntry(entry);
-    downloadBlob(`${sanitizeExportFilename(entry.variantTitle)}.png`, blob);
+    downloadBlob(entry.fileName || `${sanitizeExportFilename(entry.variantTitle)}.png`, blob);
   } catch (error) {
     console.error("[guided-export] single export failed", entry, error);
     window.alert(`单张导出失败：${error?.message || "未知错误"}`);
@@ -9968,6 +15308,7 @@ function render() {
     $(".variant-inspector")?.classList.remove("open");
     $(".richtext-editor")?.classList.remove("open");
     renderPrdDemoFlow();
+    window.renderReactMaterials?.();
     return;
   }
 
@@ -10319,7 +15660,7 @@ function bindEvents() {
     (event) => {
       if (
         state.view !== "guided-preview" ||
-        event.target.closest("[data-guided-action]")
+        event.target.closest("[data-guided-action], [data-guided-order]")
       ) {
         return;
       }
@@ -10338,11 +15679,44 @@ function bindEvents() {
 
     if (event.target.closest("[data-demo-open-file-modal]")) {
       state.prdTextError = "";
+      state.prdBlueprintPasteError = "";
       if (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID) {
         state.selectedDemoPackageId = demoActivityPackage.id;
       }
       state.prdFileModalOpen = true;
       render();
+      return;
+    }
+
+    if (event.target.closest("[data-prd-blueprint-table-submit]")) {
+      const modal = event.target.closest("[data-demo-file-modal]");
+      const pastedVersions = normalizePrdBlueprintPasteVersions(
+        getPrdBlueprintPasteVersionsFromModal(modal),
+        0,
+      );
+      const pastedRows = getPrdBlueprintPasteRowsFromModal(modal);
+      const filledRows = getFilledPrdBlueprintPasteRows(pastedRows);
+      if (!filledRows.length) {
+        state.prdBlueprintPasteVersions = pastedVersions;
+        state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(pastedRows, 12, pastedVersions.length);
+        state.prdBlueprintPasteError = "请先粘贴蓝图表格";
+        render();
+        requestAnimationFrame(() => {
+          document.querySelector("[data-prd-blueprint-cell]")?.focus();
+        });
+        return;
+      }
+      const { rows, manualVersions } = convertBlueprintPasteRowsToPrdRows(filledRows, pastedVersions);
+      state.prdBlueprintPasteVersions = pastedVersions;
+      state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(filledRows, 12, pastedVersions.length);
+      state.prdManualModuleVersions = manualVersions;
+      state.prdTableRows = rows;
+      state.prdTableBlueprint = null;
+      state.prdTableBlueprintSignature = "";
+      state.selectedDemoPackageId = PRD_TABLE_PACKAGE_ID;
+      state.prdBlueprintPasteError = "";
+      state.prdTextError = "";
+      startPrdParsing();
       return;
     }
 
@@ -10405,11 +15779,72 @@ function bindEvents() {
           return json;
         })
         .then((json) => {
-          if (json.success && json.data && json.data.content) {
-            state.prdTextInput = json.data.content;
+          if (
+            json.success &&
+            json.data &&
+            (json.data.content || json.data.tables?.length)
+          ) {
+            state.prdTextInput = json.data.content || "";
+            const documentTables = Array.isArray(json.data.tables)
+              ? json.data.tables
+              : [];
+            if (documentTables.length) {
+              const templateName =
+                detectPrdDocumentTemplateName(json.data.content) ||
+                state.prdBlueprintPasteTemplateName;
+              const adapted = adaptPrdDocumentClipboardTables(
+                documentTables,
+                templateName,
+                [],
+                false,
+              );
+              if (!adapted || adapted.error) {
+                state.prdFeishuError =
+                  adapted?.error ||
+                  "未识别到固定格式表格，请确认文档标题和表格结构完整";
+                render();
+                return;
+              }
+              const templateRows = createPrdBlueprintPasteTemplateRows(
+                adapted.templateName,
+                adapted.versions,
+              );
+              const mergedRows = mergeAdaptedPrdDocumentRows(
+                templateRows,
+                adapted,
+              );
+              const filledRows = getFilledPrdBlueprintPasteRows(mergedRows);
+              const { rows, manualVersions } =
+                convertBlueprintPasteRowsToPrdRows(
+                  filledRows,
+                  adapted.versions,
+                );
+              state.prdBlueprintPasteTemplateName = adapted.templateName;
+              state.prdBlueprintPasteVersions = adapted.versions;
+              state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(
+                mergedRows,
+                0,
+                adapted.versions.length,
+              );
+              state.prdTableRows = rows;
+              state.prdManualModuleVersions = manualVersions;
+              if (adapted.guideStateId) {
+                state.pageTemplateBlueprintStates[
+                  "page-guide-no-incentive|1"
+                ] = adapted.guideStateId;
+              }
+              state.prdTableBlueprint = null;
+              state.prdTableBlueprintSignature = "";
+              state.selectedDemoPackageId = PRD_TABLE_PACKAGE_ID;
+              state.prdFeishuError = "";
+              state.prdFileModalOpen = false;
+              startPrdParsing();
+              return;
+            }
             const rows = parsePrdPlainTextRows(state.prdTextInput);
             if (!rows.length) {
-              state.prdFeishuError = "文档内容无法解析，请检查文档格式";
+              state.prdFeishuError =
+                "未读取到可解析的飞书表格，请检查文档结构";
               render();
               return;
             }
@@ -10427,7 +15862,7 @@ function bindEvents() {
           }
         })
         .catch((e) => {
-          state.prdFeishuError = "网络错误: " + e.message;
+          state.prdFeishuError = e.message || "获取文档失败";
           render();
         });
       return;
@@ -10447,10 +15882,174 @@ function bindEvents() {
       return;
     }
 
+    const taskCountControl = event.target.closest("[data-prd-task-count-delta]");
+    if (taskCountControl) {
+      const rowIndexes = String(taskCountControl.dataset.prdTaskCountRows || "")
+        .split(",")
+        .map(Number)
+        .filter(Number.isInteger);
+      const currentRow = state.prdTableRows[rowIndexes[0]];
+      const nextCount = Math.max(
+        1,
+        Math.round(Number(currentRow?.value || 3)) +
+          Number(taskCountControl.dataset.prdTaskCountDelta || 0),
+      );
+      rowIndexes.forEach((rowIndex) => {
+        if (state.prdTableRows[rowIndex]) {
+          state.prdTableRows[rowIndex].value = String(nextCount);
+        }
+      });
+      state.prdTableBlueprint = null;
+      state.prdTableBlueprintSignature = "";
+      render();
+      return;
+    }
+
+    const paragraphCountControl = event.target.closest("[data-prd-paragraph-count-delta]");
+    if (paragraphCountControl) {
+      const rowIndexes = String(paragraphCountControl.dataset.prdParagraphCountRows || "")
+        .split(",")
+        .map(Number)
+        .filter(Number.isInteger);
+      const currentRow = state.prdTableRows[rowIndexes[0]];
+      const nextCount = clamp(
+        Number(currentRow?.value || 4) +
+          Number(paragraphCountControl.dataset.prdParagraphCountDelta || 0),
+        1,
+        4,
+      );
+      rowIndexes.forEach((rowIndex) => {
+        if (state.prdTableRows[rowIndex]) {
+          state.prdTableRows[rowIndex].value = String(nextCount);
+        }
+      });
+      state.prdTableBlueprint = null;
+      state.prdTableBlueprintSignature = "";
+      render();
+      return;
+    }
+
     const addModuleVersion = event.target.closest("[data-prd-add-module-version]");
     if (addModuleVersion) {
       addManualModuleBlueprintVersion(addModuleVersion.dataset.prdAddModuleVersion);
       render();
+      return;
+    }
+
+    const deleteModuleVersion = event.target.closest("[data-prd-delete-module-version]");
+    if (deleteModuleVersion) {
+      const moduleKey = deleteModuleVersion.dataset.prdVersionModuleKey;
+      const versionId = deleteModuleVersion.dataset.prdDeleteModuleVersion;
+      if (deleteManualModuleBlueprintVersion(moduleKey, versionId)) render();
+      return;
+    }
+
+    const deleteTemplateModule = event.target.closest("[data-prd-delete-template-module]");
+    if (deleteTemplateModule) {
+      const [templateId, moduleIndex] = deleteTemplateModule.dataset.prdDeleteTemplateModule.split("|");
+      if (deleteMoleculeFromPrdPageTemplate(templateId, Number(moduleIndex))) render();
+      return;
+    }
+
+    const moveTemplateModule = event.target.closest("[data-prd-move-template-module]");
+    if (moveTemplateModule) {
+      const [templateId, moduleIndex, direction] = moveTemplateModule.dataset.prdMoveTemplateModule.split("|");
+      if (moveMoleculeInPrdPageTemplate(templateId, Number(moduleIndex), direction)) render();
+      return;
+    }
+
+    const prdTemplateEntryState = event.target.closest(
+      "[data-prd-template-entry-state]",
+    );
+    if (prdTemplateEntryState) {
+      const [templateId, moduleIndex, stateId] =
+        prdTemplateEntryState.dataset.prdTemplateEntryState.split("|");
+      setPageTemplateEntryCardState(templateId, Number(moduleIndex), stateId);
+      render();
+      return;
+    }
+
+    const prdTemplateState = event.target.closest("[data-prd-template-state]");
+    if (prdTemplateState) {
+      const [templateId, moduleIndex, stateId] = prdTemplateState.dataset.prdTemplateState.split("|");
+      setPageTemplateBlueprintBusinessState(templateId, Number(moduleIndex), stateId);
+      render();
+      return;
+    }
+
+    const prdTemplateChildState = event.target.closest("[data-prd-template-child-state]");
+    if (prdTemplateChildState) {
+      const [templateId, moduleIndex, childIndex, stateId] =
+        prdTemplateChildState.dataset.prdTemplateChildState.split("|");
+      setPageTemplateChildState(
+        templateId,
+        Number(moduleIndex),
+        Number(childIndex),
+        stateId,
+      );
+      render();
+      return;
+    }
+
+    const prdTemplateModuleRow = event.target.closest("[data-prd-template-module-row]");
+    if (
+      prdTemplateModuleRow &&
+      !event.target.closest("button, input, textarea, select, a")
+    ) {
+      const [templateId, moduleIndex] = prdTemplateModuleRow.dataset.prdTemplateModuleRow.split("|");
+      state.prdTemplateSelectedModuleIndex = Number(moduleIndex);
+      state.prdTemplateAddModal = null;
+      state.prdTemplateAddAfterIndex = null;
+      render();
+      return;
+    }
+
+    if (
+      state.view === "prd-demo" &&
+      state.prdDemoStep === "analysis" &&
+      state.prdTemplateSelectedModuleIndex !== null &&
+      event.target.closest(".blueprint-overview, .prd-variable-table") &&
+      !event.target.closest("[data-prd-template-module-row], [data-prd-add-modal], button, input, textarea, select, a")
+    ) {
+      state.prdTemplateSelectedModuleIndex = null;
+      state.prdTemplateAddModal = null;
+      state.prdTemplateAddAfterIndex = null;
+      render();
+      return;
+    }
+
+    const prdOpenAddComponent = event.target.closest("[data-prd-open-add-component]");
+    if (prdOpenAddComponent) {
+      const [templateId, insertIndex, direction = "after"] =
+        prdOpenAddComponent.dataset.prdOpenAddComponent.split("|");
+      state.prdTemplateAddAfterIndex = Number(insertIndex);
+      state.prdTemplateAddModal = {
+        templateId,
+        insertIndex: Number(insertIndex),
+        direction,
+      };
+      render();
+      return;
+    }
+
+    if (
+      event.target.closest("[data-prd-close-add-component]") ||
+      event.target.matches("[data-prd-add-modal]")
+    ) {
+      state.prdTemplateAddAfterIndex = null;
+      state.prdTemplateAddModal = null;
+      render();
+      return;
+    }
+
+    const prdTemplateInsertMolecule = event.target.closest("[data-prd-template-insert-molecule]");
+    if (prdTemplateInsertMolecule) {
+      const templateId = prdTemplateInsertMolecule.dataset.prdTemplateId;
+      const insertIndex = Number(prdTemplateInsertMolecule.dataset.prdTemplateInsertIndex);
+      const moleculeId = prdTemplateInsertMolecule.dataset.prdTemplateInsertMolecule;
+      if (insertMoleculeIntoPrdPageTemplate(templateId, insertIndex, moleculeId)) {
+        render();
+      }
       return;
     }
 
@@ -10593,6 +16192,20 @@ function bindEvents() {
       return;
     }
 
+    const guidedOrder = event.target.closest("[data-guided-order]");
+    if (guidedOrder && state.view === "guided-preview") {
+      const pageId = guidedOrder.dataset.guidedPage;
+      const nodeId = guidedOrder.dataset.guidedNode;
+      if (moveGuidedPageNodeByDirection(pageId, nodeId, guidedOrder.dataset.guidedOrder)) {
+        render();
+        requestAnimationFrame(() => {
+          invalidateStageRect();
+          updateCanvasZoom();
+        });
+      }
+      return;
+    }
+
     const guidedCompanionToggle = event.target.closest(
       "[data-guided-companion-toggle]",
     );
@@ -10633,6 +16246,14 @@ function bindEvents() {
     const demoScenario = event.target.closest("[data-demo-scenario]");
     if (demoScenario) {
       const pageId = demoScenario.dataset.demoScenario;
+      const targetPage = state.pages.find((page) => page.id === pageId);
+      if (targetPage?.isSystemFallback) {
+        setActivePage(pageId);
+        state.selectedId = null;
+        state.guidedPanelMode = null;
+        render();
+        return;
+      }
       const visibleIds = new Set(state.guidedVisiblePageIds);
       if (visibleIds.has(pageId)) {
         visibleIds.delete(pageId);
@@ -10658,18 +16279,25 @@ function bindEvents() {
       const pageId = guidedAction.closest("[data-page-id]")?.dataset.pageId;
       if (pageId && pageId !== state.activePageId) setActivePage(pageId);
       updateGuidedNodeSelection(guidedAction.dataset.guidedNode);
-      const guidedActionNode = findNode(
-        state.nodes,
-        guidedAction.dataset.guidedNode,
-      )?.node;
+      if (guidedAction.dataset.guidedAction === "delete") {
+        if (deleteGuidedPageNode(pageId, guidedAction.dataset.guidedNode)) {
+          state.guidedCanvasInitialized = false;
+          render();
+        }
+        return;
+      }
       if (guidedAction.dataset.guidedAction === "states") {
+        const nodeId = guidedAction.dataset.guidedNode;
+        state.guidedStateMenuNodeId =
+          state.guidedStateMenuNodeId === nodeId ? null : nodeId;
         state.guidedPanelMode = null;
-        const nextStateMenuNodeId =
-          state.guidedStateMenuNodeId === guidedAction.dataset.guidedNode
-            ? null
-            : guidedAction.dataset.guidedNode;
-        state.guidedStateMenuNodeId = nextStateMenuNodeId;
         render();
+        return;
+      }
+      if (guidedAction.dataset.guidedAction === "slide") {
+        state.guidedStateMenuNodeId = null;
+        state.guidedPanelMode = null;
+        slideGuidedHorizontalCarousel(guidedAction.dataset.guidedNode);
         return;
       }
       state.guidedStateMenuNodeId = null;
@@ -10718,6 +16346,29 @@ function bindEvents() {
 
     if (event.target.closest("[data-guided-close-panel]")) {
       closeGuidedPanelWithTransition();
+      return;
+    }
+
+    const popupPrizeOption = event.target.closest("[data-guided-popup-prize-index]");
+    if (popupPrizeOption) {
+      const found = findNode(
+        state.nodes,
+        popupPrizeOption.dataset.guidedNode || state.selectedId,
+      );
+      if (!found?.node?.isLotteryResultPopup) return;
+      const prizeCount = clamp(Number(found.node.props?.prizeCount || 1), 1, 8);
+      const selectedPrizeIndex = clamp(
+        Number(popupPrizeOption.dataset.guidedPopupPrizeIndex || 1),
+        1,
+        prizeCount,
+      );
+      const selectedPrize = splitLotteryPrizeText(
+        found.node.props?.[`prize${selectedPrizeIndex}Text`] || "",
+      );
+      found.node.props.selectedPrizeIndex = selectedPrizeIndex;
+      found.node.props.amountText = selectedPrize.amountText;
+      found.node.props.prizeText = selectedPrize.prizeText;
+      render();
       return;
     }
 
@@ -10787,6 +16438,7 @@ function bindEvents() {
       const variant = findLineageVariant(found.node, lineageApply.dataset.guidedLineageApply);
       if (!variant) return;
       applyLineageVariantToNode(found.node, variant);
+        syncGuidedLotteryPopupsForPage(activePage());
       render();
       return;
     }
@@ -10803,6 +16455,7 @@ function bindEvents() {
         .map(({ index }) => index);
       const insertIndex = Math.min(...indexes);
       const replacementNodes = createGuidedModuleReplacement(optionId, found);
+      if (!replacementNodes.length) return;
       replacementNodes[0].id = found.node.id;
       [...indexes].sort((a, b) => b - a).forEach((index) => state.nodes.splice(index, 1));
       state.nodes.splice(insertIndex, 0, ...replacementNodes);
@@ -10810,6 +16463,25 @@ function bindEvents() {
       state.guidedPanelMode = null;
       state.guidedStateMenuNodeId = null;
       render();
+      return;
+    }
+
+    const guidedAddMolecule = event.target.closest("[data-guided-add-molecule]");
+    if (guidedAddMolecule && state.view === "guided-preview") {
+      if (state.suppressClick) return;
+      const page = getGuidedEditablePageFallback();
+      const pageNodes = (page?.nodes || []).filter(
+        (node) => node.canvasPlacement !== "page-side",
+      );
+      const inserted = insertGuidedMoleculeAt(
+        page?.id,
+        pageNodes.length,
+        guidedAddMolecule.dataset.guidedAddMolecule,
+      );
+      if (inserted) {
+        state.guidedPanelMode = null;
+        render();
+      }
       return;
     }
 
@@ -10837,6 +16509,8 @@ function bindEvents() {
     if (guidedInlineState) {
       const found = findNode(state.nodes, guidedInlineState.dataset.guidedNode || state.selectedId);
       if (found?.node && applyGuidedBusinessState(found.node, guidedInlineState.dataset.guidedInlineState)) {
+          if (found.node.isLotteryResultPopup) syncGuidedLotteryPopupsForPage(activePage());
+        persistPageTemplateBusinessState(found.node);
         state.selectedId = found.node.id;
         state.guidedStateMenuNodeId = found.node.id;
         state.guidedPanelMode = null;
@@ -10849,8 +16523,34 @@ function bindEvents() {
     if (guidedBusinessState) {
       const found = getSelectedNodeInfo();
       if (found?.node && applyGuidedBusinessState(found.node, guidedBusinessState.dataset.guidedBusinessState)) {
+        persistPageTemplateBusinessState(found.node);
         render();
       }
+      return;
+    }
+
+    const guidedChildState = event.target.closest("[data-guided-child-state]");
+    if (guidedChildState) {
+      const found = findNode(state.nodes, guidedChildState.dataset.guidedChildStateNode);
+      if (!found?.node) return;
+      const stateId = guidedChildState.dataset.guidedChildState;
+      const parent = found.parent;
+      const childIndex = parent?.children?.findIndex((child) => child.id === found.node.id) ?? -1;
+      if (
+        parent?.sourcePageTemplateId &&
+        parent.sourcePageTemplateNodeIndex !== undefined &&
+        childIndex >= 0
+      ) {
+        setPageTemplateChildState(
+          parent.sourcePageTemplateId,
+          Number(parent.sourcePageTemplateNodeIndex),
+          childIndex,
+          stateId,
+        );
+      } else {
+        applyGuidedBusinessState(found.node, stateId);
+      }
+      render();
       return;
     }
 
@@ -10947,10 +16647,62 @@ function bindEvents() {
       return;
     }
 
+    const adminPreviewState = event.target.closest("[data-admin-preview-state]");
+    if (adminPreviewState) {
+      const schema = findAtomSchema(adminPreviewState.dataset.adminPreviewState);
+      if (!schema) return;
+      const variants = normalizeVariants(schema);
+      const variantId = variants[0]?.id || null;
+      state.adminComponentVerifier = {
+        type: "atom",
+        schemaId: schema.id,
+        parentThemeId: getVariantThemeId(schema, variantId),
+        variantId,
+        blueprint: { ...(state.adminComponentVerifier?.blueprint || {}) },
+      };
+      render();
+      return;
+    }
+
+    const adminMoleculeChildState = event.target.closest("[data-admin-molecule-child-state]");
+    if (adminMoleculeChildState) {
+      const [childIndex, stateId] = adminMoleculeChildState.dataset.adminMoleculeChildState.split("|");
+      state.adminComponentVerifier.childStates = {
+        ...(state.adminComponentVerifier.childStates || {}),
+        [childIndex]: stateId,
+      };
+      render();
+      return;
+    }
+
+    const adminPreviewMoleculeTheme = event.target.closest("[data-admin-preview-molecule-theme]");
+    if (adminPreviewMoleculeTheme) {
+      const molecule = getAdminVerifierMolecule();
+      applyMoleculeThemeToVerifier(
+        molecule,
+        state.adminComponentVerifier,
+        adminPreviewMoleculeTheme.dataset.adminPreviewMoleculeTheme,
+      );
+      render();
+      return;
+    }
+
+    const adminPreviewPageTheme = event.target.closest("[data-admin-preview-page-theme]");
+    if (adminPreviewPageTheme) {
+      state.adminComponentVerifier.parentThemeId = adminPreviewPageTheme.dataset.adminPreviewPageTheme;
+      render();
+      return;
+    }
+
     if (event.target.closest("[data-admin-export-cut]")) {
       const target = document.querySelector("[data-admin-export-cut-capture]");
       if (target) {
-        const selected = getAdminVerifierType() === "molecule" ? getAdminVerifierMolecule() : getAdminVerifierSchema();
+        const selected =
+          getAdminVerifierType() === "page"
+            ? getAdminVerifierPageTemplate()
+            : getAdminVerifierType() === "molecule"
+              ? getAdminVerifierMolecule()
+              : getAdminVerifierSchema();
         const fileName = `${selected?.name || selected?.id || "组件切图"}.png`;
         exportElementToPngBlob(target, { pixelRatio: 2 })
             .then((blob) => downloadBlob(fileName, blob))
@@ -11602,6 +17354,68 @@ function bindEvents() {
     { passive: false },
   );
 
+  document.addEventListener("paste", (event) => {
+    const blueprintCell = event.target.closest("[data-prd-blueprint-cell]");
+    const returnStrategyTarget = event.target.closest(
+      "[data-prd-return-strategy-paste-target]",
+    );
+    if (!blueprintCell && !returnStrategyTarget) return;
+    const pasteTarget = blueprintCell || returnStrategyTarget;
+    const modal = pasteTarget.closest("[data-demo-file-modal]");
+    const moduleTable = pasteTarget.closest("[data-prd-blueprint-module-table]");
+    const targetModuleName = moduleTable?.dataset.prdBlueprintModuleTable || "";
+    const currentRows = getPrdBlueprintPasteRowsFromModal(modal);
+    const currentVersions = getPrdBlueprintPasteVersionsFromModal(modal);
+    const templateName =
+      modal?.querySelector("[data-prd-blueprint-template-select]")?.value ||
+      state.prdBlueprintPasteTemplateName;
+    const clipboardTables = parsePrdBlueprintClipboardTables(event.clipboardData);
+    const adapted = adaptPrdDocumentClipboardTables(
+      clipboardTables,
+      templateName,
+      currentVersions,
+      getFilledPrdBlueprintPasteRows(currentRows).length > 0,
+    );
+    if (adapted?.error) {
+      event.preventDefault();
+      state.prdBlueprintPasteError = adapted.error;
+      render();
+      return;
+    }
+    const rows = adapted?.rows || clipboardTables.flat();
+    if (!rows.length) return;
+    event.preventDefault();
+    const merged = adapted
+      ? {
+          rows: mergeAdaptedPrdDocumentRows(
+            currentRows,
+            adapted,
+            targetModuleName,
+          ),
+          versions: adapted.versions,
+        }
+      : mergePrdBlueprintPasteRows(
+          currentRows,
+          currentVersions,
+          rows,
+          Number(blueprintCell?.dataset.prdBlueprintRowIndex || 0),
+          Number(blueprintCell?.dataset.prdBlueprintCellIndex || 0),
+        );
+    state.prdBlueprintPasteTemplateName = adapted?.templateName || templateName || "";
+    state.prdBlueprintPasteVersions = adapted?.versions || merged.versions;
+    state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(
+      merged.rows,
+      0,
+      state.prdBlueprintPasteVersions.length,
+    );
+    if (adapted?.guideStateId) {
+      state.pageTemplateBlueprintStates["page-guide-no-incentive|1"] =
+        adapted.guideStateId;
+    }
+    state.prdBlueprintPasteError = "";
+    render();
+  });
+
   document.addEventListener("input", (event) => {
     const placementCaseScrollbar = event.target.closest("[data-placement-case-scrollbar]");
     if (placementCaseScrollbar) {
@@ -11624,6 +17438,26 @@ function bindEvents() {
       return;
     }
 
+    const prdBlueprintCell = event.target.closest("[data-prd-blueprint-cell]");
+    if (prdBlueprintCell) {
+      const modal = prdBlueprintCell.closest("[data-demo-file-modal]");
+      const versions = normalizePrdBlueprintPasteVersions(getPrdBlueprintPasteVersionsFromModal(modal));
+      state.prdBlueprintPasteVersions = versions;
+      state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(getPrdBlueprintPasteRowsFromModal(modal), 12, versions.length);
+      state.prdBlueprintPasteError = "";
+      return;
+    }
+
+    const prdBlueprintVersionCell = event.target.closest("[data-prd-blueprint-version-cell]");
+    if (prdBlueprintVersionCell) {
+      const modal = prdBlueprintVersionCell.closest("[data-demo-file-modal]");
+      const versions = normalizePrdBlueprintPasteVersions(getPrdBlueprintPasteVersionsFromModal(modal));
+      state.prdBlueprintPasteVersions = versions;
+      state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(getPrdBlueprintPasteRowsFromModal(modal), 12, versions.length);
+      state.prdBlueprintPasteError = "";
+      return;
+    }
+
     const prdTextInput = event.target.closest("[data-prd-text-input]");
     if (prdTextInput) {
       state.prdTextInput = prdTextInput.value;
@@ -11638,6 +17472,16 @@ function bindEvents() {
       return;
     }
 
+    const prdVersionNameInput = event.target.closest("[data-prd-version-name]");
+    if (prdVersionNameInput) {
+      renameManualModuleBlueprintVersion(
+        prdVersionNameInput.dataset.prdVersionModuleKey,
+        prdVersionNameInput.dataset.prdVersionId,
+        prdVersionNameInput.value,
+      );
+      return;
+    }
+
     const adminBlueprintInput = event.target.closest("[data-admin-blueprint-prop]");
     if (adminBlueprintInput) {
       const key = adminBlueprintInput.dataset.adminBlueprintProp;
@@ -11649,7 +17493,37 @@ function bindEvents() {
     const adminMoleculeBlueprintInput = event.target.closest("[data-admin-molecule-blueprint-prop]");
     if (adminMoleculeBlueprintInput) {
       const key = adminMoleculeBlueprintInput.dataset.adminMoleculeBlueprintProp;
-      state.adminComponentVerifier.blueprint[key] = adminMoleculeBlueprintInput.value;
+      const molecule = getAdminVerifierMolecule();
+      const verifierField = getMoleculeVerifierFields(molecule, state.adminComponentVerifier).find((item) =>
+        (item.compoundKey || getMoleculeBlueprintKey(item.childIndex, item.key)) === key,
+      );
+      state.adminComponentVerifier.blueprint[key] =
+        verifierField?.field?.type === "number"
+          ? Number(adminMoleculeBlueprintInput.value)
+          : adminMoleculeBlueprintInput.value;
+      if (verifierField?.scope === "molecule" && verifierField?.field?.type === "number") {
+        render();
+        return;
+      }
+      refreshAdminVerifierPreview();
+      return;
+    }
+
+    const adminPageBlueprintInput = event.target.closest("[data-admin-page-blueprint-prop]");
+    if (adminPageBlueprintInput) {
+      const key = adminPageBlueprintInput.dataset.adminPageBlueprintProp;
+      const pageTemplate = getAdminVerifierPageTemplate();
+      const verifierField = getPageTemplateVerifierFields(pageTemplate, state.adminComponentVerifier).find((item) =>
+        item.compoundKey === key,
+      );
+      state.adminComponentVerifier.blueprint[key] =
+        verifierField?.field?.type === "number"
+          ? Number(adminPageBlueprintInput.value)
+          : adminPageBlueprintInput.value;
+      if (verifierField?.scope === "molecule" && verifierField?.field?.type === "number") {
+        render();
+        return;
+      }
       refreshAdminVerifierPreview();
       return;
     }
@@ -11738,6 +17612,34 @@ function bindEvents() {
       return;
     }
 
+    const prdTemplateVariableInput = event.target.closest("[data-prd-template-variable-row]");
+    if (prdTemplateVariableInput) {
+      const rowKey = prdTemplateVariableInput.dataset.prdTemplateVariableRow;
+      let rowIndex = findPrdTableRowIndexByKey(rowKey);
+      if (rowIndex < 0) {
+        state.prdTableRows.push({ key: rowKey, value: "" });
+        rowIndex = state.prdTableRows.length - 1;
+      }
+      state.prdTableRows[rowIndex].value = prdTemplateVariableInput.value;
+      state.prdTableBlueprint = null;
+      state.prdTableBlueprintSignature = "";
+      const variableKey = prdTemplateVariableInput.dataset.prdTemplateVariableKey || "";
+      const variableLabel = prdTemplateVariableInput.dataset.prdTemplateVariableLabel || "";
+      if (
+        variableKey === "taskCount" ||
+        normalizePageTemplateLookupName(variableLabel) === normalizePageTemplateLookupName("任务数量")
+      ) {
+        render();
+        requestAnimationFrame(() => {
+          const nextInput = document.querySelector(
+            `[data-prd-template-variable-row="${CSS.escape(rowKey)}"]`,
+          );
+          nextInput?.focus();
+        });
+      }
+      return;
+    }
+
     const prdTableRowInput = event.target.closest("[data-prd-table-row]");
     if (prdTableRowInput) {
       const rowIndex = Number(prdTableRowInput.dataset.prdTableRow);
@@ -11790,6 +17692,13 @@ function bindEvents() {
       const row = group?.rows[Number(rowIndex)];
       if (row) {
         row.value = blueprintVariantInput.value;
+        if (row.moleculePropKey) {
+          const syncedRows = getMoleculePropRows({ ...module, rows: group.rows });
+          if (syncedRows?.length) group.rows = syncedRows;
+          if (groups[0]?.id === groupId) module.rows = clone(group.rows);
+          render();
+          return;
+        }
         if (groups[0]?.id === groupId) module.rows = clone(group.rows);
       }
       return;
@@ -11809,6 +17718,11 @@ function bindEvents() {
       const row = module?.rows[Number(rowIndex)];
       if (row) {
         row.value = blueprintInput.value;
+        if (row.moleculePropKey) {
+          syncMoleculeBlueprintRows(module);
+          render();
+          return;
+        }
         if (module.inputScope === "activity") {
           contexts.forEach((candidateContext) => {
             const sharedModule = candidateContext.modules.find(
@@ -11993,10 +17907,7 @@ function bindEvents() {
       targetNode.props[key] = value;
       const activeVariant = targetNode.variants?.find((item) => item.id === targetNode.activeVariantId);
       if (activeVariant && key in activeVariant.props) activeVariant.props[key] = value;
-      renderCanvas();
-      renderStructureTree();
-      renderPageSaveFloat();
-      renderContextControls();
+        refreshAfterGuidedNodePropChange();
       return;
     }
 
@@ -12019,6 +17930,18 @@ function bindEvents() {
       state.adminComponentVerifier.blueprint[key] = serializePrizeValueWithName(
         state.adminComponentVerifier.blueprint[key],
         adminMoleculePrizeNameInput.value,
+      );
+      refreshAdminVerifierPreview();
+      return;
+    }
+
+    const adminPagePrizeNameInput = event.target.closest("[data-admin-page-prize-name-prop]");
+    if (adminPagePrizeNameInput) {
+      const key = adminPagePrizeNameInput.dataset.adminPagePrizeNameProp;
+      if (!key) return;
+      state.adminComponentVerifier.blueprint[key] = serializePrizeValueWithName(
+        state.adminComponentVerifier.blueprint[key],
+        adminPagePrizeNameInput.value,
       );
       refreshAdminVerifierPreview();
       return;
@@ -12061,7 +17984,9 @@ function bindEvents() {
       : found.node.children?.[Number(childIndex)];
     if (!targetNode?.props) return;
 
-    const schema = findAtomSchema(targetNode.schemaId);
+    const schema = targetNode.type === "molecule"
+      ? moleculeSchemas.find((item) => item.id === targetNode.schemaId)
+      : findAtomSchema(targetNode.schemaId);
     const field = (schema?.props || []).find((item) => (item.key || item.name) === input.dataset.nodePropInput);
     if (!field) return;
 
@@ -12081,13 +18006,33 @@ function bindEvents() {
     if (activeVariant && input.dataset.nodePropInput in activeVariant.props) {
       activeVariant.props[input.dataset.nodePropInput] = value;
     }
-    renderCanvas();
-    renderStructureTree();
-    renderPageSaveFloat();
-    renderContextControls();
+    if (targetNode.type === "molecule") {
+      syncDynamicMoleculeChildren(targetNode);
+      applyThemeBoundVariantsToNodes([targetNode], getGuidedPageTheme(activePage()).id);
+    }
+      refreshAfterGuidedNodePropChange();
   });
 
   document.addEventListener("change", (event) => {
+    const blueprintTemplateSelect = event.target.closest(
+      "[data-prd-blueprint-template-select]",
+    );
+    if (blueprintTemplateSelect) {
+      state.prdBlueprintPasteTemplateName = blueprintTemplateSelect.value;
+      state.prdBlueprintPasteVersions = blueprintTemplateSelect.value
+        ? ["人群1", "人群2", "人群3"]
+        : normalizePrdBlueprintPasteVersions([]);
+      state.prdBlueprintPasteRows = blueprintTemplateSelect.value
+        ? createPrdBlueprintPasteTemplateRows(
+            blueprintTemplateSelect.value,
+            state.prdBlueprintPasteVersions,
+          )
+        : normalizePrdBlueprintPasteRows([]);
+      state.prdBlueprintPasteError = "";
+      render();
+      return;
+    }
+
     const adminVerifierType = event.target.closest("[data-admin-verifier-type]");
     if (adminVerifierType) {
       if (adminVerifierType.value === "molecule") {
@@ -12095,6 +18040,14 @@ function bindEvents() {
         state.adminComponentVerifier = {
           type: "molecule",
           schemaId: molecule?.id || "",
+          blueprint: {},
+          childStates: {},
+        };
+      } else if (adminVerifierType.value === "page") {
+        const pageTemplate = [...pageTemplates, ...customPageTemplates].find((item) => item.id !== "blank-page");
+        state.adminComponentVerifier = {
+          type: "page",
+          schemaId: pageTemplate?.id || "",
           blueprint: {},
         };
       } else {
@@ -12115,6 +18068,18 @@ function bindEvents() {
 
     const adminComponentSelect = event.target.closest("[data-admin-select-component]");
     if (adminComponentSelect) {
+      if (getAdminVerifierType() === "page") {
+        const pageTemplate = [...pageTemplates, ...customPageTemplates].find((item) => item.id === adminComponentSelect.value);
+        if (!pageTemplate) return;
+        state.adminComponentVerifier = {
+          type: "page",
+          schemaId: pageTemplate.id,
+          blueprint: {},
+        };
+        render();
+        return;
+      }
+
       if (getAdminVerifierType() === "molecule") {
         const molecule = moleculeSchemas.find((item) => item.id === adminComponentSelect.value);
         if (!molecule) return;
@@ -12122,6 +18087,7 @@ function bindEvents() {
           type: "molecule",
           schemaId: molecule.id,
           blueprint: {},
+          childStates: {},
         };
         render();
         return;
@@ -12139,6 +18105,15 @@ function bindEvents() {
         blueprint: {},
       };
       render();
+      return;
+    }
+
+    const adminPagePrizeSelect = event.target.closest("select[data-admin-page-blueprint-prop]");
+    if (adminPagePrizeSelect) {
+      const key = adminPagePrizeSelect.dataset.adminPageBlueprintProp;
+      state.adminComponentVerifier.blueprint[key] = adminPagePrizeSelect.value;
+      syncPrizeLibraryControl(adminPagePrizeSelect);
+      refreshAdminVerifierPreview();
       return;
     }
 
@@ -12321,6 +18296,9 @@ function startPointerDrag(event) {
 
   const stage = event.target.closest(".device-stage");
   const material = event.target.closest("[data-material-id]");
+  const guidedAddMolecule = state.view === "guided-preview"
+    ? event.target.closest("[data-guided-add-molecule]")
+    : null;
   const rootNode =
     state.view === "guided-preview"
       ? null
@@ -12333,7 +18311,7 @@ function startPointerDrag(event) {
   const blocked =
     event.target.closest(
       ".quick-toolbar, .variant-inspector, .richtext-editor, .topbar, [data-delete-molecule], .placement-case-carousel",
-    ) || editingField;
+    ) || (editingField && !guidedAddMolecule);
   const guidedBlankCanvas =
     stage?.classList.contains("guided-device-stage") &&
     !event.target.closest(
@@ -12354,7 +18332,7 @@ function startPointerDrag(event) {
     event.preventDefault();
     return;
   }
-  if (event.button !== 0 || blocked || (!material && !rootNode && !moleculeChild)) return;
+  if (event.button !== 0 || blocked || (!material && !rootNode && !moleculeChild && !guidedAddMolecule)) return;
 
   const sourcePage = (rootNode || moleculeChild)?.closest("[data-page-id]");
   if (sourcePage) setActivePage(sourcePage.dataset.pageId);
@@ -12362,14 +18340,17 @@ function startPointerDrag(event) {
   const targetNode = rootNode || moleculeChild;
   const nodeId = targetNode?.dataset.nodeId;
   const nodeLabel = targetNode?.querySelector(".node-label")?.textContent;
+  const guidedMoleculeName =
+    guidedAddMolecule?.querySelector("strong")?.textContent ||
+    moleculeSchemas.find((item) => item.id === guidedAddMolecule?.dataset.guidedAddMolecule)?.name;
 
   state.pointerDrag = {
-    kind: material ? "material" : "node",
-    schemaId: material?.dataset.materialId,
-    type: material?.dataset.type,
+    kind: guidedAddMolecule ? "guided-molecule" : material ? "material" : "node",
+    schemaId: guidedAddMolecule?.dataset.guidedAddMolecule || material?.dataset.materialId,
+    type: guidedAddMolecule ? "molecule" : material?.dataset.type,
     nodeId: nodeId,
     sourcePageId: sourcePage?.dataset.pageId,
-    label: material ? material.querySelector("strong")?.textContent : nodeLabel || "组件",
+    label: guidedAddMolecule ? guidedMoleculeName : material ? material.querySelector("strong")?.textContent : nodeLabel || "组件",
     startX: event.clientX,
     startY: event.clientY,
     active: false,
@@ -12404,7 +18385,7 @@ function movePointerDrag(event) {
     state.suppressClick = true;
     drag.ghost = document.createElement("div");
     drag.ghost.className = "drag-ghost";
-    drag.ghost.textContent = drag.kind === "material" ? `添加 ${drag.label}` : `移动 ${drag.label}`;
+    drag.ghost.textContent = drag.kind === "node" ? `移动 ${drag.label}` : `添加 ${drag.label}`;
     document.body.appendChild(drag.ghost);
   }
 
@@ -12417,7 +18398,7 @@ function movePointerDrag(event) {
   let nextMoleculeId = null;
   let nextChildIndex = null;
 
-  if (nextPageId) {
+  if (nextPageId && drag.kind !== "guided-molecule") {
     const moleculeId = moleculeFromPoint(event);
     if (moleculeId) {
       const moleculeInfo = findNode(state.nodes, moleculeId);
@@ -12441,7 +18422,8 @@ function movePointerDrag(event) {
     state.dropMoleculeId = nextMoleculeId;
     state.dropChildIndex = nextChildIndex;
     if (nextPageId) state.activePageId = nextPageId;
-    renderCanvas();
+    if (state.view === "guided-preview") renderGuidedPreview();
+    else renderCanvas();
     updateCanvasZoom();
   }
 }
@@ -12473,7 +18455,16 @@ function endPointerDrag(event) {
         moveNodeToMolecule(drag.nodeId, state.dropMoleculeId, state.dropChildIndex);
       }
     } else if (state.dropIndex !== null) {
-      if (drag.kind === "material") {
+      if (drag.kind === "guided-molecule") {
+        const inserted = insertGuidedMoleculeAt(
+          state.dropPageId || state.activePageId,
+          state.dropIndex,
+          drag.schemaId,
+        );
+        if (inserted) {
+          state.guidedPanelMode = null;
+        }
+      } else if (drag.kind === "material") {
         addMaterial(drag.schemaId, drag.type, state.dropIndex);
       } else {
         moveRootNode(drag.nodeId, state.dropIndex, drag.sourcePageId, state.activePageId);

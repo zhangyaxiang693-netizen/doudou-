@@ -20,7 +20,7 @@
       "usage": "标签文案",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     },
     {
@@ -32,7 +32,7 @@
       "usage": "消耗金额 / 抽奖次数",
       "source": {
         "status": "exact",
-        "file": "DouyinNumberABC-Medium.otf"
+        "file": "DouyinNumberABC-Medium.ttf"
       }
     }
   ],

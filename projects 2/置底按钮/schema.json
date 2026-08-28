@@ -1,0 +1,98 @@
+{
+  "id": "置底按钮",
+  "name": "置底按钮",
+  "title": "置底按钮",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "页面底部固定样式按钮组件。",
+  "reactComponent": "置底按钮",
+  "dimensions": {
+    "width": 750,
+    "height": 287
+  },
+  "fonts": [
+    {
+      "text": "立即使用DOU+",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "38px",
+      "lineHeight": "normal",
+      "usage": "按钮文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "置底按钮",
+      "底部按钮",
+      "按钮文案",
+      "立即使用DOU+"
+    ],
+    "textProps": [
+      "buttonText"
+    ]
+  },
+  "props": [
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "立即使用DOU+",
+      "description": "置底按钮展示文案。"
+    },
+    {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮颜色开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮颜色结束",
+      "type": "color",
+      "default": "#FF229F"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "themeBinding": {
+        "parentThemeId": "pink"
+      },
+      "props": {
+        "buttonGradientStart": "#FF1473",
+        "buttonGradientEnd": "#FF229F"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "buttonGradientStart": "#FF180D",
+        "buttonGradientEnd": "#FF166F"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "buttonGradientStart": "#FF4501",
+        "buttonGradientEnd": "#FF7C02"
+      }
+    }
+  ]
+}

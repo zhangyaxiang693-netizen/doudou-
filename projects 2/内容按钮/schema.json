@@ -1,0 +1,95 @@
+{
+  "id": "内容按钮",
+  "name": "内容按钮",
+  "title": "内容按钮",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "内容区域主按钮组件。",
+  "reactComponent": "内容按钮",
+  "dimensions": {
+    "width": 368,
+    "height": 83
+  },
+  "fonts": [
+    {
+      "text": "一键上热门",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "32px",
+      "lineHeight": "40px",
+      "usage": "文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "内容按钮",
+      "一键上热门",
+      "按钮",
+      "主按钮"
+    ],
+    "textProps": [
+      "buttonText"
+    ]
+  },
+  "props": [
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "文案",
+      "type": "string",
+      "default": "一键上热门",
+      "description": "按钮展示文案。"
+    },
+    {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮颜色开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮颜色结束",
+      "type": "color",
+      "default": "#FF229F"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "buttonGradientStart": "#FF1473",
+        "buttonGradientEnd": "#FF229F"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "buttonGradientStart": "#FF180E",
+        "buttonGradientEnd": "#FF166E"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "buttonGradientStart": "#FF4501",
+        "buttonGradientEnd": "#FF7B02"
+      }
+    }
+  ]
+}

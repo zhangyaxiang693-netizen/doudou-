@@ -1,0 +1,156 @@
+{
+  "id": "按钮-3-规则可视-点击后",
+  "name": "按钮-3-规则可视-点击后",
+  "title": "按钮-3-规则可视-点击后",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "按钮-3-规则可视-点击后组件：点击（已报名/已处理）状态下的规则可视按钮，主题自动切换浅粉系列纯色：粉色父#FF9ECA / 蓝色父#FF8290 / 橘色父#FF8571，按钮宽度恒定 228px。",
+  "reactComponent": "按钮-3-规则可视-点击后",
+  "dimensions": {
+    "width": 608,
+    "height": 114
+  },
+  "fonts": [
+    {
+      "text": "仅限8.18–8.20",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "22px",
+      "lineHeight": "36px",
+      "usage": "限制日期",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "投放DOU+ / ≥2单 / （投点赞评论 / 播放量 / 粉丝量目标）",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "36px",
+      "usage": "规则说明",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    },
+    {
+      "text": "立即报名",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "32px",
+      "lineHeight": "40px",
+      "usage": "按钮文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "按钮-3-规则可视-点击后",
+      "按钮点击后",
+      "已报名",
+      "规则可视-点击后",
+      "规则可视已处理"
+    ],
+    "textProps": [
+      "limitedText",
+      "actionText",
+      "orderText",
+      "targetText",
+      "buttonText"
+    ]
+  },
+  "props": [
+    {
+      "key": "limitedText",
+      "name": "limitedText",
+      "label": "限制日期",
+      "type": "string",
+      "default": "仅限8.18–8.20",
+      "description": "左侧第一段高亮日期文案。"
+    },
+    {
+      "key": "actionText",
+      "name": "actionText",
+      "label": "投放动作",
+      "type": "string",
+      "default": "投放DOU+",
+      "description": "左侧第一行中间文案。"
+    },
+    {
+      "key": "orderText",
+      "name": "orderText",
+      "label": "单量门槛",
+      "type": "string",
+      "default": "≥2单",
+      "description": "左侧第一行末尾门槛文案。"
+    },
+    {
+      "key": "targetText",
+      "name": "targetText",
+      "label": "目标说明",
+      "type": "string",
+      "default": "（投点赞评论 / 播放量 / 粉丝量目标）",
+      "description": "左侧第二行目标说明文案。"
+    },
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "立即报名",
+      "description": "右侧按钮文案。"
+    },
+    {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮渐变开始",
+      "type": "color",
+      "default": "#FF9ECA"
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮渐变结束",
+      "type": "color",
+      "default": "#FF9ECA"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套（点击后）",
+      "props": {
+        "buttonGradientStart": "#FF9ECA",
+        "buttonGradientEnd": "#FF9ECA"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面（点击后）",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "buttonGradientStart": "#FF8290",
+        "buttonGradientEnd": "#FF8290"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面（点击后）",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "buttonGradientStart": "#FF8571",
+        "buttonGradientEnd": "#FF8571"
+      }
+    }
+  ]
+}

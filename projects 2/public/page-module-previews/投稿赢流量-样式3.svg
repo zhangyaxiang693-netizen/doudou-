@@ -1,0 +1,34 @@
+<svg width="1404" height="1120" viewBox="0 0 1404 1120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1404" height="1120" rx="96" fill="white"/>
+  <g transform="translate(106 108)">
+    <rect x="0" y="0" width="68" height="68" rx="17" fill="#FF2F86"/>
+    <circle cx="34" cy="34" r="13" fill="#FFE15B"/>
+    <path d="M0 0H68V24C50 31 18 31 0 24V0Z" fill="#FF5EA1"/>
+    <text x="86" y="53" font-family="MFBenHeiNoncommercial, Source Han Sans CN, sans-serif" font-size="58" font-weight="700" fill="#2D2D2D">端午消耗返冲刺赢大额券</text>
+  </g>
+  <g transform="translate(149 252)">
+    <path d="M80 0H541C541 20.435 557.565 37 578 37C598.435 37 615 20.435 615 0H1096C1140.18 0 1176 35.8172 1176 80V328C1176 372.183 1140.18 408 1096 408H615C615 387.565 598.435 371 578 371C557.565 371 541 387.565 541 408H80C35.8172 408 0 372.183 0 328V80C0 35.8172 35.8172 0 80 0Z" fill="url(#ticketBg)"/>
+    <line x1="578" y1="72" x2="578" y2="336" stroke="white" stroke-width="8" stroke-linecap="round" stroke-dasharray="18 28"/>
+    <text x="108" y="228" font-family="Douyin Number ABC, Arial Black, sans-serif" font-size="112" font-weight="800" fill="#720D38">520</text>
+    <text x="292" y="213" font-family="MFBenHeiNoncommercial, Source Han Sans CN, sans-serif" font-size="56" font-weight="700" fill="#720D38">元</text>
+    <text x="108" y="306" font-family="MFBenHeiNoncommercial, Source Han Sans CN, sans-serif" font-size="56" font-weight="700" fill="#720D38">流量扶持</text>
+    <path d="M894 30C901 82 876 114 823 123C807 126 799 138 793 155C777 202 742 230 690 239C748 253 802 249 848 224C879 264 920 282 971 278C947 315 910 335 859 338C950 382 1068 325 1073 210C1076 151 1044 112 1000 92C1016 68 1015 42 997 14C965 51 930 65 894 30Z" fill="#FF9DBB" opacity="0.28"/>
+  </g>
+  <g transform="translate(106 746)">
+    <circle cx="34" cy="34" r="33" fill="#FF4D9D"/>
+    <text x="24" y="48" font-family="Source Han Sans CN, sans-serif" font-size="38" font-weight="800" fill="white">?</text>
+    <text x="86" y="51" font-family="MFBenHeiNoncommercial, Source Han Sans CN, sans-serif" font-size="56" font-weight="700" fill="#2D2D2D">活动说明:</text>
+    <circle cx="13" cy="118" r="7" fill="#FF1372"/>
+    <text x="36" y="132" font-family="Source Han Sans CN, sans-serif" font-size="32" font-weight="400" fill="#515151">现金消耗满30元开启第一次抽奖，且累计满90/150/200元，可解锁更多抽奖机会。</text>
+    <circle cx="13" cy="194" r="7" fill="#FF1372"/>
+    <text x="36" y="208" font-family="Source Han Sans CN, sans-serif" font-size="32" font-weight="400" fill="#515151">活动期间下单内容加热、粉丝经营目标，达成门槛后自动下发至 DOU+ 账户。</text>
+    <circle cx="13" cy="270" r="7" fill="#FF1372"/>
+    <text x="36" y="284" font-family="Source Han Sans CN, sans-serif" font-size="32" font-weight="400" fill="#515151">现金消耗全程累计，投得越多，好礼越多。</text>
+  </g>
+  <defs>
+    <linearGradient id="ticketBg" x1="0" y1="0" x2="1176" y2="408" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFB8C0"/>
+      <stop offset="1" stop-color="#FFD5D8"/>
+    </linearGradient>
+  </defs>
+</svg>

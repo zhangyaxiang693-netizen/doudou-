@@ -1,0 +1,132 @@
+{
+  "id": "投稿赢流量-样式2",
+  "name": "投稿赢流量-样式2",
+  "title": "投稿赢流量-样式2",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "投稿赢流量样式2组件，展示 DOU+ 优惠券奖励信息。",
+  "reactComponent": "投稿赢流量-样式2",
+  "dimensions": {
+    "width": 554,
+    "height": 205
+  },
+  "fonts": [
+    {
+      "text": "200",
+      "family": "Douyin Number ABC",
+      "weight": 600,
+      "size": "76px",
+      "lineHeight": "84px",
+      "usage": "金额",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Number ABC / 600",
+        "note": "组件按原始 font-family 和 font-weight 声明渲染，当前字体包未提供 600 字重文件。"
+      }
+    },
+    {
+      "text": "元",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "32px",
+      "lineHeight": "normal",
+      "usage": "金额单位",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "满30元赠",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "32px",
+      "lineHeight": "normal",
+      "usage": "赠送条件",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "DOU+",
+      "family": "Douyin Sans",
+      "weight": 400,
+      "size": "42px",
+      "lineHeight": "normal",
+      "usage": "券类型英文",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Sans Regular / 400",
+        "note": "当前字体包只有 DouyinSansBold.ttf，不能作为 400 字重精确源。"
+      }
+    },
+    {
+      "text": "优惠券",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "40px",
+      "lineHeight": "56px",
+      "usage": "券类型中文",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "共计20名",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "26px",
+      "lineHeight": "30px",
+      "usage": "名额说明",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "投稿赢流量-样式2",
+      "投稿赢流量",
+      "流量",
+      "DOU+",
+      "优惠券",
+      "满30元赠",
+      "共计20名"
+    ],
+    "textProps": [
+      "amountText",
+      "giftConditionText",
+      "quotaText"
+    ]
+  },
+  "props": [
+    {
+      "key": "amountText",
+      "name": "amountText",
+      "label": "金额",
+      "type": "string",
+      "default": "200",
+      "description": "左侧金额数字文案。"
+    },
+    {
+      "key": "giftConditionText",
+      "name": "giftConditionText",
+      "label": "赠送条件",
+      "type": "string",
+      "default": "满30元赠",
+      "description": "左侧赠送条件文案。"
+    },
+    {
+      "key": "quotaText",
+      "name": "quotaText",
+      "label": "名额说明",
+      "type": "string",
+      "default": "共计20名",
+      "description": "右侧名额说明文案。"
+    }
+  ]
+}

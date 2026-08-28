@@ -1,18 +1,15 @@
 /* eslint-disable*/
 import React from 'react'
 import styles from './index.module.scss'
-import image1Url from './assets/image_1.svg'
-import image2Url from './assets/image_2.svg'
-import image3Url from './assets/image_3.svg'
-import image4Url from './assets/image_4.svg'
-import image5Url from './assets/image_5.svg'
-import image6Url from './assets/image_6.svg'
-import questionRedUrl from '../icon库/06-status/status-question-red.svg'
-import questionYellowUrl from '../icon库/06-status/status-question-pink.svg'
-import chevronRedUrl from '../icon库/06-status/status-chevron-down-red.svg'
-import chevronYellowUrl from '../icon库/06-status/status-chevron-down-pink.svg'
-import clockRedUrl from '../icon库/05-notification/time-clock-red.svg'
-import clockYellowUrl from '../icon库/05-notification/time-clock-pink.svg'
+import pinkFirstUrl from './assets/粉/Group 2053140583.svg'
+import pinkSecondUrl from './assets/粉/Group 2147240304 (1).svg'
+import pinkThirdUrl from './assets/粉/Group 2147240462.svg'
+import blueFirstUrl from './assets/蓝/Group 2147240435.svg'
+import blueSecondUrl from './assets/蓝/Group 2147240436.svg'
+import blueThirdUrl from './assets/蓝/Group 2147240461.svg'
+import yellowFirstUrl from './assets/黄/Group 2147240437.svg'
+import yellowSecondUrl from './assets/黄/Group 2147240438.svg'
+import yellowThirdUrl from './assets/黄/Group 2147240460.svg'
 
 export type IGeneratedComponent = {
   titleText?: string
@@ -41,22 +38,27 @@ const defaultText = {
 }
 
 const variantIcons = {
+  current: {
+    first: pinkFirstUrl,
+    second: pinkSecondUrl,
+    third: pinkThirdUrl,
+  },
   red: {
-    question: questionRedUrl,
-    chevron: chevronRedUrl,
-    clock: clockRedUrl,
+    first: blueSecondUrl,
+    second: blueFirstUrl,
+    third: blueThirdUrl,
   },
   yellow: {
-    question: questionYellowUrl,
-    chevron: chevronYellowUrl,
-    clock: clockYellowUrl,
+    first: yellowSecondUrl,
+    second: yellowFirstUrl,
+    third: yellowThirdUrl,
   },
 }
 
 function getVariantIcons(iconVariant?: IGeneratedComponent['iconVariant']) {
   if (iconVariant === 'red') return variantIcons.red
   if (iconVariant === 'yellow') return variantIcons.yellow
-  return null
+  return variantIcons.current
 }
 
 function parseBoldTexts(value: string) {
@@ -137,20 +139,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       <div className={styles.wrap}>
         <div className={styles.container}>
           <div className={styles.content}>
-            {icons ? (
-              <img src={icons.question} className={styles.image} />
-            ) : (
-              <>
-                <img
-                  src={image1Url}
-                  className={styles.image}
-                />
-                <img
-                  src={image2Url}
-                  className={styles.image1}
-                />
-              </>
-            )}
+            <img src={icons.first} className={styles.image} />
           </div>
           <div className={styles.text}>{firstTitleText}</div>
         </div>
@@ -161,20 +150,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       <div className={styles.wrap1}>
         <div className={styles.container1}>
           <div className={styles.content1}>
-            {icons ? (
-              <img src={icons.chevron} className={styles.image2} />
-            ) : (
-              <>
-                <img
-                  src={image3Url}
-                  className={styles.image2}
-                />
-                <img
-                  src={image4Url}
-                  className={styles.image3}
-                />
-              </>
-            )}
+            <img src={icons.second} className={styles.image2} />
           </div>
           <div className={styles.text2}>{secondTitleText}</div>
         </div>
@@ -187,20 +163,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       <div className={styles.wrap2}>
         <div className={styles.container2}>
           <div className={styles.content2}>
-            {icons ? (
-              <img src={icons.clock} className={styles.image4} />
-            ) : (
-              <>
-                <img
-                  src={image5Url}
-                  className={styles.image4}
-                />
-                <img
-                  src={image6Url}
-                  className={styles.image5}
-                />
-              </>
-            )}
+            <img src={icons.third} className={styles.image4} />
           </div>
           <div className={styles.text4}>{thirdTitleText}</div>
         </div>

@@ -1,0 +1,51 @@
+{
+  "id": "官方小助手",
+  "name": "官方小助手",
+  "title": "官方小助手",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "官方小助手引导组件，包含头像、标题、说明和联系按钮。",
+  "reactComponent": "官方小助手",
+  "dimensions": {
+    "width": 702,
+    "height": 193
+  },
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "官方小助手",
+      "专属管家",
+      "专业指导",
+      "DOU+认证",
+      "立即联系"
+    ],
+    "textProps": [
+      "titleText",
+      "contentText",
+      "buttonText"
+    ]
+  },
+  "props": [
+    {
+      "key": "titleText",
+      "name": "titleText",
+      "label": "标题",
+      "type": "string",
+      "default": "专属管家专业指导投放"
+    },
+    {
+      "key": "contentText",
+      "name": "contentText",
+      "label": "内容",
+      "type": "string",
+      "default": "DOU+认证用户专享"
+    },
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "立即联系"
+    }
+  ]
+}

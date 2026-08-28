@@ -43,14 +43,14 @@ export type IGeneratedComponent = {
 }
 
 const placeholderPrizes = [
-  {name: '券包', image: prizeCouponPackUrl},
+  {name: '1314元心动券包', image: prizeCouponPackUrl},
   {name: '6元流量券', image: prizeTrafficCoupon6Url},
   {name: '10元流量券', image: prizeTrafficCoupon10Url},
   {name: 'DOU仔周边', image: prizeDouziUrl},
   {name: 'DOU仔周边', image: prizeDouziUrl},
   {name: '5元流量券', image: prizeTrafficCoupon5Url},
   {name: 'DOU+官方推荐机会', image: prizeRecommendUrl},
-  {name: '积分', image: prizePointsUrl},
+  {name: '内容诊断积分', image: prizePointsUrl},
 ]
 
 function resolvePrize(
@@ -87,7 +87,11 @@ function resolvePrize(
 }
 
 function isPointsPrize(prize: {name: string; image: string}) {
-  return prize.name.trim() === '积分'
+  return prize.name.trim() === '内容诊断积分'
+}
+
+function isRecommendPrize(prize: {name: string; image: string}) {
+  return prize.name.trim() === 'DOU+官方推荐机会'
 }
 
 function PrizeCard({prize}: {prize: {name: string; image: string}}) {
@@ -97,7 +101,7 @@ function PrizeCard({prize}: {prize: {name: string; image: string}}) {
         src={prize.image}
         className={`${styles.prizeImage} ${isPointsPrize(prize) ? styles.pointsPrizeImage : ''}`}
       />
-      <div className={styles.prizeName}>{prize.name}</div>
+      <div className={`${styles.prizeName} ${isRecommendPrize(prize) ? styles.prizeNameRecommend : ''}`}>{prize.name}</div>
     </div>
   )
 }

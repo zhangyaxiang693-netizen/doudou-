@@ -1,0 +1,85 @@
+{
+  "id": "智投星内容",
+  "name": "智投星内容",
+  "title": "智投星内容",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "智投星内容介绍组件，展示产品说明和三项能力卖点。",
+  "reactComponent": "智投星内容",
+  "dimensions": {
+    "width": 622,
+    "height": 315
+  },
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "智投星内容",
+      "智投星",
+      "AI智投",
+      "智能下单",
+      "轻松稳投",
+      "精准匹配"
+    ],
+    "textProps": [
+      "introText",
+      "card1Title",
+      "card1Content",
+      "card2Title",
+      "card2Content",
+      "card3Title",
+      "card3Content"
+    ]
+  },
+  "props": [
+    {
+      "key": "introText",
+      "name": "introText",
+      "label": "介绍文案",
+      "type": "text",
+      "control": "textarea",
+      "default": "AI智投聚焦创作者在投放过程中的决策难题，对话式智能下单产品、一站式轻松稳投，帮大家精准匹配需求、选对优化目标，让投放更高效、效果更有保障"
+    },
+    {
+      "key": "card1Title",
+      "name": "card1Title",
+      "label": "卡片1标题",
+      "type": "string",
+      "default": "更高效"
+    },
+    {
+      "key": "card1Content",
+      "name": "card1Content",
+      "label": "卡片1内容",
+      "type": "string",
+      "default": "智能下单产品"
+    },
+    {
+      "key": "card2Title",
+      "name": "card2Title",
+      "label": "卡片2标题",
+      "type": "string",
+      "default": "更轻松"
+    },
+    {
+      "key": "card2Content",
+      "name": "card2Content",
+      "label": "卡片2内容",
+      "type": "string",
+      "default": "一站式稳投"
+    },
+    {
+      "key": "card3Title",
+      "name": "card3Title",
+      "label": "卡片3标题",
+      "type": "string",
+      "default": "更精准"
+    },
+    {
+      "key": "card3Content",
+      "name": "card3Content",
+      "label": "卡片3内容",
+      "type": "string",
+      "default": "精准匹配需求"
+    }
+  ]
+}

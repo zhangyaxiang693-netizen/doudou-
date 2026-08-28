@@ -1,0 +1,24 @@
+{
+  "id": "无活动提示",
+  "name": "无活动提示",
+  "title": "无活动提示",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "无活动状态提示组件。",
+  "reactComponent": "无活动提示",
+  "dimensions": {
+    "width": 664,
+    "height": 744
+  },
+  "blueprint": {
+    "autoExposeProps": false,
+    "matchKeywords": [
+      "无活动提示",
+      "无活动",
+      "活动太火爆了",
+      "请稍后再来看看吧"
+    ],
+    "textProps": []
+  },
+  "props": []
+}

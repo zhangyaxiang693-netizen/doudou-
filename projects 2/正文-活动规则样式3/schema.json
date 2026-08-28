@@ -22,7 +22,7 @@
       "usage": "第一段标题",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-BOLD.otf"
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
       }
     },
     {
@@ -34,7 +34,7 @@
       "usage": "正文内容",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     }
   ],

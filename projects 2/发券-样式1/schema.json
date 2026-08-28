@@ -20,7 +20,7 @@
       "usage": "券名称",
       "source": {
         "status": "exact",
-        "file": "造字工房本黑体.otf"
+        "file": "造字工房本黑体.ttf"
       }
     },
     {
@@ -32,7 +32,7 @@
       "usage": "金额符号",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-BOLD.otf"
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
       }
     },
     {
@@ -44,7 +44,7 @@
       "usage": "金额",
       "source": {
         "status": "exact",
-        "file": "DouyinNumberABC-ExtraBold.otf"
+        "file": "DouyinNumberABC-ExtraBold.ttf"
       }
     },
     {
@@ -56,7 +56,7 @@
       "usage": "条件",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     },
     {
@@ -68,7 +68,7 @@
       "usage": "中按钮文案",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-MEDIUM.otf"
+        "file": "SOURCEHANSANSCN-MEDIUM.ttf"
       }
     }
   ],

@@ -20,7 +20,7 @@
       "usage": "奖品名称",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     },
     {
@@ -32,7 +32,7 @@
       "usage": "抽奖按钮",
       "source": {
         "status": "exact",
-        "file": "MFYUANHEI_NONCOMMERCIAL-REGULAR.OTF"
+        "file": "MFYUANHEI_NONCOMMERCIAL-REGULAR.TTF"
       }
     }
   ],

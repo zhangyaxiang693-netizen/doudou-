@@ -1,0 +1,25 @@
+{
+  "id": "内容案例-样式2",
+  "name": "内容案例-样式2",
+  "title": "内容案例-样式2",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "内容案例组件，展示三组投放案例、策略说明和投放效果数据。",
+  "reactComponent": "内容案例-样式2",
+  "dimensions": {
+    "width": 1121,
+    "height": 1027
+  },
+  "blueprint": {
+    "autoExposeProps": false,
+    "matchKeywords": [
+      "内容案例-样式2",
+      "内容案例",
+      "投放案例",
+      "投放策略",
+      "投放效果"
+    ],
+    "textProps": []
+  },
+  "props": []
+}

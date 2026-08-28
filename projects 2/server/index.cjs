@@ -4,6 +4,12 @@ const path = require("path");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 
+try {
+  process.loadEnvFile?.(path.join(__dirname, "..", ".env.local"));
+} catch (error) {
+  if (error?.code !== "ENOENT") throw error;
+}
+
 const app = express();
 app.use(express.json({ limit: "10mb" }));
 const execFileAsync = promisify(execFile);
@@ -92,6 +98,8 @@ const FEISHU_DOCUMENT_HOSTS = [
   "larkoffice.com",
   "doubao.com",
 ];
+const FEISHU_TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+let cachedFeishuTenantToken = null;
 
 apiRouter.get("/components", async (req, res) => {
   try {
@@ -186,7 +194,7 @@ function parseFeishuDocumentUrl(rawUrl, depth = 0) {
     : null;
 }
 
-function getFeishuAccessToken() {
+function getFeishuUserAccessToken() {
   return (
     process.env.FEISHU_USER_ACCESS_TOKEN ||
     process.env.LARK_USER_ACCESS_TOKEN ||
@@ -194,8 +202,139 @@ function getFeishuAccessToken() {
   ).trim();
 }
 
+function getFeishuAppCredentials() {
+  const appId = (
+    process.env.FEISHU_APP_ID ||
+    process.env.LARK_APP_ID ||
+    ""
+  ).trim();
+  const appSecret = (
+    process.env.FEISHU_APP_SECRET ||
+    process.env.LARK_APP_SECRET ||
+    ""
+  ).trim();
+
+  if ((appId && !appSecret) || (!appId && appSecret)) {
+    throw new Error(
+      "飞书应用配置不完整，请同时配置 FEISHU_APP_ID 和 FEISHU_APP_SECRET",
+    );
+  }
+  return appId && appSecret ? { appId, appSecret } : null;
+}
+
+async function getFeishuTenantAccessToken(forceRefresh = false) {
+  const credentials = getFeishuAppCredentials();
+  if (!credentials) return "";
+
+  if (
+    !forceRefresh &&
+    cachedFeishuTenantToken &&
+    cachedFeishuTenantToken.expiresAt > Date.now()
+  ) {
+    return cachedFeishuTenantToken.value;
+  }
+
+  const apiBase =
+    process.env.FEISHU_OPEN_API_BASE || "https://open.feishu.cn";
+  const response = await fetch(
+    `${apiBase}/open-apis/auth/v3/tenant_access_token/internal/`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        app_id: credentials.appId,
+        app_secret: credentials.appSecret,
+      }),
+    },
+  );
+  const result = await response.json().catch(() => null);
+  if (
+    !response.ok ||
+    !result ||
+    result.code !== 0 ||
+    !result.tenant_access_token
+  ) {
+    throw new Error(
+      `飞书应用鉴权失败：${
+        result?.msg ||
+        result?.message ||
+        `${response.status} ${response.statusText}`
+      }`,
+    );
+  }
+
+  const expiresInMs = Math.max(Number(result.expire) || 7200, 60) * 1000;
+  cachedFeishuTenantToken = {
+    value: result.tenant_access_token,
+    expiresAt:
+      Date.now() +
+      Math.max(expiresInMs - FEISHU_TOKEN_REFRESH_BUFFER_MS, 60 * 1000),
+  };
+  return cachedFeishuTenantToken.value;
+}
+
+async function getFeishuAccessToken() {
+  const tenantToken = await getFeishuTenantAccessToken();
+  if (tenantToken) return tenantToken;
+  return getFeishuUserAccessToken();
+}
+
 function createCliEnv() {
   return process.env;
+}
+
+function extractEmbeddedSheetReferences(content = "") {
+  return [...String(content).matchAll(/<sheet\b([^>]*)>/gi)]
+    .map((match) => {
+      const attributes = {};
+      for (const attribute of match[1].matchAll(/([\w-]+)="([^"]*)"/g)) {
+        attributes[attribute[1]] = attribute[2];
+      }
+      return {
+        spreadsheetToken: attributes.token || "",
+        sheetId: attributes["sheet-id"] || "",
+      };
+    })
+    .filter((reference) => reference.spreadsheetToken && reference.sheetId);
+}
+
+async function fetchEmbeddedSheetTablesWithCli(content) {
+  const references = extractEmbeddedSheetReferences(content);
+  const tables = [];
+
+  for (const reference of references) {
+    const { stdout } = await execFileAsync(
+      "lark-cli",
+      [
+        "sheets",
+        "+table-get",
+        "--spreadsheet-token",
+        reference.spreadsheetToken,
+        "--sheet-id",
+        reference.sheetId,
+        "--no-header",
+        "--format",
+        "json",
+        "--as",
+        "user",
+      ],
+      {
+        env: createCliEnv(),
+        timeout: 30000,
+        maxBuffer: 1024 * 1024 * 10,
+      },
+    );
+    const result = JSON.parse(stdout);
+    const sheet = result?.data?.sheets?.[0];
+    if (!Array.isArray(sheet?.data)) continue;
+    tables.push(
+      sheet.data.map((row) =>
+        row.map((cell) => (cell == null ? "" : String(cell))),
+      ),
+    );
+  }
+
+  return tables;
 }
 
 async function fetchFeishuOpenApi(pathname, accessToken) {
@@ -218,8 +357,142 @@ async function fetchFeishuOpenApi(pathname, accessToken) {
   return result.data || {};
 }
 
+function getFeishuBlockText(block) {
+  const textPayload = [
+    "page",
+    "text",
+    "heading1",
+    "heading2",
+    "heading3",
+    "heading4",
+    "heading5",
+    "heading6",
+    "heading7",
+    "heading8",
+    "heading9",
+    "bullet",
+    "ordered",
+    "code",
+    "quote",
+    "todo",
+  ]
+    .map((key) => block?.[key])
+    .find((value) => Array.isArray(value?.elements));
+  if (!textPayload) return "";
+  return textPayload.elements
+    .map((element) => {
+      if (typeof element?.text_run?.content === "string") {
+        return element.text_run.content;
+      }
+      if (typeof element?.equation?.content === "string") {
+        return element.equation.content;
+      }
+      return "";
+    })
+    .join("")
+    .trim();
+}
+
+function extractFeishuTables(blocks = []) {
+  const blockMap = new Map(
+    blocks
+      .filter((block) => block?.block_id)
+      .map((block) => [block.block_id, block]),
+  );
+
+  const readDescendantText = (blockId, visited = new Set()) => {
+    if (!blockId || visited.has(blockId)) return "";
+    visited.add(blockId);
+    const block = blockMap.get(blockId);
+    if (!block) return "";
+    const parts = [getFeishuBlockText(block)];
+    (block.children || []).forEach((childId) => {
+      parts.push(readDescendantText(childId, visited));
+    });
+    return parts.filter(Boolean).join("\n").trim();
+  };
+
+  return blocks
+    .filter((block) => block?.block_type === 31 && block?.table)
+    .map((block) => {
+      const rowCount = Number(block.table?.property?.row_size) || 0;
+      const columnCount = Number(block.table?.property?.column_size) || 0;
+      const cellIds = block.table?.cells || block.children || [];
+      if (!rowCount || !columnCount || !cellIds.length) return [];
+      return Array.from({ length: rowCount }, (_, rowIndex) =>
+        Array.from({ length: columnCount }, (_, columnIndex) => {
+          const cellId = cellIds[rowIndex * columnCount + columnIndex];
+          return readDescendantText(cellId);
+        }),
+      );
+    })
+    .filter((rows) => rows.length);
+}
+
+function extractEmbeddedSheetBlockReferences(blocks = []) {
+  return blocks
+    .filter((block) => block?.block_type === 30 && block?.sheet?.token)
+    .map((block) => {
+      const token = String(block.sheet.token);
+      const separatorIndex = token.lastIndexOf("_");
+      if (separatorIndex <= 0 || separatorIndex >= token.length - 1) {
+        return null;
+      }
+      return {
+        spreadsheetToken: token.slice(0, separatorIndex),
+        sheetId: token.slice(separatorIndex + 1),
+      };
+    })
+    .filter(Boolean);
+}
+
+async function fetchEmbeddedSheetTablesOpenApi(blocks, accessToken) {
+  const references = extractEmbeddedSheetBlockReferences(blocks);
+  const tables = [];
+
+  for (const reference of references) {
+    const range = encodeURIComponent(reference.sheetId);
+    const data = await fetchFeishuOpenApi(
+      `/open-apis/sheets/v2/spreadsheets/${encodeURIComponent(reference.spreadsheetToken)}/values/${range}`,
+      accessToken,
+    );
+    const values = data.valueRange?.values || data.values;
+    if (!Array.isArray(values)) continue;
+    tables.push(
+      values.map((row) =>
+        (Array.isArray(row) ? row : []).map((cell) =>
+          cell == null ? "" : String(cell),
+        ),
+      ),
+    );
+  }
+
+  return tables;
+}
+
+async function fetchAllFeishuDocumentBlocks(documentToken, accessToken) {
+  const blocks = [];
+  let pageToken = "";
+
+  do {
+    const query = new URLSearchParams({
+      document_revision_id: "-1",
+      page_size: "500",
+    });
+    if (pageToken) query.set("page_token", pageToken);
+    const data = await fetchFeishuOpenApi(
+      `/open-apis/docx/v1/documents/${encodeURIComponent(documentToken)}/blocks?${query}`,
+      accessToken,
+    );
+    blocks.push(...(Array.isArray(data.items) ? data.items : []));
+    pageToken = data.has_more ? String(data.page_token || "") : "";
+  } while (pageToken);
+
+  return blocks;
+}
+
 async function fetchAuthorizedFeishuContent(documentUrl) {
-  const accessToken = getFeishuAccessToken();
+  const accessToken = await getFeishuAccessToken();
   if (!accessToken) return null;
 
   let documentToken = documentUrl.token;
@@ -242,11 +515,27 @@ async function fetchAuthorizedFeishuContent(documentUrl) {
     throw new Error(`暂不支持读取 ${documentType || "未知"} 类型的知识库节点`);
   }
 
-  const rawContentData = await fetchFeishuOpenApi(
-    `/open-apis/docx/v1/documents/${encodeURIComponent(documentToken)}/raw_content`,
+  const rawContentPath =
+    documentType === "docx"
+      ? `/open-apis/docx/v1/documents/${encodeURIComponent(documentToken)}/raw_content`
+      : `/open-apis/doc/v2/${encodeURIComponent(documentToken)}/raw_content`;
+  const rawContentData = await fetchFeishuOpenApi(rawContentPath, accessToken);
+  const content = String(rawContentData.content || "").trim();
+  const blocks =
+    documentType === "docx"
+      ? await fetchAllFeishuDocumentBlocks(documentToken, accessToken)
+      : [];
+  const nativeTables = extractFeishuTables(blocks);
+  const embeddedSheetTables = await fetchEmbeddedSheetTablesOpenApi(
+    blocks,
     accessToken,
   );
-  return String(rawContentData.content || "").trim() || null;
+  return content || blocks.length
+    ? {
+        content,
+        tables: [...nativeTables, ...embeddedSheetTables],
+      }
+    : null;
 }
 
 async function fetchFeishuContentWithCli(documentUrl) {
@@ -262,6 +551,8 @@ async function fetchFeishuContentWithCli(documentUrl) {
         "markdown",
         "--format",
         "json",
+        "--as",
+        "user",
       ],
       {
         env: createCliEnv(),
@@ -271,11 +562,16 @@ async function fetchFeishuContentWithCli(documentUrl) {
     );
     const result = JSON.parse(stdout);
     const content = result?.data?.document?.content;
+    const tables =
+      typeof content === "string"
+        ? await fetchEmbeddedSheetTablesWithCli(content)
+        : [];
     return {
       content:
         typeof content === "string" && content.trim()
           ? content.trim()
           : null,
+      tables,
       error: null,
     };
   } catch (error) {
@@ -291,11 +587,16 @@ async function fetchFeishuContentWithCli(documentUrl) {
       error?.message ||
       "lark-cli 读取失败";
     console.warn("lark-cli read failed:", message);
-    return { content: null, error: new Error(message) };
+    return { content: null, tables: [], error: new Error(message) };
   }
 }
 
-// Fetch Feishu public document content
+function formatFeishuAuthorizedReadError(error) {
+  const message = String(error?.message || error || "未知错误");
+  return `无法读取内部飞书文档：${message}。请确认应用已发布并获得文档只读权限，且目标文档或其上级文件夹已将该应用添加为可阅读协作者`;
+}
+
+// Fetch Feishu document content, preferring enterprise app authorization.
 apiRouter.post("/fetch-feishu-doc", async (req, res) => {
   try {
     const { url } = req.body;
@@ -314,6 +615,28 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
     const docId = documentUrl.token;
     console.log("Fetching Feishu document:", docId);
 
+    let authorizedReadError = null;
+    try {
+      const authorizedDocument =
+        await fetchAuthorizedFeishuContent(documentUrl);
+      if (authorizedDocument) {
+        return res.json({
+          success: true,
+          data: {
+            docId,
+            content: authorizedDocument.content,
+            length: authorizedDocument.content.length,
+            tables: authorizedDocument.tables,
+            source: "open-api",
+          },
+        });
+      }
+    } catch (error) {
+      authorizedReadError = error;
+      console.warn("Feishu OpenAPI read failed:", error?.message || error);
+    }
+
+    // Local development fallback when lark-cli has an authorized user session.
     const cliResult = await fetchFeishuContentWithCli(documentUrl);
     if (cliResult.content) {
       return res.json({
@@ -322,41 +645,13 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
           docId,
           content: cliResult.content,
           length: cliResult.content.length,
+          tables: cliResult.tables,
           source: "lark-cli",
         },
       });
     }
 
-    if (cliResult.error) {
-      return res.status(401).json({
-        success: false,
-        error: `无法读取飞书文档：${cliResult.error.message}。请确认当前飞书账号有文档访问权限，或重新完成飞书授权`,
-        source: "lark-cli",
-      });
-    }
-
-    try {
-      const authorizedContent =
-        await fetchAuthorizedFeishuContent(documentUrl);
-      if (authorizedContent) {
-        return res.json({
-          success: true,
-          data: {
-            docId,
-            content: authorizedContent,
-            length: authorizedContent.length,
-            source: "open-api",
-          },
-        });
-      }
-    } catch (error) {
-      console.warn(
-        "Feishu OpenAPI read failed:",
-        error?.message || error,
-      );
-    }
-
-    // Fetch the public document page
+    // Preserve support for documents explicitly shared to the public.
     const response = await fetch(documentUrl.url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; H5Builder/1.0)",
@@ -366,7 +661,9 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
     if (!response.ok) {
       return res.status(response.status).json({
         success: false,
-        error: `Failed to fetch document: ${response.statusText}`,
+        error: authorizedReadError
+          ? formatFeishuAuthorizedReadError(authorizedReadError)
+          : `无法读取飞书文档：${response.status} ${response.statusText}`,
       });
     }
 
@@ -392,10 +689,16 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
         .trim();
     }
 
-    if (!textContent || textContent.length < 10) {
+    const isLoginPage =
+      /passport\.feishu\.cn|accounts\.feishu\.cn|登录飞书|扫码登录/i.test(
+        html,
+      );
+    if (!textContent || textContent.length < 10 || isLoginPage) {
       return res.status(400).json({
         success: false,
-        error: "无法提取文档内容。请将文档分享权限设置为“获得链接的人可阅读”，或重新完成飞书授权",
+        error: authorizedReadError
+          ? formatFeishuAuthorizedReadError(authorizedReadError)
+          : "服务端尚未配置 FEISHU_APP_ID 和 FEISHU_APP_SECRET，暂时只能读取公开分享的文档",
       });
     }
 

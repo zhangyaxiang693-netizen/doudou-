@@ -20,7 +20,7 @@
       "usage": "条件",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     },
     {
@@ -45,7 +45,7 @@
       "usage": "标题中文",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-BOLD.otf"
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
       }
     },
     {
@@ -57,7 +57,7 @@
       "usage": "金额",
       "source": {
         "status": "exact",
-        "file": "DouyinNumberABC-Bold.otf"
+        "file": "DouyinNumberABC-Bold.ttf"
       }
     },
     {
@@ -69,7 +69,7 @@
       "usage": "金额单位",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-BOLD.otf"
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
       }
     }
   ],

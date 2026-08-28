@@ -20,7 +20,7 @@
       "usage": "任务标题",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-MEDIUM.otf"
+        "file": "SOURCEHANSANSCN-MEDIUM.ttf"
       }
     },
     {
@@ -45,7 +45,7 @@
       "usage": "抽奖加成",
       "source": {
         "status": "exact",
-        "file": "DouyinNumberABC-Medium.otf"
+        "file": "DouyinNumberABC-Medium.ttf"
       }
     },
     {
@@ -57,7 +57,7 @@
       "usage": "任务副标题",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     },
     {
@@ -69,7 +69,7 @@
       "usage": "按钮文案",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-BOLD.otf"
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
       }
     },
     {
@@ -81,7 +81,7 @@
       "usage": "完成次数文案",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     }
   ],
@@ -103,6 +103,36 @@
       "completionText"
     ]
   },
+  "states": [
+    {
+      "id": "default",
+      "name": "点击前",
+      "schemaId": "任务条-样式1",
+      "preserveProps": true,
+      "lockedPropKeys": [
+        "buttonGradientStart",
+        "buttonGradientEnd"
+      ],
+      "props": {
+        "buttonGradientStart": "#FF1473",
+        "buttonGradientEnd": "#FF229F"
+      }
+    },
+    {
+      "id": "clicked",
+      "name": "点击后",
+      "schemaId": "任务条-样式1-点击后",
+      "preserveProps": true,
+      "lockedPropKeys": [
+        "buttonGradientStart",
+        "buttonGradientEnd"
+      ],
+      "props": {
+        "buttonGradientStart": "#FF81BA",
+        "buttonGradientEnd": "#FF81BA"
+      }
+    }
+  ],
   "props": [
     {
       "key": "taskTitle",

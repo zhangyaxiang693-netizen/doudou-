@@ -1,0 +1,115 @@
+{
+  "id": "诊断建议-样式1",
+  "name": "诊断建议-样式1",
+  "title": "诊断建议-样式1",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "诊断建议组件，展示诊断标签、视频信息和建议正文。",
+  "reactComponent": "诊断建议-样式1",
+  "dimensions": {
+    "width": 626,
+    "height": 234
+  },
+  "heightMode": "auto",
+  "fonts": [
+    {
+      "text": "诊断建议",
+      "family": "Douyin Sans",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "40px",
+      "usage": "标题",
+      "source": {
+        "status": "missing",
+        "required": "Douyin Sans Regular / 400",
+        "note": "当前字体包只有 DouyinSansBold.ttf，不能作为 400 字重精确源。"
+      }
+    },
+    {
+      "text": "当猫咪发现了扫地机器人",
+      "family": "Source Han Sans CN",
+      "weight": 500,
+      "size": "28px",
+      "lineHeight": "42px",
+      "usage": "视频标题",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-MEDIUM.ttf"
+      }
+    },
+    {
+      "text": "用户昵称",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "用户昵称",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    },
+    {
+      "text": "你的视频总播放量、点赞率均高于同类水平! 如果能再优化前几秒的视觉冲击和节奏就更好啦~ 评论区记得加入引导话术哦 !",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "诊断建议正文",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "诊断建议",
+      "诊断建议样式1",
+      "内容诊断建议",
+      "视频诊断建议",
+      "建议正文"
+    ],
+    "textProps": [
+      "titleText",
+      "videoTitle",
+      "userName",
+      "suggestionText"
+    ]
+  },
+  "props": [
+    {
+      "key": "titleText",
+      "name": "titleText",
+      "label": "标题",
+      "type": "string",
+      "default": "诊断建议",
+      "description": "顶部标签文案。"
+    },
+    {
+      "key": "videoTitle",
+      "name": "videoTitle",
+      "label": "视频标题",
+      "type": "string",
+      "default": "当猫咪发现了扫地机器人",
+      "description": "视频标题文案。"
+    },
+    {
+      "key": "userName",
+      "name": "userName",
+      "label": "用户昵称",
+      "type": "string",
+      "default": "用户昵称",
+      "description": "用户昵称文案。"
+    },
+    {
+      "key": "suggestionText",
+      "name": "suggestionText",
+      "label": "诊断建议正文",
+      "type": "string",
+      "default": "你的视频总播放量、点赞率均高于同类水平!\u00a0如果能再优化前几秒的视觉冲击和节奏就更好啦~\u00a0评论区记得加入引导话术哦\u00a0!",
+      "description": "诊断建议正文文案。"
+    }
+  ]
+}

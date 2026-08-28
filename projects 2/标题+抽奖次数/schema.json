@@ -1,0 +1,170 @@
+{
+  "id": "标题+抽奖次数",
+  "name": "标题+抽奖次数",
+  "title": "标题+抽奖次数",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "标题+抽奖次数组合原子组件。icon 库 14 种 × 3 色（粉/蓝/橘）联动。默认：礼物 biz-gift / 粉色。大小 50x50。距标题 10px。蓝图同步：titleText（标题）、drawCountText（抽奖次数数字）。",
+  "reactComponent": "标题+抽奖次数",
+  "dimensions": {
+    "width": 620,
+    "height": 50
+  },
+  "fonts": [
+    {
+      "text": "做任务 抽好礼",
+      "family": "MFBenHeiNoncommercial",
+      "weight": 400,
+      "size": "36px",
+      "lineHeight": "40px",
+      "usage": "标题文字",
+      "source": {
+        "status": "exact",
+        "file": "造字工房本黑体.ttf"
+      }
+    },
+    {
+      "text": "剩余抽奖次数：",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "normal",
+      "usage": "次数说明",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "2",
+      "family": "Douyin Number ABC",
+      "weight": 500,
+      "size": "26px",
+      "lineHeight": "30px",
+      "usage": "抽奖次数数字",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-Medium.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "标题+抽奖次数",
+      "标题 抽奖次数",
+      "抽奖次数",
+      "剩余抽奖次数",
+      "做任务 抽好礼",
+      "任务抽奖标题",
+      "抽奖标题",
+      "做任务抽好礼"
+    ],
+    "textProps": [
+      "titleText",
+      "drawCountText"
+    ]
+  },
+  "props": [
+    {
+      "key": "titleText",
+      "name": "titleText",
+      "label": "标题文字",
+      "type": "string",
+      "default": "做任务 抽好礼"
+    },
+    {
+      "key": "drawCountText",
+      "name": "drawCountText",
+      "label": "抽奖次数数字",
+      "type": "string",
+      "default": "2"
+    },
+    {
+      "key": "iconLibraryId",
+      "name": "iconLibraryId",
+      "label": "图标（来自 icon 库）",
+      "type": "select",
+      "options": [
+        {
+          "value": "biz-task",
+          "label": "任务"
+        },
+        {
+          "value": "biz-coupon",
+          "label": "券"
+        },
+        {
+          "value": "biz-helper",
+          "label": "小助手"
+        },
+        {
+          "value": "biz-tip",
+          "label": "提示"
+        },
+        {
+          "value": "biz-calendar",
+          "label": "日历"
+        },
+        {
+          "value": "biz-case",
+          "label": "案例"
+        },
+        {
+          "value": "biz-fire",
+          "label": "火"
+        },
+        {
+          "value": "biz-heart",
+          "label": "爱心"
+        },
+        {
+          "value": "biz-gift",
+          "label": "礼盒"
+        },
+        {
+          "value": "biz-redpacket",
+          "label": "红包"
+        },
+        {
+          "value": "biz-honor",
+          "label": "荣誉"
+        },
+        {
+          "value": "biz-honor2",
+          "label": "荣誉2"
+        },
+        {
+          "value": "biz-video",
+          "label": "视频"
+        },
+        {
+          "value": "biz-limited",
+          "label": "限时"
+        }
+      ],
+      "default": "biz-gift"
+    },
+    {
+      "key": "iconColor",
+      "name": "iconColor",
+      "label": "图标颜色",
+      "type": "select",
+      "options": [
+        {
+          "value": "pink",
+          "label": "粉色"
+        },
+        {
+          "value": "blue",
+          "label": "蓝色"
+        },
+        {
+          "value": "orange",
+          "label": "橘色"
+        }
+      ],
+      "default": "pink"
+    }
+  ]
+}

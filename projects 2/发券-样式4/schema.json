@@ -33,7 +33,7 @@
       "usage": "金额",
       "source": {
         "status": "exact",
-        "file": "DouyinNumberABC-Medium.otf"
+        "file": "DouyinNumberABC-Medium.ttf"
       }
     },
     {
@@ -45,7 +45,7 @@
       "usage": "使用条件",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.otf"
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
     },
     {
@@ -57,7 +57,7 @@
       "usage": "按钮文字",
       "source": {
         "status": "exact",
-        "file": "SOURCEHANSANSCN-BOLD.otf"
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
       }
     }
   ],

@@ -108,7 +108,7 @@
 .text3 {
   width: 459px;
   height: 19px;
-  font-family: "Source Han Sans CN";
+  font-family: "Source Han Sans CN Regular";
   font-size: 24px;
   white-space: nowrap;
   color: rgba(129, 129, 129, 1);
@@ -116,6 +116,10 @@
   font-weight: 400;
   display: inline-flex;
   align-items: center;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
 }
 .container1 {
   width: 152px;
@@ -173,11 +177,15 @@
   align-items: center;
 }
 .text5 {
-  font-family: "Source Han Sans CN";
+  font-family: "Source Han Sans CN Regular";
   font-size: 20px;
   white-space: nowrap;
   text-align: center;
   color: rgba(129, 129, 129, 1);
   line-height: 30px;
   font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
 }

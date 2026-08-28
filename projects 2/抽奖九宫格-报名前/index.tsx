@@ -68,15 +68,19 @@ function resolvePrize(
 }
 
 function prizeImageClass(prize: {name: string; image: string}) {
-  return `${styles.prizeImage} ${prize.name.trim() === '积分' ? styles.pointsPrizeImage : ''}`
+  return `${styles.prizeImage} ${prize.name.trim() === '内容诊断积分' ? styles.pointsPrizeImage : ''}`
+}
+
+function isRecommendPrize(prize: {name: string; image: string}) {
+  return prize.name.trim() === 'DOU+官方推荐机会'
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
   const prize1 = resolvePrize(props.prize1, 'DOU仔周边', prizeDouziUrl, props.prize1Name)
   const prize2 = resolvePrize(props.prize2, '6元流量券', prizeTrafficCouponUrl, props.prize2Name)
-  const prize3 = resolvePrize(props.prize3, '积分', prizePointsUrl, props.prize3Name)
+  const prize3 = resolvePrize(props.prize3, '内容诊断积分', prizePointsUrl, props.prize3Name)
   const prize4 = resolvePrize(props.prize4, 'DOU+官方推荐机会', prizeRecommendUrl, props.prize4Name)
-  const prize5 = resolvePrize(props.prize5, '券包', prizeCouponPackUrl, props.prize5Name)
+  const prize5 = resolvePrize(props.prize5, '1314元心动券包', prizeCouponPackUrl, props.prize5Name)
 
   return (
     <div className={styles.page}>
@@ -115,7 +119,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
         <div className={styles.container3}>
           <div className={styles.content8}></div>
           <div className={styles.content9}>
-            <div className={styles.text5}>{prize4.name}</div>
+            <div className={`${styles.text5} ${isRecommendPrize(prize4) ? styles.text5Recommend : ''}`}>{prize4.name}</div>
           </div>
           <div className={styles.content10}>
             <img src={prize4.image} className={prizeImageClass(prize4)} />

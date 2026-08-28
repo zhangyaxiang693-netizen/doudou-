@@ -1,0 +1,291 @@
+{
+  "id": "弹窗-中奖",
+  "name": "弹窗-中奖",
+  "title": "弹窗-中奖",
+  "type": "atom",
+  "category": "原子组件",
+  "canvasOnly": true,
+  "description": "中奖弹窗组件，展示中奖标题、金额和奖品文案。",
+  "reactComponent": "弹窗-中奖",
+  "dimensions": {
+    "width": 576,
+    "height": 613
+  },
+  "fonts": [
+    {
+      "text": "恭喜抽中",
+      "family": "MFBenHeiNoncommercial",
+      "weight": 400,
+      "size": "46px",
+      "lineHeight": "40px",
+      "usage": "标题文案"
+    },
+    {
+      "text": "1314",
+      "family": "Douyin Number ABC",
+      "weight": 600,
+      "size": "95px",
+      "lineHeight": "100%",
+      "usage": "金额文案"
+    },
+    {
+      "text": "元心动券包",
+      "family": "MF BenHei(Noncommercial)",
+      "weight": 400,
+      "size": "46px",
+      "lineHeight": "40px",
+      "usage": "奖品文案"
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": false,
+    "excludeFromPrd": true,
+    "matchKeywords": [
+      "弹窗-中奖",
+      "中奖",
+      "恭喜抽中",
+      "心动券包",
+      "弹窗"
+    ],
+    "textProps": [
+      "titleText",
+      "amountText",
+      "prizeText",
+      "selectedPrizeIndex",
+      "prize1Text",
+      "prize2Text",
+      "prize3Text",
+      "prize4Text",
+      "prize5Text",
+      "prize6Text",
+      "prize7Text",
+      "prize8Text"
+    ]
+  },
+  "props": [
+    {
+      "key": "titleText",
+      "name": "titleText",
+      "label": "标题文案",
+      "type": "string",
+      "default": "恭喜抽中",
+      "description": "弹窗主标题文案。"
+    },
+    {
+      "key": "amountText",
+      "name": "amountText",
+      "label": "金额文案",
+      "type": "string",
+      "default": "1314",
+      "description": "中奖金额或数字文案。"
+    },
+    {
+      "key": "prizeText",
+      "name": "prizeText",
+      "label": "奖品文案",
+      "type": "string",
+      "default": "元心动券包",
+      "description": "中奖奖品文案。"
+    },
+    {
+      "key": "selectedPrizeIndex",
+      "name": "selectedPrizeIndex",
+      "label": "中奖奖品序号",
+      "type": "number",
+      "default": 1,
+      "description": "当前中奖弹窗展示第几个九宫格奖品。"
+    },
+    {
+      "key": "prizeCount",
+      "name": "prizeCount",
+      "label": "奖品数量",
+      "type": "number",
+      "default": 8,
+      "description": "与当前九宫格中的奖品数量同步。"
+    },
+    {
+      "key": "prize1",
+      "name": "prize1",
+      "label": "奖品1",
+      "type": "prize",
+      "default": "",
+      "description": "同步九宫格奖品1的名称和图片。"
+    },
+    {
+      "key": "prize2",
+      "name": "prize2",
+      "label": "奖品2",
+      "type": "prize",
+      "default": "",
+      "description": "同步九宫格奖品2的名称和图片。"
+    },
+    {
+      "key": "prize3",
+      "name": "prize3",
+      "label": "奖品3",
+      "type": "prize",
+      "default": "",
+      "description": "同步九宫格奖品3的名称和图片。"
+    },
+    {
+      "key": "prize4",
+      "name": "prize4",
+      "label": "奖品4",
+      "type": "prize",
+      "default": "",
+      "description": "同步九宫格奖品4的名称和图片。"
+    },
+    {
+      "key": "prize5",
+      "name": "prize5",
+      "label": "奖品5",
+      "type": "prize",
+      "default": "",
+      "description": "同步九宫格奖品5的名称和图片。"
+    },
+    {
+      "key": "prize6",
+      "name": "prize6",
+      "label": "奖品6",
+      "type": "prize",
+      "default": "",
+      "description": "同步九宫格奖品6的名称和图片。"
+    },
+    {
+      "key": "prize7",
+      "name": "prize7",
+      "label": "奖品7",
+      "type": "prize",
+      "default": "",
+      "description": "同步九宫格奖品7的名称和图片。"
+    },
+    {
+      "key": "prize8",
+      "name": "prize8",
+      "label": "奖品8",
+      "type": "prize",
+      "default": "",
+      "description": "同步九宫格奖品8的名称和图片。"
+    },
+    {
+      "key": "prize1Text",
+      "name": "prize1Text",
+      "label": "奖品1文案",
+      "type": "string",
+      "default": "1314元心动券包",
+      "description": "同步九宫格奖品1文案。"
+    },
+    {
+      "key": "prize2Text",
+      "name": "prize2Text",
+      "label": "奖品2文案",
+      "type": "string",
+      "default": "6元流量券",
+      "description": "同步九宫格奖品2文案。"
+    },
+    {
+      "key": "prize3Text",
+      "name": "prize3Text",
+      "label": "奖品3文案",
+      "type": "string",
+      "default": "10元流量券",
+      "description": "同步九宫格奖品3文案。"
+    },
+    {
+      "key": "prize4Text",
+      "name": "prize4Text",
+      "label": "奖品4文案",
+      "type": "string",
+      "default": "DOU仔周边",
+      "description": "同步九宫格奖品4文案。"
+    },
+    {
+      "key": "prize5Text",
+      "name": "prize5Text",
+      "label": "奖品5文案",
+      "type": "string",
+      "default": "DOU仔周边",
+      "description": "同步九宫格奖品5文案。"
+    },
+    {
+      "key": "prize6Text",
+      "name": "prize6Text",
+      "label": "奖品6文案",
+      "type": "string",
+      "default": "5元流量券",
+      "description": "同步九宫格奖品6文案。"
+    },
+    {
+      "key": "prize7Text",
+      "name": "prize7Text",
+      "label": "奖品7文案",
+      "type": "string",
+      "default": "DOU+官方推荐机会",
+      "description": "同步九宫格奖品7文案。"
+    },
+    {
+      "key": "prize8Text",
+      "name": "prize8Text",
+      "label": "奖品8文案",
+      "type": "string",
+      "default": "内容诊断积分",
+      "description": "同步九宫格奖品8文案。"
+    },
+    {
+      "key": "cardGradientStart",
+      "name": "cardGradientStart",
+      "label": "卡片渐变开始",
+      "type": "color",
+      "default": "#FFB2C3"
+    },
+    {
+      "key": "cardGradientEnd",
+      "name": "cardGradientEnd",
+      "label": "卡片渐变结束",
+      "type": "color",
+      "default": "#FF89A3"
+    },
+    {
+      "key": "amountColor",
+      "name": "amountColor",
+      "label": "数字颜色",
+      "type": "color",
+      "default": "#FF1372"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "cardGradientStart": "#FFB2C3",
+        "cardGradientEnd": "#FF89A3",
+        "amountColor": "#FF1372"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "cardGradientStart": "#FFB2B3",
+        "cardGradientEnd": "#FF898C",
+        "amountColor": "#FF134E"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "cardGradientStart": "#FFD4B2",
+        "cardGradientEnd": "#FFAA78",
+        "amountColor": "#FF1A1D"
+      }
+    }
+  ]
+}

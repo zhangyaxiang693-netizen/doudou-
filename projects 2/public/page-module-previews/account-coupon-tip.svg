@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="702" height="160" viewBox="0 0 702 160" fill="none">
+  <defs>
+    <linearGradient id="couponBg" x1="0" y1="80" x2="702" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF1473"/>
+      <stop offset="1" stop-color="#FF229F"/>
+    </linearGradient>
+    <linearGradient id="buttonBg" x1="505" y1="80" x2="681" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFDBB2"/>
+      <stop offset="1" stop-color="#FFF8E9"/>
+    </linearGradient>
+    <linearGradient id="iconBg" x1="653.5" y1="146.5" x2="538.26" y2="66.03" gradientUnits="userSpaceOnUse">
+      <stop offset="0.131836" stop-color="#FF44A9"/>
+      <stop offset="1" stop-color="#FF2B8A"/>
+    </linearGradient>
+  </defs>
+  <rect width="702" height="160" rx="40" fill="url(#couponBg)"/>
+  <path d="M6 59.7692C6 43.212 6 34.9333 8.6714 28.391C12.3282 19.4354 19.4354 12.3282 28.391 8.6714C34.9333 6 43.212 6 59.7692 6H165C205.869 6 239 39.1309 239 80C239 120.869 205.869 154 165 154H59.7692C43.212 154 34.9333 154 28.391 151.329C19.4354 147.672 12.3282 140.565 8.6714 131.609C6 125.067 6 116.788 6 100.231V59.7692Z" fill="white"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M678.715 10.657C681.661 16.899 682.327 25.595 680.494 33.101C685.663 35.52 704.751 46.087 703.126 69.212C702.588 76.926 700.211 81.892 697.908 86.69C696.429 89.605 695.181 92.62 694.174 95.709C692.742 100.348 692.306 105.314 691.922 109.701C691.718 112.067 691.523 114.279 691.205 116.288C686.585 145.107 656.266 167.626 622.159 167.626C599.698 167.626 579.009 158.884 565.401 143.64C551.8 129.759 548.25 108.487 550.736 94.63C552.789 83.203 557.617 76.153 561.49 70.5C564.332 66.4 566.757 62.866 567.601 58.622C570.407 44.512 580.544 42.693 582.199 42.395C582.317 42.374 582.392 42.361 582.418 42.351C581.819 45.931 582.962 48.119 585.327 48.581C585.71 48.66 586.101 48.701 586.494 48.703C589.402 48.703 590.881 46.208 591.143 45.001L591.376 43.899C591.846 41.166 592.666 38.498 593.82 35.953C600.419 22.159 611.912 13.752 628.96 10.241C633.286 9.358 636.769 9.133 641.18 8.85C642.946 8.734 644.883 8.607 647.113 8.423C651.947 8.007 655.784 6.309 656.89 3.226C657.327 2.005 657.488 0.71 657.364 -0.573C657.24 -1.857 656.833 -3.102 656.169 -4.228C655.606 -5.254 654.876 -6.189 654.006 -7L658.081 -6.041C658.668 -5.909 672.489 -2.519 678.715 10.657ZM630.897 95.235H653.31L651.55 111.015H629.138L626.51 134.683H608.864L611.497 111.015H589.543L591.303 95.235H613.251L615.836 72.011H633.482L630.897 95.235Z" fill="url(#iconBg)" opacity="0.9"/>
+  <rect x="37" y="53" width="34" height="54" rx="6" fill="#FFD9E5"/>
+  <text x="54" y="77" text-anchor="middle" font-family="Source Han Sans CN, Arial, sans-serif" font-size="22" font-weight="700" fill="#FF1372">总</text>
+  <text x="54" y="101" text-anchor="middle" font-family="Source Han Sans CN, Arial, sans-serif" font-size="22" font-weight="700" fill="#FF1372">计</text>
+  <text x="77" y="95" font-family="Douyin Number ABC, Arial, sans-serif" font-size="50" font-weight="800" fill="#FF1372">600</text>
+  <text x="183" y="95" font-family="Source Han Sans CN, Arial, sans-serif" font-size="24" font-weight="700" fill="#FF1372">元</text>
+  <text x="253" y="72" font-family="Douyin Sans, Source Han Sans CN, Arial, sans-serif" font-size="32" font-weight="700" fill="#FFFFFF">DOU+</text>
+  <text x="335" y="72" font-family="Source Han Sans CN, Arial, sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">优惠券</text>
+  <text x="253" y="107" font-family="Source Han Sans CN, Arial, sans-serif" font-size="22" font-weight="400" fill="#FFFFFF">共有</text>
+  <text x="302" y="107" font-family="Douyin Number ABC, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">2</text>
+  <text x="319" y="107" font-family="Source Han Sans CN, Arial, sans-serif" font-size="22" font-weight="400" fill="#FFFFFF">张券 仅剩</text>
+  <text x="421" y="107" font-family="Douyin Number ABC, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">12</text>
+  <text x="451" y="107" font-family="Source Han Sans CN, Arial, sans-serif" font-size="22" font-weight="400" fill="#FFFFFF">小时</text>
+  <rect x="505.36" y="45" width="176" height="70" rx="35" fill="url(#buttonBg)"/>
+  <text x="593.36" y="90" text-anchor="middle" font-family="Source Han Sans CN, Arial, sans-serif" font-size="26" font-weight="700" fill="#FF1B77">立即使用</text>
+</svg>

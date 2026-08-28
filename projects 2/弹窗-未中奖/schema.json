@@ -1,0 +1,64 @@
+{
+  "id": "弹窗-未中奖",
+  "name": "弹窗-未中奖",
+  "title": "弹窗-未中奖",
+  "type": "atom",
+  "category": "原子组件",
+  "canvasOnly": true,
+  "description": "未中奖弹窗组件，展示未中奖标题和引导文案。",
+  "reactComponent": "弹窗-未中奖",
+  "dimensions": {
+    "width": 576,
+    "height": 634
+  },
+  "fonts": [
+    {
+      "text": "很遗憾没有中奖",
+      "family": "MFBenHeiNoncommercial",
+      "weight": 400,
+      "size": "46px",
+      "lineHeight": "40px",
+      "usage": "标题文案"
+    },
+    {
+      "text": "先去看看DOU+其他活动吧~",
+      "family": "OPPOSans",
+      "weight": 400,
+      "size": "30px",
+      "lineHeight": "34px",
+      "usage": "引导文案"
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": false,
+    "excludeFromPrd": true,
+    "matchKeywords": [
+      "弹窗-未中奖",
+      "未中奖",
+      "很遗憾没有中奖",
+      "弹窗"
+    ],
+    "textProps": [
+      "titleText",
+      "contentText"
+    ]
+  },
+  "props": [
+    {
+      "key": "titleText",
+      "name": "titleText",
+      "label": "标题文案",
+      "type": "string",
+      "default": "很遗憾没有中奖",
+      "description": "弹窗主标题文案。"
+    },
+    {
+      "key": "contentText",
+      "name": "contentText",
+      "label": "引导文案",
+      "type": "string",
+      "default": "先去看看DOU+其他活动吧~",
+      "description": "弹窗副文案。"
+    }
+  ]
+}

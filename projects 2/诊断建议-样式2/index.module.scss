@@ -1,0 +1,161 @@
+.page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+.wrap {
+  margin-bottom: 24px;
+  position: relative;
+  width: 614px;
+  height: 94px;
+}
+.container {
+  width: 614px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  background: rgba(255, 244, 246, 1);
+  min-height: 94px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image {
+  width: 34.65px;
+  height: 36px;
+  position: absolute;
+  top: 29px;
+  left: 33.87px;
+}
+.text {
+  position: absolute;
+  top: 11px;
+  left: 91px;
+  width: 491px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  color: rgba(110, 31, 84, 1);
+  line-height: normal;
+  letter-spacing: 1px;
+  font-weight: 400;
+}
+.text__seg1 {
+  font-family: "Source Han Sans CN Bold";
+  font-weight: 700;
+}
+.wrap1 {
+  width: 626px;
+  height: 181px;
+  border-radius: 40px;
+  box-sizing: border-box;
+  background: rgba(247, 247, 250, 1);
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  padding-right: 32px;
+  padding-left: 32px;
+}
+.container2 {
+  width: 582px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+.content {
+  margin-right: 24px;
+  position: relative;
+  width: 161.37px;
+  height: 181px;
+}
+.image1 {
+  width: 152px;
+  height: 152px;
+  position: absolute;
+  top: 21px;
+  left: 0px;
+}
+.main {
+  position: absolute;
+  top: 8px;
+  left: 133px;
+  width: 28.37px;
+  height: 32.41px;
+}
+.image2 {
+  width: 28.37px;
+  height: 32.41px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image3 {
+  width: 11.14px;
+  height: 13.06px;
+  position: absolute;
+  top: 14.38px;
+  left: 8.38px;
+}
+.content1 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.text1 {
+  margin-bottom: 16px;
+  width: 340px;
+  transform: rotate(-3.4753641115539876e-8deg);
+  font-family: "Source Han Sans CN";
+  font-size: 26px;
+  white-space: nowrap;
+  color: rgba(45, 45, 45, 1);
+  line-height: 38px;
+  font-weight: 700;
+}
+.main1 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+.text2 {
+  margin-right: 12px;
+  transform: rotate(-3.4753641115539876e-8deg);
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  white-space: nowrap;
+  color: rgba(81, 81, 81, 1);
+  line-height: 36px;
+  font-weight: 400;
+}
+.section {
+  border-radius: 4px;
+  box-sizing: border-box;
+  background: rgba(220, 240, 255, 1);
+  padding: 2px 6px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+}
+.text3 {
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(24, 136, 255, 1);
+  line-height: 30px;
+  font-weight: 400;
+}

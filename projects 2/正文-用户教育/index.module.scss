@@ -1,0 +1,310 @@
+.page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+.wrap {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+.container {
+  height: 60px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    148deg,
+    rgba(199, 232, 255, 1) -78.03999999999999%,
+    rgba(255, 255, 255, 1) 170.08%
+  );
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding-right: 32px;
+  padding-left: 32px;
+  margin-bottom: 16px;
+}
+.content {
+  margin-right: 7px;
+  position: relative;
+  width: 34.2px;
+  height: 29.92px;
+}
+.image {
+  width: 34.2px;
+  height: 29.92px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image1 {
+  width: 14.96px;
+  height: 16.54px;
+  position: absolute;
+  top: 7.13px;
+  left: 9.97px;
+}
+.text {
+  font-family: "Source Han Sans CN";
+  font-size: 28px;
+  white-space: nowrap;
+  color: rgba(24, 136, 255, 1);
+  line-height: normal;
+  font-weight: 700;
+}
+.container1 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 633.59px;
+  height: 108px;
+}
+.text1 {
+  width: 633.59px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  text-align: justify;
+  color: rgba(81, 81, 81, 1);
+  line-height: 36px;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+.image2 {
+  width: 542.43px;
+  height: 4px;
+  margin-bottom: 24px;
+}
+.wrap1 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+.container2 {
+  height: 60px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    144deg,
+    rgba(199, 232, 255, 1) -70.99%,
+    rgba(255, 255, 255, 1) 147.82999999999998%
+  );
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding-right: 32px;
+  padding-left: 32px;
+  margin-bottom: 16px;
+}
+.content1 {
+  margin-right: 7px;
+  position: relative;
+  width: 34.2px;
+  height: 29.92px;
+}
+.image3 {
+  width: 34.2px;
+  height: 29.92px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image4 {
+  width: 14.96px;
+  height: 16.54px;
+  position: absolute;
+  top: 7.13px;
+  left: 9.97px;
+}
+.text2 {
+  font-family: "Source Han Sans CN";
+  font-size: 28px;
+  white-space: nowrap;
+  color: rgba(24, 136, 255, 1);
+  line-height: normal;
+  font-weight: 700;
+}
+.container3 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 633.59px;
+  height: 108px;
+}
+.text3 {
+  width: 633.59px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  text-align: justify;
+  color: rgba(81, 81, 81, 1);
+  line-height: 36px;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+.image5 {
+  width: 542.43px;
+  height: 4px;
+  margin-bottom: 24px;
+}
+.wrap2 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+.container4 {
+  height: 60px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    140deg,
+    rgba(199, 232, 255, 1) -64.64999999999999%,
+    rgba(255, 255, 255, 1) 128.6%
+  );
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding-right: 32px;
+  padding-left: 32px;
+  margin-bottom: 16px;
+}
+.content2 {
+  margin-right: 7px;
+  position: relative;
+  width: 34.2px;
+  height: 29.92px;
+}
+.image6 {
+  width: 34.2px;
+  height: 29.92px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image7 {
+  width: 14.96px;
+  height: 16.54px;
+  position: absolute;
+  top: 7.13px;
+  left: 9.97px;
+}
+.text4 {
+  font-family: "Source Han Sans CN";
+  font-size: 28px;
+  white-space: nowrap;
+  color: rgba(24, 136, 255, 1);
+  line-height: normal;
+  font-weight: 700;
+}
+.container5 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 633.59px;
+  height: 144px;
+}
+.text5 {
+  width: 633.59px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  text-align: justify;
+  color: rgba(81, 81, 81, 1);
+  line-height: 36px;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+.image8 {
+  width: 542.43px;
+  height: 4px;
+  margin-bottom: 24px;
+}
+.wrap3 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.container6 {
+  height: 60px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    142deg,
+    rgba(199, 232, 255, 1) -67.32000000000001%,
+    rgba(255, 255, 255, 1) 136.5%
+  );
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  padding-right: 32px;
+  padding-left: 32px;
+  margin-bottom: 16px;
+}
+.content3 {
+  margin-right: 7px;
+  position: relative;
+  width: 34.2px;
+  height: 29.92px;
+}
+.image9 {
+  width: 34.2px;
+  height: 29.92px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.image10 {
+  width: 14.96px;
+  height: 16.54px;
+  position: absolute;
+  top: 7.13px;
+  left: 9.97px;
+}
+.text6 {
+  font-family: "Source Han Sans CN";
+  font-size: 28px;
+  white-space: nowrap;
+  color: rgba(24, 136, 255, 1);
+  line-height: normal;
+  font-weight: 700;
+}
+.container7 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 633.59px;
+  height: 72px;
+}
+.text7 {
+  width: 633.59px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  text-align: justify;
+  color: rgba(81, 81, 81, 1);
+  line-height: 36px;
+  font-weight: 400;
+  flex-shrink: 0;
+}

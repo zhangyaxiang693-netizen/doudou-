@@ -1,0 +1,49 @@
+{
+  "id": "查看更多",
+  "name": "查看更多",
+  "title": "查看更多",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "查看更多入口文案组件。",
+  "reactComponent": "查看更多",
+  "dimensions": {
+    "width": 286,
+    "height": 33
+  },
+  "fonts": [
+    {
+      "text": "查看更多内容诊断信息 >>",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "查看更多",
+      "查看更多内容诊断信息",
+      "内容诊断信息",
+      "更多诊断信息"
+    ],
+    "textProps": [
+      "text"
+    ]
+  },
+  "props": [
+    {
+      "key": "text",
+      "name": "text",
+      "label": "文案",
+      "type": "string",
+      "default": "查看更多内容诊断信息\u00a0>>",
+      "description": "查看更多入口展示文案。"
+    }
+  ]
+}

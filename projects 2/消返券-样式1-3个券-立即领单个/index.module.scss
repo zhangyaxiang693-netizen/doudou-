@@ -1,0 +1,154 @@
+.page {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.wrap {
+  width: 600px;
+  height: 192.2px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  border-radius: 46px;
+  overflow: hidden;
+}
+.container {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+.content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.main {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  width: 600px;
+}
+.section {
+  width: 162.49px;
+  height: 192.2px;
+  box-sizing: border-box;
+  position: relative;
+  border-radius: 46px;
+  overflow: hidden;
+}
+.subSection {
+  width: 161.6px;
+  box-sizing: border-box;
+  min-height: 52.72px;
+  display: flex;
+  height: 52.72px;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  position: absolute;
+  top: 126.64px;
+  left: 0.4px;
+}
+.subSection1 {
+  position: absolute;
+  top: 102.63px;
+  left: 0.74px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 161.6px;
+  height: 40.41px;
+}
+.subSection2 {
+  width: 161.6px;
+  height: 27.85px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 74.78px;
+  left: 0.74px;
+}
+.text {
+  width: 139px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 22px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 217, 229, 1);
+  line-height: normal;
+  font-weight: 400;
+}
+.subSection3 {
+  width: 161.6px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 32.89px;
+  left: 0.74px;
+}
+.text1 {
+  margin-right: 4px;
+  font-family: "Douyin Number ABC";
+  font-size: 50px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 255, 255, 1);
+  line-height: 42px;
+  font-weight: 800;
+}
+.text2 {
+  font-family: "Source Han Sans CN";
+  font-size: 26px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 255, 255, 1);
+  line-height: 38px;
+  font-weight: 700;
+}
+.subSection4 {
+  width: 136px;
+  height: 56px;
+  border-radius: 9999px;
+  box-sizing: border-box;
+  background: rgba(255, 94, 164, 1);
+  position: absolute;
+  top: 116.6px;
+  left: 13px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.text3 {
+  font-family: "Source Han Sans CN";
+  font-size: 26px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 158, 202, 1);
+  line-height: 32px;
+  font-weight: 700;
+  flex-shrink: 0;
+}

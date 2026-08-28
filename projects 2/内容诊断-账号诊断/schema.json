@@ -1,0 +1,138 @@
+{
+  "id": "内容诊断-账号诊断",
+  "name": "内容诊断-账号诊断",
+  "title": "内容诊断-账号诊断",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "账号诊断组件，展示账号增长诊断提示和投放按钮。",
+  "reactComponent": "内容诊断-账号诊断",
+  "dimensions": {
+    "width": 702,
+    "height": 191.25
+  },
+  "fonts": [
+    {
+      "text": "一键上热门",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "32px",
+      "usage": "按钮文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "近一周的涨粉速度对比上周下降40%",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "28px",
+      "lineHeight": "normal",
+      "usage": "标题",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "建议投放「粉丝量」, 提升涨粉速度。",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "说明文",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "内容诊断-账号诊断",
+      "内容诊断账号诊断",
+      "账号诊断",
+      "涨粉速度",
+      "粉丝量"
+    ],
+    "textProps": [
+      "buttonText",
+      "titleText",
+      "descriptionText"
+    ]
+  },
+  "props": [
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "一键上热门",
+      "description": "按钮展示文案。"
+    },
+    {
+      "key": "titleText",
+      "name": "titleText",
+      "label": "标题",
+      "type": "string",
+      "default": "近一周的涨粉速度对比上周下降40%",
+      "description": "账号诊断标题文案。"
+    },
+    {
+      "key": "descriptionText",
+      "name": "descriptionText",
+      "label": "说明文",
+      "type": "string",
+      "default": "建议投放「粉丝量」,\u00a0提升涨粉速度。",
+      "description": "账号诊断说明文案。"
+    },
+    {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮颜色开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮颜色结束",
+      "type": "color",
+      "default": "#FF229F"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "buttonGradientStart": "#FF1473",
+        "buttonGradientEnd": "#FF229F"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "buttonGradientStart": "#FF180E",
+        "buttonGradientEnd": "#FF166E"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "buttonGradientStart": "#FF4501",
+        "buttonGradientEnd": "#FF7B02"
+      }
+    }
+  ]
+}

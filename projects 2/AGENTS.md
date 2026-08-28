@@ -65,7 +65,7 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/api/fetch-feishu-doc` | 抓取飞书公开文档正文（body: `{url}`） |
+| POST | `/api/fetch-feishu-doc` | 读取飞书内部或公开文档正文（body: `{url}`） |
 
 ## 组件开发
 

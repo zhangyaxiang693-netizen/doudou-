@@ -5,7 +5,11 @@
     "colors": {
       "pink": "粉色",
       "red": "红色",
-      "magenta": "玫红色"
+      "magenta": "玫红色",
+      "coral": "珊瑚色",
+      "purple": "紫色",
+      "orange": "橘色",
+      "blue": "蓝色"
     },
     "note": "source 保留原始 Figma 文件名，组件引用建议使用 id 和 color。"
   },
@@ -249,6 +253,138 @@
           "name": "上传",
           "color": "blue",
           "source": "07-special/special-upload-blue.svg"
+        }
+      ]
+    },
+    {
+      "id": "business-three-color",
+      "name": "业务图标（三色系）",
+      "icons": [
+        {
+          "id": "biz-task",
+          "name": "任务",
+          "variants": {
+            "pink": "粉色系/Property 1=任务.svg",
+            "blue": "蓝色系/Property 1=任务-1.svg",
+            "orange": "橘色系/Property 1=任务-2.svg"
+          }
+        },
+        {
+          "id": "biz-coupon",
+          "name": "券",
+          "variants": {
+            "pink": "粉色系/Property 1=券.svg",
+            "blue": "蓝色系/Property 1=券-1.svg",
+            "orange": "橘色系/Property 1=券-2.svg"
+          }
+        },
+        {
+          "id": "biz-helper",
+          "name": "小助手",
+          "variants": {
+            "pink": "粉色系/Property 1=小助手.svg",
+            "blue": "蓝色系/Property 1=小助手-1.svg",
+            "orange": "橘色系/Property 1=小助手-2.svg"
+          }
+        },
+        {
+          "id": "biz-tip",
+          "name": "提示",
+          "variants": {
+            "pink": "粉色系/Property 1=提示.svg",
+            "blue": "蓝色系/Property 1=提示-1.svg",
+            "orange": "橘色系/Property 1=提示-2.svg"
+          }
+        },
+        {
+          "id": "biz-calendar",
+          "name": "日历",
+          "variants": {
+            "pink": "粉色系/Property 1=日历.svg",
+            "blue": "蓝色系/Property 1=日历-1.svg",
+            "orange": "橘色系/Property 1=日历-2.svg"
+          }
+        },
+        {
+          "id": "biz-case",
+          "name": "案例",
+          "variants": {
+            "pink": "粉色系/Property 1=案例.svg",
+            "blue": "蓝色系/Property 1=案例-1.svg",
+            "orange": "橘色系/Property 1=案例-2.svg"
+          }
+        },
+        {
+          "id": "biz-fire",
+          "name": "火",
+          "variants": {
+            "pink": "粉色系/Property 1=火.svg",
+            "blue": "蓝色系/Property 1=火-1.svg",
+            "orange": "橘色系/Property 1=火-2.svg"
+          }
+        },
+        {
+          "id": "biz-heart",
+          "name": "爱心",
+          "variants": {
+            "pink": "粉色系/Property 1=爱心.svg",
+            "blue": "蓝色系/Property 1=爱心-1.svg",
+            "orange": "橘色系/Property 1=爱心-2.svg"
+          }
+        },
+        {
+          "id": "biz-gift",
+          "name": "礼盒",
+          "variants": {
+            "pink": "粉色系/Property 1=礼盒.svg",
+            "blue": "蓝色系/Property 1=礼盒-1.svg",
+            "orange": "橘色系/Property 1=礼盒-2.svg"
+          }
+        },
+        {
+          "id": "biz-redpacket",
+          "name": "红包",
+          "variants": {
+            "pink": "粉色系/Property 1=红包.svg",
+            "blue": "蓝色系/Property 1=红包-1.svg",
+            "orange": "橘色系/Property 1=红包-2.svg"
+          }
+        },
+        {
+          "id": "biz-honor",
+          "name": "荣誉",
+          "variants": {
+            "pink": "粉色系/Property 1=荣誉.svg",
+            "blue": "蓝色系/Property 1=荣誉-1.svg",
+            "orange": "橘色系/Property 1=荣誉-2.svg"
+          }
+        },
+        {
+          "id": "biz-honor2",
+          "name": "荣誉2",
+          "variants": {
+            "pink": "粉色系/Property 1=荣誉2.svg",
+            "blue": "蓝色系/Property 1=荣誉2-1.svg",
+            "orange": "橘色系/Property 1=荣誉2-2.svg"
+          }
+        },
+        {
+          "id": "biz-video",
+          "name": "视频",
+          "variants": {
+            "pink": "粉色系/Property 1=视频.svg",
+            "blue": "蓝色系/Property 1=视频-1.svg",
+            "orange": "橘色系/Property 1=视频-2.svg"
+          }
+        },
+        {
+          "id": "biz-limited",
+          "name": "限时",
+          "variants": {
+            "pink": "粉色系/Property 1=限时.svg",
+            "blue": "蓝色系/Property 1=限时-1.svg",
+            "orange": "橘色系/Property 1=限时-2.svg"
+          }
         }
       ]
     }

@@ -1,0 +1,73 @@
+{
+  "id": "流量扶持券",
+  "name": "流量扶持券",
+  "title": "流量扶持券",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "流量扶持券组件，展示流量扶持奖励文案。",
+  "reactComponent": "流量扶持券",
+  "dimensions": {
+    "width": 626,
+    "height": 155
+  },
+  "fonts": [
+    {
+      "text": "520",
+      "family": "Douyin Number ABC",
+      "weight": 800,
+      "size": "50px",
+      "lineHeight": "normal",
+      "usage": "奖励数字",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-ExtraBold.ttf"
+      }
+    },
+    {
+      "text": "元",
+      "family": "MFBenHeiNoncommercial",
+      "weight": 400,
+      "size": "36px",
+      "lineHeight": "40px",
+      "usage": "奖励单位",
+      "source": {
+        "status": "exact",
+        "file": "造字工房本黑体.ttf"
+      }
+    },
+    {
+      "text": "流量扶持",
+      "family": "MFBenHeiNoncommercial",
+      "weight": 400,
+      "size": "36px",
+      "lineHeight": "40px",
+      "usage": "奖励文案",
+      "source": {
+        "status": "exact",
+        "file": "造字工房本黑体.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "流量扶持券",
+      "流量扶持",
+      "流量",
+      "520元流量扶持"
+    ],
+    "textProps": [
+      "supportText"
+    ]
+  },
+  "props": [
+    {
+      "key": "supportText",
+      "name": "supportText",
+      "label": "文本",
+      "type": "string",
+      "default": "520元流量扶持",
+      "description": "组件展示文本，组件会自动拆分数字和后缀以保持原始版式。"
+    }
+  ]
+}

@@ -1,0 +1,266 @@
+{
+  "id": "消耗返-样式1-3个券",
+  "name": "消耗返-样式1-3个券",
+  "title": "消耗返-样式1-3个券",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "消耗返模块样式1（3个券），三列优惠券卡片展示，包含金额、使用条件、未达标按钮、底部消耗可得文案。",
+  "reactComponent": "消耗返-样式1-3个券",
+  "dimensions": {
+    "width": 600,
+    "height": 286
+  },
+  "fonts": [
+    {
+      "text": "满50元可用",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "22px",
+      "lineHeight": "normal",
+      "usage": "满减使用条件",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    },
+    {
+      "text": "50",
+      "family": "Douyin Number ABC",
+      "weight": 600,
+      "size": "50px",
+      "lineHeight": "42px",
+      "usage": "券金额",
+      "source": {
+        "status": "exact",
+        "file": "DouyinNumberABC-Medium.ttf"
+      }
+    },
+    {
+      "text": "元",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "38px",
+      "usage": "券金额单位",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "未达标",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "32px",
+      "usage": "按钮文字",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "消耗30元得",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "30px",
+      "usage": "底部消耗可得文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "消耗返-样式1-3个券",
+      "消耗返样式1",
+      "消耗返",
+      "3个券",
+      "优惠券",
+      "金额",
+      "满多少可用",
+      "消耗多少可得",
+      "未达标",
+      "已达标"
+    ],
+    "textProps": [
+      "firstAmountText",
+      "firstConditionText",
+      "firstButtonText",
+      "secondAmountText",
+      "secondConditionText",
+      "secondButtonText",
+      "thirdAmountText",
+      "thirdConditionText",
+      "thirdButtonText",
+      "firstEarnText",
+      "secondEarnText",
+      "thirdEarnText"
+    ]
+  },
+  "props": [
+    {
+      "key": "firstAmountText",
+      "name": "firstAmountText",
+      "label": "第一张券金额",
+      "type": "string",
+      "default": "50"
+    },
+    {
+      "key": "firstConditionText",
+      "name": "firstConditionText",
+      "label": "第一张满多少可用",
+      "type": "string",
+      "default": "满50元可用"
+    },
+    {
+      "key": "firstButtonText",
+      "name": "firstButtonText",
+      "label": "第一张按钮文案",
+      "type": "string",
+      "default": "未达标"
+    },
+    {
+      "key": "secondAmountText",
+      "name": "secondAmountText",
+      "label": "第二张券金额",
+      "type": "string",
+      "default": "50"
+    },
+    {
+      "key": "secondConditionText",
+      "name": "secondConditionText",
+      "label": "第二张满多少可用",
+      "type": "string",
+      "default": "满50元可用"
+    },
+    {
+      "key": "secondButtonText",
+      "name": "secondButtonText",
+      "label": "第二张按钮文案",
+      "type": "string",
+      "default": "未达标"
+    },
+    {
+      "key": "thirdAmountText",
+      "name": "thirdAmountText",
+      "label": "第三张券金额",
+      "type": "string",
+      "default": "50"
+    },
+    {
+      "key": "thirdConditionText",
+      "name": "thirdConditionText",
+      "label": "第三张满多少可用",
+      "type": "string",
+      "default": "满50元可用"
+    },
+    {
+      "key": "thirdButtonText",
+      "name": "thirdButtonText",
+      "label": "第三张按钮文案",
+      "type": "string",
+      "default": "未达标"
+    },
+    {
+      "key": "firstEarnText",
+      "name": "firstEarnText",
+      "label": "底部消耗多少可得1",
+      "type": "string",
+      "default": "消耗30元得"
+    },
+    {
+      "key": "secondEarnText",
+      "name": "secondEarnText",
+      "label": "底部消耗多少可得2",
+      "type": "string",
+      "default": "消耗60元得"
+    },
+    {
+      "key": "thirdEarnText",
+      "name": "thirdEarnText",
+      "label": "底部消耗多少可得3",
+      "type": "string",
+      "default": "消耗80元得"
+    },
+    {
+      "key": "cardGradientStart",
+      "name": "cardGradientStart",
+      "label": "卡片背景色开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "cardGradientEnd",
+      "name": "cardGradientEnd",
+      "label": "卡片背景色结束",
+      "type": "color",
+      "default": "#FF229F"
+    },
+    {
+      "key": "buttonBackground",
+      "name": "buttonBackground",
+      "label": "未达标按钮背景色",
+      "type": "color",
+      "default": "rgba(255, 94, 164, 1)"
+    },
+    {
+      "key": "buttonTextColor",
+      "name": "buttonTextColor",
+      "label": "按钮文字颜色",
+      "type": "color",
+      "default": "rgba(255, 158, 202, 1)"
+    },
+    {
+      "key": "waveAccentColor",
+      "name": "waveAccentColor",
+      "label": "券身装饰线颜色",
+      "type": "color",
+      "default": "#FF62A0"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "cardGradientStart": "#FF1473",
+        "cardGradientEnd": "#FF229F",
+        "buttonBackground": "rgba(255, 94, 164, 1)",
+        "buttonTextColor": "rgba(255, 158, 202, 1)",
+        "waveAccentColor": "#FF62A0"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "cardGradientStart": "#FF180E",
+        "cardGradientEnd": "#FF166E",
+        "buttonBackground": "#FF8290",
+        "buttonTextColor": "#FFB8C9",
+        "waveAccentColor": "#FF6068"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "cardGradientStart": "#FF4401",
+        "cardGradientEnd": "#FF7C02",
+        "buttonBackground": "#FF8571",
+        "buttonTextColor": "#FFC9B5",
+        "waveAccentColor": "#FF8C3E"
+      }
+    }
+  ]
+}

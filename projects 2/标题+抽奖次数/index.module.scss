@@ -1,0 +1,147 @@
+@font-face {
+  font-family: "MFBenHeiNoncommercial";
+  src: url("../fonts/造字工房本黑体.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Source Han Sans CN";
+  src: url("../fonts/SOURCEHANSANSCN-BOLD.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Douyin Number ABC";
+  src: url("../fonts/DouyinNumberABC-Medium.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Douyin Number ABC";
+  src: url("../fonts/DouyinNumberABC-Bold.otf") format("opentype");
+}
+
+.page {
+  width: 620px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.wrap {
+  margin-right: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 295px;
+  height: 50px;
+}
+
+.container {
+  width: 295px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+}
+
+.content {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  overflow: visible;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.iconWrapper {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconWrapper svg {
+  width: 50px;
+  height: 50px;
+  display: block;
+}
+
+.main {
+  display: none;
+}
+
+.content1 {
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.text {
+  font-family: "MFBenHeiNoncommercial";
+  font-size: 36px;
+  white-space: nowrap;
+  color: rgba(45, 45, 45, 1);
+  line-height: 40px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.wrap1 {
+  width: 252.11px;
+  height: 46px;
+  box-sizing: border-box;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.text1 {
+  font-family: "Source Han Sans CN";
+  font-size: 26px;
+  white-space: nowrap;
+  width: 198px;
+  text-align: right;
+  color: rgba(38, 38, 38, 1);
+  line-height: 46px;
+  font-weight: 700;
+  letter-spacing: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.text1__listwrap {
+  width: 198px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.text2 {
+  font-family: "Douyin Number ABC";
+  font-size: 26px;
+  white-space: nowrap;
+  color: rgba(38, 38, 38, 1);
+  line-height: 46px;
+  font-weight: 500;
+  letter-spacing: 0;
+  margin-left: 6px;
+  min-width: 18px;
+  text-align: left;
+  transform: translate(-14px, 2px);
+}
