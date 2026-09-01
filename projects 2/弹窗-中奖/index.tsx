@@ -65,9 +65,18 @@ function normalizeColor(value?: string) {
   return String(value || '').trim().toUpperCase()
 }
 
+function getDefaultTrafficCouponThreshold(amount?: string) {
+  const thresholds: Record<string, string> = {
+    5: '30',
+    6: '68',
+    10: '100',
+  }
+  return thresholds[String(amount || '').trim()] || '00'
+}
+
 function renderTrafficCouponCopy(amount?: string, threshold?: string) {
   return amount
-    ? `满${threshold || '00'}元赠价值${amount}元流量`
+    ? `满${threshold || getDefaultTrafficCouponThreshold(amount)}元赠价值${amount}元流量`
     : ''
 }
 
@@ -87,7 +96,7 @@ function resolvePrize(value: PrizeValue | undefined, fallbackName: string) {
   if (prize && typeof prize === 'object') {
     const name = prize.name || prize.title || prize.label || fallbackName
     const copyAmount = getTrafficCouponAmount(name) || prize.copyAmount
-    const copyThreshold = prize.copyThreshold || (copyAmount ? '00' : '')
+    const copyThreshold = prize.copyThreshold || (copyAmount ? getDefaultTrafficCouponThreshold(copyAmount) : '')
     return {
       name,
       image: prize.image || prize.imageUrl || prize.url || prize.src || '',
@@ -139,10 +148,12 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const selectedIndex = Math.max(1, Math.min(availablePrizeCount, Number(selectedPrizeIndex) || 1))
   const selectedPrize = prizes[selectedIndex - 1]
   const displayedPrizeText = prizeText || selectedPrize.name
-  const displayedPrizeSubText = prizeSubText || selectedPrize.copy || '满00元赠价值5元流量'
+  const displayedPrizeSubText = prizeSubText || selectedPrize.copy || '满30元赠价值5元流量'
   const isTrafficCouponPrize = /^(?:5|6|10)元流量券$/.test(selectedPrize.name)
   const isOfficialRecommendationPrize = selectedPrize.name === 'DOU+官方推荐机会'
-  const isDouziFamilyPackPrize = selectedPrize.name === 'DOU仔周边全家福' || selectedPrize.name === 'DOU仔全家福'
+  const isDouziFamilyPackPrize = selectedPrize.name === 'DOU仔周边全家福' ||
+    selectedPrize.name === 'DOU仔全家福' ||
+    selectedPrize.name === 'DOU仔全家福随机发'
   const isContentDiagnosisPrize = selectedPrize.name === '内容诊断积分'
   const hasNoSubText = selectedPrize.name === '1314元心动券包' ||
     selectedPrize.name === '1314心动券包' ||

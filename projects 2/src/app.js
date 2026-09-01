@@ -5,6 +5,15 @@ const GUIDED_CUT_EXPORT_BOTTOM_SPACE = 32;
 const GUIDED_TASK_BAR_EXPORT_BOTTOM_SPACE = 16;
 const DEFAULT_TRAFFIC_COUPON_THRESHOLD = "00";
 
+function getDefaultTrafficCouponThreshold(amount) {
+  const thresholds = {
+    5: "30",
+    6: "68",
+    10: "100",
+  };
+  return thresholds[String(amount || "").trim()] || DEFAULT_TRAFFIC_COUPON_THRESHOLD;
+}
+
 const _schemaModules = import.meta.glob('../*/schema.json', { eager: true, as: 'json' });
 const _cssVarModules = import.meta.glob('../*/index.module.scss', { eager: true, query: '?raw', import: 'default' });
 const _themeHeaderImageModules = import.meta.glob("../色系头图/*.png", { eager: true, query: "?url", import: "default" });
@@ -17,24 +26,24 @@ const mockPrizeLibrary = [
     name: "5元流量券",
     image: new URL("../九宫格-奖品库/5元流量券.png", import.meta.url).href,
     copyAmount: "5",
-    copyThreshold: DEFAULT_TRAFFIC_COUPON_THRESHOLD,
-    copy: "满00元赠价值5元流量",
+    copyThreshold: "30",
+    copy: "满30元赠价值5元流量",
   },
   {
     id: "traffic_coupon_6",
     name: "6元流量券",
     image: new URL("../九宫格-奖品库/6元流量券.png", import.meta.url).href,
     copyAmount: "6",
-    copyThreshold: DEFAULT_TRAFFIC_COUPON_THRESHOLD,
-    copy: "满00元赠价值6元流量",
+    copyThreshold: "68",
+    copy: "满68元赠价值6元流量",
   },
   {
     id: "traffic_coupon_10",
     name: "10元流量券",
     image: new URL("../九宫格-奖品库/10元流量券.png", import.meta.url).href,
     copyAmount: "10",
-    copyThreshold: DEFAULT_TRAFFIC_COUPON_THRESHOLD,
-    copy: "满00元赠价值10元流量",
+    copyThreshold: "100",
+    copy: "满100元赠价值10元流量",
   },
   {
     id: "official_recommendation",
@@ -50,7 +59,7 @@ const mockPrizeLibrary = [
   },
   {
     id: "douzi_family_pack",
-    name: "DOU仔周边全家福",
+    name: "DOU仔全家福随机发",
     image: new URL("../九宫格-奖品库/dou仔周边全家福.png", import.meta.url).href,
     copy: "毛绒公仔/毛绒挂件/AI抖仔挂件/盲盒/冰箱贴\n随机发一件",
   },
@@ -5062,7 +5071,7 @@ function getTrafficCouponCopyParts(value) {
 
 function renderTrafficCouponCopy(amount, threshold) {
   return amount
-    ? `满${threshold || DEFAULT_TRAFFIC_COUPON_THRESHOLD}元赠价值${amount}元流量`
+    ? `满${threshold || getDefaultTrafficCouponThreshold(amount)}元赠价值${amount}元流量`
     : "";
 }
 
@@ -5093,7 +5102,7 @@ function normalizePrizeCopyMeta(prize = {}, sourceText = "") {
   const copyThreshold =
     copyParts.threshold ||
     prize.copyThreshold ||
-    (copyAmount ? DEFAULT_TRAFFIC_COUPON_THRESHOLD : "");
+    (copyAmount ? getDefaultTrafficCouponThreshold(copyAmount) : "");
   const renderedCopy = copyAmount
     ? renderTrafficCouponCopy(copyAmount, copyThreshold)
     : copy || (isNoPrizeCopyName(name) ? "" : "满30元赠价值5元流量");
@@ -5186,6 +5195,8 @@ function findPrizeLibraryItemByText(value) {
     dou官方推荐机会: "official_recommendation",
     "dou+官方推荐机会": "official_recommendation",
     dou仔周边: "douzi_merch",
+    dou仔全家福: "douzi_family_pack",
+    dou仔全家福随机发: "douzi_family_pack",
     dou仔周边全家福: "douzi_family_pack",
     dou仔周边帆布包: "douzi_canvas_bag",
   };
@@ -10856,9 +10867,47 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     ensureLotteryPopupResultStates(popupNode);
   }
 
+  function syncLotteryPopupCurrentPrizeCopy(popupNode) {
+    if (!popupNode?.isLotteryResultPopup) return;
+    const winProps = popupNode.schemaId === "弹窗-中奖"
+      ? popupNode.props || {}
+      : popupNode.lotteryWinProps || {};
+    const selectedPrizeIndex = clamp(
+      Number(winProps.selectedPrizeIndex || popupNode.lotteryWinProps?.selectedPrizeIndex || 1),
+      1,
+      Math.max(1, Number(winProps.prizeCount || popupNode.lotteryWinProps?.prizeCount || 1)),
+    );
+    const prizeSubText = String(winProps.prizeSubText ?? "").trim();
+    if (!prizeSubText) return;
+    const copyKey = `prize${selectedPrizeIndex}Copy`;
+    const prizeKey = `prize${selectedPrizeIndex}`;
+    const nextWinProps = {
+      ...(popupNode.lotteryWinProps || {}),
+      ...(popupNode.schemaId === "弹窗-中奖" ? popupNode.props || {} : {}),
+      [copyKey]: prizeSubText,
+      prizeSubText,
+    };
+    if (nextWinProps[prizeKey]) {
+      nextWinProps[prizeKey] = serializePrizeValueWithCopy(nextWinProps[prizeKey], prizeSubText);
+    }
+    popupNode.lotteryWinProps = nextWinProps;
+    if (popupNode.schemaId === "弹窗-中奖") {
+      popupNode.props = {
+        ...(popupNode.props || {}),
+        [copyKey]: prizeSubText,
+        prizeSubText,
+      };
+      if (popupNode.props[prizeKey]) {
+        popupNode.props[prizeKey] = nextWinProps[prizeKey];
+      }
+    }
+    ensureLotteryPopupResultStates(popupNode);
+  }
+
   function syncPopupPrizesToSourceLottery(popupNode) {
     const lotteryNode = findSourceLotteryNodeForPopup(popupNode);
     if (!popupNode?.props || !lotteryNode?.props) return;
+    syncLotteryPopupCurrentPrizeCopy(popupNode);
     const winProps = popupNode.lotteryWinProps || popupNode.props || {};
     const prizeCount = Math.max(1, Number(winProps.prizeCount) || 1);
     lotteryNode.props.prizeCount = prizeCount;
@@ -10897,6 +10946,7 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
   function refreshAfterGuidedNodePropChange() {
     const selected = getSelectedNodeInfo();
     if (selected?.node?.isLotteryResultPopup) {
+      syncLotteryPopupCurrentPrizeCopy(selected.node);
       syncPopupPrizesToSourceLottery(selected.node);
     }
     syncGuidedLotteryPopupsForPage(activePage());
@@ -15673,6 +15723,7 @@ function getNodeGuideGuidedCutExportEntries(page, node, nodeIndex) {
 }
 
 function getLotteryPopupGuidedCutExportEntries(page, node, nodeIndex) {
+  syncLotteryPopupCurrentPrizeCopy(node);
   const winProps = node.lotteryWinProps || node.props || {};
   const prizeCount = Math.max(1, Number(winProps.prizeCount || 1));
   const winnerEntries = Array.from({ length: prizeCount }, (_, arrayIndex) => {
@@ -15691,6 +15742,7 @@ function getLotteryPopupGuidedCutExportEntries(page, node, nodeIndex) {
       amountText: splitPrize.amountText,
       prizeText: splitPrize.prizeText,
       prizeSubText:
+        (Number(winProps.selectedPrizeIndex) === prizeIndex ? winProps.prizeSubText : "") ||
         winProps[`prize${prizeIndex}Copy`] ||
         parsedPrize?.copy ||
         "满30元赠价值5元流量",
@@ -18984,6 +19036,10 @@ function bindEvents() {
         propKey,
         value,
       );
+      if (state.view === "guided-preview" && found.node?.isLotteryResultPopup) {
+        syncLotteryPopupCurrentPrizeCopy(found.node);
+        syncPopupPrizesToSourceLottery(found.node);
+      }
       syncMeasuredComponentFrames();
       positionContextControls();
       return;
