@@ -84,7 +84,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
         </div>
       </div>
       <div className={styles.wrap1}>
-        <div className={styles.text2} style={totalTextStyle}>{amountText}</div>
+        <div className={styles.text2} style={totalTextStyle}>{hideExportMetaNumbers ? '' : amountText}</div>
         <div className={styles.text3} style={totalTextStyle}>
           <div className={styles.text3__listwrap}>元</div>
         </div>
@@ -102,9 +102,6 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             </div>
             <div className={styles.text8}>张券</div>
           </div>
-          <div className={styles.text9}>仅剩</div>
-            <div className={styles.text10}>{hideExportMetaNumbers ? '' : '12'}</div>
-          <div className={styles.text11}>小时</div>
         </div>
       </div>
     </div>

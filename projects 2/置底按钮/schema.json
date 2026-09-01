@@ -58,6 +58,13 @@
       "label": "按钮颜色结束",
       "type": "color",
       "default": "#FF229F"
+    },
+    {
+      "key": "backgroundGradientColor",
+      "name": "backgroundGradientColor",
+      "label": "底部背景渐变色",
+      "type": "color",
+      "default": "#FFBBD8"
     }
   ],
   "variants": [
@@ -69,7 +76,20 @@
       },
       "props": {
         "buttonGradientStart": "#FF1473",
-        "buttonGradientEnd": "#FF229F"
+        "buttonGradientEnd": "#FF229F",
+        "backgroundGradientColor": "#FFBBD8"
+      }
+    },
+    {
+      "id": "womens_day_parent",
+      "name": "三八父级页面",
+      "themeBinding": {
+        "parentThemeId": "node-womens-day"
+      },
+      "props": {
+        "buttonGradientStart": "#FF1473",
+        "buttonGradientEnd": "#FF229F",
+        "backgroundGradientColor": "#FFE0A8"
       }
     },
     {
@@ -80,7 +100,80 @@
       },
       "props": {
         "buttonGradientStart": "#FF180D",
-        "buttonGradientEnd": "#FF166F"
+        "buttonGradientEnd": "#FF166F",
+        "backgroundGradientColor": "#8FC4FF"
+      }
+    },
+    {
+      "id": "cyan_parent",
+      "name": "青色父级页面",
+      "themeBinding": {
+        "parentThemeId": "daily-cyan"
+      },
+      "props": {
+        "buttonGradientStart": "#FF180D",
+        "buttonGradientEnd": "#FF166F",
+        "backgroundGradientColor": "#98F0F5"
+      }
+    },
+    {
+      "id": "purple_parent",
+      "name": "紫色父级页面",
+      "themeBinding": {
+        "parentThemeId": "daily-purple"
+      },
+      "props": {
+        "buttonGradientStart": "#FF180D",
+        "buttonGradientEnd": "#FF166F",
+        "backgroundGradientColor": "#D9A8FF"
+      }
+    },
+    {
+      "id": "green_parent",
+      "name": "绿色父级页面",
+      "themeBinding": {
+        "parentThemeId": "daily-green"
+      },
+      "props": {
+        "buttonGradientStart": "#FF180D",
+        "buttonGradientEnd": "#FF166F",
+        "backgroundGradientColor": "#D5F5AD"
+      }
+    },
+    {
+      "id": "breath_parent",
+      "name": "气息父级页面",
+      "themeBinding": {
+        "parentThemeId": "node-breath"
+      },
+      "props": {
+        "buttonGradientStart": "#FF180D",
+        "buttonGradientEnd": "#FF166F",
+        "backgroundGradientColor": "#FFC3E8"
+      }
+    },
+    {
+      "id": "anniversary_parent",
+      "name": "周年庆父级页面",
+      "themeBinding": {
+        "parentThemeId": "node-anniversary"
+      },
+      "props": {
+        "buttonGradientStart": "#FF180D",
+        "buttonGradientEnd": "#FF166F",
+        "backgroundGradientColor": "#FFC5C5"
+      }
+    },
+    {
+      "id": "double_festival_parent",
+      "name": "双旦父级页面",
+      "themeBinding": {
+        "parentThemeId": "node-double-festival"
+      },
+      "props": {
+        "buttonGradientStart": "#FF180D",
+        "buttonGradientEnd": "#FF166F",
+        "backgroundGradientColor": "#BEEBFF"
       }
     },
     {
@@ -91,7 +184,56 @@
       },
       "props": {
         "buttonGradientStart": "#FF4501",
-        "buttonGradientEnd": "#FF7C02"
+        "buttonGradientEnd": "#FF7C02",
+        "backgroundGradientColor": "#FFC49A"
+      }
+    },
+    {
+      "id": "yellow_parent",
+      "name": "黄色父级页面",
+      "themeBinding": {
+        "parentThemeId": "daily-yellow"
+      },
+      "props": {
+        "buttonGradientStart": "#FF4501",
+        "buttonGradientEnd": "#FF7C02",
+        "backgroundGradientColor": "#FFECA3"
+      }
+    },
+    {
+      "id": "new_year_parent",
+      "name": "新年父级页面",
+      "themeBinding": {
+        "parentThemeId": "node-new-year"
+      },
+      "props": {
+        "buttonGradientStart": "#FF4501",
+        "buttonGradientEnd": "#FF7C02",
+        "backgroundGradientColor": "#FFC3C6"
+      }
+    },
+    {
+      "id": "mid_autumn_parent",
+      "name": "中秋父级页面",
+      "themeBinding": {
+        "parentThemeId": "node-mid-autumn"
+      },
+      "props": {
+        "buttonGradientStart": "#FF4501",
+        "buttonGradientEnd": "#FF7C02",
+        "backgroundGradientColor": "#FFC5F0"
+      }
+    },
+    {
+      "id": "double_11_parent",
+      "name": "双11父级页面",
+      "themeBinding": {
+        "parentThemeId": "node-double-11"
+      },
+      "props": {
+        "buttonGradientStart": "#FF4501",
+        "buttonGradientEnd": "#FF7C02",
+        "backgroundGradientColor": "#FFE3A8"
       }
     }
   ]

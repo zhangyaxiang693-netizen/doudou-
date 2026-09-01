@@ -34,7 +34,7 @@
 }
 .content {
   position: absolute;
-  top: 223.79px;
+  top: 177.79px;
   left: 113.45px;
   width: 348.25px;
   height: 74.12px;
@@ -54,16 +54,32 @@
   left: 85.81px;
 }
 .image3 {
-  width: 244.92px;
-  height: 265.76px;
+  width: 213.86px;
+  height: 232px;
   object-fit: contain;
   position: absolute;
   top: 0px;
-  left: 165.21px;
+  left: 181.07px;
+}
+.trafficCouponImage {
+  transform: scale(1.36);
+  transform-origin: center center;
+}
+.officialRecommendationImage {
+  transform: scale(2);
+  transform-origin: center center;
+}
+.familyPackImage {
+  transform: translateX(16px) scale(1.22);
+  transform-origin: center center;
+}
+.contentDiagnosisImage {
+  transform: translate(10px, -10px) scale(1.08);
+  transform-origin: center center;
 }
 .text {
   position: absolute;
-  top: 318px;
+  top: 244px;
   left: 194.5px;
   font-family: "MFBenHeiNoncommercial";
   font-size: 46px;
@@ -76,13 +92,91 @@
 }
 .wrap1 {
   position: absolute;
-  top: 382px;
+  top: 281.81px;
   left: 75px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   width: 426.93px;
   height: 94.48px;
+}
+.noSubTextTitleWrap {
+  top: 293.81px;
+}
+.familyPackTitleWrap {
+  top: 281.81px;
+  left: 16px;
+  width: 576px;
+  height: 48px;
+  justify-content: center;
+  align-items: center;
+}
+.familyPackTitle {
+  width: auto;
+  font-family: "MFBenHeiNoncommercial";
+  font-size: 46px;
+  line-height: 48px;
+  font-weight: 400;
+  color: #2D2D2D;
+  text-align: center;
+  white-space: nowrap;
+}
+.familyPackTitle span {
+  color: inherit;
+}
+.contentDiagnosisTitleWrap {
+  top: 279px;
+  left: 0;
+  width: 576px;
+  height: 64px;
+  justify-content: center;
+  align-items: center;
+}
+.contentDiagnosisTitle {
+  width: auto;
+  font-family: "MFBenHeiNoncommercial";
+  font-size: 46px;
+  line-height: 54px;
+  font-weight: 400;
+  color: #2D2D2D;
+  text-align: center;
+  white-space: nowrap;
+}
+.contentDiagnosisTitle span {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+}
+.contentDiagnosisDecoration {
+  position: absolute;
+  z-index: -1;
+  bottom: -11px;
+  left: 50%;
+  width: 260px;
+  height: auto;
+  transform: translateX(-50%);
+}
+.contentDiagnosisAmount {
+  position: absolute;
+  top: 379px;
+  left: 0;
+  width: 576px;
+  height: 90px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.contentDiagnosisAmountIcon {
+  width: 96px;
+  height: auto;
+}
+.contentDiagnosisAmount span {
+  font-family: "Douyin Number ABC";
+  font-size: 57px;
+  line-height: 86px;
+  font-weight: 600;
+  letter-spacing: -1px;
 }
 .text2 {
   font-family: "Douyin Number ABC";
@@ -109,5 +203,91 @@
   line-height: 40px;
   letter-spacing: 0.02em;
   font-weight: 400;
+  flex-shrink: 0;
+}
+.officialRecommendationPrizeName {
+  color: inherit;
+}
+.subText {
+  position: absolute;
+  top: 388px;
+  left: 0;
+  width: 576px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 400;
+  color: #2D2D2D;
+  text-align: center;
+  white-space: nowrap;
+}
+.officialRecommendationSubText {
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 400;
+}
+.familyPackSubText {
+  top: 364px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 400;
+  white-space: normal;
+}
+.familyPackSubTextLine {
+  position: relative;
+  z-index: 1;
+}
+.familyPackSubTextLineWrap {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+.familyPackDecoration {
+  position: absolute;
+  z-index: 0;
+  top: 24px;
+  left: 50%;
+  width: 130px;
+  height: auto;
+  transform: translateX(-50%);
+}
+.buttonPage {
+  position: absolute;
+  top: 468px;
+  left: 131px;
+  width: 314px;
+  height: 110px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.buttonWrap {
+  min-width: 314px;
+  padding: 25px 0;
+  border-radius: 999px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 20, 115, 1) 0%,
+    rgba(255, 34, 159, 1) 100%
+  );
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.buttonText {
+  width: 165px;
+  font-family: "Source Han Sans CN";
+  font-size: 40px;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 255, 255, 1);
+  line-height: 60px;
+  letter-spacing: 2px;
+  font-weight: 700;
   flex-shrink: 0;
 }

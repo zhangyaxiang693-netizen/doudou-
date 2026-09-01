@@ -1,12 +1,18 @@
 /* eslint-disable*/
 import React, {useEffect, useState} from 'react'
 import styles from './index.module.scss'
+import newTagUrl from './new.png'
 
 export type IGeneratedComponent = {
   taskTitle?: string
+  title?: string
   taskSubtitle?: string
+  description?: string
   rewardCountText?: string
+  rewardCount?: string
   completionText?: string
+  frequency?: string
+  showNewTag?: boolean | string
   buttonGradientStart?: string
   buttonGradientEnd?: string
   lotteryTagGradientStart?: string
@@ -15,6 +21,11 @@ export type IGeneratedComponent = {
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
+  const showNewTag = props.showNewTag === true || props.showNewTag === 'true' || props.showNewTag === '1'
+  const taskTitle = props.taskTitle || props.title || '投一单DOU+'
+  const taskSubtitle = props.taskSubtitle || props.description || '投内容加热、粉丝经营目标且消耗达成30元'
+  const rewardCountText = props.rewardCountText || props.rewardCount || '+1'
+  const completionText = props.completionText || props.frequency || '每日可完成1次'
   const style = {
     '--task-bar-button-gradient-start': props.buttonGradientStart || '#FF1473',
     '--task-bar-button-gradient-end': props.buttonGradientEnd || '#FF229F',
@@ -28,18 +39,19 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       <div className={styles.wrap}>
         <div className={styles.container}>
           <div className={styles.content}>
-            <div className={styles.text}>{props.taskTitle || '投一单DOU+'}</div>
+            {showNewTag ? <img src={newTagUrl} className={styles.newTag} /> : null}
+            <div className={styles.text}>{taskTitle}</div>
             <div className={styles.main}>
               <div className={styles.section}>
                 <div className={styles.text1}>抽奖</div>
               </div>
-              <div className={styles.text2}>{props.rewardCountText || '+1'}</div>
+              <div className={styles.text2}>{rewardCountText}</div>
             </div>
           </div>
           <div className={styles.content1}>
             <div className={styles.text3}>
               <div className={styles.text3__listwrap}>
-                  {props.taskSubtitle || '投内容加热、粉丝经营目标且消耗达成30元'}
+                  {taskSubtitle}
               </div>
             </div>
           </div>
@@ -51,7 +63,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             </div>
           </div>
           <div className={styles.content3}>
-            <div className={styles.text5}>{props.completionText || '每日可完成1次'}</div>
+            <div className={styles.text5}>{completionText}</div>
           </div>
         </div>
       </div>

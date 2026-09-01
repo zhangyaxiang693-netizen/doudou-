@@ -25,9 +25,7 @@
   <text x="335" y="72" font-family="Source Han Sans CN, Arial, sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">优惠券</text>
   <text x="253" y="107" font-family="Source Han Sans CN, Arial, sans-serif" font-size="22" font-weight="400" fill="#FFFFFF">共有</text>
   <text x="302" y="107" font-family="Douyin Number ABC, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">2</text>
-  <text x="319" y="107" font-family="Source Han Sans CN, Arial, sans-serif" font-size="22" font-weight="400" fill="#FFFFFF">张券 仅剩</text>
-  <text x="421" y="107" font-family="Douyin Number ABC, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">12</text>
-  <text x="451" y="107" font-family="Source Han Sans CN, Arial, sans-serif" font-size="22" font-weight="400" fill="#FFFFFF">小时</text>
+  <text x="319" y="107" font-family="Source Han Sans CN, Arial, sans-serif" font-size="22" font-weight="400" fill="#FFFFFF">张券</text>
   <rect x="505.36" y="45" width="176" height="70" rx="35" fill="url(#buttonBg)"/>
   <text x="593.36" y="90" text-anchor="middle" font-family="Source Han Sans CN, Arial, sans-serif" font-size="26" font-weight="700" fill="#FF1B77">立即使用</text>
 </svg>

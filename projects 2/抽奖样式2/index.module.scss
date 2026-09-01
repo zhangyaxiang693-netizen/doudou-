@@ -53,15 +53,21 @@
 }
 .main {
   position: relative;
-  width: 118.26px;
+  width: 145.69px;
   height: 112.67px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .image {
-  width: 118.26px;
-  height: 112.67px;
-  position: absolute;
-  top: 0px;
-  left: 0px;
+  display: block;
+  max-width: 145.69px;
+  max-height: 112.67px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transform: scale(1.14);
+  transform-origin: center;
 }
 .text1 {
   position: absolute;
@@ -131,13 +137,19 @@
 .main1 {
   display: flex;
   justify-content: center;
-  align-items: flex-end;
-  width: 143.56px;
-  height: 103.47px;
+  align-items: center;
+  width: 145.69px;
+  height: 112.67px;
 }
 .image2 {
-  width: 143.56px;
-  height: 103.47px;
+  display: block;
+  max-width: 145.69px;
+  max-height: 112.67px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transform: scale(1.14);
+  transform-origin: center;
 }
 .image3 {
   width: 89.65px;
@@ -192,14 +204,20 @@
 .main2 {
   position: relative;
   width: 145.69px;
-  height: 107.66px;
+  height: 112.67px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .image4 {
-  width: 145.69px;
-  height: 107.66px;
-  position: absolute;
-  top: 0px;
-  left: 0px;
+  display: block;
+  max-width: 145.69px;
+  max-height: 112.67px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transform: scale(1.14);
+  transform-origin: center;
 }
 .text4 {
   position: absolute;

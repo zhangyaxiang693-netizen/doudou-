@@ -6,6 +6,7 @@ export type IGeneratedComponent = {
   buttonText?: string
   buttonGradientStart?: string
   buttonGradientEnd?: string
+  backgroundGradientColor?: string
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
@@ -20,6 +21,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     buttonText = '立即使用DOU+',
     buttonGradientStart = '#FF1473',
     buttonGradientEnd = '#FF229F',
+    backgroundGradientColor = '#FFBBD8',
   } = props
 
   return (
@@ -69,8 +71,8 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       </text>
       <defs>
         <linearGradient id={fadeId} x1="375" y1="0" x2="375" y2="234" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FFBBD8" stopOpacity="0" />
-          <stop offset="1" stopColor="#FFBBD8" />
+          <stop stopColor={backgroundGradientColor} stopOpacity="0" />
+          <stop offset="1" stopColor={backgroundGradientColor} />
         </linearGradient>
         <linearGradient id={outerId} x1="348.486" y1="60.6896" x2="422.564" y2="287.801" gradientUnits="userSpaceOnUse">
           <stop stopColor="#F70000" />

@@ -119,42 +119,6 @@
         "status": "exact",
         "file": "SOURCEHANSANSCN-REGULAR.ttf"
       }
-    },
-    {
-      "text": "仅剩",
-      "family": "Source Han Sans CN",
-      "weight": 400,
-      "size": "22px",
-      "lineHeight": "normal",
-      "usage": "倒计时前缀",
-      "source": {
-        "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.ttf"
-      }
-    },
-    {
-      "text": "12",
-      "family": "Douyin Number ABC",
-      "weight": 700,
-      "size": "22px",
-      "lineHeight": "normal",
-      "usage": "倒计时数字",
-      "source": {
-        "status": "exact",
-        "file": "DouyinNumberABC-Bold.ttf"
-      }
-    },
-    {
-      "text": "小时",
-      "family": "Source Han Sans CN",
-      "weight": 400,
-      "size": "22px",
-      "lineHeight": "normal",
-      "usage": "小时文案",
-      "source": {
-        "status": "exact",
-        "file": "SOURCEHANSANSCN-REGULAR.ttf"
-      }
     }
   ],
   "blueprint": {

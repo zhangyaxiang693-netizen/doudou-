@@ -41,7 +41,7 @@
   flex-wrap: nowrap;
   justify-content: flex-start;
   align-items: center;
-  margin-bottom: 13px;
+  margin-bottom: 22px;
 }
 .text {
   margin-right: 14px;
@@ -50,6 +50,13 @@
   white-space: nowrap;
   color: rgba(45, 45, 45, 1);
   font-weight: 500;
+}
+.newTag {
+  width: 75px;
+  height: 33px;
+  display: block;
+  flex-shrink: 0;
+  margin-right: 10px;
 }
 .main {
   width: 92.36px;

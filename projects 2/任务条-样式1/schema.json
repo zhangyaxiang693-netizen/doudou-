@@ -93,11 +93,13 @@
       "任务",
       "任务标题",
       "任务副标题",
+      "NEW标签",
       "抽奖加成",
       "每日可完成"
     ],
     "textProps": [
       "taskTitle",
+      "showNewTag",
       "taskSubtitle",
       "rewardCountText",
       "completionText"
@@ -141,6 +143,14 @@
       "type": "string",
       "default": "投一单DOU+",
       "description": "任务条左上方标题。"
+    },
+    {
+      "key": "showNewTag",
+      "name": "showNewTag",
+      "label": "NEW标签",
+      "type": "boolean",
+      "default": false,
+      "description": "开启后在任务标题前显示 NEW 标签。"
     },
     {
       "key": "taskSubtitle",

@@ -35,6 +35,28 @@
       "size": "46px",
       "lineHeight": "40px",
       "usage": "奖品文案"
+    },
+    {
+      "text": "满00元赠价值5元流量",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "30px",
+      "lineHeight": "38px",
+      "usage": "奖品补充文案",
+      "source": {
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    },
+    {
+      "text": "去查看",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "40px",
+      "lineHeight": "60px",
+      "usage": "按钮文案",
+      "source": {
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
     }
   ],
   "blueprint": {
@@ -51,6 +73,8 @@
       "titleText",
       "amountText",
       "prizeText",
+      "prizeSubText",
+      "buttonText",
       "selectedPrizeIndex",
       "prize1Text",
       "prize2Text",
@@ -62,6 +86,19 @@
       "prize8Text"
     ]
   },
+  "states": [
+    {
+      "id": "win",
+      "name": "中奖",
+      "schemaId": "弹窗-中奖",
+      "preserveProps": true
+    },
+    {
+      "id": "lose",
+      "name": "未中奖",
+      "schemaId": "弹窗-未中奖"
+    }
+  ],
   "props": [
     {
       "key": "titleText",
@@ -86,6 +123,22 @@
       "type": "string",
       "default": "元心动券包",
       "description": "中奖奖品文案。"
+    },
+    {
+      "key": "prizeSubText",
+      "name": "prizeSubText",
+      "label": "奖品补充文案",
+      "type": "string",
+      "default": "满00元赠价值5元流量",
+      "description": "随奖品库同步的中奖奖品补充文案。"
+    },
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "去查看",
+      "description": "中奖弹窗底部按钮文案。"
     },
     {
       "key": "selectedPrizeIndex",
@@ -251,6 +304,20 @@
       "label": "数字颜色",
       "type": "color",
       "default": "#FF1372"
+    },
+    {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮渐变开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮渐变结束",
+      "type": "color",
+      "default": "#FF229F"
     }
   ],
   "variants": [
@@ -260,7 +327,9 @@
       "props": {
         "cardGradientStart": "#FFB2C3",
         "cardGradientEnd": "#FF89A3",
-        "amountColor": "#FF1372"
+        "amountColor": "#FF1372",
+        "buttonGradientStart": "#FF1473",
+        "buttonGradientEnd": "#FF229F"
       }
     },
     {
@@ -272,7 +341,9 @@
       "props": {
         "cardGradientStart": "#FFB2B3",
         "cardGradientEnd": "#FF898C",
-        "amountColor": "#FF134E"
+        "amountColor": "#FF134E",
+        "buttonGradientStart": "#FF180E",
+        "buttonGradientEnd": "#FF166F"
       }
     },
     {
@@ -284,7 +355,9 @@
       "props": {
         "cardGradientStart": "#FFD4B2",
         "cardGradientEnd": "#FFAA78",
-        "amountColor": "#FF1A1D"
+        "amountColor": "#FF1A1D",
+        "buttonGradientStart": "#FF4401",
+        "buttonGradientEnd": "#FF7C02"
       }
     }
   ]
