@@ -8,6 +8,8 @@ import prizeDouziUrl from '../九宫格-奖品库/dou仔周边.png'
 import prizeJianyingVipUrl from '../九宫格-奖品库/剪映vip.png'
 import prizeTrafficCouponUrl from '../九宫格-奖品库/6元流量券.png'
 
+const MAX_PRIZE_COUNT = 8
+
 type PrizeValue =
   | string
   | {
@@ -21,12 +23,23 @@ type PrizeValue =
     }
 
 export type IGeneratedComponent = {
+  prizeCount?: number | string
   prize1?: PrizeValue
   prize2?: PrizeValue
   prize3?: PrizeValue
+  prize4?: PrizeValue
+  prize5?: PrizeValue
+  prize6?: PrizeValue
+  prize7?: PrizeValue
+  prize8?: PrizeValue
   prize1Name?: string
   prize2Name?: string
   prize3Name?: string
+  prize4Name?: string
+  prize5Name?: string
+  prize6Name?: string
+  prize7Name?: string
+  prize8Name?: string
 }
 
 function resolvePrize(
@@ -64,45 +77,52 @@ function resolvePrize(
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
-  const prize1 = resolvePrize(props.prize1, '抖仔限量盲盒', prizeDouziUrl, props.prize1Name)
-  const prize2 = resolvePrize(props.prize2, '剪映VIP月卡', prizeJianyingVipUrl, props.prize2Name)
-  const prize3 = resolvePrize(props.prize3, 'DOU+流量券', prizeTrafficCouponUrl, props.prize3Name)
+  const fallbackPrizes = [
+    { name: '抖仔限量盲盒', image: prizeDouziUrl, ribbon: image2 },
+    { name: '剪映VIP月卡', image: prizeJianyingVipUrl, ribbon: image4 },
+    { name: 'DOU+流量券', image: prizeTrafficCouponUrl, ribbon: image7 },
+    { name: '奖品4', image: prizeDouziUrl, ribbon: image2 },
+    { name: '奖品5', image: prizeJianyingVipUrl, ribbon: image4 },
+    { name: '奖品6', image: prizeTrafficCouponUrl, ribbon: image7 },
+    { name: '奖品7', image: prizeDouziUrl, ribbon: image2 },
+    { name: '奖品8', image: prizeJianyingVipUrl, ribbon: image4 },
+  ]
+  const highestFilledPrizeIndex = fallbackPrizes.reduce((max, _, index) => {
+    const prizeIndex = index + 1
+    const value = props[`prize${prizeIndex}` as keyof IGeneratedComponent]
+    const name = props[`prize${prizeIndex}Name` as keyof IGeneratedComponent]
+    return value || name ? prizeIndex : max
+  }, 0)
+  const requestedPrizeCount = Number(props.prizeCount) || highestFilledPrizeIndex || 3
+  const prizeCount = Math.max(1, Math.min(MAX_PRIZE_COUNT, requestedPrizeCount))
+  const prizes = fallbackPrizes.slice(0, prizeCount).map((fallback, index) => {
+    const prizeIndex = index + 1
+    return {
+      ...resolvePrize(
+        props[`prize${prizeIndex}` as keyof IGeneratedComponent] as PrizeValue | undefined,
+        fallback.name,
+        fallback.image,
+        props[`prize${prizeIndex}Name` as keyof IGeneratedComponent] as string | undefined,
+      ),
+      ribbon: fallback.ribbon,
+    }
+  })
 
   return (
     <div className={styles.page}>
-      <div className={styles.wrap}>
-        <div className={styles.container}>
-          <div className={styles.text}>{prize1.name}</div>
-          <div className={styles.content}>
-            <div className={styles.main}>
-              <img src={prize1.image} className={styles.image} />
+      {prizes.map((prize, index) => (
+        <div className={styles.wrap} key={`${index}-${prize.name}`}>
+          <div className={styles.container}>
+            <div className={styles.text}>{prize.name}</div>
+            <div className={styles.content}>
+              <div className={styles.main}>
+                <img src={prize.image} className={styles.image} />
+              </div>
             </div>
+            <img src={prize.ribbon} className={styles.image1} />
           </div>
-          <img src={image2} className={styles.image1} />
         </div>
-      </div>
-      <div className={styles.wrap1}>
-        <div className={styles.container1}>
-          <div className={styles.text2}>{prize2.name}</div>
-          <div className={styles.content1}>
-            <div className={styles.main1}>
-              <img src={prize2.image} className={styles.image2} />
-            </div>
-          </div>
-          <img src={image4} className={styles.image3} />
-        </div>
-      </div>
-      <div className={styles.wrap2}>
-        <div className={styles.container2}>
-          <div className={styles.text3}>{prize3.name}</div>
-          <div className={styles.content2}>
-            <div className={styles.main2}>
-              <img src={prize3.image} className={styles.image4} />
-            </div>
-          </div>
-          <img src={image7} className={styles.image6} />
-        </div>
-      </div>
+      ))}
     </div>
   )
 }

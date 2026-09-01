@@ -1,10 +1,12 @@
 .page {
   width: 626px;
-  height: 208px;
+  height: auto;
   box-sizing: border-box;
   display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
   justify-content: flex-start;
-  align-items: center;
+  align-items: flex-start;
 }
 .wrap {
   box-sizing: border-box;

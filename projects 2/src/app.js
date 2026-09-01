@@ -4,6 +4,8 @@ const GUIDED_CUT_EXPORT_WIDTH = 750;
 const GUIDED_CUT_EXPORT_BOTTOM_SPACE = 32;
 const GUIDED_TASK_BAR_EXPORT_BOTTOM_SPACE = 16;
 const DEFAULT_TRAFFIC_COUPON_THRESHOLD = "00";
+const DEFAULT_LOTTERY_PRIZE_COUNT = 3;
+const MAX_LOTTERY_PRIZE_COUNT = 8;
 
 function getDefaultTrafficCouponThreshold(amount) {
   const thresholds = {
@@ -1006,11 +1008,10 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
         },
         {
           title: "奖品配置",
-          fields: [
-            ["1.prize1", "奖品1"],
-            ["1.prize2", "奖品2"],
-            ["1.prize3", "奖品3"],
-          ],
+          fields: Array.from({ length: MAX_LOTTERY_PRIZE_COUNT }, (_, index) => [
+            `1.prize${index + 1}`,
+            `奖品${index + 1}`,
+          ]),
         },
         {
           title: "参与规则",
@@ -1901,7 +1902,7 @@ function withDynamicPrdBlueprintPrizeFields(fields, dataRows) {
   const nextFields = [...fields];
   dataRows.forEach((row) => {
     const prizeIndex = getPrdBlueprintPrizeNumber(row.field);
-    if (!prizeIndex) return;
+    if (!prizeIndex || prizeIndex > MAX_LOTTERY_PRIZE_COUNT || !String(row.value || "").trim()) return;
     const baseField = nextFields.find((field) =>
       isPrdBlueprintModuleMatch(field, row.module) &&
       getPrdBlueprintPrizeNumber(field.label) === 1,
@@ -1953,33 +1954,40 @@ function withDynamicPageTemplatePrizeFields(fields, rows) {
     if (!match) return;
     const group = ensureGroup(Number(field.moduleIndex), Number(match[1]));
     const prizeIndex = Number(match[2]);
-    group.maxPrizeIndex = Math.max(group.maxPrizeIndex, prizeIndex);
     if (prizeIndex === 1) group.baseField = field;
   });
   normalizePrdTableRows(rows).forEach((row) => {
+    const rowValue = String(row.value || "").trim();
+    if (!rowValue) return;
     const parsed =
       parsePageTemplateVariableRowKey(row.key) ||
       parsePageTemplateVariableVersionRowKey(row.key);
     const localKey = parsed?.compoundKey || "";
     const countMatch = localKey.match(/^(\d+)\.prizeCount$/);
     if (countMatch) {
-      ensureGroup(parsed.moduleIndex, Number(countMatch[1])).explicitCount = Math.max(
-        1,
-        Number(row.value) || 1,
+      ensureGroup(parsed.moduleIndex, Number(countMatch[1])).explicitCount = Math.min(
+        MAX_LOTTERY_PRIZE_COUNT,
+        Math.max(1, Number(row.value) || 1),
       );
       return;
     }
     const prizeMatch = localKey.match(/^(\d+)\.prize(\d+)$/);
     if (!prizeMatch) return;
     const group = ensureGroup(parsed.moduleIndex, Number(prizeMatch[1]));
-    group.maxPrizeIndex = Math.max(group.maxPrizeIndex, Number(prizeMatch[2]));
+    group.maxPrizeIndex = Math.max(
+      group.maxPrizeIndex,
+      Math.min(MAX_LOTTERY_PRIZE_COUNT, Number(prizeMatch[2])),
+    );
   });
   let nextFields = fields.filter((field) => {
     const localKey = getPageTemplateFieldLocalCompoundKey(field);
     const match = localKey.match(/^(\d+)\.prize(\d+)$/);
     if (!match) return true;
     const group = groups.get(getGroupKey(Number(field.moduleIndex), Number(match[1])));
-    const count = group?.explicitCount || group?.maxPrizeIndex || Number(match[2]);
+    const count = Math.min(
+      MAX_LOTTERY_PRIZE_COUNT,
+      group?.explicitCount || group?.maxPrizeIndex || DEFAULT_LOTTERY_PRIZE_COUNT,
+    );
     return Number(match[2]) <= count;
   });
   groups.forEach((group) => {
@@ -1988,7 +1996,10 @@ function withDynamicPageTemplatePrizeFields(fields, rows) {
       getPageTemplateFieldLocalCompoundKey(field) === getMoleculeBlueprintKey(group.childIndex, "prize1"),
     );
     if (!baseField) return;
-    const count = group.explicitCount || group.maxPrizeIndex;
+    const count = Math.min(
+      MAX_LOTTERY_PRIZE_COUNT,
+      group.explicitCount || group.maxPrizeIndex || DEFAULT_LOTTERY_PRIZE_COUNT,
+    );
     for (let prizeIndex = 1; prizeIndex <= count; prizeIndex += 1) {
       const compoundKey = getPageBlueprintKey(
         group.moduleIndex,
@@ -2067,6 +2078,8 @@ function getPageTemplateBlueprintPrizeCount(moduleIndex, childIndex) {
   let explicitCount = 0;
   let maxPrizeIndex = 0;
   normalizePrdTableRows(state.prdTableRows).forEach((row) => {
+    const value = String(row.value || "").trim();
+    if (!value) return;
     const parsed =
       parsePageTemplateVariableRowKey(row.key) ||
       parsePageTemplateVariableVersionRowKey(row.key);
@@ -2081,11 +2094,17 @@ function getPageTemplateBlueprintPrizeCount(moduleIndex, childIndex) {
       maxPrizeIndex = Math.max(maxPrizeIndex, Number(prizeMatch[2]));
     }
   });
-  return Math.max(1, explicitCount || maxPrizeIndex || 1);
+  return Math.min(
+    MAX_LOTTERY_PRIZE_COUNT,
+    Math.max(1, explicitCount || maxPrizeIndex || DEFAULT_LOTTERY_PRIZE_COUNT),
+  );
 }
 
 function setPageTemplateBlueprintPrizeCount(moduleIndex, childIndex, count, versionNames = []) {
-  const nextCount = Math.max(1, Math.round(Number(count) || 1));
+  const nextCount = Math.min(
+    MAX_LOTTERY_PRIZE_COUNT,
+    Math.max(1, Math.round(Number(count) || 1)),
+  );
   upsertPrdTableRow(getPageTemplatePrizeCountRowKey(moduleIndex, childIndex), String(nextCount));
   versionNames.forEach((versionName) => {
     if (versionName) {
@@ -5719,6 +5738,7 @@ function applyThemeToAtomNode(node, themeId) {
 function createAdminVerifierMoleculeNode(molecule, verifier) {
   const node = createMoleculeNode(molecule.id);
   if (!node) return null;
+  const prizeCountsByChild = new Map();
   const moleculePropKeys = new Set(getPropEntries(molecule).map(([key]) => key));
   Object.entries(verifier?.blueprint || {}).forEach(([key, value]) => {
     if (moleculePropKeys.has(key)) node.props[key] = value;
@@ -5727,10 +5747,16 @@ function createAdminVerifierMoleculeNode(molecule, verifier) {
   (node.children || []).forEach((child, childIndex) => {
     Object.entries(verifier?.blueprint || {}).forEach(([compoundKey, value]) => {
       const [index, propKey] = compoundKey.split(".");
-      if (Number(index) === childIndex && propKey && propKey in child.props) {
+      if (Number(index) === childIndex && propKey && (propKey in child.props || isLotteryPrizePropKey(propKey))) {
         child.props[propKey] = value;
+        const prizeIndex = Number(String(propKey).match(/^prize(\d+)/)?.[1] || 0);
+        if (prizeIndex) {
+          prizeCountsByChild.set(childIndex, Math.max(prizeCountsByChild.get(childIndex) || 0, prizeIndex));
+        }
       }
     });
+    const prizeCount = prizeCountsByChild.get(childIndex);
+    if (prizeCount) child.props.prizeCount = Math.min(MAX_LOTTERY_PRIZE_COUNT, prizeCount);
   });
   applyMoleculeChildStates(node, verifier?.childStates);
   applyThemeToMoleculeNodeChildren(node, verifier?.parentThemeId);
@@ -5778,12 +5804,23 @@ function createAdminVerifierPageNodes(template, verifier) {
       });
       syncDynamicMoleculeChildren(node);
       applyThemeToMoleculeNodeChildren(node, verifier?.parentThemeId);
+      const prizeCountsByChild = new Map();
       Object.entries(verifier?.blueprint || {}).forEach(([compoundKey, value]) => {
         const [index, localKey] = compoundKey.split("|");
         if (Number(index) !== nodeIndex || !localKey || !localKey.includes(".")) return;
         const [childIndex, propKey] = localKey.split(".");
         const child = node.children?.[Number(childIndex)];
-        if (child?.props && propKey in child.props) child.props[propKey] = value;
+        if (child?.props && (propKey in child.props || isLotteryPrizePropKey(propKey))) {
+          child.props[propKey] = value;
+          const prizeIndex = Number(String(propKey).match(/^prize(\d+)/)?.[1] || 0);
+          if (prizeIndex) {
+            prizeCountsByChild.set(childIndex, Math.max(prizeCountsByChild.get(childIndex) || 0, prizeIndex));
+          }
+        }
+      });
+      prizeCountsByChild.forEach((count, childIndex) => {
+        const child = node.children?.[Number(childIndex)];
+        if (child?.props) child.props.prizeCount = Math.min(MAX_LOTTERY_PRIZE_COUNT, count);
       });
       return;
     }
@@ -7712,16 +7749,30 @@ function createPageTemplateBlueprintPreviewNode(group) {
   if (!node) return null;
 
   const fields = group?.versions?.[0]?.sections?.flatMap((section) => section.fields || []) || [];
+  const prizeCountsByChild = new Map();
   fields.forEach((field) => {
     const localKey = getPageTemplateFieldLocalCompoundKey(field);
     const value = state.prdTableRows[field.rowIndex]?.value ?? field.value;
     const [childIndexText, childPropKey] = String(localKey || "").split(".");
     if (childPropKey) {
       const child = node.children?.[Number(childIndexText)];
-      if (child?.props && childPropKey in child.props) child.props[childPropKey] = value;
+      if (child?.props && (childPropKey in child.props || isLotteryPrizePropKey(childPropKey))) {
+        child.props[childPropKey] = value;
+        const prizeIndex = Number(String(childPropKey).match(/^prize(\d+)/)?.[1] || 0);
+        if (prizeIndex && String(value || "").trim()) {
+          prizeCountsByChild.set(
+            Number(childIndexText),
+            Math.max(prizeCountsByChild.get(Number(childIndexText)) || 0, prizeIndex),
+          );
+        }
+      }
       return;
     }
     if (node.props && localKey in node.props) node.props[localKey] = value;
+  });
+  prizeCountsByChild.forEach((count, childIndex) => {
+    const child = node.children?.[Number(childIndex)];
+    if (child?.props) child.props.prizeCount = Math.min(MAX_LOTTERY_PRIZE_COUNT, count);
   });
   return node;
 }
@@ -7731,6 +7782,7 @@ function renderPageTemplateModulePreview(group) {
     "内容诊断-样式-点击后",
     "内容诊断-优质视频提示",
     "内容诊断-账号诊断",
+    "投放抽奖",
   ]);
   if (livePreviewSchemaIds.has(group?.moduleSchemaId)) {
     const node = createPageTemplateBlueprintPreviewNode(group);
@@ -10707,15 +10759,19 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
   function getLotteryPrizeCount(lotteryNode) {
     const schema = findAtomSchema(lotteryNode?.schemaId);
     const configuredCount = schema?.blueprint?.prizeProps?.length;
-    const propPrizeIndexes = Object.keys(lotteryNode?.props || {})
-      .map((key) => key.match(/^prize(\d+)(?:Name|Text|Copy)?$/)?.[1])
+    const propPrizeIndexes = Object.entries(lotteryNode?.props || {})
+      .filter(([, value]) => String(value || "").trim())
+      .map(([key]) => key.match(/^prize(\d+)(?:Name|Text|Copy)?$/)?.[1])
       .filter(Boolean)
       .map(Number);
-    return Math.max(
-      1,
-      Number(lotteryNode?.props?.prizeCount) || 0,
-      configuredCount || 0,
-      ...propPrizeIndexes,
+    const explicitCount = Number(lotteryNode?.props?.prizeCount) || 0;
+    return Math.min(
+      MAX_LOTTERY_PRIZE_COUNT,
+      Math.max(
+        1,
+        explicitCount || configuredCount || 0,
+        ...propPrizeIndexes,
+      ),
     );
   }
 
@@ -10909,7 +10965,10 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     if (!popupNode?.props || !lotteryNode?.props) return;
     syncLotteryPopupCurrentPrizeCopy(popupNode);
     const winProps = popupNode.lotteryWinProps || popupNode.props || {};
-    const prizeCount = Math.max(1, Number(winProps.prizeCount) || 1);
+    const prizeCount = Math.min(
+      MAX_LOTTERY_PRIZE_COUNT,
+      Math.max(1, Number(winProps.prizeCount) || 1),
+    );
     lotteryNode.props.prizeCount = prizeCount;
     for (let index = 1; index <= prizeCount; index += 1) {
       lotteryNode.props[`prize${index}`] = winProps[`prize${index}`] || "";
@@ -11012,10 +11071,10 @@ function applyLotteryRowsToNode(node, rows) {
     if (/^prize\d+(Name|Copy)?$/.test(row.propKey || "")) {
       lotteryNode.props[row.propKey] = row.value;
       const prizeIndex = Number(String(row.propKey).match(/^prize(\d+)/)?.[1] || 0);
-      if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, prizeIndex);
+      if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, Math.min(MAX_LOTTERY_PRIZE_COUNT, prizeIndex));
     }
   });
-  if (maxPrizeIndex) lotteryNode.props.prizeCount = maxPrizeIndex;
+  if (maxPrizeIndex) lotteryNode.props.prizeCount = Math.min(MAX_LOTTERY_PRIZE_COUNT, maxPrizeIndex);
 }
 
 function findConsumptionProgressNode(nodes = []) {
@@ -11509,10 +11568,15 @@ function applyPageTemplateVariableValuesToNode(node, values) {
       if (compoundKey in node.props || isLotteryPrizePropKey(compoundKey) || compoundKey === "prizeCount") {
         node.props[compoundKey] = value;
         const prizeIndex = Number(String(compoundKey).match(/^prize(\d+)/)?.[1] || 0);
-        if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, prizeIndex);
+        if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, Math.min(MAX_LOTTERY_PRIZE_COUNT, prizeIndex));
       }
     });
-    if (maxPrizeIndex) node.props.prizeCount = Math.max(Number(node.props.prizeCount) || 0, maxPrizeIndex);
+    if (maxPrizeIndex) {
+      node.props.prizeCount = Math.min(
+        MAX_LOTTERY_PRIZE_COUNT,
+        Math.max(Number(node.props.prizeCount) || 0, maxPrizeIndex),
+      );
+    }
     return;
   }
 
@@ -11532,7 +11596,10 @@ function applyPageTemplateVariableValuesToNode(node, values) {
       child.props[propKey] = value;
       const prizeIndex = Number(String(propKey).match(/^prize(\d+)/)?.[1] || 0);
       if (prizeIndex) {
-        prizeCountsByChild.set(childIndex, Math.max(prizeCountsByChild.get(childIndex) || 0, prizeIndex));
+        prizeCountsByChild.set(
+          childIndex,
+          Math.max(prizeCountsByChild.get(childIndex) || 0, Math.min(MAX_LOTTERY_PRIZE_COUNT, prizeIndex)),
+        );
       }
       (child.guidedStates || []).forEach((entry) => {
         if (entry.node?.props && (propKey in entry.node.props || isLotteryPrizePropKey(propKey) || propKey === "prizeCount")) {
@@ -11544,7 +11611,10 @@ function applyPageTemplateVariableValuesToNode(node, values) {
   prizeCountsByChild.forEach((count, childIndex) => {
     const child = node.children?.[Number(childIndex)];
     if (!child?.props) return;
-    child.props.prizeCount = Math.max(Number(child.props.prizeCount) || 0, count);
+    child.props.prizeCount = Math.min(
+      MAX_LOTTERY_PRIZE_COUNT,
+      Math.max(Number(child.props.prizeCount) || 0, count),
+    );
     (child.guidedStates || []).forEach((entry) => {
       if (entry.node?.props) entry.node.props.prizeCount = child.props.prizeCount;
     });
@@ -11889,7 +11959,7 @@ function applyMoleculeBlueprintValues(node, module) {
   module.rows.forEach((row) => {
     if (typeof row.childIndex !== "number" || !row.propKey) return;
     const child = node.children?.[row.childIndex];
-    if (child?.props && row.propKey in child.props) {
+    if (child?.props && (row.propKey in child.props || isLotteryPrizePropKey(row.propKey))) {
       child.props[row.propKey] = row.value;
     }
   });

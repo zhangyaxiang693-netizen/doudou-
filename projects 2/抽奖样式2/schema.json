@@ -10,6 +10,7 @@
     "width": 626,
     "height": 208
   },
+  "heightMode": "auto",
   "blueprint": {
     "autoExposeProps": true,
     "matchKeywords": [
@@ -21,7 +22,12 @@
     "textProps": [
       "prize1",
       "prize2",
-      "prize3"
+      "prize3",
+      "prize4",
+      "prize5",
+      "prize6",
+      "prize7",
+      "prize8"
     ],
     "prizeProps": [
       {
@@ -36,6 +42,16 @@
     ]
   },
   "props": [
+    {
+      "key": "prizeCount",
+      "name": "prizeCount",
+      "label": "奖品数量",
+      "type": "number",
+      "default": 3,
+      "min": 1,
+      "max": 8,
+      "description": "控制投放抽奖奖品展示数量，最多 8 个。"
+    },
     {
       "key": "prize1",
       "name": "prize1",
@@ -56,6 +72,46 @@
       "key": "prize3",
       "name": "prize3",
       "label": "奖品3",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize4",
+      "name": "prize4",
+      "label": "奖品4",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize5",
+      "name": "prize5",
+      "label": "奖品5",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize6",
+      "name": "prize6",
+      "label": "奖品6",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize7",
+      "name": "prize7",
+      "label": "奖品7",
+      "type": "prize",
+      "default": "",
+      "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize8",
+      "name": "prize8",
+      "label": "奖品8",
       "type": "prize",
       "default": "",
       "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
