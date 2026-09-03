@@ -1,8 +1,13 @@
 import { getFontEmbedCSS, toBlob as exportNodeToBlob } from "html-to-image";
 
 const GUIDED_CUT_EXPORT_WIDTH = 750;
+const GUIDED_HEADER_IMAGE_EXPORT_HEIGHT = 400;
 const GUIDED_CUT_EXPORT_BOTTOM_SPACE = 32;
 const GUIDED_TASK_BAR_EXPORT_BOTTOM_SPACE = 16;
+const GUIDED_FALLBACK_HOT_BOTTOM_SPACE = 358;
+const GUIDED_FALLBACK_HOT_PAGE_HEIGHT = 1502;
+const GUIDED_FALLBACK_CASE_BOTTOM_SPACE = 154;
+const GUIDED_FALLBACK_CASE_PAGE_HEIGHT = 1759;
 const DEFAULT_TRAFFIC_COUPON_THRESHOLD = "00";
 const DEFAULT_LOTTERY_PRIZE_COUNT = 3;
 const MAX_LOTTERY_PRIZE_COUNT = 8;
@@ -18,7 +23,8 @@ function getDefaultTrafficCouponThreshold(amount) {
 
 const _schemaModules = import.meta.glob('../*/schema.json', { eager: true, as: 'json' });
 const _cssVarModules = import.meta.glob('../*/index.module.scss', { eager: true, query: '?raw', import: 'default' });
-const _themeHeaderImageModules = import.meta.glob("../色系头图/*.png", { eager: true, query: "?url", import: "default" });
+const _headerMainVisualModules = import.meta.glob("../头图/主体替换/*.png", { eager: true, query: "?url", import: "default" });
+const headerDefaultMainVisualUrl = new URL("../头图/assets/主视觉.png", import.meta.url).href;
 const navigationBarSvgUrl = new URL("../导航栏/顶栏.svg", import.meta.url).href;
 const contentModuleImageUrl = new URL("../内容模块.png", import.meta.url).href;
 const contentModuleImage2Url = new URL("../内容模块2.png", import.meta.url).href;
@@ -115,7 +121,7 @@ const COMPONENT_DISPLAY_NAME_BY_ID = {
   "核心权益模块-bigday发券-样式2": "核心权益｜预约抢券",
   "核心权益模块-发券-样式2": "核心权益｜发券",
   "核心玩法模块-抽奖消返-3列": "核心玩法｜消耗返（三档）",
-  "核心玩法模块-抽奖消返-4列": "核心玩法｜消耗返",
+  "核心玩法模块-抽奖消返-4列": "核心玩法｜抽奖消耗返（四档）",
   "核心玩法模块-抽奖-未报名": "核心玩法｜抽奖-九宫格（报名前）",
   "核心玩法模块-抽奖-已报名": "核心玩法｜抽奖-九宫格（已报名）",
   投放抽奖: "核心玩法｜投放抽奖",
@@ -649,9 +655,7 @@ const PAGE_TEMPLATE_BUSINESS_STATES = {
     ],
   },
 };
-const PAGE_TEMPLATE_DEFAULT_BUSINESS_STATES = {
-  "page-lottery-consumption-return|3": "registered",
-};
+const PAGE_TEMPLATE_DEFAULT_BUSINESS_STATES = {};
 const PAGE_TEMPLATE_MODULE_BUSINESS_STATES = {
   "page-guide-no-incentive|1": {
     label: "内容诊断",
@@ -705,6 +709,17 @@ function normalizePageTemplateLookupName(value) {
 
 function repairCustomPageTemplateNames(templates) {
   let repaired = false;
+  const ensureHeaderNode = (template, canonicalName) => {
+    if (!Object.prototype.hasOwnProperty.call(PRD_PAGE_TEMPLATE_ALIASES, canonicalName)) {
+      return false;
+    }
+    const nodes = Array.isArray(template.nodes) ? template.nodes : [];
+    const hasHeader = nodes.some((node) => node?.schemaId === "头图" || node?.name === "头图");
+    if (hasHeader) return false;
+    const headerNode = createAtomNode("头图");
+    template.nodes = [headerNode, ...nodes];
+    return true;
+  };
   const replaceNodeSchema = (template, fromSchemaId, toSchemaId) => {
     const nodeIndex = (template.nodes || []).findIndex(
       (node) => node?.schemaId === fromSchemaId,
@@ -731,6 +746,7 @@ function repairCustomPageTemplateNames(templates) {
       repaired = true;
     }
     const canonicalName = matchedEntry?.[0] || item.name;
+    repaired = ensureHeaderNode(item, canonicalName) || repaired;
     if (canonicalName === "模板3 抽奖 + 消耗返") {
       repaired =
         replaceNodeSchema(
@@ -892,6 +908,7 @@ const pageTemplates = [
     background: "#FFE0E9",
     viewportWidth: 750,
     nodes: [
+      ["头图", {}],
       ["核心权益模块-发券-样式2", {}],
       ["内容诊断-样式1-点击前", {}],
       ["用户教育-攻略", {}],
@@ -909,6 +926,7 @@ const pageTemplates = [
     background: "#FFE0E9",
     viewportWidth: 750,
     nodes: [
+      ["头图", {}],
       ["账户优惠券提示", {}],
       ["核心权益模块-发券-样式2", {}],
       ["投放抽奖", {}],
@@ -928,6 +946,7 @@ const pageTemplates = [
     background: "#FFE0E9",
     viewportWidth: 750,
     nodes: [
+      ["头图", {}],
       ["账户优惠券提示", {}],
       ["核心权益模块-bigday发券-样式1", {}],
       ["核心玩法模块-抽奖消返-4列", {}],
@@ -948,6 +967,7 @@ const pageTemplates = [
     background: "#FFE0E9",
     viewportWidth: 750,
     nodes: [
+      ["头图", {}],
       ["账户优惠券提示", {}],
       ["内容诊断-样式1-点击前", {}],
       ["用户教育-攻略", {}],
@@ -964,8 +984,23 @@ const PRD_PAGE_TEMPLATE_ID_BY_NAME = {
   "模板4 无激励攻略": "page-guide-no-incentive",
 };
 
+const PAGE_TEMPLATE_HEADER_BLUEPRINT_SPEC = {
+  schemaIds: ["头图"],
+  moduleName: "头图",
+  sections: [
+    {
+      title: "",
+      fields: [
+        ["text", "文案"],
+        ["dateText", "日期文案"],
+      ],
+    },
+  ],
+};
+
 const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
   "page-coupon": [
+    PAGE_TEMPLATE_HEADER_BLUEPRINT_SPEC,
     {
       schemaIds: ["核心权益模块-发券-样式2"],
       moduleName: "核心权益｜发券",
@@ -983,6 +1018,7 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
     },
   ],
   "page-lottery": [
+    PAGE_TEMPLATE_HEADER_BLUEPRINT_SPEC,
     {
       schemaIds: ["核心权益模块-发券-样式2"],
       moduleName: "核心权益｜发券",
@@ -1028,6 +1064,7 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
     },
   ],
   "page-lottery-consumption-return": [
+    PAGE_TEMPLATE_HEADER_BLUEPRINT_SPEC,
     {
       schemaIds: [
         "核心权益模块-bigday发券-样式1",
@@ -1067,8 +1104,8 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
       ],
     },
     {
-      schemaIds: ["核心玩法模块-抽奖消返-4列"],
-      moduleName: "核心玩法｜消耗返",
+      schemaIds: ["核心玩法模块-抽奖消返-3列"],
+      moduleName: "核心玩法｜消耗返（三档）",
       sections: [
         {
           title: "",
@@ -1077,13 +1114,53 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
         {
           title: "返券配置",
           fields: [
-            ["1.amountText1", "返券1 · 金额"],
-            ["1.amountText2", "返券2 · 金额"],
-            ["1.amountText3", "返券3 · 金额"],
-            ["1.consumeAmountText1", "第1档 · 抽奖门槛"],
-            ["1.consumeAmountText2", "返券1 · 消耗门槛"],
-            ["1.consumeAmountText3", "返券2 · 消耗门槛"],
-            ["1.consumeAmountText4", "返券3 · 消耗门槛"],
+            ["1.rewardType1", "第1档 · 类型"],
+            ["1.amountText1", "第1档 · 券金额"],
+            ["1.rewardType2", "第2档 · 类型"],
+            ["1.amountText2", "第2档 · 券金额"],
+            ["1.rewardType3", "第3档 · 类型"],
+            ["1.amountText3", "第3档 · 券金额"],
+            ["1.consumeAmountText1", "第1档 · 消耗门槛"],
+            ["1.consumeAmountText2", "第2档 · 消耗门槛"],
+            ["1.consumeAmountText3", "第3档 · 消耗门槛"],
+          ],
+        },
+        {
+          title: "活动规则",
+          fields: [
+            ["3.titleText", "标题"],
+            ["3.firstBodyText", "规则正文1"],
+            ["3.secondBodyText", "规则正文2"],
+            ["3.thirdBodyText", "规则正文3"],
+            ["3.highlightText", "高亮内容"],
+            ["3.paragraphCount", "规则段落数量"],
+          ],
+        },
+      ],
+    },
+    {
+      schemaIds: ["核心玩法模块-抽奖消返-4列"],
+      moduleName: "核心玩法｜抽奖消耗返（四档）",
+      sections: [
+        {
+          title: "",
+          fields: [["0.titleText", "模块标题"]],
+        },
+        {
+          title: "返券配置",
+          fields: [
+            ["1.rewardType1", "第1档 · 类型"],
+            ["1.amountText1", "第1档 · 券金额"],
+            ["1.rewardType2", "第2档 · 类型"],
+            ["1.amountText2", "第2档 · 券金额"],
+            ["1.rewardType3", "第3档 · 类型"],
+            ["1.amountText3", "第3档 · 券金额"],
+            ["1.rewardType4", "第4档 · 类型"],
+            ["1.amountText4", "第4档 · 券金额"],
+            ["1.consumeAmountText1", "第1档 · 消耗门槛"],
+            ["1.consumeAmountText2", "第2档 · 消耗门槛"],
+            ["1.consumeAmountText3", "第3档 · 消耗门槛"],
+            ["1.consumeAmountText4", "第4档 · 消耗门槛"],
           ],
         },
         {
@@ -1169,7 +1246,9 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
       ],
     },
   ],
-  "page-guide-no-incentive": [],
+  "page-guide-no-incentive": [
+    PAGE_TEMPLATE_HEADER_BLUEPRINT_SPEC,
+  ],
 };
 
 function getCanonicalPrdPageTemplateId(pageTemplate) {
@@ -1431,17 +1510,30 @@ function parsePrdDocumentReturnStrategyTable(rows) {
         record.tiers.some((tier) => tier.threshold || tier.reward),
     );
   if (!records.length) return null;
+  const hasFourthTier = records.some((record) =>
+    record.tiers[2]?.threshold || record.tiers[2]?.reward,
+  );
+  const tierCount = hasFourthTier ? 4 : 3;
   const fieldValues = [
-    ["第1档 · 抽奖门槛", records.map((record) => record.drawThreshold)],
-    ["返券1 · 金额", records.map((record) => record.tiers[0].reward)],
-    ["返券2 · 金额", records.map((record) => record.tiers[1].reward)],
-    ["返券3 · 金额", records.map((record) => record.tiers[2].reward)],
-    ["返券1 · 消耗门槛", records.map((record) => record.tiers[0].threshold)],
-    ["返券2 · 消耗门槛", records.map((record) => record.tiers[1].threshold)],
-    ["返券3 · 消耗门槛", records.map((record) => record.tiers[2].threshold)],
+    ["第1档 · 类型", records.map(() => "抽奖任务")],
+    ["第1档 · 消耗门槛", records.map((record) => record.drawThreshold)],
+    ["第2档 · 类型", records.map(() => "消耗返")],
+    ["第2档 · 券金额", records.map((record) => record.tiers[0].reward)],
+    ["第2档 · 消耗门槛", records.map((record) => record.tiers[0].threshold)],
+    ["第3档 · 类型", records.map(() => "消耗返")],
+    ["第3档 · 券金额", records.map((record) => record.tiers[1].reward)],
+    ["第3档 · 消耗门槛", records.map((record) => record.tiers[1].threshold)],
   ];
+  if (tierCount === 4) {
+    fieldValues.push(
+      ["第4档 · 类型", records.map(() => "消耗返")],
+      ["第4档 · 券金额", records.map((record) => record.tiers[2].reward)],
+      ["第4档 · 消耗门槛", records.map((record) => record.tiers[2].threshold)],
+    );
+  }
   return {
-    module: "核心玩法｜消耗返",
+    module: tierCount === 4 ? "核心玩法｜抽奖消耗返（四档）" : "核心玩法｜消耗返（三档）",
+    tierCount,
     versions: records.map((record) => record.name),
     fields: fieldValues.map(([field, values]) => ({ field, values })),
   };
@@ -1806,7 +1898,14 @@ function buildPageTemplateSeedBlueprintFromPasteRows(pageTemplate, pasteRows, ve
 }
 
 function getNormalizedPrdBlueprintModuleName(value) {
-  return normalizePageTemplateLookupName(value)
+  const normalized = normalizePageTemplateLookupName(value);
+  if (
+    /核心玩法.*消耗返.*(?:三档|四档|3列|4列)/.test(normalized) ||
+    /核心玩法模块抽奖消返[34]列/.test(normalized)
+  ) {
+    return normalizePageTemplateLookupName("核心玩法｜抽奖消耗返");
+  }
+  return normalized
     .replace(/核心玩法模块抽奖$/, "核心玩法模块抽奖未报名")
     .replace(/任务列表模块$/, "任务列表");
 }
@@ -1856,8 +1955,14 @@ function getPrdBlueprintFieldAliases(field) {
   }
 
   const consumptionAliasMap = {
+    第1档类型: ["第1档玩法类型", "第1档奖励类型"],
     金额1: ["第1档奖励金额"],
+    第2档类型: ["第2档玩法类型", "第2档奖励类型"],
     金额2: ["第2档奖励金额"],
+    第3档类型: ["第3档玩法类型", "第3档奖励类型"],
+    金额3: ["第3档奖励金额"],
+    第4档类型: ["第4档玩法类型", "第4档奖励类型"],
+    金额4: ["第4档奖励金额"],
     满赠券文案: ["第3档奖励金额"],
     "30元文案": ["抽奖入口文案", "第1个进度节点文案"],
     消耗金额1: ["第2个进度节点文案"],
@@ -2195,6 +2300,10 @@ function convertBlueprintPasteRowsToPrdRows(pasteRows = [], versions = PRD_BLUEP
     return { rows: normalizePrdTableRows([...directRows, ...fallbackRows]), manualVersions };
   }
 
+  applyConsumptionReturnMoleculeByTierCount(
+    pageTemplate,
+    getConsumptionReturnTierCountFromRows(dataRows),
+  );
   const seedBlueprint = buildPageTemplateSeedBlueprintFromPasteRows(pageTemplate, pasteRows, versions);
   const fields = withDynamicPrdBlueprintPrizeFields(
     getPrdPageTemplateInputFields(pageTemplate, { blueprint: seedBlueprint }).map((field) => ({
@@ -3190,6 +3299,7 @@ const state = {
   prdTemplateAddAfterIndex: null,
   prdTemplateAddModal: null,
   prdTemplateSelectedModuleIndex: null,
+  prdTemplatePreviewVersions: {},
   pageTemplateBlueprintStates: {},
   pageTemplateChildStates: {},
   guidedLineageZoom: 1,
@@ -3205,139 +3315,170 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 let prdParseTimer = null;
 let guidedCanvasFitToken = 0;
+let pendingGuidedFocusNodeId = null;
 const uid = () => `node_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const colorChoices = ["#1677ff", "#101828", "#1f9d62", "#e5484d", "#f59e0b", "#ffffff"];
+const makeGuidedPageBackground = (colors = []) => {
+  const [top, upperMiddle, lowerMiddle, base] = colors;
+  if (!top || !upperMiddle || !lowerMiddle || !base) return base || lowerMiddle || upperMiddle || top || "#ffffff";
+  return `linear-gradient(165deg, ${top} 0px, ${upperMiddle} 200px, ${lowerMiddle} 360px, ${base} 400px, ${base} 100%)`;
+};
+const makeGuidedPageBackgroundLower = (colors = []) => {
+  const [top, upperMiddle, lowerMiddle, base] = colors;
+  if (!top || !upperMiddle || !lowerMiddle || !base) return base || lowerMiddle || upperMiddle || top || "#ffffff";
+  return `linear-gradient(165deg, ${top} 0px, ${top} 40px, ${upperMiddle} 240px, ${lowerMiddle} 400px, ${base} 440px, ${base} 100%)`;
+};
 const guidedPageThemePresets = [
   {
     id: "pink",
     name: "日常色系-粉色",
-    background: "#FFDFE9",
-    primary: "#FFDFE9",
-    secondary: "#FFDFE9",
+    background: makeGuidedPageBackground(["#FF88C1", "#FFC1D5", "#FFDAE6", "#FFE9EE"]),
+    solidBackground: "#FFDFE9",
+    primary: "#FF88C1",
+    secondary: "#FFE9EE",
     variantThemeId: "pink",
     filter: "none",
   },
   {
     id: "node-womens-day",
     name: "节点色系-三八",
-    background: "#FEF6E5",
-    primary: "#FEF6E5",
-    secondary: "#FEF6E5",
+    background: makeGuidedPageBackground(["#00B7FF", "#9ED8FF", "#CCE3FF", "#CCE3FF"]),
+    solidBackground: "#FEF6E5",
+    primary: "#00B7FF",
+    secondary: "#CCE3FF",
     variantThemeId: "pink",
     filter: "none",
   },
   {
     id: "sky",
     name: "日常色系-蓝色",
-    background: "#CCE3FF",
-    primary: "#CCE3FF",
-    secondary: "#CCE3FF",
+    background: makeGuidedPageBackground(["#88BEFF", "#AED3FF", "#CCE3FF", "#ECF5FF"]),
+    solidBackground: "#CCE3FF",
+    primary: "#88BEFF",
+    secondary: "#ECF5FF",
     variantThemeId: "sky",
     filter: "none",
   },
   {
     id: "daily-cyan",
     name: "日常色系-青色",
-    background: "#D0F9FC",
-    primary: "#D0F9FC",
-    secondary: "#D0F9FC",
+    background: makeGuidedPageBackground(["#ABF9FF", "#B5FBFF", "#C7E9EC", "#CAF1F3"]),
+    solidBackground: "#D0F9FC",
+    primary: "#ABF9FF",
+    secondary: "#CAF1F3",
     variantThemeId: "sky",
     filter: "none",
   },
   {
     id: "daily-purple",
     name: "日常色系-紫色",
-    background: "#E9CCFF",
-    primary: "#E9CCFF",
-    secondary: "#E9CCFF",
+    background: makeGuidedPageBackground(["#CB88FF", "#DCAEFF", "#E9CCFF", "#F7ECFF"]),
+    solidBackground: "#E9CCFF",
+    primary: "#CB88FF",
+    secondary: "#F7ECFF",
     variantThemeId: "sky",
     filter: "none",
   },
   {
     id: "daily-green",
     name: "日常色系-绿色",
-    background: "#EFFCDE",
-    primary: "#EFFCDE",
+    background: makeGuidedPageBackground(["#DAFF99", "#E1FFAE", "#DAEFC5", "#EFFCDE"]),
+    solidBackground: "#EFFCDE",
+    primary: "#DAFF99",
     secondary: "#EFFCDE",
     variantThemeId: "sky",
     filter: "none",
   },
   {
     id: "node-breath",
-    name: "节点色系-气息",
-    background: "#FFE8F7",
-    primary: "#FFE8F7",
-    secondary: "#FFE8F7",
+    name: "节点色系-七夕",
+    background: makeGuidedPageBackground(["#FF89E3", "#FFC6EE", "#FFDAF2", "#FFE1F8"]),
+    solidBackground: "#FFE8F7",
+    primary: "#FF89E3",
+    secondary: "#FFE1F8",
     variantThemeId: "sky",
     filter: "none",
   },
   {
     id: "node-anniversary",
     name: "节点色系-周年庆",
-    background: "#FFE8E8",
-    primary: "#FFE8E8",
-    secondary: "#FFE8E8",
+    background: makeGuidedPageBackgroundLower(["#9B0C33", "#F1446D", "#FFCFD9", "#FFECEE"]),
+    solidBackground: "#FFE8E8",
+    primary: "#9B0C33",
+    secondary: "#FFECEE",
     variantThemeId: "sky",
     filter: "none",
   },
   {
     id: "node-double-festival",
     name: "节点色系-双旦",
-    background: "#E6F8FF",
-    primary: "#E6F8FF",
-    secondary: "#E6F8FF",
+    background: makeGuidedPageBackgroundLower(["#1E78FF", "#5B9EFF", "#B9E2FF", "#D4EFFF"]),
+    solidBackground: "#E6F8FF",
+    primary: "#1E78FF",
+    secondary: "#D4EFFF",
     variantThemeId: "sky",
     filter: "none",
   },
   {
     id: "apricot",
     name: "日常色系-卡其色",
-    background: "#FFE3CC",
-    primary: "#FFE3CC",
-    secondary: "#FFE3CC",
+    background: makeGuidedPageBackground(["#FFBE88", "#FFD2AE", "#FFE3CC", "#FFE7D1"]),
+    solidBackground: "#FFE3CC",
+    primary: "#FFBE88",
+    secondary: "#FFE7D1",
     variantThemeId: "apricot",
     filter: "none",
   },
   {
     id: "daily-yellow",
     name: "日常色系-黄色",
-    background: "#FFF6D1",
-    primary: "#FFF6D1",
-    secondary: "#FFF6D1",
+    background: makeGuidedPageBackground(["#FADD4E", "#FFF4BD", "#FFE8B7", "#FFF0E6"]),
+    solidBackground: "#FFF6D1",
+    primary: "#FADD4E",
+    secondary: "#FFF0E6",
     variantThemeId: "apricot",
     filter: "none",
   },
   {
     id: "node-new-year",
     name: "节点色系-新年",
-    background: "#FFE8E9",
-    primary: "#FFE8E9",
-    secondary: "#FFE8E9",
+    background: makeGuidedPageBackground(["#FF7275", "#FFA8AA", "#FFCECE", "#FFDFDF"]),
+    solidBackground: "#FFE8E9",
+    primary: "#FF7275",
+    secondary: "#FFDFDF",
     variantThemeId: "apricot",
     filter: "none",
   },
   {
     id: "node-mid-autumn",
     name: "节点色系-中秋",
-    background: "#FFE8FA",
-    primary: "#FFE8FA",
-    secondary: "#FFE8FA",
+    background: makeGuidedPageBackgroundLower(["#4B1E7B", "#A141B6", "#FFD7EF", "#FFE6F5"]),
+    solidBackground: "#FFE8FA",
+    primary: "#4B1E7B",
+    secondary: "#FFE6F5",
     variantThemeId: "apricot",
     filter: "none",
   },
   {
     id: "node-double-11",
     name: "节点色系-双11",
-    background: "#FFF7E8",
-    primary: "#FFF7E8",
-    secondary: "#FFF7E8",
+    background: makeGuidedPageBackground(["#FF7A21", "#FFD06A", "#FFF2CD", "#FFF0CD"]),
+    solidBackground: "#FFF7E8",
+    primary: "#FF7A21",
+    secondary: "#FFF0CD",
     variantThemeId: "apricot",
     filter: "none",
   },
 ];
 const canvasColorChoices = guidedPageThemePresets.map((theme) => theme.background);
+
+function getThemeColorInputValue(value, fallback = "#ffffff") {
+  const text = String(value || "").trim();
+  const hex = text.match(/#[0-9a-fA-F]{6}\b/)?.[0];
+  return hex || fallback;
+}
 
 function getGuidedThemePreset(themeOrId) {
   if (typeof themeOrId === "object" && themeOrId) return themeOrId;
@@ -3351,6 +3492,32 @@ function getGuidedVariantThemeId(themeOrId) {
 
 function getGuidedThemeCategory(theme) {
   return String(theme?.name || "").startsWith("节点色系-") ? "节点色系" : "日常色系";
+}
+
+function getHeaderMainVisualOptions() {
+  const displayNames = ["爱心", "冲出"];
+  const replacementOptions = Object.entries(_headerMainVisualModules)
+    .map(([path, url]) => {
+      const fileName = decodeURIComponent(path.split("/").pop() || "");
+      return {
+        id: path,
+        name: fileName.replace(/\.[^.]+$/, ""),
+        url,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "zh-CN"))
+    .map((item, index) => ({
+      ...item,
+      name: displayNames[index] || item.name,
+    }));
+  return [
+    {
+      id: "default-main-visual",
+      name: "惊喜",
+      url: headerDefaultMainVisualUrl,
+    },
+    ...replacementOptions,
+  ];
 }
 
 function renderGuidedThemeButton(item, activeThemeId) {
@@ -3367,28 +3534,6 @@ function renderGuidedThemeButton(item, activeThemeId) {
   `;
 }
 
-function getThemeHeaderImageUrl(themeOrId) {
-  const theme = getGuidedThemePreset(themeOrId);
-  const themeName = String(theme?.name || "");
-  if (!themeName) return "";
-  const match = Object.entries(_themeHeaderImageModules).find(([path]) => {
-    const fileName = decodeURIComponent(path.split("/").pop() || "").replace(/\.[^.]+$/, "");
-    return fileName === themeName;
-  });
-  return match?.[1] || "";
-}
-
-function renderGuidedPageThemeHeader(page) {
-  const theme = getGuidedPageTheme(page);
-  const imageUrl = getThemeHeaderImageUrl(theme);
-  if (!imageUrl) return "";
-  return `
-    <div class="guided-page-theme-header">
-      <img src="${escapeAttr(imageUrl)}" alt="" />
-    </div>
-  `;
-}
-
 function findAtomSchema(schemaId) {
   const normalized = String(schemaId || "").replace(/\s+/g, "").toLowerCase();
   if (!normalized) return null;
@@ -3400,7 +3545,9 @@ function findAtomSchema(schemaId) {
   });
 }
 
-const moduleKindMap = {};
+const moduleKindMap = {
+  头图: "hero",
+};
 
 const moduleKindLabels = {
   hero: "头图/动效",
@@ -3976,6 +4123,88 @@ function moveMoleculeInPrdPageTemplate(templateId, moduleIndex, direction) {
   state.prdTemplateAddModal = null;
   state.prdTemplateAddAfterIndex = null;
   return true;
+}
+
+function replaceMoleculeInPrdPageTemplate(templateId, moduleIndex, moleculeId) {
+  const template = [...pageTemplates, ...customPageTemplates].find((item) => item.id === templateId);
+  if (!template?.nodes?.length) return false;
+  const boundedIndex = Number(moduleIndex);
+  if (!Number.isInteger(boundedIndex) || boundedIndex < 0 || boundedIndex >= template.nodes.length) return false;
+  const entry = createPageTemplateMoleculeEntry(template, moleculeId);
+  if (!entry) return false;
+  if (template.isCustom && template.nodes[boundedIndex]?.id && entry && typeof entry === "object" && !Array.isArray(entry)) {
+    entry.id = template.nodes[boundedIndex].id;
+  }
+  template.nodes[boundedIndex] = entry;
+  if (template.isCustom) saveCustomPageTemplatesToStorage();
+  state.prdTemplateSelectedModuleIndex = boundedIndex;
+  state.prdTemplateAddModal = null;
+  state.prdTemplateAddAfterIndex = null;
+  state.prdTableBlueprint = null;
+  state.prdTableBlueprintSignature = "";
+  return true;
+}
+
+function getPageTemplateRawNodeSchemaId(entry) {
+  return Array.isArray(entry) ? entry[0] : entry?.schemaId;
+}
+
+function getConsumptionReturnMoleculeIdByTierCount(tierCount) {
+  return Number(tierCount) >= 4
+    ? "核心玩法模块-抽奖消返-4列"
+    : Number(tierCount) >= 3
+      ? "核心玩法模块-抽奖消返-3列"
+      : "";
+}
+
+function getConsumptionReturnTierCountFromRows(rows = []) {
+  let maxTier = 0;
+  rows.forEach((row) => {
+    const value = String(row.value ?? "").trim();
+    const field = String(row.field ?? row.key ?? "").trim();
+    const moduleName = String(row.module ?? "").trim();
+    if (!value) return;
+    const normalizedModule = normalizePageTemplateLookupName(moduleName);
+    const normalizedField = normalizePageTemplateLookupName(field);
+    if (
+      normalizedModule &&
+      !normalizedModule.includes(normalizePageTemplateLookupName("消耗返")) &&
+      !normalizedModule.includes(normalizePageTemplateLookupName("抽奖消返"))
+    ) {
+      return;
+    }
+    const propMatch = normalizedField.match(/(?:rewardtype|amounttext|consumeamounttext)([1-4])/i);
+    const tierMatch = normalizedField.match(/第([1-4一二三四])档/);
+    const chineseTierMap = { 一: 1, 二: 2, 三: 3, 四: 4 };
+    const tierValue = propMatch?.[1] || tierMatch?.[1] || 0;
+    const tier = Number(chineseTierMap[tierValue] || tierValue || 0);
+    if (tier) maxTier = Math.max(maxTier, tier);
+  });
+  return maxTier >= 4 ? 4 : maxTier >= 1 ? 3 : 0;
+}
+
+function applyConsumptionReturnMoleculeByTierCount(pageTemplate, tierCount) {
+  const moleculeId = getConsumptionReturnMoleculeIdByTierCount(tierCount);
+  if (!pageTemplate?.nodes?.length || !moleculeId) return false;
+  const moduleIndex = pageTemplate.nodes.findIndex((entry) =>
+    [
+      "核心玩法模块-抽奖消返-3列",
+      "核心玩法模块-抽奖消返-4列",
+    ].includes(getPageTemplateRawNodeSchemaId(entry)),
+  );
+  if (moduleIndex < 0) return false;
+  if (getPageTemplateRawNodeSchemaId(pageTemplate.nodes[moduleIndex]) === moleculeId) return false;
+  return replaceMoleculeInPrdPageTemplate(pageTemplate.id, moduleIndex, moleculeId);
+}
+
+function applyConsumptionReturnMoleculeFromPrdRows(rows = []) {
+  const normalizedRows = normalizePrdTableRows(rows);
+  const pageType = getPrdPageTemplateType(normalizedRows);
+  const pageTemplate = pageType ? findLatestCustomPageTemplateByPrdType(pageType) : null;
+  return applyConsumptionReturnMoleculeByTierCount(
+    pageTemplate,
+    getConsumptionReturnTierCountFromRows(normalizedRows),
+  );
 }
 
 function getPageTemplateBusinessStateConfig(schemaId, templateId = "", moduleIndex = -1) {
@@ -5297,6 +5526,34 @@ function renderPrizeLibrarySelect(value, dataAttr, ariaLabel, nameDataAttr = "",
   `;
 }
 
+function isSelectPropField(field) {
+  return field?.type === "select" && Array.isArray(field.options) && field.options.length > 0;
+}
+
+function getSelectFieldOptions(field) {
+  return (field?.options || []).map((option) =>
+    typeof option === "string"
+      ? { label: option, value: option }
+      : {
+          label: option.label ?? option.value ?? "",
+          value: option.value ?? option.label ?? "",
+        },
+  );
+}
+
+function renderSelectFieldControl(field, value, dataAttr, ariaLabel = "") {
+  const currentValue = String(value === undefined || value === null || value === "" ? field?.default ?? "" : value);
+  return `
+    <select ${dataAttr} ${ariaLabel ? `aria-label="${escapeAttr(ariaLabel)}"` : ""}>
+      ${getSelectFieldOptions(field).map((option) => `
+        <option value="${escapeAttr(option.value)}" ${String(option.value) === currentValue ? "selected" : ""}>
+          ${escapeHtml(option.label)}
+        </option>
+      `).join("")}
+    </select>
+  `;
+}
+
 function renderFixedPrizeLibrarySelect(value, dataAttr, ariaLabel) {
   const selectedValue = normalizePrizeLibraryValue(value);
   const optionValues = new Set(mockPrizeLibrary.map((item) => serializePrizeOption(item)));
@@ -5388,6 +5645,14 @@ function syncPrizeLibraryControl(select) {
 }
 
 function getBlueprintRowField(module, row) {
+  if (module?.component?.startsWith("molecule:") && typeof row?.childIndex === "number" && row?.propKey) {
+    const moleculeName = module.component.slice("molecule:".length);
+    const molecule = findDemoMoleculeByName(moleculeName);
+    const childEntry = getMoleculeChildEntries(molecule, getMoleculeDefaultProps(molecule))[row.childIndex];
+    const schema = findAtomSchema(childEntry?.[0]);
+    const entry = getPropEntries(schema).find(([key]) => key === row.propKey);
+    return entry?.[1] || null;
+  }
   const schema = findAtomSchema(module?.component);
   if (!schema || !row?.propKey) return null;
   const entry = getPropEntries(schema).find(([key]) => key === row.propKey);
@@ -5470,10 +5735,26 @@ function getAdminVerifierProps(schema, verifier) {
   );
   const themeVariant = getSchemaThemeVariant(schema, variantThemeId);
   const themeProps = Object.fromEntries(getThemeLinkedVariantProps(schema, themeVariant));
+  const headlineTextColor = getThemeHeadlineTextColor(verifier?.parentThemeId || variantThemeId);
+  const directThemeProps = schema?.id === "头图"
+    ? {
+        burstColor: getThemePrimaryColor(verifier?.parentThemeId || variantThemeId),
+        burstOpacity: getThemeBurstOpacity(verifier?.parentThemeId || variantThemeId),
+        buttonBackgroundColor: getThemeButtonBackgroundColor(verifier?.parentThemeId || variantThemeId),
+        ribbonColor: getThemeRibbonColor(verifier?.parentThemeId || variantThemeId),
+        glowOpacity: getThemeGlowOpacity(verifier?.parentThemeId || variantThemeId),
+        headlineGradientTop: headlineTextColor === "#FFFFFF"
+          ? headlineTextColor
+          : getThemeHeadlineGradientTop(verifier?.parentThemeId || variantThemeId),
+        headlineGradientBottom: headlineTextColor,
+        textColor: headlineTextColor,
+      }
+    : {};
   return {
     ...getSchemaDefaultValues(schema),
     ...(variant?.props || {}),
     ...themeProps,
+    ...directThemeProps,
     ...(verifier.blueprint || {}),
   };
 }
@@ -5640,6 +5921,137 @@ function getThemeLinkedVariantProps(schema, variant) {
   });
 }
 
+function getThemePrimaryColor(themeId) {
+  const burstColorOverrides = {
+    "daily-cyan": "#0FB3FF",
+    "daily-green": "#7DB52E",
+    "node-anniversary": "#FF0A4F",
+    "node-mid-autumn": "#952BB2",
+    "node-double-11": "#FD3F00",
+  };
+  if (burstColorOverrides[themeId]) return burstColorOverrides[themeId];
+  return (guidedPageThemePresets.find((theme) => theme.id === themeId) || guidedPageThemePresets[0])?.primary || "#FF88C1";
+}
+
+function getThemeBurstOpacity(themeId) {
+  if (new Set(["daily-cyan", "daily-green"]).has(themeId)) return 0.3;
+  if (themeId === "node-anniversary") return 0.5;
+  if (themeId === "node-mid-autumn") return 0.5;
+  if (themeId === "node-double-11") return 0.3;
+  return new Set(["sky", "daily-cyan", "daily-green", "apricot", "daily-yellow"]).has(themeId) ? 0.8 : 0.5;
+}
+
+function getThemeButtonBackgroundColor(themeId) {
+  const buttonColorMap = {
+    pink: "#FF62B8",
+    "daily-cyan": "#0FB3FF",
+    "daily-purple": "#A32CFF",
+    "daily-yellow": "#FE9E14",
+    sky: "#2C8BFF",
+    "daily-green": "#7DB52E",
+    apricot: "#E57112",
+    "node-new-year": "#FF797B",
+    "node-womens-day": "#38BDFF",
+    "node-breath": "#FF79DA",
+    "node-mid-autumn": "#952BB2",
+    "node-anniversary": "#E52051",
+    "node-double-festival": "#287FFF",
+    "node-double-11": "#FD3F00",
+  };
+  return buttonColorMap[themeId] || buttonColorMap[getGuidedVariantThemeId(themeId)] || "#FF62B8";
+}
+
+function getThemeRibbonColor(themeId) {
+  const ribbonColorMap = {
+    pink: "#FF4FAE",
+    "daily-cyan": "#00C8F5",
+    "daily-purple": "#B64CFF",
+    "daily-yellow": "#FFC21A",
+    sky: "#3D94FF",
+    "daily-green": "#8FD937",
+    apricot: "#FF8A2A",
+    "node-new-year": "#FF4D58",
+    "node-womens-day": "#24B9FF",
+    "node-breath": "#FF56CC",
+    "node-mid-autumn": "#B23AD1",
+    "node-anniversary": "#FF1F55",
+    "node-double-festival": "#3B8CFF",
+    "node-double-11": "#FF4B00",
+  };
+  return ribbonColorMap[themeId] || ribbonColorMap[getGuidedVariantThemeId(themeId)] || "#FF4FAE";
+}
+
+function getThemeGlowOpacity(themeId) {
+  return new Set(["node-mid-autumn", "node-anniversary", "node-double-festival"]).has(themeId) ? 0.2 : 0.6;
+}
+
+function getThemeHeadlineGradientTop(themeId) {
+  const gradientTopMap = {
+    pink: "#FF6FC5",
+    "daily-cyan": "#22E6FF",
+    "daily-purple": "#C35BFF",
+    "daily-yellow": "#FFE45C",
+    sky: "#5AA7FF",
+    "daily-green": "#A7F04A",
+    apricot: "#FFA04A",
+    "node-new-year": "#FF6669",
+    "node-womens-day": "#45C8FF",
+    "node-breath": "#FF69D8",
+    "node-mid-autumn": "#BF4CDA",
+    "node-anniversary": "#F13965",
+    "node-double-festival": "#4B97FF",
+    "node-double-11": "#FF6A12",
+  };
+  return gradientTopMap[themeId] || gradientTopMap[getGuidedVariantThemeId(themeId)] || "#FF5F5F";
+}
+
+function getThemeHeadlineTextColor(themeId) {
+  const textColorMap = {
+    pink: "#2C0113",
+    "daily-cyan": "#092E39",
+    "daily-purple": "#240939",
+    "daily-yellow": "#392909",
+    sky: "#001A2F",
+    "daily-green": "#1B3608",
+    apricot: "#391F09",
+    "node-new-year": "#4E0506",
+    "node-womens-day": "#052A4E",
+    "node-breath": "#4E0548",
+    "node-mid-autumn": "#FFFFFF",
+    "node-anniversary": "#FFFFFF",
+    "node-double-festival": "#FFFFFF",
+    "node-double-11": "#320603",
+  };
+  return textColorMap[themeId] || textColorMap[getGuidedVariantThemeId(themeId)] || "#2C0113";
+}
+
+function applyDirectThemePropsToAtomNode(node, themeId) {
+  if (!node?.props) return;
+  if (node.schemaId === "头图" && "burstColor" in node.props) {
+    node.props.burstColor = getThemePrimaryColor(themeId);
+  }
+  if (node.schemaId === "头图" && "burstOpacity" in node.props) {
+    node.props.burstOpacity = getThemeBurstOpacity(themeId);
+  }
+  if (node.schemaId === "头图" && "buttonBackgroundColor" in node.props) {
+    node.props.buttonBackgroundColor = getThemeButtonBackgroundColor(themeId);
+  }
+  if (node.schemaId === "头图") {
+    node.props.ribbonColor = getThemeRibbonColor(themeId);
+    node.props.glowOpacity = getThemeGlowOpacity(themeId);
+  }
+  if (node.schemaId === "头图" && "headlineGradientTop" in node.props) {
+    const headlineTextColor = getThemeHeadlineTextColor(themeId);
+    node.props.headlineGradientTop = headlineTextColor === "#FFFFFF" ? headlineTextColor : getThemeHeadlineGradientTop(themeId);
+  }
+  if (node.schemaId === "头图" && "textColor" in node.props) {
+    node.props.textColor = getThemeHeadlineTextColor(themeId);
+  }
+  if (node.schemaId === "头图" && "headlineGradientBottom" in node.props) {
+    node.props.headlineGradientBottom = getThemeHeadlineTextColor(themeId);
+  }
+}
+
 function getMoleculePropsForVerifier(molecule, verifier) {
   const props = getMoleculeDefaultProps(molecule);
   Object.keys(props).forEach((key) => {
@@ -5708,6 +6120,19 @@ function applyMoleculeThemeToVerifier(molecule, verifier, themeId) {
     getThemeLinkedVariantProps(schema, variant).forEach(([key, value]) => {
       verifier.blueprint[getMoleculeBlueprintKey(childIndex, key)] = value;
     });
+    if (schema?.id === "头图") {
+      const headlineTextColor = getThemeHeadlineTextColor(themeId);
+      verifier.blueprint[getMoleculeBlueprintKey(childIndex, "burstColor")] = getThemePrimaryColor(themeId);
+      verifier.blueprint[getMoleculeBlueprintKey(childIndex, "burstOpacity")] = getThemeBurstOpacity(themeId);
+      verifier.blueprint[getMoleculeBlueprintKey(childIndex, "buttonBackgroundColor")] = getThemeButtonBackgroundColor(themeId);
+      verifier.blueprint[getMoleculeBlueprintKey(childIndex, "ribbonColor")] = getThemeRibbonColor(themeId);
+      verifier.blueprint[getMoleculeBlueprintKey(childIndex, "glowOpacity")] = getThemeGlowOpacity(themeId);
+      verifier.blueprint[getMoleculeBlueprintKey(childIndex, "headlineGradientTop")] = headlineTextColor === "#FFFFFF"
+        ? headlineTextColor
+        : getThemeHeadlineGradientTop(themeId);
+      verifier.blueprint[getMoleculeBlueprintKey(childIndex, "headlineGradientBottom")] = headlineTextColor;
+      verifier.blueprint[getMoleculeBlueprintKey(childIndex, "textColor")] = headlineTextColor;
+    }
   });
 }
 
@@ -5721,6 +6146,7 @@ function applyThemeToMoleculeNodeChildren(node, themeId) {
     getThemeLinkedVariantProps(schema, variant).forEach(([key, value]) => {
       if (child.props && key in child.props) child.props[key] = value;
     });
+    applyDirectThemePropsToAtomNode(child, themeId);
     if (child.children?.length) applyThemeToMoleculeNodeChildren(child, themeId);
   });
 }
@@ -5733,6 +6159,7 @@ function applyThemeToAtomNode(node, themeId) {
   getThemeLinkedVariantProps(schema, variant).forEach(([key, value]) => {
     if (node.props && key in node.props) node.props[key] = value;
   });
+  applyDirectThemePropsToAtomNode(node, themeId);
 }
 
 function createAdminVerifierMoleculeNode(molecule, verifier) {
@@ -6032,11 +6459,13 @@ function renderAdminComponentVerifier() {
       ? Number(schema.dimensions?.width || 702)
       : 702;
   const exportWidth = GUIDED_CUT_EXPORT_WIDTH;
-  const exportBottomSpace = verifierType === "atom" && isStickyBottomButtonExportNode(schema)
+  const exportBottomSpace = verifierType === "atom" && isHeaderImageExportNode(schema)
     ? 0
-    : verifierType === "atom" && isTaskBarStyle1ExportNode(schema)
-      ? GUIDED_TASK_BAR_EXPORT_BOTTOM_SPACE
-      : GUIDED_CUT_EXPORT_BOTTOM_SPACE;
+    : verifierType === "atom" && isStickyBottomButtonExportNode(schema)
+      ? 0
+      : verifierType === "atom" && isTaskBarStyle1ExportNode(schema)
+        ? GUIDED_TASK_BAR_EXPORT_BOTTOM_SPACE
+        : GUIDED_CUT_EXPORT_BOTTOM_SPACE;
   const height = verifierType === "page"
     ? 1334
     : verifierType === "atom"
@@ -6051,8 +6480,20 @@ function renderAdminComponentVerifier() {
     : verifierType === "page"
       ? renderPageTemplateVerifierPreview(pageTemplate, verifier)
       : moleculeNode ? renderComponent(moleculeNode, { editable: false }) : "";
+  const isHeaderAtomExport = verifierType === "atom" && isHeaderImageExportNode(schema);
   const exportPreview = verifierType === "atom"
-    ? renderAtomPreview(schema.id, getCutExportProps(schema.id, props))
+    ? isHeaderAtomExport
+      ? `
+        <div
+          class="guided-export-header-image"
+          style="background:${escapeAttr(theme.background)};background-position:top center;--guided-page-theme-filter:${escapeAttr(theme.filter || "none")};"
+        >
+          <div class="guided-export-themed-content">
+            ${renderAtomPreview(schema.id, getCutExportProps(schema.id, props))}
+          </div>
+        </div>
+      `
+      : renderAtomPreview(schema.id, getCutExportProps(schema.id, props))
     : verifierType === "page"
       ? renderPageTemplateVerifierPreview(pageTemplate, verifier, true)
       : moleculeExportNode ? renderComponent(moleculeExportNode, { editable: false }) : "";
@@ -6139,6 +6580,13 @@ function renderAdminComponentVerifier() {
                             data-admin-blueprint-prop="${escapeAttr(key)}"
                           >${escapeHtml(value)}</textarea>
                         `
+                      : isSelectPropField(field)
+                        ? renderSelectFieldControl(
+                            field,
+                            value,
+                            `data-admin-blueprint-prop="${escapeAttr(key)}"`,
+                            field.label || key,
+                          )
                       : `
                         <input
                           type="text"
@@ -6178,6 +6626,13 @@ function renderAdminComponentVerifier() {
                             value="${escapeAttr(value)}"
                           />
                         `
+                      : isSelectPropField(field)
+                        ? renderSelectFieldControl(
+                            field,
+                            value,
+                            `data-admin-molecule-blueprint-prop="${escapeAttr(compoundKey)}"`,
+                            field.label || key,
+                          )
                         : `
                           <input
                             type="text"
@@ -6219,6 +6674,13 @@ function renderAdminComponentVerifier() {
                             value="${escapeAttr(value)}"
                           />
                         `
+                      : isSelectPropField(field)
+                        ? renderSelectFieldControl(
+                            field,
+                            value,
+                            `data-admin-page-blueprint-prop="${escapeAttr(compoundKey)}"`,
+                            field.label || compoundKey,
+                          )
                         : `
                           <input
                             type="text"
@@ -6404,7 +6866,7 @@ function renderAdminComponentVerifier() {
             <header>
               <div>
                 <strong>导出切图样子</strong>
-                <span>${isAutoHeight ? `${exportWidth}px 宽，底部留白 ${exportBottomSpace}px` : `${exportWidth} x ${exportHeight}px`}，透明背景</span>
+                <span>${isHeaderAtomExport ? `${exportWidth} x ${GUIDED_HEADER_IMAGE_EXPORT_HEIGHT}px，带页面背景` : `${isAutoHeight ? `${exportWidth}px 宽，底部留白 ${exportBottomSpace}px` : `${exportWidth} x ${exportHeight}px`}，透明背景`}</span>
               </div>
               <button type="button" data-admin-export-cut>下载 PNG</button>
             </header>
@@ -6412,7 +6874,7 @@ function renderAdminComponentVerifier() {
               <div
                 class="admin-export-capture"
                 data-admin-export-cut-capture
-                style="width:${exportWidth}px;${isAutoHeight ? `min-height:${exportHeight}px` : `height:${exportHeight}px`};padding-bottom:${exportBottomSpace}px;box-sizing:border-box;"
+                style="width:${exportWidth}px;${isHeaderAtomExport ? `height:${GUIDED_HEADER_IMAGE_EXPORT_HEIGHT}px;` : isAutoHeight ? `min-height:${exportHeight}px` : `height:${exportHeight}px`};padding-bottom:${isHeaderAtomExport ? 0 : exportBottomSpace}px;box-sizing:border-box;"
                 >${exportPreview}</div>
             </div>
           </section>
@@ -6453,8 +6915,22 @@ function refreshAdminVerifierPreview() {
   const verifier = ensureAdminVerifierState(schema);
   const liveProps = getAdminVerifierProps(schema, verifier);
   const exportProps = getCutExportProps(schema.id, liveProps);
+  const theme = guidedPageThemePresets.find((item) => item.id === verifier.parentThemeId) || guidedPageThemePresets[0];
   if (liveTarget) liveTarget.innerHTML = renderAtomPreview(schema.id, liveProps);
-  if (exportTarget) exportTarget.innerHTML = renderAtomPreview(schema.id, exportProps);
+  if (exportTarget) {
+    exportTarget.innerHTML = isHeaderImageExportNode(schema)
+      ? `
+        <div
+          class="guided-export-header-image"
+          style="background:${escapeAttr(theme.background)};background-position:top center;--guided-page-theme-filter:${escapeAttr(theme.filter || "none")};"
+        >
+          <div class="guided-export-themed-content">
+            ${renderAtomPreview(schema.id, exportProps)}
+          </div>
+        </div>
+      `
+      : renderAtomPreview(schema.id, exportProps);
+  }
   mountPreviewDetailReactMaterials();
 }
 
@@ -6580,6 +7056,16 @@ function getPrdBlueprintPasteFieldValue(rows, moduleName, fieldName, versionInde
 
 function renderPrdBlueprintReturnStrategyTable(group, versions) {
   const moduleName = group.module;
+  const tierIndexes = Array.from(
+    new Set(
+      group.rows
+        .map(({ row }) => String(row.field || "").match(/第([1-4])档/)?.[1])
+        .filter(Boolean)
+        .map(Number),
+    ),
+  ).sort((left, right) => left - right);
+  const tiers = tierIndexes.length ? tierIndexes : [1, 2, 3, 4];
+  const consumeTiers = tiers.filter((tier) => tier > 1);
   return `
     <section
       class="prd-blueprint-module-paste is-return-strategy"
@@ -6589,32 +7075,35 @@ function renderPrdBlueprintReturnStrategyTable(group, versions) {
         <strong>返券配置</strong>
         <span>粘贴人群策略表</span>
       </header>
-      <div class="prd-blueprint-return-paste-grid">
+      <div
+        class="prd-blueprint-return-paste-grid"
+        style="--prd-return-paste-tier-count:${tiers.length};--prd-return-paste-min-width:${220 + tiers.length * 190}px"
+      >
         <div class="prd-blueprint-return-paste-head">
           <span>人群策略</span>
           <span>第1档 · 抽奖任务</span>
-          <span>第2档 · 消耗返（门槛1）</span>
-          <span>第3档 · 消耗返（门槛2）</span>
-          <span>第4档 · 消耗返（门槛3）</span>
+          ${consumeTiers.map((tier) => `
+            <span>第${tier}档 · 消耗返（门槛${tier - 1}）</span>
+          `).join("")}
         </div>
         ${versions.map((version, versionIndex) => {
           const drawThreshold = getPrdBlueprintPasteFieldValue(
             group.rows,
             moduleName,
-            "第1档 · 抽奖门槛",
+            "第1档 · 消耗门槛",
             versionIndex,
           );
-          const tiers = [1, 2, 3].map((tier) => ({
+          const tierValues = consumeTiers.map((tier) => ({
             threshold: getPrdBlueprintPasteFieldValue(
               group.rows,
               moduleName,
-              `返券${tier} · 消耗门槛`,
+              `第${tier}档 · 消耗门槛`,
               versionIndex,
             ),
             reward: getPrdBlueprintPasteFieldValue(
               group.rows,
               moduleName,
-              `返券${tier} · 金额`,
+              `第${tier}档 · 券金额`,
               versionIndex,
             ),
           }));
@@ -6622,7 +7111,7 @@ function renderPrdBlueprintReturnStrategyTable(group, versions) {
             <div class="prd-blueprint-return-paste-row">
               <div contenteditable="true" data-prd-return-strategy-paste-target>${escapeHtml(version)}</div>
               <div contenteditable="true" data-prd-return-strategy-paste-target>${escapeHtml(drawThreshold ? `累计现金消耗≥${drawThreshold}元` : "")}</div>
-              ${tiers.map((tier) => `
+              ${tierValues.map((tier) => `
                 <div contenteditable="true" data-prd-return-strategy-paste-target>${escapeHtml(
                   tier.threshold && tier.reward
                     ? `送满${tier.threshold}赠${tier.reward}`
@@ -6809,6 +7298,9 @@ function startPrdParsing() {
   state.prdTemplateAddModal = null;
   state.prdTemplateAddAfterIndex = null;
   if (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID) {
+    applyConsumptionReturnMoleculeFromPrdRows(state.prdTableRows);
+  }
+  if (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID) {
     state.selectedBlueprintAudienceId =
       getPrdTableBlueprint().audiences[0]?.id || "prd-table-page";
   } else if (state.selectedDemoPackageId === demoTimeActivityPackage.id) {
@@ -6863,7 +7355,7 @@ function renderPrdTemplateMappingBlueprint(blueprint) {
           <p>${hasPageTemplate ? "页面模板已命中；下方直接展开页面继承的分子变量，有 PRD 值自动带入，没值留空。" : `左侧是「${escapeHtml(pageType || "未识别类型")}」命中的页面模板模块；右侧是 PRD 输入表格里的具体信息，有值展示、没值留空。`}</p>
         </div>
         <button class="blueprint-side-generate" data-demo-generate-activity>
-          <span>确认并预览</span>
+          <span>预览页面</span>
           <b>→</b>
         </button>
       </header>
@@ -6998,36 +7490,6 @@ function renderModuleBoundBlueprintTable({ templateName, moduleItems }) {
 
 const PAGE_TEMPLATE_VARIABLE_ROW_PREFIX = "页面模板变量";
 const PAGE_TEMPLATE_VARIABLE_VERSION_ROW_PREFIX = "页面模板变量版本";
-const pageTemplateModulePreviewImages = {
-  账户优惠券提示: "/page-module-previews/账户优惠券提示.png",
-  "核心权益模块-bigday发券-样式1": "/page-module-previews/bigday-coupon-style1.png",
-  "核心权益模块-bigday发券-样式1-已报名": "/page-module-previews/bigday-coupon-style1.png",
-  "核心权益模块-bigday发券-样式2": "/page-module-previews/核心权益模块-bigday发券-样式2.png",
-  "核心权益模块-发券-样式2": "/page-module-previews/核心权益模块-发券-样式2.png",
-  "核心玩法模块-抽奖消返-3列": "/page-module-previews/lottery-consumption-return-3col.png",
-  "核心玩法模块-抽奖消返-4列": "/page-module-previews/核心玩法模块-抽奖消返-4列.png",
-  "核心玩法模块-抽奖-未报名": "/page-module-previews/lottery-unregistered.png",
-  "核心玩法模块-抽奖-已报名": "/page-module-previews/核心玩法模块-抽奖-已报名.png",
-  任务列表: "/page-module-previews/task-list.png",
-  "投稿赢流量-样式3": "/page-module-previews/投稿赢流量-样式3.png",
-  "内容诊断-样式1-点击前": "/page-module-previews/内容诊断.png",
-  "内容诊断-样式-点击后": "/page-module-previews/内容诊断.png",
-  "内容诊断-优质视频提示": "/page-module-previews/内容诊断.png",
-  "内容诊断-账号诊断": "/page-module-previews/内容诊断.png",
-  "用户教育-攻略": "/page-module-previews/用户教育-攻略.png",
-  "用户教育案例-样式1": "/page-module-previews/用户教育案例-样式1.png",
-  "用户教育案例-样式2": "/page-module-previews/用户教育案例-样式1.png",
-  置底按钮: "/page-module-previews/置底按钮.png",
-  "官方小助手模块": "/page-module-previews/官方小助手模块.png",
-  "AI智投": "/page-module-previews/AI智投%20.png",
-  "节点指南": "/page-module-previews/节点指南.png",
-  "投放抽奖": "/page-module-previews/投放抽奖.png",
-};
-
-function getPageTemplateStatePreviewSrc(config, activeStateId, fallbackSrc) {
-  const schemaId = config?.states?.find((item) => item.id === activeStateId)?.schemaId;
-  return pageTemplateModulePreviewImages[schemaId] || fallbackSrc || "";
-}
 
 function getPageTemplateVariableRowKey(field) {
   return [
@@ -7348,9 +7810,7 @@ function getPrdPageTemplateInputFields(pageTemplate, verifier) {
         moduleSpec.sections.flatMap((section) =>
           section.fields.map(([localKey, label]) => {
             const field = fields.find((candidate) => {
-              const sourceSchemaId =
-                candidate.sourceModuleSchemaId || candidate.moduleSchemaId;
-              return moduleSpec.schemaIds.includes(sourceSchemaId) &&
+              return moduleSpec.schemaIds.includes(candidate.moduleSchemaId) &&
                 getPageTemplateFieldLocalCompoundKey(candidate) === localKey;
             });
             return field
@@ -7384,9 +7844,30 @@ function getPageTemplateVariableFields(pageTemplate) {
   const prdFieldByKey = new Map(
     prdInputFields.map((field) => [field.compoundKey, field]),
   );
+  const prdPrizeGroupKeys = new Set();
+  prdInputFields.forEach((field) => {
+    const prizeMatch = getPageTemplateFieldLocalCompoundKey(field).match(
+      /^(\d+)\.prize\d+$/,
+    );
+    if (prizeMatch) {
+      prdPrizeGroupKeys.add(`${field.moduleIndex}|${prizeMatch[1]}`);
+    }
+  });
   const orderedFields = [
     ...prdInputFields,
-    ...allFields.filter((field) => !prdFieldByKey.has(field.compoundKey)),
+    ...allFields.filter((field) => {
+      if (prdFieldByKey.has(field.compoundKey)) return false;
+      const prizeMatch = getPageTemplateFieldLocalCompoundKey(field).match(
+        /^(\d+)\.prize\d+$/,
+      );
+      if (
+        prizeMatch &&
+        prdPrizeGroupKeys.has(`${field.moduleIndex}|${prizeMatch[1]}`)
+      ) {
+        return false;
+      }
+      return true;
+    }),
   ];
   return orderedFields.map((field) => {
     const prdField = prdFieldByKey.get(field.compoundKey);
@@ -7478,12 +7959,8 @@ function getPageTemplateVariableGroups(pageTemplate) {
         stateConfig,
       );
     const moduleSpec =
-      getPrdPageTemplateModuleSpec(pageTemplate, sourceSchemaId) ||
-      getPrdPageTemplateModuleSpec(pageTemplate, activeSchemaId);
-    const previewSrc =
-      pageTemplateModulePreviewImages[activeSchemaId] ||
-      pageTemplateModulePreviewImages[sourceSchemaId] ||
-      "";
+      getPrdPageTemplateModuleSpec(pageTemplate, activeSchemaId) ||
+      getPrdPageTemplateModuleSpec(pageTemplate, sourceSchemaId);
     return {
       templateId: pageTemplate.id,
       moduleIndex,
@@ -7495,11 +7972,6 @@ function getPageTemplateVariableGroups(pageTemplate) {
           activeSchemaId,
           stateConfig?.label || node.name,
         ),
-      previewSrc: getPageTemplateStatePreviewSrc(
-        stateConfig,
-        activeStateId,
-        previewSrc,
-      ),
       stateOptions: stateConfig?.states || [],
       activeStateId,
       fields: moduleFields,
@@ -7594,6 +8066,11 @@ function renderPageTemplateVariableGroup(group, index = 0) {
               >↓</button>
               <button
                 type="button"
+                class="prd-module-jump-rail-btn"
+                data-prd-switch-canvas="${escapeAttr(`${group.templateId}|${group.moduleIndex}`)}"
+              >切换至页面</button>
+              <button
+                type="button"
                 data-prd-open-add-component="${escapeAttr(`${group.templateId}|${group.moduleIndex}|before`)}"
               >上方添加</button>
               <button
@@ -7610,7 +8087,15 @@ function renderPageTemplateVariableGroup(group, index = 0) {
           : ""
       }
       <article class="prd-variable-module-name">
-        <strong>${escapeHtml(group.moduleName)}</strong>
+        <div class="prd-variable-module-title-row">
+          <strong>${escapeHtml(group.moduleName)}</strong>
+          <button
+            type="button"
+            class="prd-module-jump-canvas-btn"
+            data-prd-switch-canvas="${escapeAttr(`${group.templateId}|${group.moduleIndex}`)}"
+            aria-label="切换至页面预览"
+          >▦ 切换至页面</button>
+        </div>
         ${renderPageTemplateStateSwitch(group)}
         ${renderPageTemplateEntryCardStateSwitch(group)}
         ${renderPageTemplateChildStateControls(group)}
@@ -7739,16 +8224,49 @@ function renderPageTemplateEntryCardStateSwitch(group) {
 }
 
 function createPageTemplateBlueprintPreviewNode(group) {
-  const molecule = moleculeSchemas.find((item) => item.id === group?.moduleSchemaId);
-  const atom = findAtomSchema(group?.moduleSchemaId);
-  const node = molecule
-    ? createMoleculeNode(molecule.id)
-    : atom
-      ? createAtomNode(atom.id)
-      : null;
+  const pageTemplate = [...pageTemplates, ...customPageTemplates].find(
+    (item) => item.id === group?.templateId,
+  );
+  const nodes = pageTemplate ? materializePageTemplateNodes(pageTemplate) : [];
+  nodes.forEach((node, nodeIndex) => {
+    node.sourcePageTemplateId = pageTemplate.id;
+    node.sourcePageTemplateNodeIndex = nodeIndex;
+  });
+  attachPageTemplateBusinessStates(nodes, pageTemplate?.id || "");
+  const tableBlueprint = getPrdTableBlueprint();
+  bindPrdModuleVariantsToTemplateNodes(
+    nodes,
+    [],
+    tableBlueprint?.consumptionProgressConfig,
+    tableBlueprint?.taskListConfig,
+    state.prdTableRows,
+    pageTemplate?.id || "",
+  );
+  applyStoredPageTemplateBusinessStates(nodes, pageTemplate?.id || "");
+  applyStoredPageTemplateChildStates(nodes, pageTemplate?.id || "");
+  let node = nodes[Number(group?.moduleIndex)];
   if (!node) return null;
 
-  const fields = group?.versions?.[0]?.sections?.flatMap((section) => section.fields || []) || [];
+  const previewVersionKey = `${group.templateId}|${group.moduleIndex}`;
+  const previewVersion = state.prdTemplatePreviewVersions?.[previewVersionKey];
+  const activeVersion =
+    group?.versions?.find(
+      (version) =>
+        version.id === previewVersion ||
+        version.name === previewVersion ||
+        version.title === previewVersion,
+    ) ||
+    group?.versions?.[0];
+  if (previewVersion && previewVersion !== "base" && node.guidedLineageVariants?.length) {
+    const variant = node.guidedLineageVariants.find(
+      (item) =>
+        item.id === previewVersion ||
+        item.title === previewVersion ||
+        item.name === previewVersion,
+    );
+    if (variant?.node) node = cloneNodeForLineage(variant.node);
+  }
+  const fields = activeVersion?.sections?.flatMap((section) => section.fields || []) || [];
   const prizeCountsByChild = new Map();
   fields.forEach((field) => {
     const localKey = getPageTemplateFieldLocalCompoundKey(field);
@@ -7774,34 +8292,112 @@ function createPageTemplateBlueprintPreviewNode(group) {
     const child = node.children?.[Number(childIndex)];
     if (child?.props) child.props.prizeCount = Math.min(MAX_LOTTERY_PRIZE_COUNT, count);
   });
+  (group?.childStateControls || []).forEach((control) => {
+    const child = node.children?.[Number(control.childIndex)];
+    if (child?.guidedStates?.length && control.activeStateId) {
+      applyGuidedBusinessState(child, control.activeStateId);
+    }
+  });
   return node;
 }
 
-function renderPageTemplateModulePreview(group) {
-  const livePreviewSchemaIds = new Set([
-    "内容诊断-样式-点击后",
-    "内容诊断-优质视频提示",
-    "内容诊断-账号诊断",
-    "投放抽奖",
-  ]);
-  if (livePreviewSchemaIds.has(group?.moduleSchemaId)) {
-    const node = createPageTemplateBlueprintPreviewNode(group);
-    if (node) {
-      return `
-        <div class="prd-module-preview is-live" aria-label="${escapeAttr(`${group.moduleName}预览`)}">
-          <div class="prd-module-preview-live-stage">
-            ${renderComponent(node, { editable: false })}
-          </div>
-        </div>
-      `;
-    }
-  }
-  if (!group?.previewSrc) return "";
+function renderBlueprintCanvasNode(node) {
+  const canvasLayout = node.schemaId === "投放案例" ? "placement-case-canvas" : "";
+  const content =
+    node.schemaId === "投放案例"
+      ? renderPlacementCaseCarousel(node, { editable: false })
+      : renderComponent(node, { editable: false });
   return `
-    <div class="prd-module-preview" aria-hidden="true">
-      <img src="${escapeAttr(group.previewSrc)}" alt="" loading="lazy" />
-    </div>
+    <section
+      class="node-wrap root guided-node prd-module-preview-node ${canvasLayout}"
+      data-node-id="${escapeAttr(node.id || "")}"
+    >
+      <div class="guided-node-theme-content">${content}</div>
+    </section>
   `;
+}
+
+function renderPageTemplateModulePreview(group) {
+  const node = createPageTemplateBlueprintPreviewNode(group);
+  if (node) {
+    const pageTemplate = [...pageTemplates, ...customPageTemplates].find(
+      (item) => item.id === group?.templateId,
+    );
+    const dimensions = getNodeEstimatedExportDimensions(node);
+    const pageWidth = Number(pageTemplate?.viewportWidth || 750);
+    const previewHeight = Number(dimensions.height || 300);
+    const previewScale = Math.min(0.32, 208 / Math.max(1, pageWidth));
+    const scaledHeight = Math.max(72, Math.ceil(previewHeight * previewScale));
+    const background =
+      pageTemplate?.canvasBackground ||
+      pageTemplate?.background ||
+      "#ffffff";
+    return `
+      <div
+        class="prd-module-preview is-canvas"
+        data-prd-module-preview="${escapeAttr(`${group.templateId}|${group.moduleIndex}`)}"
+        style="--prd-preview-page-width:${pageWidth}px;--prd-preview-page-height:${previewHeight}px;--prd-preview-scale:${previewScale};height:${scaledHeight}px;"
+        aria-label="${escapeAttr(`${group.moduleName}预览`)}"
+      >
+        <div class="prd-module-preview-canvas-stage">
+          <section class="guided-page-shell prd-module-preview-shell">
+            <div class="phone guided-phone prd-module-preview-phone">
+              <div
+                class="page guided-theme-page prd-module-preview-page"
+                style="background:${escapeAttr(background)};"
+              >
+                ${renderBlueprintCanvasNode(node)}
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    `;
+  }
+  return "";
+}
+
+function refreshPageTemplateModulePreview(templateId, moduleIndex) {
+  const pageTemplate = [...pageTemplates, ...customPageTemplates].find(
+    (item) => item.id === templateId,
+  );
+  if (!pageTemplate) return;
+  const group = getPageTemplateVariableGroups(pageTemplate).find(
+    (item) => Number(item.moduleIndex) === Number(moduleIndex),
+  );
+  if (!group) return;
+  const preview = document.querySelector(
+    `[data-prd-module-preview="${CSS.escape(`${templateId}|${moduleIndex}`)}"]`,
+  );
+  if (!preview) return;
+  const nextHtml = renderPageTemplateModulePreview(group);
+  if (!nextHtml) {
+    preview.remove();
+    return;
+  }
+  const template = document.createElement("template");
+  template.innerHTML = nextHtml.trim();
+  const nextPreview = template.content.firstElementChild;
+  if (!nextPreview) return;
+  preview.replaceWith(nextPreview);
+  window.renderReactMaterials?.();
+}
+
+function refreshPageTemplateModulePreviewByRowIndex(rowIndex) {
+  const key = state.prdTableRows[Number(rowIndex)]?.key;
+  const parsed =
+    parsePageTemplateVariableRowKey(key) ||
+    parsePageTemplateVariableVersionRowKey(key);
+  if (!parsed) return;
+  const blueprint = getPrdTableBlueprint();
+  const pageTemplate = blueprint?.pageType
+    ? findLatestCustomPageTemplateByPrdType(blueprint.pageType)
+    : null;
+  if (!pageTemplate) return;
+  const previewVersionKey = `${pageTemplate.id}|${parsed.moduleIndex}`;
+  state.prdTemplatePreviewVersions = state.prdTemplatePreviewVersions || {};
+  state.prdTemplatePreviewVersions[previewVersionKey] = parsed.versionName || "base";
+  refreshPageTemplateModulePreview(pageTemplate.id, parsed.moduleIndex);
 }
 
 function renderPageTemplateVariableField(field) {
@@ -7810,12 +8406,21 @@ function renderPageTemplateVariableField(field) {
   return `
     <label class="prd-variable-field ${isLong ? "is-wide" : ""}">
       <span>${escapeHtml(field.label)}</span>
-      <textarea
-        rows="${getBlueprintTextareaRows(value)}"
-        data-prd-template-variable-row="${escapeAttr(field.rowKey)}"
-        data-prd-template-variable-key="${escapeAttr(getPageTemplateFieldLocalCompoundKey(field))}"
-        data-prd-template-variable-label="${escapeAttr(field.label || "")}"
-      >${escapeHtml(value)}</textarea>
+      ${isSelectPropField(field.field)
+        ? renderSelectFieldControl(
+            field.field,
+            value,
+            `data-prd-template-variable-row="${escapeAttr(field.rowKey)}" data-prd-template-variable-key="${escapeAttr(getPageTemplateFieldLocalCompoundKey(field))}" data-prd-template-variable-label="${escapeAttr(field.label || "")}"`,
+            field.label,
+          )
+        : `
+          <textarea
+            rows="${getBlueprintTextareaRows(value)}"
+            data-prd-template-variable-row="${escapeAttr(field.rowKey)}"
+            data-prd-template-variable-key="${escapeAttr(getPageTemplateFieldLocalCompoundKey(field))}"
+            data-prd-template-variable-label="${escapeAttr(field.label || "")}"
+          >${escapeHtml(value)}</textarea>
+        `}
     </label>
   `;
 }
@@ -8016,20 +8621,26 @@ function hasImportedModuleBlueprintVersions(moduleName) {
   );
 }
 
-function addManualModuleBlueprintVersion(moduleName) {
+function addManualModuleBlueprintVersion(moduleName, options = {}) {
   if (!moduleName || moduleName === "页面基础信息") return;
   if (!state.prdManualModuleVersions) state.prdManualModuleVersions = {};
   const versions = state.prdManualModuleVersions[moduleName] || [];
+  if (options.id) {
+    const existingById = versions.find((version) => version.id === options.id);
+    if (existingById) return existingById;
+  }
   const nextIndex = hasImportedModuleBlueprintVersions(moduleName)
     ? versions.length + 1
     : versions.length + 2;
-  versions.push({
-    id: `manual_${Date.now()}_${nextIndex}`,
-    name: `人群${nextIndex}`,
-  });
+  const version = {
+    id: options.id || `manual_${Date.now()}_${nextIndex}`,
+    name: String(options.name || "").trim() || `人群${nextIndex}`,
+  };
+  versions.push(version);
   state.prdManualModuleVersions[moduleName] = versions;
   state.prdTableBlueprint = null;
   state.prdTableBlueprintSignature = "";
+  return version;
 }
 
 function renameManualModuleBlueprintVersion(moduleName, versionId, nextName) {
@@ -8183,8 +8794,10 @@ function renderModuleBoundBlueprintVersionMatrix(group) {
   const baseSections = versions[0]?.sections || [];
   const dimensionGroups = getBlueprintVersionDimensionGroups(versions);
   const versionModuleKey = group.versionModuleKey || group.moduleName;
-  const usesConsumptionReturnMatrix =
-    group.moduleSchemaId === "核心玩法模块-抽奖消返-4列";
+  const usesConsumptionReturnMatrix = new Set([
+    "核心玩法模块-抽奖消返-3列",
+    "核心玩法模块-抽奖消返-4列",
+  ]).has(group.moduleSchemaId);
   const hasLongCopy = group.fields.some(
     (field) => String(field.value || "").trim().length >= 36,
   );
@@ -8248,9 +8861,11 @@ function renderModuleBoundBlueprintVersionMatrix(group) {
 
   const returnSection = indexedSections.find(
     ({ section }) => section.title === "返券配置",
+  ) || indexedSections.find(
+    ({ section }) => (section.fields || []).some((field) => field.key === "rewardType1"),
   );
   const standardSections = indexedSections.filter(
-    ({ section }) => section.title !== "返券配置",
+    ({ section, sectionIndex }) => sectionIndex !== returnSection?.sectionIndex,
   );
   return `
     <section class="prd-variable-version-matrix prd-consumption-return-table">
@@ -8259,6 +8874,7 @@ function renderModuleBoundBlueprintVersionMatrix(group) {
         versions,
         group.isContentLocked,
         versionModuleKey,
+        group,
       )}
     </section>
     ${renderStandardMatrix(standardSections, false)}
@@ -8270,30 +8886,103 @@ function renderConsumptionReturnBlueprintMatrix(
   versions,
   isContentLocked = false,
   versionModuleKey = "",
+  group = {},
 ) {
   const getField = (version, key) =>
     version.sections?.[sectionIndex]?.fields?.find((field) => field.key === key);
+  const tierIndexes = Array.from(
+    new Set(
+      versions.flatMap((version) =>
+        (version.sections?.[sectionIndex]?.fields || [])
+          .map((field) => String(field.key || "").match(/^rewardType(\d+)$/)?.[1])
+          .filter(Boolean)
+          .map(Number),
+      ),
+    ),
+  ).sort((left, right) => left - right);
+  const tiers = tierIndexes.length ? tierIndexes : [1, 2, 3, 4];
   const renderField = (field, label) => {
     if (!field) return "";
     const row = state.prdTableRows[field.rowIndex] || { value: "" };
-    return `
-      <label class="prd-consumption-return-input">
-        <span>${escapeHtml(label)}</span>
+    const control = isSelectPropField(field.field || field)
+      ? renderSelectFieldControl(
+          field.field || field,
+          row.value,
+          `${isContentLocked ? "disabled" : ""} data-prd-table-row="${escapeAttr(field.rowIndex)}"`,
+          field.label,
+        )
+      : `
         <textarea
           rows="1"
           aria-label="${escapeAttr(field.label)}"
           ${isContentLocked ? "readonly" : ""}
           data-prd-table-row="${field.rowIndex}"
         >${escapeHtml(row.value || "")}</textarea>
+      `;
+    return `
+      <label class="prd-consumption-return-input">
+        <span>${escapeHtml(label)}</span>
+        ${control}
       </label>
     `;
   };
-  const renderCouponCell = (version, thresholdKey, amountKey) => `
-    <div class="prd-consumption-return-cell">
-      ${renderField(getField(version, thresholdKey), "满")}
-      ${renderField(getField(version, amountKey), "赠")}
-    </div>
-  `;
+  const isLotteryTier = (field) => {
+    const row = field ? state.prdTableRows[field.rowIndex] : null;
+    const value = String(row?.value || field?.field?.default || field?.default || "").trim();
+    return value === "抽奖" || value === "抽奖任务";
+  };
+  const renderTierHeader = (tierIndex) => {
+    const typeFields = versions
+      .map((version) => getField(version, `rewardType${tierIndex}`))
+      .filter(Boolean);
+    const typeField = typeFields[0];
+    if (!typeField) return `<strong>第${tierIndex}档</strong>`;
+    const row = state.prdTableRows[typeField.rowIndex] || { value: "" };
+    return `
+      <strong class="prd-consumption-return-tier-head">
+        <span>第${tierIndex}档</span>
+        ${renderSelectFieldControl(
+          typeField.field || typeField,
+          row.value,
+          `${isContentLocked ? "disabled" : ""} data-prd-return-tier-type-rows="${escapeAttr(typeFields.map((field) => field.rowIndex).join(","))}"`,
+          `第${tierIndex}档类型`,
+        )}
+      </strong>
+    `;
+  };
+  const renderTierCell = (version, tierIndex) => {
+    const typeField = getField(version, `rewardType${tierIndex}`);
+    const thresholdField = getField(version, `consumeAmountText${tierIndex}`);
+    const amountField = getField(version, `amountText${tierIndex}`);
+    const isLottery = isLotteryTier(typeField);
+    return `
+      <div class="prd-consumption-return-cell ${isLottery ? "is-draw-task" : ""}">
+        ${renderField(thresholdField, "满")}
+        ${isLottery ? "" : renderField(amountField, "赠")}
+      </div>
+    `;
+  };
+  const renderModuleSchemaSelect = () => {
+    const options = [
+      { label: "四档", value: "核心玩法模块-抽奖消返-4列" },
+      { label: "三档", value: "核心玩法模块-抽奖消返-3列" },
+    ];
+    if (!options.some((item) => item.value === group.moduleSchemaId)) return "";
+    return `
+      <select
+        class="prd-consumption-return-module-select"
+        aria-label="返券配置分子模块"
+        ${isContentLocked ? "disabled" : ""}
+        data-prd-replace-consumption-module="${escapeAttr(`${group.templateId}|${group.moduleIndex}`)}"
+      >
+        ${options.map((item) => `
+          <option value="${escapeAttr(item.value)}" ${item.value === group.moduleSchemaId ? "selected" : ""}>
+            ${escapeHtml(item.label)}
+          </option>
+        `).join("")}
+      </select>
+    `;
+  };
   const renderVersionCell = (version) => {
     if (!version.isManual) {
       return `
@@ -8337,9 +9026,10 @@ function renderConsumptionReturnBlueprintMatrix(
         <strong class="prd-consumption-return-title">
           返券配置
           <b>PRD</b>
+          ${renderModuleSchemaSelect()}
         </strong>
       </div>
-      <div class="prd-consumption-return-matrix">
+      <div class="prd-consumption-return-matrix" style="--prd-return-tier-count:${tiers.length}">
         <div class="prd-consumption-return-head">
           <strong class="prd-consumption-return-version-head">
             <span>版本</span>
@@ -8356,20 +9046,12 @@ function renderConsumptionReturnBlueprintMatrix(
                 `
             }
           </strong>
-          <strong>第1档 · 抽奖任务</strong>
-          <strong>第2档 · 消耗返（门槛1）</strong>
-          <strong>第3档 · 消耗返（门槛2）</strong>
-          <strong>第4档 · 消耗返（门槛3）</strong>
+          ${tiers.map((tierIndex) => renderTierHeader(tierIndex)).join("")}
         </div>
         ${versions.map((version) => `
           <div class="prd-consumption-return-row">
             ${renderVersionCell(version)}
-            <div class="prd-consumption-return-cell is-draw">
-              ${renderField(getField(version, "consumeAmountText1"), "累计消耗")}
-            </div>
-            ${renderCouponCell(version, "consumeAmountText2", "amountText1")}
-            ${renderCouponCell(version, "consumeAmountText3", "amountText2")}
-            ${renderCouponCell(version, "consumeAmountText4", "amountText3")}
+            ${tiers.map((tierIndex) => renderTierCell(version, tierIndex)).join("")}
           </div>
         `).join("")}
       </div>
@@ -8655,6 +9337,14 @@ function renderModuleBoundBlueprintMatrixCell(field, isContentLocked = false) {
       field.label,
     );
   }
+  if (isSelectPropField(field.field || field)) {
+    return renderSelectFieldControl(
+      field.field || field,
+      row.value,
+      `${isContentLocked ? "disabled" : ""} data-prd-table-row="${escapeAttr(field.rowIndex)}"`,
+      field.label,
+    );
+  }
   if (field.type === "boolean") {
     const checked = /^(?:true|1|yes|是|开启|开|new)$/i.test(String(row.value || "").trim());
     return `
@@ -8710,6 +9400,19 @@ function renderModuleBoundBlueprintSection(section) {
 function renderModuleBoundBlueprintField(field) {
   const row = state.prdTableRows[field.rowIndex] || { value: "" };
   const sizeClass = field.size ? ` is-${field.size}` : "";
+  if (isSelectPropField(field.field || field)) {
+    return `
+      <label class="prd-variable-field${sizeClass}">
+        <span>${escapeHtml(field.label)}</span>
+        ${renderSelectFieldControl(
+          field.field || field,
+          row.value,
+          `data-prd-table-row="${escapeAttr(field.rowIndex)}"`,
+          field.label,
+        )}
+      </label>
+    `;
+  }
   if (field.type === "boolean") {
     const checked = /^(?:true|1|yes|是|开启|开|new)$/i.test(String(row.value || "").trim());
     return `
@@ -8899,7 +9602,7 @@ function renderBlueprintAudienceOverview({ audienceGroups, slots, unitLabel }) {
           <p>确认系统拆出的活动目标、人群策略和页面模块，详细变量可在预览阶段继续编辑。</p>
         </div>
         <button class="blueprint-side-generate" data-demo-generate-activity>
-          <span>确认并预览</span>
+          <span>预览页面</span>
           <b>→</b>
         </button>
       </header>
@@ -10146,13 +10849,23 @@ function renderBlueprintVariantGroups(context, module, contextName) {
             </div>
             ${groups.map((group) => {
               const groupRow = group.rows[rowIndex] || row;
+              const field = getBlueprintRowField(module, groupRow);
               return `
                 <div class="blueprint-variant-value-cell ${getBlueprintTextareaRows(groupRow.value) > 1 ? "is-multiline" : ""}">
-                <textarea
-                    rows="${getBlueprintTextareaRows(groupRow.value)}"
-                  data-blueprint-variant-value="${escapeAttr(`${context.id}|${module.id}|${group.id}|${rowIndex}`)}"
-                    aria-label="${escapeAttr(`${contextName} ${module.name} ${group.name} ${row.field}`)}"
-                  >${escapeHtml(groupRow.value || "")}</textarea>
+                  ${isSelectPropField(field)
+                    ? renderSelectFieldControl(
+                        field,
+                        groupRow.value,
+                        `data-blueprint-variant-value="${escapeAttr(`${context.id}|${module.id}|${group.id}|${rowIndex}`)}"`,
+                        `${contextName} ${module.name} ${group.name} ${row.field}`,
+                      )
+                    : `
+                      <textarea
+                        rows="${getBlueprintTextareaRows(groupRow.value)}"
+                        data-blueprint-variant-value="${escapeAttr(`${context.id}|${module.id}|${group.id}|${rowIndex}`)}"
+                        aria-label="${escapeAttr(`${contextName} ${module.name} ${group.name} ${row.field}`)}"
+                      >${escapeHtml(groupRow.value || "")}</textarea>
+                    `}
                 </div>
               `;
             }).join("")}
@@ -10255,12 +10968,16 @@ function moveBlueprintModule(contextId, moduleId, direction) {
   return true;
 }
 
-function createBlueprintVariantGroup(module) {
+function createBlueprintVariantGroup(module, options = {}) {
   const groups = ensureBlueprintVariantGroups(module);
+  if (options.id) {
+    const existingById = groups.find((group) => group.id === options.id);
+    if (existingById) return existingById;
+  }
   const source = groups[0];
   const group = {
-    id: `group_${Date.now()}_${groups.length}`,
-    name: `文案分组 ${groups.length + 1}`,
+    id: options.id || `group_${Date.now()}_${groups.length}`,
+    name: String(options.name || "").trim() || `文案分组 ${groups.length + 1}`,
     rows: clone(source.rows),
   };
   groups.push(group);
@@ -10317,7 +11034,7 @@ function getMoleculePropRows(module) {
     return propEntries
       .filter(([key, field]) => {
         const value = overrides[key] ?? field.default;
-        return field.type === "boolean" || isCopyPropField(key, field, value);
+        return field.type === "boolean" || isSelectPropField(field) || isCopyPropField(key, field, value);
       })
       .map(([key, field]) => {
         const existing = module.rows.find(
@@ -10471,6 +11188,13 @@ function renderBlueprintModuleTable(context, module, index, contextName = contex
                               `data-blueprint-prize-name-value="${escapeAttr(controlId)}"`,
                               `data-blueprint-prize-copy-value="${escapeAttr(controlId)}"`,
                             )
+                          : isSelectPropField(field)
+                            ? renderSelectFieldControl(
+                                field,
+                                value,
+                                `data-blueprint-value="${escapeAttr(controlId)}"`,
+                                ariaLabel,
+                              )
                           : `
                             <textarea
                               rows="1"
@@ -10548,6 +11272,7 @@ function renderBlueprintStateTables(tableContexts, isShared) {
 }
 
 function buildDemoGeneratedActivity() {
+  const defaultTheme = getGuidedThemePreset("pink") || guidedPageThemePresets[0];
   const isTimePackage = state.selectedDemoPackageId === demoTimeActivityPackage.id;
   const isPrdTablePackage = state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID;
   const prdTableBlueprint = isPrdTablePackage ? getPrdTableBlueprint() : null;
@@ -10605,11 +11330,6 @@ function buildDemoGeneratedActivity() {
     const phase = isTimePackage
       ? demoTimeActivityPackage.phases.find((item) => item.id === context.phaseId)
       : null;
-    const canvasBackground =
-      prdPageTemplate?.canvasBackground ||
-      context.canvasBackground ||
-      audience?.canvasBackground ||
-      "#ffffff";
     return {
       id: `page_${Date.now()}_${contextIndex}`,
       name: prdPageTemplate?.name || phase?.name || "活动页面",
@@ -10619,7 +11339,8 @@ function buildDemoGeneratedActivity() {
         : context.modules.map((module) => module.name),
       sourceContextId: context.id,
       sourcePageTemplateId: prdPageTemplate?.id || "",
-      canvasBackground,
+      canvasBackground: defaultTheme.background,
+      colorThemeId: defaultTheme.id,
       navBarEnabled: prdPageTemplate
         ? Boolean(prdPageTemplate.navBarEnabled)
         : false,
@@ -10635,7 +11356,7 @@ function buildDemoGeneratedActivity() {
         : "PRD 文本 → 页面模块"
       : "PRD mock → 活动包 → 人群页面",
   };
-  const fallbackPages = createGuidedFallbackPages(getGuidedPageTheme(pages[0]));
+  const fallbackPages = createGuidedFallbackPages(pages[0]);
   state.pages = [...pages, ...fallbackPages];
   state.activePageId = pages[0]?.id || fallbackPages[0].id;
     state.guidedVisiblePageIds = [
@@ -10660,39 +11381,103 @@ function buildDemoGeneratedActivity() {
   state.currentTemplateId = null;
 }
 
-function createGuidedFallbackPages(parentTheme = guidedPageThemePresets[0]) {
+function getPageHeaderNode(page) {
+  return (page?.nodes || []).find((node) => getModuleKind(node?.schemaId) === "hero") || null;
+}
+
+function cloneFallbackHeaderNode(sourcePage) {
+  const sourceHeader = getPageHeaderNode(sourcePage);
+  if (!sourceHeader) return createAtomNode("头图");
+  const headerNode = cloneNodeForLineage(sourceHeader);
+  const refreshNodeIds = (node) => {
+    if (!node) return;
+    node.id = uid();
+    (node.children || []).forEach(refreshNodeIds);
+    (node.guidedStates || []).forEach((entry) => {
+      if (entry.node) refreshNodeIds(entry.node);
+    });
+  };
+  refreshNodeIds(headerNode);
+  return headerNode;
+}
+
+function createGuidedFallbackPages(sourcePageOrTheme = guidedPageThemePresets[0]) {
   const timestamp = Date.now();
-  const theme = getGuidedThemePreset(parentTheme) || guidedPageThemePresets[0];
+  const sourcePage = sourcePageOrTheme?.nodes ? sourcePageOrTheme : null;
+  const theme = sourcePage
+    ? getGuidedPageTheme(sourcePage)
+    : getGuidedThemePreset(sourcePageOrTheme) || guidedPageThemePresets[0];
+  const fallbackBackground = sourcePage ? getGuidedPageBackground(sourcePage, theme) : theme.background;
+  const fallbackThemeId = sourcePage?.colorThemeId || theme.id;
+  const createFallbackNodes = (contentNode) => [
+    cloneFallbackHeaderNode(sourcePage),
+    contentNode,
+  ].filter(Boolean);
   const pages = [
     {
       id: `page_fallback_hot_${timestamp}`,
       name: "活动火爆",
       dimension: "兜底页面",
       tags: ["系统页面", "活动火爆"],
-      canvasBackground: theme.background,
-      colorThemeId: theme.id,
+      canvasBackground: fallbackBackground,
+      colorThemeId: fallbackThemeId,
       navBarEnabled: false,
+      sourceContextId: sourcePage?.sourceContextId || "",
+      sourcePageTemplateId: sourcePage?.sourcePageTemplateId || "",
       isSystemFallback: true,
-      fallbackBottomSpace: 358,
-      fallbackPageHeight: 1602,
-      nodes: [createAtomNode("无活动提示")],
+      fallbackBottomSpace: GUIDED_FALLBACK_HOT_BOTTOM_SPACE,
+      fallbackPageHeight: GUIDED_FALLBACK_HOT_PAGE_HEIGHT,
+      nodes: createFallbackNodes(createAtomNode("无活动提示")),
     },
     {
       id: `page_fallback_case_${timestamp}`,
       name: "内容案例",
       dimension: "兜底页面",
       tags: ["系统页面", "内容案例"],
-      canvasBackground: theme.background,
-      colorThemeId: theme.id,
+      canvasBackground: fallbackBackground,
+      colorThemeId: fallbackThemeId,
       navBarEnabled: false,
+      sourceContextId: sourcePage?.sourceContextId || "",
+      sourcePageTemplateId: sourcePage?.sourcePageTemplateId || "",
       isSystemFallback: true,
-      fallbackBottomSpace: 154,
-      fallbackPageHeight: 1859,
-      nodes: [createMoleculeNode("用户教育案例-样式1")],
+      fallbackBottomSpace: GUIDED_FALLBACK_CASE_BOTTOM_SPACE,
+      fallbackPageHeight: GUIDED_FALLBACK_CASE_PAGE_HEIGHT,
+      nodes: createFallbackNodes(createMoleculeNode("用户教育案例-样式1")),
     },
   ];
   pages.forEach((page) => applyThemeBoundVariantsToNodes(page.nodes, theme.id));
   return pages;
+}
+
+function applyHeaderMainVisualToNode(node, mainVisualImage, visited = new WeakSet()) {
+  if (!node || visited.has(node)) return;
+  visited.add(node);
+  if (node.schemaId === "头图" || node.name === "头图") {
+    node.props = { ...(node.props || {}) };
+    node.props.mainVisualImage = mainVisualImage;
+  }
+  (node.children || []).forEach((child) =>
+    applyHeaderMainVisualToNode(child, mainVisualImage, visited),
+  );
+  (node.guidedStates || []).forEach((entry) =>
+    applyHeaderMainVisualToNode(entry.node, mainVisualImage, visited),
+  );
+  (node.guidedLineageVariants || []).forEach((variant) =>
+    applyHeaderMainVisualToNode(variant.node, mainVisualImage, visited),
+  );
+}
+
+function syncFallbackHeaderMainVisual(mainVisualImage) {
+  const page = activePage();
+  if (!page || page.isSystemFallback) return;
+  const sourceHeader = getPageHeaderNode(page);
+  if (!sourceHeader || sourceHeader.id !== state.selectedId) return;
+  state.pages.forEach((item) => {
+    if (!item?.isSystemFallback) return;
+    const headerNode = getPageHeaderNode(item);
+    if (!headerNode) return;
+    applyHeaderMainVisualToNode(headerNode, mainVisualImage);
+  });
 }
 
   function isLotteryGridNode(node) {
@@ -12368,6 +13153,77 @@ function returnToBlueprintWithTransition() {
   window.scrollTo(0, 0);
 }
 
+function flashLocateElement(element, options = {}) {
+  if (!element) return;
+  if (options.scroll !== false) {
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  element.classList.remove("is-locate-flash");
+  void element.offsetWidth;
+  element.classList.add("is-locate-flash");
+  setTimeout(() => element.classList.remove("is-locate-flash"), 2000);
+}
+
+function jumpToBlueprintModule(templateId, moduleIndex) {
+  state.view = "prd-demo";
+  state.prdDemoStep = "analysis";
+  state.guidedWorkspaceMode = "split";
+  state.blueprintReturningFromPreview = false;
+  state.selectedId = null;
+  state.guidedPanelMode = null;
+  state.guidedStateMenuNodeId = null;
+  state.prdTemplateSelectedModuleIndex = Number(moduleIndex);
+  render();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const row = document.querySelector(
+        `[data-prd-template-module-row="${CSS.escape(`${templateId}|${moduleIndex}`)}"]`,
+      );
+      flashLocateElement(row);
+    });
+  });
+}
+
+function jumpToCanvasModule(templateId, moduleIndex) {
+  buildDemoGeneratedActivity();
+  const targetNode = state.pages
+    .flatMap((page) => page.nodes || [])
+    .find(
+      (node) =>
+        node.sourcePageTemplateId === templateId &&
+        Number(node.sourcePageTemplateNodeIndex) === Number(moduleIndex),
+    );
+  const targetPage = state.pages.find((page) =>
+    (page.nodes || []).some((node) => node.id === targetNode?.id),
+  );
+  if (targetPage) {
+    if (!state.guidedVisiblePageIds.includes(targetPage.id)) {
+      state.guidedVisiblePageIds = [...state.guidedVisiblePageIds, targetPage.id];
+    }
+    state.activePageId = targetPage.id;
+  }
+  state.prdDemoStep = "preview";
+  state.view = "guided-preview";
+  state.guidedWorkspaceMode = "split";
+  state.blueprintReturningFromPreview = false;
+  state.selectedId = null;
+  state.guidedPanelMode = null;
+  state.guidedStateMenuNodeId = null;
+  pendingGuidedFocusNodeId = targetNode?.id || null;
+  state.guidedCanvasInitialized = false;
+  render();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (targetNode) {
+        const element = document.querySelector(
+          `.guided-node[data-node-id="${CSS.escape(targetNode.id)}"]`,
+        );
+        flashLocateElement(element, { scroll: false });
+      }
+    });
+  });
+}
+
 function renderGuidedSidebarItems(visiblePageIds, options = {}) {
   const visibleCompanionIds = new Set(
     state.guidedVisibleCompanionNodeIds || [],
@@ -12441,9 +13297,9 @@ function renderGuidedBlueprintPane(mode, visiblePageIds) {
 
   return `
     <aside class="guided-blueprint-pane guided-compact-nav" aria-label="页面切换">
-      <button class="guided-sidebar-back" data-demo-back-analysis>
-        <span>←</span>
-        返回
+      <button class="guided-table-edge-tab" data-demo-back-analysis aria-label="返回蓝图表格">
+        <span class="guided-table-edge-arrow" aria-hidden="true">←</span>
+        <span>表格</span>
       </button>
       <div class="guided-page-list">
         ${renderGuidedSidebarItems(visiblePageIds)}
@@ -12546,8 +13402,9 @@ function renderGuidedPagePreview(pageData) {
   if (isActive && state.dropPageId === pageData.id && state.dropIndex === pageNodes.length) {
     pieces.push('<div class="drop-marker guided-drop-marker"></div>');
   }
+  const fallbackLayout = getGuidedFallbackLayoutConfig(pageData);
   const fallbackLayoutStyle = pageData.isSystemFallback
-    ? `--guided-fallback-bottom-space:${Number(pageData.fallbackBottomSpace || 0)}px;min-height:${Number(pageData.fallbackPageHeight || 1334)}px;`
+    ? `--guided-fallback-bottom-space:${Number(fallbackLayout?.bottomSpace || 0)}px;min-height:${Number(fallbackLayout?.pageHeight || 1334)}px;`
     : "";
   return `
     <section class="guided-page-shell ${companionNodes.length ? "has-side-companion" : ""} ${pageData.isSystemFallback ? "is-system-fallback" : ""} ${isActive ? "active" : ""} ${pageSelected ? "has-selected-page" : ""}" data-page-shell="${pageData.id}">
@@ -12558,7 +13415,6 @@ function renderGuidedPagePreview(pageData) {
           data-page-theme="${escapeAttr(getGuidedPageTheme(pageData).id)}"
           style="${escapeAttr(`${getGuidedPageThemeStyle(pageData)}${fallbackLayoutStyle}`)}"
         >
-          ${renderGuidedPageThemeHeader(pageData)}
           ${pieces.join("")}
           ${pageData.navBarEnabled ? renderPageNavBarOverlay() : ""}
         </div>
@@ -12587,21 +13443,21 @@ function renderGuidedPagePreview(pageData) {
 function renderGuidedFallbackExportPage(entry) {
   const page = state.pages.find((item) => item.id === entry.pageId);
   const nodes = page?.nodes?.length ? page.nodes : [];
-  const background = page?.canvasBackground || "#FFE0E9";
-  const bottomSpace = Number(page?.fallbackBottomSpace || 0);
-  const pageHeight = Number(page?.fallbackPageHeight || entry.dimensions?.height || 1334);
+  const background = getGuidedPageBackground(page, entry.pageTheme || getGuidedPageTheme(page)) || "#FFE0E9";
+  const fallbackLayout = getGuidedFallbackLayoutConfig(page);
+  const bottomSpace = Number(fallbackLayout?.bottomSpace || 0);
+  const pageHeight = Number(fallbackLayout?.pageHeight || entry.dimensions?.height || 1334);
   return `
     <div
       class="page guided-theme-page guided-fallback-page guided-export-fallback-page"
-      style="height:${pageHeight}px;background:${escapeAttr(background)};--guided-page-theme-filter:${escapeAttr(entry.pageTheme?.filter || "none")};--guided-fallback-bottom-space:${bottomSpace}px"
+      style="height:${pageHeight}px;background:${escapeAttr(background)};background-position:top center;--guided-page-theme-filter:${escapeAttr(entry.pageTheme?.filter || "none")};--guided-fallback-bottom-space:${bottomSpace}px"
     >
-      ${renderGuidedPageThemeHeader(page)}
       ${nodes.map((node) => renderComponent(node, { editable: false })).join("")}
     </div>
   `;
 }
 
-function renderPlacementCaseCarousel(node) {
+function renderPlacementCaseCarousel(node, options = {}) {
   return `
     <div class="placement-case-carousel-shell">
       <div class="placement-case-carousel">
@@ -12610,7 +13466,7 @@ function renderPlacementCaseCarousel(node) {
             { length: 4 },
             (_, index) => `
               <div class="placement-case-carousel-item" data-carousel-index="${index}">
-                ${renderComponent(node)}
+                ${renderComponent(node, options)}
               </div>
             `,
           ).join("")}
@@ -12683,7 +13539,7 @@ function renderGuidedNode(node) {
     hasStateOptions;
   return `
     <section
-      class="node-wrap root guided-node ${canvasLayout} ${selected}"
+      class="node-wrap root guided-node ${isHero ? "is-hero" : ""} ${canvasLayout} ${selected}"
       data-select="${node.id}"
       data-node-id="${node.id}"
       aria-label="${escapeAttr(node.name || moduleKindLabels[kind] || "模块")}"
@@ -12716,8 +13572,17 @@ function renderGuidedNode(node) {
       }
       <div class="guided-node-actions">
         <button data-guided-action="global" data-guided-node="${node.id}" aria-label="${node.isLotteryResultPopup ? "查看变量" : "编辑全局信息"}">
-          <span>◎</span><i>${node.isLotteryResultPopup ? "查看变量" : "查看模块变量"}</i>
+          <span>◎</span><i>${node.isLotteryResultPopup ? "查看变量" : "模块人群"}</i>
         </button>
+        ${
+          node.sourcePageTemplateId && node.sourcePageTemplateNodeIndex !== undefined
+            ? `
+              <button data-guided-switch-table="${escapeAttr(node.sourcePageTemplateId)}" data-guided-module-index="${escapeAttr(String(node.sourcePageTemplateNodeIndex))}" aria-label="切换至表格">
+                <span>▤</span><i>切换至表格</i>
+              </button>
+            `
+            : ""
+        }
           ${
             node.isLotteryResultPopup
               ? ""
@@ -12732,8 +13597,8 @@ function renderGuidedNode(node) {
             ? ""
             : isHero
             ? `
-              <button data-guided-action="hero" data-guided-node="${node.id}" aria-label="修改头图">
-                <span>AI</span><i>修改头图</i>
+              <button data-guided-action="hero" data-guided-node="${node.id}" aria-label="替换主体">
+                <span>图</span><i>替换主体</i>
               </button>
             `
             : `
@@ -13214,6 +14079,155 @@ function createLineageListVariant(target) {
   };
   target.guidedLineageVariants.push(variant);
   return variant;
+}
+
+function getLineageSourceNode(found) {
+  return found?.parent || found?.node || null;
+}
+
+function syncLineageVariantAddToSource(sourceNode, variant) {
+  if (!sourceNode || !variant || variant.id === "base") return false;
+  if (
+    sourceNode.sourcePageTemplateId &&
+    sourceNode.sourcePageTemplateNodeIndex !== undefined
+  ) {
+    const moduleIndex = Number(sourceNode.sourcePageTemplateNodeIndex);
+    const versionModuleKey = getPageTemplateVersionModuleKey(
+      sourceNode.sourcePageTemplateId,
+      moduleIndex,
+    );
+    const savedVersion = addManualModuleBlueprintVersion(versionModuleKey, {
+      id: variant.id,
+    });
+    if (savedVersion?.name) variant.title = savedVersion.name;
+    const pageTemplate = [...pageTemplates, ...customPageTemplates].find(
+      (item) => item.id === sourceNode.sourcePageTemplateId,
+    );
+    if (pageTemplate && savedVersion?.name) {
+      getPageTemplateVariableFields(pageTemplate)
+        .filter((field) => Number(field.moduleIndex) === moduleIndex)
+        .forEach((field) =>
+          ensurePageTemplateVariableVersionRow(field, savedVersion.name),
+        );
+    }
+    return Boolean(savedVersion);
+  }
+
+  if (sourceNode.sourceContextId && sourceNode.sourceModuleId) {
+    const { module } = findBlueprintModule(
+      sourceNode.sourceContextId,
+      sourceNode.sourceModuleId,
+    );
+    if (!module) return false;
+    const syncGroup = (candidateModule) =>
+      createBlueprintVariantGroup(candidateModule, {
+        id: variant.id,
+      });
+    const savedGroup = syncGroup(module);
+    if (savedGroup?.name) variant.title = savedGroup.name;
+    if (module.inputScope === "activity") {
+      getBlueprintContexts()
+        .map((context) =>
+          context.modules.find(
+            (candidate) =>
+              candidate.inputScope === "activity" &&
+              candidate.slot === module.slot,
+          ),
+        )
+        .filter(Boolean)
+        .forEach((candidateModule) =>
+          createBlueprintVariantGroup(candidateModule, {
+            id: variant.id,
+            name: variant.title,
+          }),
+        );
+    }
+    return true;
+  }
+  return false;
+}
+
+function syncLineageVariantTitleToSource(sourceNode, variantId, nextTitle) {
+  if (!sourceNode || !variantId || variantId === "base") return false;
+  if (
+    sourceNode.sourcePageTemplateId &&
+    sourceNode.sourcePageTemplateNodeIndex !== undefined
+  ) {
+    const versionModuleKey = getPageTemplateVersionModuleKey(
+      sourceNode.sourcePageTemplateId,
+      sourceNode.sourcePageTemplateNodeIndex,
+    );
+    renameManualModuleBlueprintVersion(versionModuleKey, variantId, nextTitle);
+    return true;
+  }
+
+  if (sourceNode.sourceContextId && sourceNode.sourceModuleId) {
+    const { module } = findBlueprintModule(
+      sourceNode.sourceContextId,
+      sourceNode.sourceModuleId,
+    );
+    if (!module) return false;
+    const updateGroup = (candidateModule) => {
+      const group = ensureBlueprintVariantGroups(candidateModule).find(
+        (item) => item.id === variantId,
+      );
+      if (group) group.name = String(nextTitle || "").trim() || group.name;
+    };
+    updateGroup(module);
+    if (module.inputScope === "activity") {
+      getBlueprintContexts()
+        .map((context) =>
+          context.modules.find(
+            (candidate) =>
+              candidate.inputScope === "activity" &&
+              candidate.slot === module.slot,
+          ),
+        )
+        .filter(Boolean)
+        .forEach(updateGroup);
+    }
+    return true;
+  }
+  return false;
+}
+
+function syncLineageVariantDeleteToSource(sourceNode, variantId) {
+  if (!sourceNode || !variantId || variantId === "base") return false;
+  if (
+    sourceNode.sourcePageTemplateId &&
+    sourceNode.sourcePageTemplateNodeIndex !== undefined
+  ) {
+    const versionModuleKey = getPageTemplateVersionModuleKey(
+      sourceNode.sourcePageTemplateId,
+      sourceNode.sourcePageTemplateNodeIndex,
+    );
+    return deleteManualModuleBlueprintVersion(versionModuleKey, variantId);
+  }
+
+  if (sourceNode.sourceContextId && sourceNode.sourceModuleId) {
+    const { module } = findBlueprintModule(
+      sourceNode.sourceContextId,
+      sourceNode.sourceModuleId,
+    );
+    if (!module) return false;
+    const deleteGroup = (candidateModule) =>
+      deleteBlueprintVariantGroup(candidateModule, variantId);
+    deleteGroup(module);
+    if (module.inputScope === "activity") {
+      getBlueprintContexts()
+        .map((context) =>
+          context.modules.find(
+            (candidate) =>
+              candidate.inputScope === "activity" &&
+              candidate.slot === module.slot,
+          ),
+        )
+        .filter(Boolean)
+        .forEach(deleteGroup);
+    }
+    return true;
+  }
+  return false;
 }
 
 function deleteLineageGraphNode(target, variantId) {
@@ -13753,18 +14767,27 @@ function renderGuidedMoleculePreview(item) {
 }
 
 function getGuidedPageTheme(page) {
+  const canvasBackground = String(page?.canvasBackground || "").toLowerCase();
   return (
     guidedPageThemePresets.find((theme) => theme.id === page?.colorThemeId) ||
     guidedPageThemePresets.find(
-      (theme) => theme.background.toLowerCase() === String(page?.canvasBackground || "").toLowerCase(),
+      (theme) =>
+        theme.background.toLowerCase() === canvasBackground ||
+        String(theme.solidBackground || "").toLowerCase() === canvasBackground,
     ) ||
     guidedPageThemePresets[0]
   );
 }
 
+function getGuidedPageBackground(page, theme = getGuidedPageTheme(page)) {
+  const background = page?.canvasBackground || theme.background;
+  return String(background || "").includes("gradient(") ? theme.background : background;
+}
+
 function getGuidedPageThemeStyle(page) {
   const theme = getGuidedPageTheme(page);
-  return `background:${theme.background};--guided-page-theme-filter:${theme.filter};`;
+  const background = getGuidedPageBackground(page, theme);
+  return `background:${background};background-position:top center;--guided-page-theme-filter:${theme.filter};`;
 }
 
 function applyThemeBoundVariantsToNodes(nodes = [], themeId, visited = new WeakSet()) {
@@ -13779,6 +14802,7 @@ function applyThemeBoundVariantsToNodes(nodes = [], themeId, visited = new WeakS
         const themeProps = Object.fromEntries(getThemeLinkedVariantProps(schema, boundVariant));
         node.props = { ...defaultProps(node.schemaId), ...(node.props || {}), ...themeProps };
       }
+      applyDirectThemePropsToAtomNode(node, themeId);
       if (node.isLotteryResultPopup && node.lotteryWinProps) {
         const winSchema = findAtomSchema("弹窗-中奖");
         const winVariant = getSchemaThemeVariant(winSchema, themeId);
@@ -13878,12 +14902,12 @@ function renderGuidedFloatingPanel(node, options = {}) {
         : mode === "global"
           ? node?.isLotteryResultPopup
             ? "查看变量"
-            : "查看模块变量"
+            : "模块人群"
           : mode === "page"
             ? "页面设置"
             : mode === "add"
               ? "增加组件"
-              : "AI 修改头图";
+              : "替换主体";
   let body = "";
 
   if (mode === "page") {
@@ -14034,10 +15058,32 @@ function renderGuidedFloatingPanel(node, options = {}) {
       `
       : `<div class="guided-panel-empty">当前组件只有默认状态，暂无其他变体。</div>`;
   } else {
+    const options = getHeaderMainVisualOptions();
     body = `
-      <p>描述希望调整的头图内容，点击按钮后模拟 AI 重新生成并替换。</p>
-      <textarea class="guided-ai-prompt" rows="4" placeholder="例如：突出端午氛围，主利益点更醒目"></textarea>
-      <button class="guided-ai-submit" data-guided-ai-apply>生成并替换头图</button>
+      ${
+        options.length
+          ? `
+            <div class="guided-header-visual-options">
+              ${options
+                .map((item) => {
+                  const currentMainVisualImage = node?.props?.mainVisualImage || headerDefaultMainVisualUrl;
+                  return `
+                    <button
+                      type="button"
+                      class="guided-header-visual-card ${currentMainVisualImage === item.url ? "active" : ""}"
+                      data-guided-header-main-visual="${escapeAttr(item.url)}"
+                      aria-label="替换为${escapeAttr(item.name)}"
+                    >
+                      <span><img src="${escapeAttr(item.url)}" alt="" loading="lazy" /></span>
+                      <strong>${escapeHtml(item.name)}</strong>
+                    </button>
+                  `;
+                })
+                .join("")}
+            </div>
+          `
+          : `<div class="guided-panel-empty">把 PNG 主体图放到 头图/主体替换 文件夹后重新打开预览。</div>`
+      }
     `;
   }
 
@@ -14866,7 +15912,7 @@ function renderPageCanvas(pageData) {
   return `
     <section class="page-shell ${isActive ? "active" : ""}" data-page-shell="${pageData.id}">
       <div class="phone">
-        <div class="page" data-page-id="${pageData.id}" style="background:${pageData.canvasBackground}">
+        <div class="page" data-page-id="${pageData.id}" style="background:${getGuidedPageBackground(pageData)}">
           ${pieces.join("")}
           ${pageData.navBarEnabled ? renderPageNavBarOverlay() : ""}
         </div>
@@ -15099,6 +16145,13 @@ function renderNodePropControl(node, field, options = {}) {
     control = `<input id="${escapeAttr(id)}" type="color" data-node-prop-input="${escapeAttr(key)}"${childIndexAttr} value="${String(value).startsWith("#") ? escapeAttr(String(value)) : "#ffffff"}" />`;
   } else if (type === "number") {
     control = `<input id="${escapeAttr(id)}" type="number" data-node-prop-input="${escapeAttr(key)}"${childIndexAttr} value="${escapeAttr(String(value))}" />`;
+  } else if (isSelectPropField(field)) {
+    control = renderSelectFieldControl(
+      field,
+      value,
+      `id="${escapeAttr(id)}" data-node-prop-input="${escapeAttr(key)}"${childIndexAttr}`,
+      field.label || key,
+    );
   } else if (isPrizePropField(field)) {
     control = renderPrizeLibrarySelect(
       value,
@@ -15336,8 +16389,17 @@ function isStickyBottomButtonExportNode(node) {
   ].includes(schemaId);
 }
 
+function isHeaderImageExportNode(node) {
+  const schemaId = node?.schemaId || node?.id || node?.name || "";
+  return schemaId === "头图" || schemaId === "HeaderImage";
+}
+
 function getGuidedCutExportBottomSpace(entry) {
+  if (entry?.isFallbackContentEntry) {
+    return Number(entry.fallbackContentBottomSpace || 0);
+  }
   if (
+    entry?.exportKind === "page-background" ||
     entry?.exportKind === "fallback-page" ||
     entry?.exportKind === "case-showcase-shell" ||
     entry?.exportKind === "case-showcase-card" ||
@@ -15349,6 +16411,7 @@ function getGuidedCutExportBottomSpace(entry) {
     return 0;
   }
   const node = entry?.node || entry?.sourceNode || {};
+  if (node?.type === "atom" && isHeaderImageExportNode(node)) return 0;
   if (node?.type === "atom" && isStickyBottomButtonExportNode(node)) return 0;
   return node?.type === "atom" && isTaskBarStyle1ExportNode(node)
     ? GUIDED_TASK_BAR_EXPORT_BOTTOM_SPACE
@@ -15396,13 +16459,25 @@ function makeGuidedExportFilename(moduleTitle, nodeIndex, dimensionTitle, varian
 
 function getExportEntryDimensions(entry) {
   const bottomSpace = getGuidedCutExportBottomSpace(entry);
+  const node = entry?.node || entry?.sourceNode || {};
+  if (entry?.exportKind === "page-background") {
+    return {
+      width: GUIDED_CUT_EXPORT_WIDTH,
+      height: Number(entry.dimensions?.height || 1334),
+    };
+  }
+  if (isHeaderImageExportNode(node)) {
+    return {
+      width: GUIDED_CUT_EXPORT_WIDTH,
+      height: GUIDED_HEADER_IMAGE_EXPORT_HEIGHT,
+    };
+  }
   if (entry?.dimensions) {
     return {
       width: Number(entry.dimensions.width || GUIDED_CUT_EXPORT_WIDTH),
       height: Number(entry.dimensions.height || 300) + bottomSpace,
     };
   }
-  const node = entry?.node || entry?.sourceNode || {};
   const dimensions = getNodeEstimatedExportDimensions(node);
   return {
     ...dimensions,
@@ -15483,6 +16558,52 @@ function getNodeEstimatedExportDimensions(node) {
     width: Number(schema?.dimensions?.width || 750),
     height: Number(schema?.dimensions?.height || 300),
   };
+}
+
+function getGuidedPageExportNodes(page) {
+  return (page?.nodes || []).filter((node) => node?.canvasPlacement !== "page-side");
+}
+
+function getGuidedNodePageFlowMargin(node, index, nodes) {
+  if (getModuleKind(node?.schemaId) === "hero" && index < nodes.length - 1) return 0;
+  return 32;
+}
+
+function getGuidedFallbackLayoutConfig(page) {
+  if (!page?.isSystemFallback) return null;
+  const tags = Array.isArray(page.tags) ? page.tags : [];
+  const nodes = Array.isArray(page.nodes) ? page.nodes : [];
+  const hasFallbackTag = (tag) => tags.includes(tag) || page.name === tag;
+  const hasNode = (schemaId) => nodes.some((node) => node?.schemaId === schemaId);
+  if (hasFallbackTag("活动火爆") || hasNode("无活动提示")) {
+    return {
+      bottomSpace: GUIDED_FALLBACK_HOT_BOTTOM_SPACE,
+      pageHeight: GUIDED_FALLBACK_HOT_PAGE_HEIGHT,
+    };
+  }
+  if (hasFallbackTag("内容案例") || hasNode("用户教育案例-样式1")) {
+    return {
+      bottomSpace: GUIDED_FALLBACK_CASE_BOTTOM_SPACE,
+      pageHeight: GUIDED_FALLBACK_CASE_PAGE_HEIGHT,
+    };
+  }
+  return {
+    bottomSpace: Number(page.fallbackBottomSpace || 0),
+    pageHeight: Number(page.fallbackPageHeight || 1334),
+  };
+}
+
+function getGuidedPageActualExportHeight(page) {
+  if (page?.isSystemFallback) {
+    const layout = getGuidedFallbackLayoutConfig(page);
+    return Math.max(1334, Number(layout?.pageHeight || 1334));
+  }
+  const nodes = getGuidedPageExportNodes(page);
+  const contentHeight = nodes.reduce((sum, node, index) => {
+    const dimensions = getNodeEstimatedExportDimensions(node);
+    return sum + Number(dimensions.height || 0) + getGuidedNodePageFlowMargin(node, index, nodes);
+  }, 0);
+  return Math.max(1334, Math.ceil(contentHeight));
 }
 
 function isTaskListExportNode(node) {
@@ -15578,6 +16699,13 @@ function makeGuidedCutExportEntry({
 
 function getGuidedNodeLineageExportVariants(node) {
   const { base, graph } = ensureGuidedLineageTree(node);
+  const mainVisualImage = node?.props?.mainVisualImage;
+  if (isHeaderImageExportNode(node) && mainVisualImage !== undefined) {
+    applyHeaderMainVisualToNode(base.node, mainVisualImage);
+    (node.guidedLineageVariants || []).forEach((variant) =>
+      applyHeaderMainVisualToNode(variant.node, mainVisualImage),
+    );
+  }
   return (graph.nodes || []).map((graphNode, variantIndex) => {
     const variant = findLineageVariant(node, graphNode.variantId) || base;
     return {
@@ -15948,58 +17076,86 @@ function getExportDimensionTitle(graph, graphNode) {
   return title === "维度 1" ? "默认维度" : title;
 }
 
+function createGuidedPageBackgroundExportEntry(page) {
+  const moduleTitle = "背景";
+  const moduleFolderTitle = "00_背景";
+  const dimensionTitle = "页面背景";
+  const variantTitle = "背景+头图";
+  const fileName = makeGuidedExportFilename(
+    moduleTitle,
+    -1,
+    dimensionTitle,
+    variantTitle,
+  );
+  return {
+    id: [page.id, "page-background", "header"]
+      .map(sanitizeExportFilename)
+      .join("__"),
+    pageId: page.id,
+    pageName: page.name || `页面 ${state.pages.indexOf(page) + 1}`,
+    pageTheme: getGuidedPageTheme(page),
+    moduleTitle,
+    moduleFolderTitle,
+    dimensionTitle,
+    variantTitle,
+    sourceNode: getPageHeaderNode(page),
+    node: getPageHeaderNode(page),
+    exportKind: "page-background",
+    dimensions: {
+      width: GUIDED_CUT_EXPORT_WIDTH,
+      height: getGuidedPageActualExportHeight(page),
+    },
+    fileName,
+    filePath: [
+      sanitizeExportFilename(page.name || page.id || "页面"),
+      fileName,
+    ].join("/"),
+  };
+}
+
+function getGuidedNodeCutExportEntries(page, node, nodeIndex) {
+  if (isLotteryPopupExportNode(node)) {
+    return getLotteryPopupGuidedCutExportEntries(page, node, nodeIndex);
+  }
+  if (isTaskListExportNode(node)) {
+    return getTaskListGuidedCutExportEntries(page, node, nodeIndex);
+  }
+  if (isUserEducationCaseShowcaseExportNode(node)) {
+    return getCaseShowcaseGuidedCutExportEntries(page, node, nodeIndex);
+  }
+  if (isNodeGuideExportNode(node)) {
+    return getNodeGuideGuidedCutExportEntries(page, node, nodeIndex);
+  }
+  return getStatefulGuidedCutExportEntries(page, node, nodeIndex);
+}
+
+function getGuidedFallbackContentExportEntries(page) {
+  const contentNodes = getGuidedPageExportNodes(page).filter(
+    (node) => getModuleKind(node?.schemaId) !== "hero",
+  );
+  return contentNodes.flatMap((node, contentIndex) =>
+    getGuidedNodeCutExportEntries(page, node, contentIndex).map((entry) => ({
+      ...entry,
+      isFallbackContentEntry: true,
+      fallbackContentBottomSpace: 0,
+    })),
+  );
+}
+
 function getGuidedCutExportEntries() {
   return state.pages.flatMap((page) => {
+    const pageBackgroundEntry = createGuidedPageBackgroundExportEntry(page);
     if (page.isSystemFallback) {
-      const moduleTitle = "兜底页整页";
-      const moduleFolderTitle = `01_${moduleTitle}`;
-      const dimensionTitle = "系统状态";
-      const variantTitle = page.name || "页面加载失败";
-      const fileName = makeGuidedExportFilename(
-        moduleTitle,
-        0,
-        dimensionTitle,
-        variantTitle,
-      );
-      return [{
-        id: [page.id, "fallback-page", "system", "default"]
-          .map(sanitizeExportFilename)
-          .join("__"),
-        pageId: page.id,
-        pageName: page.name || "兜底页面",
-        pageTheme: getGuidedPageTheme(page),
-        moduleTitle,
-        moduleFolderTitle,
-        dimensionTitle,
-        variantTitle,
-        exportKind: "fallback-page",
-        fileName,
-        dimensions: {
-          width: 750,
-          height: Number(page.fallbackPageHeight || 1334),
-        },
-        filePath: [
-          sanitizeExportFilename(page.name || page.id || "兜底页面"),
-          fileName,
-        ].join("/"),
-      }];
+      return [
+        pageBackgroundEntry,
+        ...getGuidedFallbackContentExportEntries(page),
+      ];
     }
 
-    return (page.nodes || []).flatMap((node, nodeIndex) => {
-      if (isLotteryPopupExportNode(node)) {
-        return getLotteryPopupGuidedCutExportEntries(page, node, nodeIndex);
-      }
-      if (isTaskListExportNode(node)) {
-        return getTaskListGuidedCutExportEntries(page, node, nodeIndex);
-      }
-      if (isUserEducationCaseShowcaseExportNode(node)) {
-        return getCaseShowcaseGuidedCutExportEntries(page, node, nodeIndex);
-      }
-      if (isNodeGuideExportNode(node)) {
-        return getNodeGuideGuidedCutExportEntries(page, node, nodeIndex);
-      }
-      return getStatefulGuidedCutExportEntries(page, node, nodeIndex);
-    });
+    const nodeEntries = (page.nodes || []).flatMap((node, nodeIndex) =>
+      getGuidedNodeCutExportEntries(page, node, nodeIndex),
+    );
+    return [pageBackgroundEntry, ...nodeEntries];
   });
 }
 
@@ -16063,18 +17219,66 @@ function renderNodeGuideExportContent(entry) {
   `;
 }
 
+function getGuidedExportEntryPage(entry) {
+  return state.pages.find((page) => page.id === entry?.pageId) || null;
+}
+
+function renderHeaderImageExportContent(entry) {
+  const page = getGuidedExportEntryPage(entry);
+  const theme = entry.pageTheme || getGuidedPageTheme(page);
+  const background = getGuidedPageBackground(page, theme) || theme?.background || "#FFE0E9";
+  return `
+    <div
+      class="guided-export-header-image"
+      style="background:${escapeAttr(background)};background-position:top center;--guided-page-theme-filter:${escapeAttr(theme?.filter || "none")};"
+    >
+      <div class="guided-export-themed-content">
+        ${renderComponent(getExportEntryNode(entry), { editable: false })}
+      </div>
+    </div>
+  `;
+}
+
+function renderPageBackgroundExportContent(entry) {
+  const page = getGuidedExportEntryPage(entry);
+  const theme = entry.pageTheme || getGuidedPageTheme(page);
+  const background = getGuidedPageBackground(page, theme) || theme?.background || "#FFE0E9";
+  const pageHeight = Number(entry.dimensions?.height || getGuidedPageActualExportHeight(page));
+  const headerNode = entry.node || getPageHeaderNode(page);
+  return `
+    <div
+      class="guided-export-page-background"
+      style="width:${GUIDED_CUT_EXPORT_WIDTH}px;height:${pageHeight}px;background:${escapeAttr(background)};background-position:top center;--guided-page-theme-filter:${escapeAttr(theme?.filter || "none")};"
+    >
+      ${
+        headerNode
+          ? `
+            <div class="guided-export-themed-content">
+              ${renderComponent(getExportEntryNode({ ...entry, node: headerNode }), { editable: false })}
+            </div>
+          `
+          : ""
+      }
+    </div>
+  `;
+}
+
 function renderGuidedExportPreview(entry) {
   const { width, height } = getExportEntryDimensions(entry);
   const bottomSpace = getGuidedCutExportBottomSpace(entry);
   const previewScale = width > 720 ? 0.44 : 0.46;
   const previewWidth = Math.ceil(width * previewScale);
   const previewHeight = Math.ceil(height * previewScale);
-  const content = entry.exportKind === "fallback-page"
+  const content = entry.exportKind === "page-background"
+    ? renderPageBackgroundExportContent(entry)
+    : entry.exportKind === "fallback-page"
     ? renderGuidedFallbackExportPage(entry)
     : entry.exportKind === "case-showcase-shell" || entry.exportKind === "case-showcase-card"
       ? renderCaseShowcaseExportContent(entry)
       : entry.exportKind === "node-guide-title" || entry.exportKind === "node-guide-card"
         ? renderNodeGuideExportContent(entry)
+      : isHeaderImageExportNode(entry.node || entry.sourceNode)
+        ? renderHeaderImageExportContent(entry)
       : `
       <div
         class="guided-export-themed-content"
@@ -16250,15 +17454,17 @@ async function waitForExportPreviewReady() {
 async function captureGuidedExportEntry(entry, options = {}) {
   const element = findGuidedExportElement(entry.id);
   if (!element) throw new Error("找不到导出组件");
-  const fixedDimensions =
+  const shouldUseFixedDimensions =
+    entry.exportKind === "page-background" ||
+    entry.isFallbackContentEntry ||
+    isHeaderImageExportNode(entry.node || entry.sourceNode) ||
     entry.exportKind === "case-showcase-shell" ||
     entry.exportKind === "case-showcase-card" ||
     entry.exportKind === "lottery-popup" ||
     entry.exportKind === "task-list-title" ||
     entry.exportKind === "node-guide-title" ||
-    entry.exportKind === "node-guide-card"
-      ? getExportEntryDimensions(entry)
-      : {};
+    entry.exportKind === "node-guide-card";
+  const fixedDimensions = shouldUseFixedDimensions ? getExportEntryDimensions(entry) : {};
   return exportElementToPngBlob(element, { ...options, ...fixedDimensions });
 }
 
@@ -16658,6 +17864,51 @@ async function initializeGuidedCanvasView() {
   state.guidedCanvasInitialized = true;
   invalidateStageRect();
   fitGuidedPageToView();
+  if (pendingGuidedFocusNodeId) {
+    const focusNodeId = pendingGuidedFocusNodeId;
+    pendingGuidedFocusNodeId = null;
+    focusGuidedNodeToView(focusNodeId);
+  }
+}
+
+function focusGuidedNodeToView(nodeId) {
+  const stage = $(".guided-device-stage");
+  const world = $(".guided-canvas-world");
+  const node = document.querySelector(
+    `.guided-node[data-node-id="${CSS.escape(nodeId)}"]`,
+  );
+  if (!stage || !world || !node) return;
+
+  const stageRect = stage.getBoundingClientRect();
+  const worldRect = world.getBoundingClientRect();
+  const nodeRect = node.getBoundingClientRect();
+  const currentZoom = Math.max(state.canvasZoom, 0.01);
+
+  const contentX = (nodeRect.left - worldRect.left) / currentZoom;
+  const contentY = (nodeRect.top - worldRect.top) / currentZoom;
+  const contentW = nodeRect.width / currentZoom;
+  const contentH = nodeRect.height / currentZoom;
+
+  const margin = 72;
+  const availableW = Math.max(320, stageRect.width - margin * 2);
+  const availableH = Math.max(320, stageRect.height - margin * 2);
+  const targetZoom = clamp(
+    Math.min(availableW / contentW, availableH / contentH, 1.1),
+    currentZoom,
+    1.1,
+  );
+
+  state.canvasZoom = targetZoom;
+  state.canvasPanX = (stageRect.width - contentW * targetZoom) / 2 - contentX * targetZoom;
+  state.canvasPanY = (stageRect.height - contentH * targetZoom) / 2 - contentY * targetZoom;
+
+  invalidateStageRect();
+  world.classList.add("is-focusing");
+  updateCanvasZoom();
+  window.setTimeout(() => {
+    world.classList.remove("is-focusing");
+    invalidateStageRect();
+  }, 460);
 }
 
 function fitGuidedPageToView() {
@@ -16771,15 +18022,16 @@ function zoomCanvas(event) {
 function renderCanvasColorControl() {
   const control = $(".canvas-color-control");
   if (!control) return;
+  const colorInputValue = getThemeColorInputValue(state.canvasBackground);
   control.innerHTML = `
     <button class="canvas-color-button" data-toggle-canvas-colors aria-label="画布颜色">
       <span class="color-dot" style="background:${state.canvasBackground}"></span>
-      <input class="native-color-input" type="color" data-canvas-color-picker value="${state.canvasBackground}" />
+      <input class="native-color-input" type="color" data-canvas-color-picker value="${colorInputValue}" />
       <span>画布颜色</span>
     </button>
     <div class="canvas-color-popover ${state.canvasColorPanelOpen ? "open" : ""}">
       ${canvasColorChoices
-        .map((color) => `<button class="color-swatch" data-apply-canvas-color="${color}" style="background:${color}" aria-label="${color}"></button>`)
+        .map((color) => `<button class="color-swatch" data-apply-canvas-color="${escapeAttr(color)}" style="background:${escapeAttr(color)}" aria-label="${escapeAttr(color)}"></button>`)
         .join("")}
     </div>
   `;
@@ -17152,6 +18404,13 @@ function bindEvents() {
       return;
     }
 
+    const switchToCanvas = event.target.closest("[data-prd-switch-canvas]");
+    if (switchToCanvas) {
+      const [templateId, moduleIndex] = switchToCanvas.dataset.prdSwitchCanvas.split("|");
+      jumpToCanvasModule(templateId, Number(moduleIndex));
+      return;
+    }
+
     const moveTemplateModule = event.target.closest("[data-prd-move-template-module]");
     if (moveTemplateModule) {
       const [templateId, moduleIndex, direction] = moveTemplateModule.dataset.prdMoveTemplateModule.split("|");
@@ -17475,6 +18734,15 @@ function bindEvents() {
       return;
     }
 
+    const switchToTable = event.target.closest("[data-guided-switch-table]");
+    if (switchToTable && state.view === "guided-preview") {
+      jumpToBlueprintModule(
+        switchToTable.dataset.guidedSwitchTable,
+        Number(switchToTable.dataset.guidedModuleIndex),
+      );
+      return;
+    }
+
     const guidedAction = event.target.closest("[data-guided-action]");
     if (guidedAction && state.view === "guided-preview") {
       const pageId = guidedAction.closest("[data-page-id]")?.dataset.pageId;
@@ -17596,7 +18864,11 @@ function bindEvents() {
     if (lineageDelete) {
       const found = getSelectedNodeInfo();
       if (!found?.node) return;
-      deleteLineageGraphNode(found.node, lineageDelete.dataset.guidedLineageDelete);
+      const variantId = lineageDelete.dataset.guidedLineageDelete;
+      const sourceNode = getLineageSourceNode(found);
+      if (deleteLineageGraphNode(found.node, variantId)) {
+        syncLineageVariantDeleteToSource(sourceNode, variantId);
+      }
       updateGuidedPanel();
       return;
     }
@@ -17606,6 +18878,7 @@ function bindEvents() {
       const found = getSelectedNodeInfo();
       if (!found?.node) return;
       const variant = createLineageListVariant(found.node);
+      syncLineageVariantAddToSource(getLineageSourceNode(found), variant);
       state.selectedLineageVariantId = variant.id;
       updateGuidedPanel();
       return;
@@ -17619,6 +18892,7 @@ function bindEvents() {
         found.node,
         lineageComponentAdd.dataset.guidedLineageAddComponent,
       );
+      syncLineageVariantAddToSource(getLineageSourceNode(found), variant);
       state.selectedLineageVariantId = variant.id;
       updateGuidedPanel();
       return;
@@ -17629,6 +18903,7 @@ function bindEvents() {
       const found = getSelectedNodeInfo();
       if (!found?.node) return;
       const { variant } = createLineageGraphDimension(found.node);
+      syncLineageVariantAddToSource(getLineageSourceNode(found), variant);
       state.selectedLineageVariantId = variant.id;
       updateGuidedPanel();
       return;
@@ -17771,14 +19046,14 @@ function bindEvents() {
       return;
     }
 
-    if (event.target.closest("[data-guided-ai-apply]")) {
+    const headerMainVisual = event.target.closest("[data-guided-header-main-visual]");
+    if (headerMainVisual) {
       const found = getSelectedNodeInfo();
-      const prompt = document.querySelector(".guided-ai-prompt")?.value.trim();
-      if (found?.node.type === "atom") {
-        if ("mainTextTop" in found.node.props && prompt) found.node.props.mainTextTop = prompt;
-        if ("titleText" in found.node.props && prompt) found.node.props.titleText = prompt;
+      if (found?.node?.schemaId === "头图") {
+        const mainVisualImage = headerMainVisual.dataset.guidedHeaderMainVisual || "";
+        applyHeaderMainVisualToNode(found.node, mainVisualImage);
+        syncFallbackHeaderMainVisual(mainVisualImage);
       }
-      state.guidedPanelMode = null;
       render();
       return;
     }
@@ -18749,7 +20024,14 @@ function bindEvents() {
     if (lineageTitle) {
       const found = getSelectedNodeInfo();
       const variant = found?.node ? findLineageVariant(found.node, lineageTitle.dataset.guidedLineageTitle) : null;
-      if (variant) variant.title = lineageTitle.value;
+      if (variant) {
+        variant.title = lineageTitle.value;
+        syncLineageVariantTitleToSource(
+          getLineageSourceNode(found),
+          variant.id,
+          variant.title,
+        );
+      }
       return;
     }
 
@@ -18857,6 +20139,39 @@ function bindEvents() {
           );
           nextInput?.focus();
         });
+      } else {
+        refreshPageTemplateModulePreviewByRowIndex(rowIndex);
+      }
+      return;
+    }
+
+    const prdReturnTierTypeSelect = event.target.closest("[data-prd-return-tier-type-rows]");
+    if (prdReturnTierTypeSelect) {
+      const rowIndexes = String(prdReturnTierTypeSelect.dataset.prdReturnTierTypeRows || "")
+        .split(",")
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value >= 0);
+      rowIndexes.forEach((rowIndex) => {
+        if (state.prdTableRows[rowIndex]) state.prdTableRows[rowIndex].value = prdReturnTierTypeSelect.value;
+      });
+      state.prdTableBlueprint = null;
+      state.prdTableBlueprintSignature = "";
+      render();
+      return;
+    }
+
+    const prdReplaceConsumptionModuleSelect = event.target.closest("[data-prd-replace-consumption-module]");
+    if (prdReplaceConsumptionModuleSelect) {
+      const [templateId, moduleIndex] =
+        prdReplaceConsumptionModuleSelect.dataset.prdReplaceConsumptionModule.split("|");
+      if (
+        replaceMoleculeInPrdPageTemplate(
+          templateId,
+          Number(moduleIndex),
+          prdReplaceConsumptionModuleSelect.value,
+        )
+      ) {
+        render();
       }
       return;
     }
@@ -18865,11 +20180,20 @@ function bindEvents() {
     if (prdTableRowInput) {
       const rowIndex = Number(prdTableRowInput.dataset.prdTableRow);
       if (state.prdTableRows[rowIndex]) {
+        const rowKey = state.prdTableRows[rowIndex].key || "";
         state.prdTableRows[rowIndex].value = prdTableRowInput.type === "checkbox"
           ? (prdTableRowInput.checked ? "true" : "")
           : prdTableRowInput.value;
         state.prdTableBlueprint = null;
         state.prdTableBlueprintSignature = "";
+        if (
+          prdTableRowInput.tagName === "SELECT" &&
+          /(?:rewardType[1-4]|第[1-4]档\s*·\s*类型)/.test(rowKey)
+        ) {
+          render();
+        } else {
+          refreshPageTemplateModulePreviewByRowIndex(rowIndex);
+        }
       }
       return;
     }
@@ -19455,12 +20779,13 @@ function bindEvents() {
         state.prdTableRows[rowIndex].value = prdPrizeTableSelect.value;
         state.prdTableBlueprint = null;
         state.prdTableBlueprintSignature = "";
-        render();
+        syncPrizeLibraryControl(prdPrizeTableSelect);
+        refreshPageTemplateModulePreviewByRowIndex(rowIndex);
       }
       return;
     }
 
-    const adminPagePrizeSelect = event.target.closest("select[data-admin-page-blueprint-prop]");
+    const adminPagePrizeSelect = event.target.closest(".prize-library-select[data-admin-page-blueprint-prop]");
     if (adminPagePrizeSelect) {
       const key = adminPagePrizeSelect.dataset.adminPageBlueprintProp;
       state.adminComponentVerifier.blueprint[key] = adminPagePrizeSelect.value;
@@ -19469,7 +20794,7 @@ function bindEvents() {
       return;
     }
 
-    const adminMoleculePrizeSelect = event.target.closest("[data-admin-molecule-blueprint-prop]");
+    const adminMoleculePrizeSelect = event.target.closest(".prize-library-select[data-admin-molecule-blueprint-prop]");
     if (adminMoleculePrizeSelect) {
       const key = adminMoleculePrizeSelect.dataset.adminMoleculeBlueprintProp;
       state.adminComponentVerifier.blueprint[key] = adminMoleculePrizeSelect.value;
@@ -19478,12 +20803,28 @@ function bindEvents() {
       return;
     }
 
-    const adminPrizeSelect = event.target.closest("[data-admin-prize-prop]");
+    const adminPrizeSelect = event.target.closest(".prize-library-select[data-admin-prize-prop]");
     if (adminPrizeSelect) {
       const key = adminPrizeSelect.dataset.adminPrizeProp;
       state.adminComponentVerifier.blueprint[key] = adminPrizeSelect.value;
       syncPrizeLibraryControl(adminPrizeSelect);
       refreshAdminVerifierPreview();
+      return;
+    }
+
+    const standardBlueprintSelect = event.target.closest([
+      "select[data-prd-table-row]",
+      "select[data-prd-return-tier-type-rows]",
+      "select[data-prd-replace-consumption-module]",
+      "select[data-prd-template-variable-row]",
+      "select[data-blueprint-value]",
+      "select[data-blueprint-variant-value]",
+      "select[data-admin-blueprint-prop]",
+      "select[data-admin-molecule-blueprint-prop]",
+      "select[data-admin-page-blueprint-prop]",
+    ].join(","));
+    if (standardBlueprintSelect) {
+      standardBlueprintSelect.dispatchEvent(new Event("input", { bubbles: true }));
       return;
     }
 

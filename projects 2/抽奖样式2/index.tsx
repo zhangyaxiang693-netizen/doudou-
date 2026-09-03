@@ -8,7 +8,7 @@ import prizeDouziUrl from '../九宫格-奖品库/dou仔周边.png'
 import prizeJianyingVipUrl from '../九宫格-奖品库/剪映vip.png'
 import prizeTrafficCouponUrl from '../九宫格-奖品库/6元流量券.png'
 
-const MAX_PRIZE_COUNT = 8
+const DISPLAY_PRIZE_COUNT = 3
 
 type PrizeValue =
   | string
@@ -87,15 +87,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     { name: '奖品7', image: prizeDouziUrl, ribbon: image2 },
     { name: '奖品8', image: prizeJianyingVipUrl, ribbon: image4 },
   ]
-  const highestFilledPrizeIndex = fallbackPrizes.reduce((max, _, index) => {
-    const prizeIndex = index + 1
-    const value = props[`prize${prizeIndex}` as keyof IGeneratedComponent]
-    const name = props[`prize${prizeIndex}Name` as keyof IGeneratedComponent]
-    return value || name ? prizeIndex : max
-  }, 0)
-  const requestedPrizeCount = Number(props.prizeCount) || highestFilledPrizeIndex || 3
-  const prizeCount = Math.max(1, Math.min(MAX_PRIZE_COUNT, requestedPrizeCount))
-  const prizes = fallbackPrizes.slice(0, prizeCount).map((fallback, index) => {
+  const prizes = fallbackPrizes.slice(0, DISPLAY_PRIZE_COUNT).map((fallback, index) => {
     const prizeIndex = index + 1
     return {
       ...resolvePrize(

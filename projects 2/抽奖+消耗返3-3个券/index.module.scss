@@ -32,6 +32,31 @@
   justify-content: flex-start;
   align-items: center;
 }
+.slot {
+  width: 160px;
+  height: 153px;
+  margin-right: 50px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+.lastSlot {
+  margin-right: 0;
+}
+.slot .image,
+.slot .main,
+.slot .main1 {
+  margin-right: 0;
+}
+.drawSlot {
+  width: 160px;
+  height: 153px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 .image {
   width: 160px;
   height: 141.58px;

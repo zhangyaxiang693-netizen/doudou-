@@ -33,6 +33,25 @@
   justify-content: center;
   align-items: flex-end;
 }
+.slot {
+  width: 130px;
+  height: 152px;
+  margin-right: 28px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  position: relative;
+}
+.lastSlot {
+  margin-right: 0;
+}
+.slot .main,
+.slot .main1,
+.slot .main2,
+.slot .main3 {
+  margin-right: 0;
+}
 .main {
   margin-right: 28px;
   position: relative;

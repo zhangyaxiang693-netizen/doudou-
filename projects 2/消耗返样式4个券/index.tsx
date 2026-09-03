@@ -24,9 +24,14 @@ import image20Url from './assets/image_20.svg'
 import image21Url from './assets/image_21.svg'
 
 export type IGeneratedComponent = {
+  rewardType1?: string
   amountText1?: string
+  rewardType2?: string
   amountText2?: string
+  rewardType3?: string
   amountText3?: string
+  rewardType4?: string
+  amountText4?: string
   consumeAmountText1?: string
   consumeAmountText2?: string
   consumeAmountText3?: string
@@ -66,6 +71,11 @@ function normalizeAmount(value: string | undefined, fallback: string) {
     .trim()
 }
 
+function normalizeRewardType(value: string | undefined, fallback: '抽奖任务' | '消耗返') {
+  const normalized = String(value || fallback).trim()
+  return normalized === '抽奖' || normalized === '抽奖任务' ? '抽奖任务' : '消耗返'
+}
+
 function themedFrameSvg(svg: string, frameUnionGradientStart?: string, frameUnionGradientEnd?: string) {
   return svg
     .replaceAll(originalColors.frameUnionGradientStart, frameUnionGradientStart || originalColors.frameUnionGradientStart)
@@ -89,9 +99,24 @@ function themedSemicircleSvg(svg: string, redPacketEllipseColor?: string) {
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
+  const rewardType1 = normalizeRewardType(props.rewardType1, '抽奖任务')
+  const rewardType2 = normalizeRewardType(props.rewardType2, '消耗返')
+  const rewardType3 = normalizeRewardType(props.rewardType3, '消耗返')
+  const rewardType4 = normalizeRewardType(props.rewardType4, '消耗返')
   const amountText1 = normalizeAmount(props.amountText1, '110')
   const amountText2 = normalizeAmount(props.amountText2, '110')
   const amountText3 = normalizeAmount(props.amountText3, '110')
+  const amountText4 = normalizeAmount(props.amountText4, '110')
+  const usesTierAmountMapping =
+    props.rewardType1 !== undefined ||
+    props.rewardType2 !== undefined ||
+    props.rewardType3 !== undefined ||
+    props.rewardType4 !== undefined ||
+    props.amountText4 !== undefined
+  const displayAmount1 = amountText1
+  const displayAmount2 = usesTierAmountMapping ? amountText2 : amountText1
+  const displayAmount3 = usesTierAmountMapping ? amountText3 : amountText2
+  const displayAmount4 = usesTierAmountMapping ? amountText4 : amountText3
   const consumeAmountText1 = normalizeAmount(props.consumeAmountText1, '30')
   const consumeAmountText2 = normalizeAmount(props.consumeAmountText2, '30')
   const consumeAmountText3 = normalizeAmount(props.consumeAmountText3, '30')
@@ -118,97 +143,133 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const rightSemicircleSvg2 = themedSemicircleSvg(image12Raw, props.redPacketEllipseColor)
   const leftSemicircleSvg3 = themedSemicircleSvg(image15Raw, props.redPacketEllipseColor)
   const rightSemicircleSvg3 = themedSemicircleSvg(image17Raw, props.redPacketEllipseColor)
+  const renderLottery = (isLast = false) => (
+    <div className={`${styles.slot} ${isLast ? styles.lastSlot : ''}`}>
+      <div className={styles.main}>
+        <div className={styles.image} dangerouslySetInnerHTML={{__html: lotteryFrameSvg}} />
+        <div className={styles.image1} dangerouslySetInnerHTML={{__html: lotteryIconSvg}} />
+        <div className={styles.section}>
+          <div className={styles.text}>抽奖</div>
+        </div>
+      </div>
+    </div>
+  )
+  const couponStyles = [
+    {
+      main: styles.main1,
+      section: styles.section1,
+      background: styles.image2,
+      subSection: styles.subSection,
+      block: styles.block,
+      subBlock: styles.subBlock,
+      frame: styles.image3,
+      amountSection: styles.section2,
+      amountWrap: styles.subSection1,
+      amount: styles.text1,
+      unit: styles.text2,
+      label: styles.text3,
+      divider: styles.section3,
+      left: styles.image4,
+      line: styles.image6,
+      right: styles.image5,
+      backgroundSvg: backgroundSvg1,
+      frameSvg: redPacketUnionSvg1,
+      leftSvg: leftSemicircleSvg1,
+      rightSvg: rightSemicircleSvg1,
+      lineUrl: image6Url,
+    },
+    {
+      main: styles.main2,
+      section: styles.section4,
+      background: styles.image7,
+      subSection: styles.subSection2,
+      block: styles.block1,
+      subBlock: styles.subBlock1,
+      frame: styles.image8,
+      amountSection: styles.section5,
+      amountWrap: styles.subSection3,
+      amount: styles.text4,
+      unit: styles.text5,
+      label: styles.text6,
+      divider: styles.section6,
+      left: styles.image9,
+      line: styles.image11,
+      right: styles.image10,
+      backgroundSvg: backgroundSvg2,
+      frameSvg: redPacketUnionSvg2,
+      leftSvg: leftSemicircleSvg2,
+      rightSvg: rightSemicircleSvg2,
+      lineUrl: image11Url,
+    },
+    {
+      main: styles.main3,
+      section: styles.section7,
+      background: styles.image12,
+      subSection: styles.subSection4,
+      block: styles.block2,
+      subBlock: styles.subBlock2,
+      frame: styles.image13,
+      amountSection: styles.section8,
+      amountWrap: styles.subSection5,
+      amount: styles.text7,
+      unit: styles.text8,
+      label: styles.text9,
+      divider: styles.section9,
+      left: styles.image14,
+      line: styles.image16,
+      right: styles.image15,
+      backgroundSvg: backgroundSvg3,
+      frameSvg: redPacketUnionSvg3,
+      leftSvg: leftSemicircleSvg3,
+      rightSvg: rightSemicircleSvg3,
+      lineUrl: image16Url,
+    },
+  ]
+  const renderCoupon = (amountText: string, index: number, isLast = false) => {
+    const item = couponStyles[(index - 1) % couponStyles.length]
+    return (
+      <div className={`${styles.slot} ${isLast ? styles.lastSlot : ''}`}>
+        <div className={item.main}>
+          <div className={item.section}>
+            <div className={item.background} dangerouslySetInnerHTML={{__html: item.backgroundSvg}} />
+            <div className={item.subSection}>
+              <div className={item.block}>
+                <div className={item.subBlock}></div>
+              </div>
+            </div>
+            <div className={item.frame} dangerouslySetInnerHTML={{__html: item.frameSvg}} />
+          </div>
+          <div className={item.amountSection}>
+            <div className={item.amountWrap}>
+              <div className={item.amount} style={amountTextStyle}>{amountText}</div>
+              <div className={item.unit} style={amountTextStyle}>元</div>
+            </div>
+          </div>
+          <div className={item.label} style={couponLabelStyle}>满赠券</div>
+          <div className={item.divider}>
+            <div className={item.left} dangerouslySetInnerHTML={{__html: item.leftSvg}} />
+            <img
+              src={item.lineUrl}
+              className={item.line}
+            />
+            <div className={item.right} dangerouslySetInnerHTML={{__html: item.rightSvg}} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+  const renderReward = (rewardType: string, amountText: string, index: number, isLast = false) =>
+    rewardType === '抽奖任务' ? renderLottery(isLast) : renderCoupon(amountText, index, isLast)
 
   return (
     <div className={styles.page}>
       <div className={styles.wrap}>
         <div className={styles.container}>
           <div className={styles.content}>
-            <div className={styles.main}>
-              <div className={styles.image} dangerouslySetInnerHTML={{__html: lotteryFrameSvg}} />
-              <div className={styles.image1} dangerouslySetInnerHTML={{__html: lotteryIconSvg}} />
-              <div className={styles.section}>
-                <div className={styles.text}>抽奖</div>
-              </div>
-            </div>
-            <div className={styles.main1}>
-              <div className={styles.section1}>
-                <div className={styles.image2} dangerouslySetInnerHTML={{__html: backgroundSvg1}} />
-                <div className={styles.subSection}>
-                  <div className={styles.block}>
-                    <div className={styles.subBlock}></div>
-                  </div>
-                </div>
-                <div className={styles.image3} dangerouslySetInnerHTML={{__html: redPacketUnionSvg1}} />
-              </div>
-              <div className={styles.section2}>
-                <div className={styles.subSection1}>
-                  <div className={styles.text1} style={amountTextStyle}>{amountText1}</div>
-                  <div className={styles.text2} style={amountTextStyle}>元</div>
-                </div>
-              </div>
-              <div className={styles.text3} style={couponLabelStyle}>满赠券</div>
-              <div className={styles.section3}>
-                <div className={styles.image4} dangerouslySetInnerHTML={{__html: leftSemicircleSvg1}} />
-                <img
-                  src={image6Url}
-                  className={styles.image6}
-                />
-                <div className={styles.image5} dangerouslySetInnerHTML={{__html: rightSemicircleSvg1}} />
-              </div>
-            </div>
-            <div className={styles.main2}>
-              <div className={styles.section4}>
-                <div className={styles.image7} dangerouslySetInnerHTML={{__html: backgroundSvg2}} />
-                <div className={styles.subSection2}>
-                  <div className={styles.block1}>
-                    <div className={styles.subBlock1}></div>
-                  </div>
-                </div>
-                <div className={styles.image8} dangerouslySetInnerHTML={{__html: redPacketUnionSvg2}} />
-              </div>
-              <div className={styles.section5}>
-                <div className={styles.subSection3}>
-                  <div className={styles.text4} style={amountTextStyle}>{amountText2}</div>
-                  <div className={styles.text5} style={amountTextStyle}>元</div>
-                </div>
-              </div>
-              <div className={styles.text6} style={couponLabelStyle}>满赠券</div>
-              <div className={styles.section6}>
-                <div className={styles.image9} dangerouslySetInnerHTML={{__html: leftSemicircleSvg2}} />
-                <img
-                  src={image11Url}
-                  className={styles.image11}
-                />
-                <div className={styles.image10} dangerouslySetInnerHTML={{__html: rightSemicircleSvg2}} />
-              </div>
-            </div>
-            <div className={styles.main3}>
-              <div className={styles.section7}>
-                <div className={styles.image12} dangerouslySetInnerHTML={{__html: backgroundSvg3}} />
-                <div className={styles.subSection4}>
-                  <div className={styles.block2}>
-                    <div className={styles.subBlock2}></div>
-                  </div>
-                </div>
-                <div className={styles.image13} dangerouslySetInnerHTML={{__html: redPacketUnionSvg3}} />
-              </div>
-              <div className={styles.section8}>
-                <div className={styles.subSection5}>
-                  <div className={styles.text7} style={amountTextStyle}>{amountText3}</div>
-                  <div className={styles.text8} style={amountTextStyle}>元</div>
-                </div>
-              </div>
-              <div className={styles.text9} style={couponLabelStyle}>满赠券</div>
-              <div className={styles.section9}>
-                <div className={styles.image14} dangerouslySetInnerHTML={{__html: leftSemicircleSvg3}} />
-                <img
-                  src={image16Url}
-                  className={styles.image16}
-                />
-                <div className={styles.image15} dangerouslySetInnerHTML={{__html: rightSemicircleSvg3}} />
-              </div>
-            </div>
+            {renderReward(rewardType1, displayAmount1, 1)}
+            {renderReward(rewardType2, displayAmount2, 2)}
+            {renderReward(rewardType3, displayAmount3, 3)}
+            {renderReward(rewardType4, displayAmount4, 4, true)}
           </div>
         </div>
         <div className={styles.container1} style={props.hideProgressGraphic ? { visibility: 'hidden' } : undefined}>

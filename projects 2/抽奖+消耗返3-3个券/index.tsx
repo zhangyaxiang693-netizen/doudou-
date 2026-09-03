@@ -17,8 +17,12 @@ import image13Url from './assets/image_13.svg'
 import image14Url from './assets/image_14.svg'
 
 export type IGeneratedComponent = {
+  rewardType1?: string
   amountText1?: string
+  rewardType2?: string
   amountText2?: string
+  rewardType3?: string
+  amountText3?: string
   consumeAmountText1?: string
   consumeAmountText2?: string
   consumeAmountText3?: string
@@ -57,6 +61,11 @@ function normalizeAmount(value: string | undefined, fallback: string) {
     .trim()
 }
 
+function normalizeRewardType(value: string | undefined, fallback: '抽奖任务' | '消耗返') {
+  const normalized = String(value || fallback).trim()
+  return normalized === '抽奖' || normalized === '抽奖任务' ? '抽奖任务' : '消耗返'
+}
+
 function themedFrameSvg(svg: string, frameUnionGradientStart?: string, frameUnionGradientEnd?: string) {
   return svg
     .replaceAll(originalColors.frameUnionGradientStart, frameUnionGradientStart || originalColors.frameUnionGradientStart)
@@ -86,8 +95,20 @@ function themedGiftSvg(props: IGeneratedComponent) {
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
+  const rewardType1 = normalizeRewardType(props.rewardType1, '抽奖任务')
+  const rewardType2 = normalizeRewardType(props.rewardType2, '消耗返')
+  const rewardType3 = normalizeRewardType(props.rewardType3, '消耗返')
   const amountText1 = normalizeAmount(props.amountText1, '30')
   const amountText2 = normalizeAmount(props.amountText2, '30')
+  const amountText3 = normalizeAmount(props.amountText3, '30')
+  const usesTierAmountMapping =
+    props.rewardType1 !== undefined ||
+    props.rewardType2 !== undefined ||
+    props.rewardType3 !== undefined ||
+    props.amountText3 !== undefined
+  const displayAmount1 = amountText1
+  const displayAmount2 = usesTierAmountMapping ? amountText2 : amountText1
+  const displayAmount3 = usesTierAmountMapping ? amountText3 : amountText2
   const consumeAmountText1 = normalizeAmount(props.consumeAmountText1, '30')
   const consumeAmountText2 = normalizeAmount(props.consumeAmountText2, '30')
   const consumeAmountText3 = normalizeAmount(props.consumeAmountText3, '30')
@@ -108,61 +129,55 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const rightSemicircleSvg = themedSemicircleSvg(image6Raw, props.redPacketEllipseColor)
   const leftSemicircleSvg1 = themedSemicircleSvg(image9Raw, props.redPacketEllipseColor)
   const rightSemicircleSvg1 = themedSemicircleSvg(image11Raw, props.redPacketEllipseColor)
+  const renderLottery = (isLast = false) => (
+    <div className={`${styles.slot} ${isLast ? styles.lastSlot : ''}`}>
+      <div className={styles.drawSlot}>
+        <div className={styles.image} dangerouslySetInnerHTML={{__html: giftSvg}} />
+      </div>
+    </div>
+  )
+  const renderCoupon = (amountText: string, index: number, isLast = false) => {
+    const useSecondSet = index % 2 === 0
+    return (
+      <div className={`${styles.slot} ${isLast ? styles.lastSlot : ''}`}>
+        <div className={useSecondSet ? styles.main1 : styles.main}>
+          <div className={useSecondSet ? styles.section3 : styles.section}>
+            <div className={useSecondSet ? styles.image6 : styles.image1} dangerouslySetInnerHTML={{__html: useSecondSet ? backgroundSvg1 : backgroundSvg}} />
+            <div className={useSecondSet ? styles.subSection2 : styles.subSection}>
+              <div className={useSecondSet ? styles.subBlock1 : styles.subBlock}></div>
+            </div>
+            <div className={useSecondSet ? styles.image7 : styles.image2} dangerouslySetInnerHTML={{__html: useSecondSet ? frameSvg1 : frameSvg}} />
+          </div>
+          <div className={useSecondSet ? styles.section4 : styles.section1}>
+            <div className={useSecondSet ? styles.subSection3 : styles.subSection1}>
+              <div className={useSecondSet ? styles.text3 : styles.text} style={amountTextStyle}>{amountText}</div>
+              <div className={useSecondSet ? styles.text4 : styles.text1} style={amountTextStyle}>元</div>
+            </div>
+          </div>
+          <div className={useSecondSet ? styles.text5 : styles.text2} style={couponLabelStyle}>满赠券</div>
+          <div className={useSecondSet ? styles.section5 : styles.section2}>
+            <div className={useSecondSet ? styles.image8 : styles.image3} dangerouslySetInnerHTML={{__html: useSecondSet ? leftSemicircleSvg1 : leftSemicircleSvg}} />
+            <img
+              src={useSecondSet ? image10Url : image5Url}
+              className={useSecondSet ? styles.image10 : styles.image5}
+            />
+            <div className={useSecondSet ? styles.image9 : styles.image4} dangerouslySetInnerHTML={{__html: useSecondSet ? rightSemicircleSvg1 : rightSemicircleSvg}} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+  const renderReward = (rewardType: string, amountText: string, index: number, isLast = false) =>
+    rewardType === '抽奖任务' ? renderLottery(isLast) : renderCoupon(amountText, index, isLast)
 
   return (
     <div className={styles.page}>
       <div className={styles.wrap}>
         <div className={styles.container}>
           <div className={styles.content}>
-            <div className={styles.image} dangerouslySetInnerHTML={{__html: giftSvg}} />
-            <div className={styles.main}>
-              <div className={styles.section}>
-                <div className={styles.image1} dangerouslySetInnerHTML={{__html: backgroundSvg}} />
-                <div className={styles.subSection}>
-                  <div className={styles.subBlock}></div>
-                </div>
-                <div className={styles.image2} dangerouslySetInnerHTML={{__html: frameSvg}} />
-              </div>
-              <div className={styles.section1}>
-                <div className={styles.subSection1}>
-                  <div className={styles.text} style={amountTextStyle}>{amountText1}</div>
-                  <div className={styles.text1} style={amountTextStyle}>元</div>
-                </div>
-              </div>
-              <div className={styles.text2} style={couponLabelStyle}>满赠券</div>
-              <div className={styles.section2}>
-                <div className={styles.image3} dangerouslySetInnerHTML={{__html: leftSemicircleSvg}} />
-                <img
-                  src={image5Url}
-                  className={styles.image5}
-                />
-                <div className={styles.image4} dangerouslySetInnerHTML={{__html: rightSemicircleSvg}} />
-              </div>
-            </div>
-            <div className={styles.main1}>
-              <div className={styles.section3}>
-                <div className={styles.image6} dangerouslySetInnerHTML={{__html: backgroundSvg1}} />
-                <div className={styles.subSection2}>
-                  <div className={styles.subBlock1}></div>
-                </div>
-                <div className={styles.image7} dangerouslySetInnerHTML={{__html: frameSvg1}} />
-              </div>
-              <div className={styles.section4}>
-                <div className={styles.subSection3}>
-                  <div className={styles.text3} style={amountTextStyle}>{amountText2}</div>
-                  <div className={styles.text4} style={amountTextStyle}>元</div>
-                </div>
-              </div>
-              <div className={styles.text5} style={couponLabelStyle}>满赠券</div>
-              <div className={styles.section5}>
-                <div className={styles.image8} dangerouslySetInnerHTML={{__html: leftSemicircleSvg1}} />
-                <img
-                  src={image10Url}
-                  className={styles.image10}
-                />
-                <div className={styles.image9} dangerouslySetInnerHTML={{__html: rightSemicircleSvg1}} />
-              </div>
-            </div>
+            {renderReward(rewardType1, displayAmount1, 1)}
+            {renderReward(rewardType2, displayAmount2, 2)}
+            {renderReward(rewardType3, displayAmount3, 3, true)}
           </div>
         </div>
         <div className={styles.container1} style={props.hideProgressGraphic ? { visibility: 'hidden' } : undefined}>

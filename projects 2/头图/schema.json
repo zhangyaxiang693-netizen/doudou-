@@ -1,0 +1,174 @@
+{
+  "id": "头图",
+  "name": "头图",
+  "title": "头图",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "头图组件，展示活动主文案和时间按钮。",
+  "reactComponent": "头图",
+  "dimensions": {
+    "width": 750,
+    "height": 400
+  },
+  "fonts": [
+    {
+      "text": "抽666元流量大奖",
+      "family": "MFBenHeiNoncommercial",
+      "weight": 400,
+      "size": "74px",
+      "lineHeight": "96px",
+      "usage": "文案",
+      "source": {
+        "status": "exact",
+        "file": "造字工房本黑体.ttf"
+      }
+    },
+    {
+      "text": "6月10日-6月21日",
+      "family": "Source Han Sans CN",
+      "weight": 500,
+      "size": "28px",
+      "lineHeight": "42px",
+      "usage": "按钮文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-MEDIUM.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "头图",
+      "头图模块",
+      "活动头图",
+      "流量大奖",
+      "文案"
+    ],
+    "textProps": [
+      "text",
+      "dateText"
+    ]
+  },
+  "props": [
+    {
+      "key": "text",
+      "name": "text",
+      "label": "文案",
+      "type": "string",
+      "default": "抽666元流量大奖",
+      "description": "头图主文案，超出宽度后自动折行。"
+    },
+    {
+      "key": "dateText",
+      "name": "dateText",
+      "label": "日期文案",
+      "type": "string",
+      "default": "6月10日-6月21日",
+      "description": "按钮中的日期展示文案。"
+    },
+    {
+      "key": "burstColor",
+      "name": "burstColor",
+      "label": "爆炸图形颜色",
+      "type": "color",
+      "default": "#FF88C1",
+      "description": "爆炸 1 图形的填充颜色，跟随父级背景渐变的第一个颜色。"
+    },
+    {
+      "key": "burstOpacity",
+      "name": "burstOpacity",
+      "label": "爆炸图形透明度",
+      "type": "number",
+      "default": 0.5,
+      "description": "爆炸 1 图形透明度，部分浅色父级主题会自动提升。"
+    },
+    {
+      "key": "mainVisualImage",
+      "name": "mainVisualImage",
+      "label": "主体图片",
+      "type": "image",
+      "default": "",
+      "description": "头图右侧主体图片，可在预览页替换主体面板中选择。"
+    },
+    {
+      "key": "ribbonColor",
+      "name": "ribbonColor",
+      "label": "彩带颜色",
+      "type": "color",
+      "default": "#FF62B8",
+      "description": "头图左上角彩带颜色，跟随父级色系自动变化。"
+    },
+    {
+      "key": "glowOpacity",
+      "name": "glowOpacity",
+      "label": "氛围光透明度",
+      "type": "number",
+      "default": 0.6,
+      "description": "头图白色氛围光透明度，部分节点色系会自动降低。"
+    },
+    {
+      "key": "textColor",
+      "name": "textColor",
+      "label": "文案颜色",
+      "type": "color",
+      "default": "#2C0113"
+    },
+    {
+      "key": "buttonBackgroundColor",
+      "name": "buttonBackgroundColor",
+      "label": "按钮颜色",
+      "type": "color",
+      "default": "#FF62B8"
+    },
+    {
+      "key": "headlineGradientTop",
+      "name": "headlineGradientTop",
+      "label": "抽奖金额顶部渐变",
+      "type": "color",
+      "default": "#FF5F5F"
+    },
+    {
+      "key": "headlineGradientBottom",
+      "name": "headlineGradientBottom",
+      "label": "抽奖金额底部渐变",
+      "type": "color",
+      "default": "#2C0113"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "burstColor": "#FF88C1",
+        "buttonBackgroundColor": "#FF62B8",
+        "headlineGradientTop": "#FF5F5F"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "burstColor": "#88BEFF",
+        "buttonBackgroundColor": "#FF6265",
+        "headlineGradientTop": "#FF7D65"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "burstColor": "#FFBE88",
+        "buttonBackgroundColor": "#FF8F4A",
+        "headlineGradientTop": "#FFB047"
+      }
+    }
+  ]
+}

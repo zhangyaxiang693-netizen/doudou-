@@ -4,7 +4,7 @@
   "title": "消耗返样式4个券",
   "type": "atom",
   "category": "原子组件",
-  "description": "消耗返券组件，展示四档消耗金额和三张满赠券。",
+  "description": "抽奖消耗返券组件，展示四档消耗金额，每档可在抽奖任务和消耗返之间切换。",
   "reactComponent": "消耗返样式4个券",
   "dimensions": {
     "width": 604.09,
@@ -72,9 +72,14 @@
       "四个券"
     ],
     "textProps": [
+      "rewardType1",
       "amountText1",
+      "rewardType2",
       "amountText2",
+      "rewardType3",
       "amountText3",
+      "rewardType4",
+      "amountText4",
       "consumeAmountText1",
       "consumeAmountText2",
       "consumeAmountText3",
@@ -83,12 +88,48 @@
   },
   "props": [
     {
+      "key": "rewardType1",
+      "name": "rewardType1",
+      "label": "第1档类型",
+      "type": "select",
+      "default": "抽奖任务",
+      "options": [
+        {
+          "label": "抽奖任务",
+          "value": "抽奖任务"
+        },
+        {
+          "label": "消耗返",
+          "value": "消耗返"
+        }
+      ],
+      "description": "第一档玩法类型，可在抽奖任务和消耗返之间切换。"
+    },
+    {
       "key": "amountText1",
       "name": "amountText1",
       "label": "金额1",
       "type": "string",
       "default": "110",
-      "description": "第一张券金额数字，组件固定显示“元”单位。"
+      "description": "第一档券金额数字，组件固定显示“元”单位。"
+    },
+    {
+      "key": "rewardType2",
+      "name": "rewardType2",
+      "label": "第2档类型",
+      "type": "select",
+      "default": "消耗返",
+      "options": [
+        {
+          "label": "抽奖任务",
+          "value": "抽奖任务"
+        },
+        {
+          "label": "消耗返",
+          "value": "消耗返"
+        }
+      ],
+      "description": "第二档玩法类型，可在抽奖任务和消耗返之间切换。"
     },
     {
       "key": "amountText2",
@@ -96,7 +137,25 @@
       "label": "金额2",
       "type": "string",
       "default": "110",
-      "description": "第二张券金额数字，组件固定显示“元”单位。"
+      "description": "第二档券金额数字，组件固定显示“元”单位。"
+    },
+    {
+      "key": "rewardType3",
+      "name": "rewardType3",
+      "label": "第3档类型",
+      "type": "select",
+      "default": "消耗返",
+      "options": [
+        {
+          "label": "抽奖任务",
+          "value": "抽奖任务"
+        },
+        {
+          "label": "消耗返",
+          "value": "消耗返"
+        }
+      ],
+      "description": "第三档玩法类型，可在抽奖任务和消耗返之间切换。"
     },
     {
       "key": "amountText3",
@@ -104,7 +163,33 @@
       "label": "金额3",
       "type": "string",
       "default": "110",
-      "description": "第三张券金额数字，组件固定显示“元”单位。"
+      "description": "第三档券金额数字，组件固定显示“元”单位。"
+    },
+    {
+      "key": "rewardType4",
+      "name": "rewardType4",
+      "label": "第4档类型",
+      "type": "select",
+      "default": "消耗返",
+      "options": [
+        {
+          "label": "抽奖任务",
+          "value": "抽奖任务"
+        },
+        {
+          "label": "消耗返",
+          "value": "消耗返"
+        }
+      ],
+      "description": "第四档玩法类型，可在抽奖任务和消耗返之间切换。"
+    },
+    {
+      "key": "amountText4",
+      "name": "amountText4",
+      "label": "金额4",
+      "type": "string",
+      "default": "110",
+      "description": "第四档券金额数字，组件固定显示“元”单位。"
     },
     {
       "key": "consumeAmountText1",

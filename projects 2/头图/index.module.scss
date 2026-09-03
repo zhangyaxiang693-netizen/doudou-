@@ -1,0 +1,101 @@
+.page {
+  width: 750px;
+  height: 400px;
+  overflow: hidden;
+  box-sizing: border-box;
+  position: relative;
+}
+.image {
+  width: 554.97px;
+  height: 400px;
+  position: absolute;
+  top: 0px;
+  left: 195.03px;
+  opacity: 0.5;
+}
+.image1 {
+  width: 533.58px;
+  height: 400px;
+  position: absolute;
+  top: 0px;
+  left: 216.42px;
+  opacity: 0.6;
+}
+.image2 {
+  width: 387px;
+  height: 305.2px;
+  position: absolute;
+  top: 94.8px;
+  left: 351.46px;
+}
+.image3 {
+  width: 100.19px;
+  height: 132.51px;
+  position: absolute;
+  top: 17.18px;
+  left: 0px;
+}
+.wrap {
+  position: absolute;
+  top: 101.69px;
+  left: 47.46px;
+  width: 316.15px;
+  height: 249.36px;
+}
+.text {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 316.15px;
+  font-family: "MFBenHeiNoncommercial";
+  font-size: 74px;
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  color: rgba(44, 1, 19, 1);
+  line-height: 96px;
+  font-weight: 400;
+}
+.textLine {
+  display: block;
+  height: 96px;
+}
+.textLineGradient {
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.textLineSolid {
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+}
+.container {
+  position: absolute;
+  top: 199.36px;
+  left: 1.54px;
+  width: 248px;
+  height: 50px;
+}
+.content {
+  width: 248px;
+  border-radius: 32px;
+  box-sizing: border-box;
+  background: rgba(255, 98, 184, 1);
+  min-height: 50px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+.text1 {
+  position: absolute;
+  top: 4px;
+  left: 15px;
+  transform: rotate(1.129999680560335e-7deg);
+  font-family: "Source Han Sans CN";
+  font-size: 28px;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 1);
+  line-height: 42px;
+  font-weight: 500;
+}

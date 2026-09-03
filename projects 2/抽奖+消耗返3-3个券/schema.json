@@ -4,7 +4,7 @@
   "title": "抽奖+消耗返3-3个券",
   "type": "atom",
   "category": "原子组件",
-  "description": "抽奖消耗返券组件，展示三档消耗金额和两张满赠券。",
+  "description": "抽奖消耗返券组件，展示三档消耗金额，每档可在抽奖任务和消耗返之间切换。",
   "reactComponent": "抽奖+消耗返3-3个券",
   "dimensions": {
     "width": 600,
@@ -72,14 +72,36 @@
       "3个券"
     ],
     "textProps": [
+      "rewardType1",
       "amountText1",
+      "rewardType2",
       "amountText2",
+      "rewardType3",
+      "amountText3",
       "consumeAmountText1",
       "consumeAmountText2",
       "consumeAmountText3"
     ]
   },
   "props": [
+    {
+      "key": "rewardType1",
+      "name": "rewardType1",
+      "label": "第1档类型",
+      "type": "select",
+      "default": "抽奖任务",
+      "options": [
+        {
+          "label": "抽奖任务",
+          "value": "抽奖任务"
+        },
+        {
+          "label": "消耗返",
+          "value": "消耗返"
+        }
+      ],
+      "description": "第一档玩法类型，可在抽奖任务和消耗返之间切换。"
+    },
     {
       "key": "amountText1",
       "name": "amountText1",
@@ -89,12 +111,56 @@
       "description": "第一张券金额数字，组件固定显示“元”单位。"
     },
     {
+      "key": "rewardType2",
+      "name": "rewardType2",
+      "label": "第2档类型",
+      "type": "select",
+      "default": "消耗返",
+      "options": [
+        {
+          "label": "抽奖任务",
+          "value": "抽奖任务"
+        },
+        {
+          "label": "消耗返",
+          "value": "消耗返"
+        }
+      ],
+      "description": "第二档玩法类型，可在抽奖任务和消耗返之间切换。"
+    },
+    {
       "key": "amountText2",
       "name": "amountText2",
       "label": "金额2",
       "type": "string",
       "default": "30",
       "description": "第二张券金额数字，组件固定显示“元”单位。"
+    },
+    {
+      "key": "rewardType3",
+      "name": "rewardType3",
+      "label": "第3档类型",
+      "type": "select",
+      "default": "消耗返",
+      "options": [
+        {
+          "label": "抽奖任务",
+          "value": "抽奖任务"
+        },
+        {
+          "label": "消耗返",
+          "value": "消耗返"
+        }
+      ],
+      "description": "第三档玩法类型，可在抽奖任务和消耗返之间切换。"
+    },
+    {
+      "key": "amountText3",
+      "name": "amountText3",
+      "label": "金额3",
+      "type": "string",
+      "default": "30",
+      "description": "第三张券金额数字，组件固定显示“元”单位。"
     },
     {
       "key": "consumeAmountText1",

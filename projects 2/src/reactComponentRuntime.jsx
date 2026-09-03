@@ -53,6 +53,7 @@ import LotteryLosePopup from "../弹窗-未中奖";
 import LotteryWinPopup from "../弹窗-中奖";
 import TitleDrawCount from "../标题+抽奖次数";
 import NoActivityNotice from "../无活动提示";
+import HeaderImage from "../头图";
 
 const roots = new WeakMap();
 
@@ -109,6 +110,7 @@ const componentMap = {
     "弹窗-中奖": LotteryWinPopup,
   "标题+抽奖次数": TitleDrawCount,
   "无活动提示": NoActivityNotice,
+  "头图": HeaderImage,
 };
 
 function parseProps(element) {
