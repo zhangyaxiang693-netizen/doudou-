@@ -36,7 +36,7 @@
       }
     },
     {
-      "text": "立即报名",
+      "text": "已报名",
       "family": "Source Han Sans CN",
       "weight": 700,
       "size": "32px",
@@ -103,7 +103,7 @@
       "name": "buttonText",
       "label": "按钮文案",
       "type": "string",
-      "default": "立即报名",
+      "default": "已报名",
       "description": "右侧按钮文案。"
     },
     {

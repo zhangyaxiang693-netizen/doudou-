@@ -48,11 +48,29 @@ function splitTitleLines(value: string) {
   return lines
 }
 
+function renderTitleTextWithNumberFont(value: string) {
+  const segments = value.split(/([0-9０-９]+)/g)
+  return segments.map((segment, index) => {
+    if (!segment) return null
+    if (/^[0-9０-９]+$/.test(segment)) {
+      return (
+        <span key={`${segment}-${index}`} className={styles.douyinNumber}>
+          {segment}
+        </span>
+      )
+    }
+    return segment
+  })
+}
+
 export default function GeneratedComponent(props: IGeneratedComponent) {
+  const hasText = props.text !== undefined && props.text !== null
   const text =
-    props.headlineText && (!props.text || props.text === '流量大奖')
+    props.headlineText && (!hasText || props.text === '流量大奖')
       ? `${props.headlineText}${props.text || '流量大奖'}`
-      : props.text || '抽666元流量大奖'
+      : hasText
+        ? props.text || ''
+        : '抽666元流量大奖'
   const titleLines = splitTitleLines(text)
   const dateText = props.dateText || '6月10日-6月21日'
   const mainTextColor = props.textColor || '#2C0113'
@@ -99,20 +117,20 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       <img src={props.mainVisualImage || mainVisualUrl} className={styles.image2} />
       <div className={styles.image3} style={ribbonStyle} />
       <div className={styles.wrap}>
-        <div className={styles.text} style={titleStyle}>
+        <div className={styles.text} style={titleStyle} data-react-edit-prop="text">
           {titleLines.map((line, index) => (
             <span
               key={`${line}-${index}`}
               className={`${styles.textLine} ${index === 0 ? styles.textLineGradient : styles.textLineSolid}`}
               style={index === 0 ? firstLineStyle : undefined}
             >
-              {line}
+              {renderTitleTextWithNumberFont(line)}
             </span>
           ))}
         </div>
         <div className={styles.container}>
           <div className={styles.content} style={buttonStyle}></div>
-          <div className={styles.text1}>{dateText}</div>
+          <div className={styles.text1} data-react-edit-prop="dateText">{dateText}</div>
         </div>
       </div>
     </div>

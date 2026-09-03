@@ -14,7 +14,7 @@ export type IGeneratedComponent = {
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
-  const buttonText = props.buttonText || '一键上热门'
+  const buttonText = props.buttonText && props.buttonText !== '立即生成报告' ? props.buttonText : '一键上热门'
   const titleText = props.titleText || '近一周的涨粉速度对比上周下降40%'
   const descriptionText = props.descriptionText || '建议投放「粉丝量」,\u00a0提升涨粉速度。'
   const buttonStyle =

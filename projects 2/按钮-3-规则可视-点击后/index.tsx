@@ -26,7 +26,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const actionText = props.actionText || '投放DOU+'
   const orderText = props.orderText || '≥2单'
   const targetText = props.targetText || '（投点赞评论\xa0/\xa0播放量\xa0/\xa0粉丝量目标）'
-  const buttonText = props.buttonText || '立即报名'
+  const buttonText = props.buttonText && props.buttonText !== '立即报名' ? props.buttonText : '已报名'
   const gradientStart = props.buttonGradientStart || originalColors.buttonGradientStart
   const gradientEnd = props.buttonGradientEnd || originalColors.buttonGradientEnd
   const buttonStyle =

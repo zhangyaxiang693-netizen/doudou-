@@ -67,7 +67,7 @@ const mockPrizeLibrary = [
   },
   {
     id: "douzi_family_pack",
-    name: "DOU仔全家福随机发",
+    name: "DOU仔随机周边",
     image: new URL("../九宫格-奖品库/dou仔周边全家福.png", import.meta.url).href,
     copy: "毛绒公仔/毛绒挂件/AI抖仔挂件/盲盒/冰箱贴\n随机发一件",
   },
@@ -314,7 +314,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     children: [
       ["模块标题-正常", {}],
       ["发券-样式3", {}],
-      ["按钮-3-规则可视-点击后", {}],
+      ["按钮-3-规则可视-点击后", { buttonText: "已报名" }],
       ["说明文-补充说明", {}],
     ],
     states: [
@@ -969,7 +969,6 @@ const pageTemplates = [
     nodes: [
       ["头图", {}],
       ["账户优惠券提示", {}],
-      ["内容诊断-样式1-点击前", {}],
       ["用户教育-攻略", {}],
       ["用户教育案例-样式2", {}],
       ["置底按钮", {}],
@@ -3276,7 +3275,6 @@ const state = {
   prdDemoStep: "upload",
   prdFileModalOpen: false,
   prdTextInput: "",
-  prdTextError: "",
   prdBlueprintPasteRows: normalizePrdBlueprintPasteRows([]),
   prdBlueprintPasteVersions: normalizePrdBlueprintPasteVersions([]),
   prdBlueprintPasteTemplateName: "",
@@ -3328,7 +3326,12 @@ const makeGuidedPageBackground = (colors = []) => {
 const makeGuidedPageBackgroundLower = (colors = []) => {
   const [top, upperMiddle, lowerMiddle, base] = colors;
   if (!top || !upperMiddle || !lowerMiddle || !base) return base || lowerMiddle || upperMiddle || top || "#ffffff";
-  return `linear-gradient(165deg, ${top} 0px, ${top} 40px, ${upperMiddle} 240px, ${lowerMiddle} 400px, ${base} 440px, ${base} 100%)`;
+  return `linear-gradient(165deg, ${top} 0px, ${top} 40px, ${upperMiddle} 280px, ${lowerMiddle} 440px, ${base} 480px, ${base} 100%)`;
+};
+const makeGuidedPageBackgroundLowerDeep = (colors = []) => {
+  const [top, upperMiddle, lowerMiddle, base] = colors;
+  if (!top || !upperMiddle || !lowerMiddle || !base) return base || lowerMiddle || upperMiddle || top || "#ffffff";
+  return `linear-gradient(165deg, ${top} 0px, ${top} 40px, ${upperMiddle} 280px, ${lowerMiddle} 480px, ${base} 520px, ${base} 100%)`;
 };
 const guidedPageThemePresets = [
   {
@@ -3404,7 +3407,7 @@ const guidedPageThemePresets = [
   {
     id: "node-anniversary",
     name: "节点色系-周年庆",
-    background: makeGuidedPageBackgroundLower(["#9B0C33", "#F1446D", "#FFCFD9", "#FFECEE"]),
+    background: makeGuidedPageBackgroundLowerDeep(["#9B0C33", "#F1446D", "#FFCFD9", "#FFECEE"]),
     solidBackground: "#FFE8E8",
     primary: "#9B0C33",
     secondary: "#FFECEE",
@@ -3454,7 +3457,7 @@ const guidedPageThemePresets = [
   {
     id: "node-mid-autumn",
     name: "节点色系-中秋",
-    background: makeGuidedPageBackgroundLower(["#4B1E7B", "#A141B6", "#FFD7EF", "#FFE6F5"]),
+    background: makeGuidedPageBackgroundLowerDeep(["#4B1E7B", "#A141B6", "#FFD7EF", "#FFE6F5"]),
     solidBackground: "#FFE8FA",
     primary: "#4B1E7B",
     secondary: "#FFE6F5",
@@ -3464,7 +3467,7 @@ const guidedPageThemePresets = [
   {
     id: "node-double-11",
     name: "节点色系-双11",
-    background: makeGuidedPageBackground(["#FF7A21", "#FFD06A", "#FFF2CD", "#FFF0CD"]),
+    background: makeGuidedPageBackgroundLower(["#FF7A21", "#FFD06A", "#FFF2CD", "#FFF0CD"]),
     solidBackground: "#FFF7E8",
     primary: "#FF7A21",
     secondary: "#FFF0CD",
@@ -5443,6 +5446,7 @@ function findPrizeLibraryItemByText(value) {
     dou官方推荐机会: "official_recommendation",
     "dou+官方推荐机会": "official_recommendation",
     dou仔周边: "douzi_merch",
+    dou仔随机周边: "douzi_family_pack",
     dou仔全家福: "douzi_family_pack",
     dou仔全家福随机发: "douzi_family_pack",
     dou仔周边全家福: "douzi_family_pack",
@@ -7246,27 +7250,6 @@ function renderPrdFileModal() {
               ${escapeHtml(state.prdBlueprintPasteError || "支持文档原表格式；返券策略表会自动转换为纵向版本")}
             </span>
             <button type="button" data-prd-blueprint-table-submit>使用蓝图表格</button>
-          </div>
-        </div>
-        <div class="prd-file-divider"><span>或粘贴普通文本</span></div>
-        <div class="prd-text-import">
-          <div class="prd-text-import-head">
-            <div>
-              <strong>粘贴 PRD 文本</strong>
-              <span>支持“字段：内容”格式，也可以直接粘贴完整正文</span>
-            </div>
-            <em>文本</em>
-          </div>
-          <textarea
-            rows="6"
-            placeholder="例如：&#10;模板3 抽奖 + 消耗返&#10;活动名称：夏日消耗返活动&#10;核心权益｜big-day发券：..."
-            data-prd-text-input
-          >${escapeHtml(state.prdTextInput)}</textarea>
-          <div class="prd-text-import-actions">
-            <span class="${state.prdTextError ? "error" : ""}">
-              ${escapeHtml(state.prdTextError || "粘贴后将转换为可编辑的 PRD 信息表")}
-            </span>
-            <button type="button" data-prd-text-submit>使用文本 PRD</button>
           </div>
         </div>
         <footer>
@@ -13634,6 +13617,32 @@ function renderGuidedNode(node) {
   `;
 }
 
+function refreshGuidedReactNodeContent(node, propKey, caretOffset) {
+  if (state.view !== "guided-preview" || !node?.id) return false;
+  const content = document.querySelector(
+    `.guided-node[data-node-id="${CSS.escape(node.id)}"] .guided-node-theme-content`,
+  );
+  if (!content) return false;
+  content.innerHTML = renderComponent(node);
+  window.renderReactMaterials?.();
+  const nextEditable = content.querySelector(
+    `[data-edit-prop="${CSS.escape(propKey)}"]`,
+  );
+  if (nextEditable) restoreTextOffsetWithin(nextEditable, caretOffset);
+  syncMeasuredComponentFrames();
+  positionContextControls();
+  return true;
+}
+
+function shouldRefreshGuidedHeaderEditable(node, propKey, event) {
+  return (
+    state.view === "guided-preview" &&
+    node?.schemaId === "头图" &&
+    propKey === "text" &&
+    !event.isComposing
+  );
+}
+
 function getGuidedInlineStateLabel(entry) {
   return entry.id === "default" ? "点击前" : entry.id === "clicked" || entry.id === "registered" ? "点击后" : entry.name;
 }
@@ -16432,6 +16441,7 @@ function getExportFilenameSegments(value) {
     "默认版本",
     "默认状态",
     "系统状态",
+    "默认文案",
   ]);
   return String(value || "")
     .split(/\s*·\s*/)
@@ -16439,8 +16449,20 @@ function getExportFilenameSegments(value) {
     .filter((item) => item && !omittedLabels.has(item.replace(/\s+/g, "")));
 }
 
-function makeGuidedExportFilename(moduleTitle, nodeIndex, dimensionTitle, variantTitle) {
+function makeGuidedExportFilename(moduleTitle, nodeIndex, dimensionTitle, variantTitle, options = {}) {
+  const pageName = options.pageName || "";
+  const exportKind = options.exportKind || "";
+  const pageSegments = getExportFilenameSegments(pageName);
+  if (exportKind === "page-background") {
+    const segments = [
+      ...pageSegments,
+      "页面背景",
+      ...getExportFilenameSegments(variantTitle || "背景+头图"),
+    ];
+    return `${sanitizeExportFilename(segments.join("_") || "页面背景")}.png`;
+  }
   const segments = [
+    ...pageSegments,
     ...getExportFilenameSegments(moduleTitle),
     ...getExportFilenameSegments(dimensionTitle),
     ...getExportFilenameSegments(variantTitle),
@@ -16453,8 +16475,17 @@ function makeGuidedExportFilename(moduleTitle, nodeIndex, dimensionTitle, varian
           normalizePageTemplateLookupName(segment),
       ) === index,
   );
-  const sequence = String(nodeIndex + 1).padStart(2, "0");
-  return `${sanitizeExportFilename(`${sequence}_${uniqueSegments.join("_") || "切图"}`)}.png`;
+  return `${sanitizeExportFilename(uniqueSegments.join("_") || "切图")}.png`;
+}
+
+function getGuidedExportPageName(page) {
+  if (!page) return "页面";
+  if (page.isSystemFallback) {
+    const fallbackIndex = state.pages.filter((item) => item?.isSystemFallback).findIndex((item) => item.id === page.id);
+    return `兜底页面${fallbackIndex >= 0 ? fallbackIndex + 1 : ""}`;
+  }
+  const mainIndex = state.pages.filter((item) => !item?.isSystemFallback).findIndex((item) => item.id === page.id);
+  return mainIndex > 0 ? `主页面${mainIndex + 1}` : "主页面";
 }
 
 function getExportEntryDimensions(entry) {
@@ -16669,16 +16700,21 @@ function makeGuidedCutExportEntry({
 }) {
   const moduleTitle = getExportNodeTitle(node);
   const moduleFolderTitle = `${String(nodeIndex + 1).padStart(2, "0")}_${moduleTitle}`;
+  const pageName = getGuidedExportPageName(page);
   const fileName = makeGuidedExportFilename(
     moduleTitle,
     nodeIndex,
     dimensionTitle,
     variantTitle,
+    {
+      pageName,
+      exportKind,
+    },
   );
   return {
     id: [page.id, node.id, ...idParts].map(sanitizeExportFilename).join("__"),
     pageId: page.id,
-    pageName: page.name || `页面 ${state.pages.indexOf(page) + 1}`,
+    pageName,
     pageTheme: getGuidedPageTheme(page),
     nodeId: node.id,
     moduleTitle,
@@ -16691,7 +16727,7 @@ function makeGuidedCutExportEntry({
     dimensions,
     fileName,
     filePath: [
-      sanitizeExportFilename(page.name || page.id || "页面"),
+      sanitizeExportFilename(pageName),
       fileName,
     ].join("/"),
   };
@@ -16849,8 +16885,8 @@ function getCaseShowcaseGuidedCutExportEntries(page, node, nodeIndex) {
 function getNodeGuideGuidedCutExportEntries(page, node, nodeIndex) {
   const cardSpecs = [
     { prop: "card1IndustryTitle", title: "服装配饰行业", offsetX: 0, offsetY: 0 },
-    { prop: "card2IndustryTitle", title: "文体娱乐行业", offsetX: 680, offsetY: 5.4 },
-    { prop: "card3IndustryTitle", title: "餐饮服务行业", offsetX: 1356.5, offsetY: 0 },
+    { prop: "card2IndustryTitle", title: "文体娱乐行业", offsetX: 680, offsetY: 0 },
+    { prop: "card3IndustryTitle", title: "餐饮服务行业", offsetX: 1360, offsetY: 0 },
     { prop: "card4IndustryTitle", title: "传媒资讯行业", offsetX: 2040, offsetY: 0 },
   ];
 
@@ -17081,18 +17117,23 @@ function createGuidedPageBackgroundExportEntry(page) {
   const moduleFolderTitle = "00_背景";
   const dimensionTitle = "页面背景";
   const variantTitle = "背景+头图";
+  const pageName = getGuidedExportPageName(page);
   const fileName = makeGuidedExportFilename(
     moduleTitle,
     -1,
     dimensionTitle,
     variantTitle,
+    {
+      pageName,
+      exportKind: "page-background",
+    },
   );
   return {
     id: [page.id, "page-background", "header"]
       .map(sanitizeExportFilename)
       .join("__"),
     pageId: page.id,
-    pageName: page.name || `页面 ${state.pages.indexOf(page) + 1}`,
+    pageName,
     pageTheme: getGuidedPageTheme(page),
     moduleTitle,
     moduleFolderTitle,
@@ -17107,7 +17148,7 @@ function createGuidedPageBackgroundExportEntry(page) {
     },
     fileName,
     filePath: [
-      sanitizeExportFilename(page.name || page.id || "页面"),
+      sanitizeExportFilename(pageName),
       fileName,
     ].join("/"),
   };
@@ -17142,8 +17183,35 @@ function getGuidedFallbackContentExportEntries(page) {
   );
 }
 
+function getChineseCounter(value) {
+  return ["", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"][value] || String(value);
+}
+
+function uniquifyGuidedExportFilenames(entries) {
+  const seen = new Map();
+  return entries.map((entry) => {
+    const pageFolder = sanitizeExportFilename(
+      entry.exportKind === "lottery-popup"
+        ? "弹窗"
+        : entry.pageName || entry.pageId || "页面",
+    );
+    const baseName = String(entry.fileName || "切图.png").replace(/\.png$/i, "");
+    const key = `${pageFolder}/${sanitizeExportFilename(baseName)}`;
+    const count = (seen.get(key) || 0) + 1;
+    seen.set(key, count);
+    const fileName = count > 1
+      ? `${sanitizeExportFilename(`${baseName}_副本${getChineseCounter(count)}`)}.png`
+      : `${sanitizeExportFilename(baseName)}.png`;
+    return {
+      ...entry,
+      fileName,
+      filePath: [pageFolder, fileName].join("/"),
+    };
+  });
+}
+
 function getGuidedCutExportEntries() {
-  return state.pages.flatMap((page) => {
+  const entries = state.pages.flatMap((page) => {
     const pageBackgroundEntry = createGuidedPageBackgroundExportEntry(page);
     if (page.isSystemFallback) {
       return [
@@ -17157,6 +17225,7 @@ function getGuidedCutExportEntries() {
     );
     return [pageBackgroundEntry, ...nodeEntries];
   });
+  return uniquifyGuidedExportFilenames(entries);
 }
 
 function renderCaseShowcaseExportContent(entry) {
@@ -17629,7 +17698,7 @@ async function downloadGuidedExportBatch() {
     files.sort((a, b) => a.path.localeCompare(b.path, "zh-Hans-CN"));
     if (button) button.textContent = "正在打包 ZIP";
     const zipBlob = createZipBlob(files);
-    downloadBlob(`${sanitizeExportFilename(state.activity?.name || "活动切图")}.zip`, zipBlob);
+    downloadBlob(`${sanitizeExportFilename(`${state.activity?.name || "活动"}切图`)}.zip`, zipBlob);
     if (failed.length) {
       window.alert(`已导出 ${files.length} 张，${failed.length} 张失败。`);
     }
@@ -18074,7 +18143,6 @@ function bindEvents() {
     if (event.target.closest("[data-placement-case-scrollbar]")) return;
 
     if (event.target.closest("[data-demo-open-file-modal]")) {
-      state.prdTextError = "";
       state.prdBlueprintPasteError = "";
       if (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID) {
         state.selectedDemoPackageId = demoActivityPackage.id;
@@ -18111,31 +18179,6 @@ function bindEvents() {
       state.prdTableBlueprintSignature = "";
       state.selectedDemoPackageId = PRD_TABLE_PACKAGE_ID;
       state.prdBlueprintPasteError = "";
-      state.prdTextError = "";
-      startPrdParsing();
-      return;
-    }
-
-    if (event.target.closest("[data-prd-text-submit]")) {
-      const textInput = event.target
-        .closest("[data-demo-file-modal]")
-        ?.querySelector("[data-prd-text-input]");
-      state.prdTextInput = textInput?.value || state.prdTextInput;
-      const rows = parsePrdPlainTextRows(state.prdTextInput);
-      if (!state.prdTextInput.trim() || !rows.length) {
-        state.prdTextError = "请先粘贴 PRD 文本";
-        render();
-        requestAnimationFrame(() => {
-          document.querySelector("[data-prd-text-input]")?.focus();
-        });
-        return;
-      }
-      state.prdTableRows = normalizePrdTableRows(rows);
-      state.prdManualModuleVersions = {};
-      state.prdTableBlueprint = null;
-      state.prdTableBlueprintSignature = "";
-      state.selectedDemoPackageId = PRD_TABLE_PACKAGE_ID;
-      state.prdTextError = "";
       startPrdParsing();
       return;
     }
@@ -19950,20 +19993,6 @@ function bindEvents() {
       return;
     }
 
-    const prdTextInput = event.target.closest("[data-prd-text-input]");
-    if (prdTextInput) {
-      state.prdTextInput = prdTextInput.value;
-      state.prdTextError = "";
-      const status = prdTextInput
-        .closest(".prd-text-import")
-        ?.querySelector(".prd-text-import-actions span");
-      if (status) {
-        status.classList.remove("error");
-        status.textContent = "粘贴后将转换为可编辑的 PRD 信息表";
-      }
-      return;
-    }
-
     const prdVersionNameInput = event.target.closest("[data-prd-version-name]");
     if (prdVersionNameInput) {
       renameManualModuleBlueprintVersion(
@@ -20415,6 +20444,7 @@ function bindEvents() {
     if (!found) return;
 
     if (prop) {
+      const caretOffset = getTextOffsetWithin(prop);
       const value = prop.textContent;
       const propKey = prop.dataset.editProp;
       found.node.props[propKey] = value;
@@ -20434,6 +20464,12 @@ function bindEvents() {
         syncLotteryPopupCurrentPrizeCopy(found.node);
         syncPopupPrizesToSourceLottery(found.node);
       }
+      if (
+        shouldRefreshGuidedHeaderEditable(found.node, propKey, event) &&
+        refreshGuidedReactNodeContent(found.node, propKey, caretOffset)
+      ) {
+        return;
+      }
       syncMeasuredComponentFrames();
       positionContextControls();
       return;
@@ -20448,10 +20484,47 @@ function bindEvents() {
         found.node.props[variantProp.dataset.variantProp] = value;
         const canvasField = document.querySelector(`[data-node-id="${found.node.id}"] [data-edit-prop="${variantProp.dataset.variantProp}"]`);
         if (canvasField) canvasField.textContent = value;
+        if (
+          shouldRefreshGuidedHeaderEditable(found.node, variantProp.dataset.variantProp, event) &&
+          refreshGuidedReactNodeContent(found.node, variantProp.dataset.variantProp, getTextOffsetWithin(variantProp))
+        ) {
+          return;
+        }
       }
       syncGuidedInlineEditToSource(found, variant.id, variantProp.dataset.variantProp, value);
       positionContextControls();
     }
+  });
+
+  document.addEventListener("compositionend", (event) => {
+    if (state.view !== "guided-preview") return;
+    const prop = event.target.closest("[data-edit-prop]");
+    const variantProp = event.target.closest("[data-variant-prop]");
+    const propKey = prop?.dataset.editProp || variantProp?.dataset.variantProp;
+    if (propKey !== "text") return;
+    const editingNodeId = (prop || variantProp)?.closest("[data-node-id]")?.dataset.nodeId;
+    const found = findNode(state.nodes, editingNodeId || state.selectedId);
+    if (!found?.node || !shouldRefreshGuidedHeaderEditable(found.node, propKey, event)) return;
+    const target = prop || variantProp;
+    const value = target.textContent;
+    if (prop) {
+      found.node.props[propKey] = value;
+      const activeVariant = found.node.variants?.find((item) => item.id === found.node.activeVariantId);
+      if (activeVariant && propKey in activeVariant.props) activeVariant.props[propKey] = value;
+      syncGuidedInlineEditToSource(
+        found,
+        found.parent?.activeLineageVariantId || found.node.activeLineageVariantId || "base",
+        propKey,
+        value,
+      );
+    } else if (variantProp) {
+      const variant = found.node.variants?.find((item) => item.id === variantProp.dataset.variantId);
+      if (!variant) return;
+      variant.props[propKey] = value;
+      if (found.node.activeVariantId === variant.id) found.node.props[propKey] = value;
+      syncGuidedInlineEditToSource(found, variant.id, propKey, value);
+    }
+    refreshGuidedReactNodeContent(found.node, propKey, getTextOffsetWithin(target));
   });
 
   document.addEventListener("focusout", (event) => {

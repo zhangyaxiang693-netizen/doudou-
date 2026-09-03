@@ -147,12 +147,18 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   })
   const selectedIndex = Math.max(1, Math.min(availablePrizeCount, Number(selectedPrizeIndex) || 1))
   const selectedPrize = prizes[selectedIndex - 1]
-  const displayedPrizeText = prizeText || selectedPrize.name
+  const normalizedSelectedPrizeName = selectedPrize.name.replace(/\s+/g, '')
+  const displayedPrizeText = prizeText || (
+    normalizedSelectedPrizeName.includes('全家福随机发') || normalizedSelectedPrizeName.includes('周边全家福')
+      ? 'DOU仔随机周边'
+      : selectedPrize.name
+  )
   const displayedPrizeSubText = prizeSubText || selectedPrize.copy || '满30元赠价值5元流量'
   const isTrafficCouponPrize = /^(?:5|6|10)元流量券$/.test(selectedPrize.name)
   const isOfficialRecommendationPrize = selectedPrize.name === 'DOU+官方推荐机会'
   const isDouziFamilyPackPrize = selectedPrize.name === 'DOU仔周边全家福' ||
     selectedPrize.name === 'DOU仔全家福' ||
+    selectedPrize.name === 'DOU仔随机周边' ||
     selectedPrize.name === 'DOU仔全家福随机发'
   const isContentDiagnosisPrize = selectedPrize.name === '内容诊断积分'
   const hasNoSubText = selectedPrize.name === '1314元心动券包' ||

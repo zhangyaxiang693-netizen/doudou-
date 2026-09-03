@@ -89,7 +89,7 @@
       "props": {
         "buttonGradientStart": "#FF1473",
         "buttonGradientEnd": "#FF229F",
-        "backgroundGradientColor": "#FFE0A8"
+        "backgroundGradientColor": "#5FC7DE"
       }
     },
     {
@@ -197,7 +197,7 @@
       "props": {
         "buttonGradientStart": "#FF4501",
         "buttonGradientEnd": "#FF7C02",
-        "backgroundGradientColor": "#FFECA3"
+        "backgroundGradientColor": "#FFC8A8"
       }
     },
     {

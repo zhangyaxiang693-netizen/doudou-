@@ -232,6 +232,11 @@ function findPartialTextTarget(host, value, usedTargets) {
   )[0];
 }
 
+function findExplicitEditableTarget(host, key, usedTargets) {
+  const target = host.querySelector(`[data-react-edit-prop="${CSS.escape(key)}"]`);
+  return target && !usedTargets.has(target) ? target : null;
+}
+
 function renderEmbeddedLineageTextDiff(fullText, value, initialValue) {
   const source = String(fullText ?? "");
   const current = String(value ?? "");
@@ -267,11 +272,13 @@ function markEditableFields(host, props) {
   const usedTargets = new WeakSet();
 
   Object.entries(props).forEach(([key, value]) => {
-    if (key === "className" || value == null || value === "") return;
+    if (key === "className" || value == null) return;
     if (typeof value !== "string" && typeof value !== "number") return;
+    const explicitTarget = findExplicitEditableTarget(host, key, usedTargets);
     const targetText = normalizeText(value);
-    if (!targetText.length) return;
+    if (!targetText.length && !explicitTarget) return;
     const target =
+      explicitTarget ||
       findExactTextTarget(host, targetText, usedTargets) ||
       findPartialTextTarget(host, value, usedTargets);
     if (!target) return;
