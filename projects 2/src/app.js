@@ -1478,56 +1478,105 @@ function parsePrdDocumentStandardTable(rows, templateName) {
 }
 
 function parsePrdDocumentReturnTier(value) {
-  const match = String(value || "")
+  const text = String(value || "")
     .replace(/\s+/g, "")
-    .match(/送满([\d.]+)赠([\d.]+)/);
+    .replace(/元/g, "");
+  const thresholdMatch = text.match(/(?:累计现金消耗)?(?:≥|>=|满)([\d.]+)/);
+  const rewardMatch = text.match(/赠(?:价值)?([\d.]+)/);
   return {
-    threshold: match?.[1] || "",
-    reward: match?.[2] || "",
+    threshold: thresholdMatch?.[1] || "",
+    reward: rewardMatch?.[1] || "",
   };
 }
 
+function getPrdDocumentReturnStrategyHeaderIndex(rows) {
+  return rows.findIndex((cells) => {
+    const firstCell = normalizePageTemplateLookupName(cells[0]);
+    if (
+      firstCell !== normalizePageTemplateLookupName("人群策略") &&
+      firstCell !== normalizePageTemplateLookupName("人群版本")
+    ) {
+      return false;
+    }
+    return cells
+      .slice(1)
+      .some((cell) => /第[1-4一二三四]档/.test(String(cell || "")));
+  });
+}
+
+function getPrdDocumentReturnTierIndex(value) {
+  const match = String(value || "").match(/第([1-4一二三四])档/);
+  const chineseTierMap = { 一: 1, 二: 2, 三: 3, 四: 4 };
+  return Number(chineseTierMap[match?.[1]] || match?.[1] || 0);
+}
+
+function getPrdDocumentReturnTierType(headerValue, tierValue) {
+  const headerText = String(headerValue || "").replace(/\s+/g, "");
+  if (tierValue.reward || /赠(?:价值)?[\d.]+/.test(headerText)) return "消耗返";
+  if (/消耗返/.test(headerText)) return "消耗返";
+  if (/抽奖/.test(headerText)) return "抽奖任务";
+  return tierValue.reward ? "消耗返" : "抽奖任务";
+}
+
+function getPrdDocumentReturnTierColumns(headerCells = []) {
+  return headerCells
+    .map((cell, index) => ({
+      sourceIndex: index,
+      header: String(cell || "").trim(),
+      tier: getPrdDocumentReturnTierIndex(cell),
+    }))
+    .filter((item) => item.tier)
+    .sort((left, right) => left.tier - right.tier);
+}
+
 function parsePrdDocumentReturnStrategyTable(rows) {
-  const headerIndex = getPrdDocumentTableHeaderIndex(rows, "人群策略");
+  const headerIndex = getPrdDocumentReturnStrategyHeaderIndex(rows);
   if (headerIndex < 0) return null;
+  const tierColumns = getPrdDocumentReturnTierColumns(rows[headerIndex]);
+  if (!tierColumns.length) return null;
   const records = rows
     .slice(headerIndex + 1)
     .map((cells) => {
       const name = String(cells[0] || "").trim();
-      const drawThreshold =
-        String(cells[1] || "").replace(/\s+/g, "").match(/(?:≥|>=|满)([\d.]+)/)?.[1] ||
-        "";
-      const tiers = [2, 3, 4].map((index) =>
-        parsePrdDocumentReturnTier(cells[index]),
-      );
-      return { name, drawThreshold, tiers };
+      const tiers = tierColumns.map((column) => {
+        const tier = parsePrdDocumentReturnTier(cells[column.sourceIndex]);
+        return {
+          ...tier,
+          index: column.tier,
+          type: getPrdDocumentReturnTierType(column.header, tier),
+        };
+      });
+      return { name, tiers };
     })
     .filter(
       (record) =>
-        record.name &&
-        record.drawThreshold &&
-        record.tiers.some((tier) => tier.threshold || tier.reward),
+        record.name && record.tiers.some((tier) => tier.threshold || tier.reward),
     );
   if (!records.length) return null;
-  const hasFourthTier = records.some((record) =>
-    record.tiers[2]?.threshold || record.tiers[2]?.reward,
+  const maxTier = Math.max(
+    ...tierColumns.map((column) => column.tier),
+    ...records.flatMap((record) =>
+      record.tiers
+        .filter((tier) => tier.threshold || tier.reward)
+        .map((tier) => tier.index),
+    ),
   );
-  const tierCount = hasFourthTier ? 4 : 3;
-  const fieldValues = [
-    ["第1档 · 类型", records.map(() => "抽奖任务")],
-    ["第1档 · 消耗门槛", records.map((record) => record.drawThreshold)],
-    ["第2档 · 类型", records.map(() => "消耗返")],
-    ["第2档 · 券金额", records.map((record) => record.tiers[0].reward)],
-    ["第2档 · 消耗门槛", records.map((record) => record.tiers[0].threshold)],
-    ["第3档 · 类型", records.map(() => "消耗返")],
-    ["第3档 · 券金额", records.map((record) => record.tiers[1].reward)],
-    ["第3档 · 消耗门槛", records.map((record) => record.tiers[1].threshold)],
-  ];
-  if (tierCount === 4) {
+  const tierCount = maxTier >= 4 ? 4 : 3;
+  const fieldValues = [];
+  for (let tierIndex = 1; tierIndex <= tierCount; tierIndex += 1) {
     fieldValues.push(
-      ["第4档 · 类型", records.map(() => "消耗返")],
-      ["第4档 · 券金额", records.map((record) => record.tiers[2].reward)],
-      ["第4档 · 消耗门槛", records.map((record) => record.tiers[2].threshold)],
+      [
+        `第${tierIndex}档 · 类型`,
+        records.map((record) => record.tiers.find((tier) => tier.index === tierIndex)?.type || ""),
+      ],
+      [
+        `第${tierIndex}档 · 券金额`,
+        records.map((record) => record.tiers.find((tier) => tier.index === tierIndex)?.reward || ""),
+      ],
+      [
+        `第${tierIndex}档 · 消耗门槛`,
+        records.map((record) => record.tiers.find((tier) => tier.index === tierIndex)?.threshold || ""),
+      ],
     );
   }
   return {
