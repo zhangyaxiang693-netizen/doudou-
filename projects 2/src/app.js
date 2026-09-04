@@ -1489,21 +1489,6 @@ function parsePrdDocumentReturnTier(value) {
   };
 }
 
-function getPrdDocumentReturnStrategyHeaderIndex(rows) {
-  return rows.findIndex((cells) => {
-    const firstCell = normalizePageTemplateLookupName(cells[0]);
-    if (
-      firstCell !== normalizePageTemplateLookupName("人群策略") &&
-      firstCell !== normalizePageTemplateLookupName("人群版本")
-    ) {
-      return false;
-    }
-    return cells
-      .slice(1)
-      .some((cell) => /第[1-4一二三四]档/.test(String(cell || "")));
-  });
-}
-
 function getPrdDocumentReturnTierIndex(value) {
   const match = String(value || "").match(/第([1-4一二三四])档/);
   const chineseTierMap = { 一: 1, 二: 2, 三: 3, 四: 4 };
@@ -1529,15 +1514,35 @@ function getPrdDocumentReturnTierColumns(headerCells = []) {
     .sort((left, right) => left.tier - right.tier);
 }
 
+function getPrdDocumentReturnStrategyHeader(rows = []) {
+  const nameHeaders = new Set([
+    normalizePageTemplateLookupName("人群策略"),
+    normalizePageTemplateLookupName("人群版本"),
+  ]);
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const cells = rows[rowIndex] || [];
+    const nameColumnIndex = cells.findIndex((cell) =>
+      nameHeaders.has(normalizePageTemplateLookupName(cell)),
+    );
+    if (nameColumnIndex < 0) continue;
+    const tierColumns = getPrdDocumentReturnTierColumns(cells).filter(
+      (column) => column.sourceIndex > nameColumnIndex,
+    );
+    if (tierColumns.length) {
+      return { rowIndex, nameColumnIndex, tierColumns };
+    }
+  }
+  return null;
+}
+
 function parsePrdDocumentReturnStrategyTable(rows) {
-  const headerIndex = getPrdDocumentReturnStrategyHeaderIndex(rows);
-  if (headerIndex < 0) return null;
-  const tierColumns = getPrdDocumentReturnTierColumns(rows[headerIndex]);
-  if (!tierColumns.length) return null;
+  const header = getPrdDocumentReturnStrategyHeader(rows);
+  if (!header) return null;
+  const { rowIndex: headerIndex, nameColumnIndex, tierColumns } = header;
   const records = rows
     .slice(headerIndex + 1)
     .map((cells) => {
-      const name = String(cells[0] || "").trim();
+      const name = String(cells[nameColumnIndex] || "").trim();
       const tiers = tierColumns.map((column) => {
         const tier = parsePrdDocumentReturnTier(cells[column.sourceIndex]);
         return {
@@ -1617,22 +1622,23 @@ function adaptPrdDocumentClipboardTables(
   const hasDocumentTable = tables.some(
     (rows) =>
       getPrdDocumentTableHeaderIndex(rows, "") >= 0 ||
-      getPrdDocumentTableHeaderIndex(rows, "人群策略") >= 0 ||
+      Boolean(getPrdDocumentReturnStrategyHeader(rows)) ||
       getPrdDocumentTableHeaderIndex(rows, "页面模块顺序") >= 0,
   );
   if (!hasDocumentTable) return null;
-  if (!templateName) {
-    return { error: "请先选择本次粘贴对应的页面模板" };
-  }
-
   const returnStrategy = tables
     .map(parsePrdDocumentReturnStrategyTable)
     .find(Boolean);
   const guideTable = tables
     .map(parsePrdDocumentGuideTable)
     .find(Boolean);
+  const resolvedTemplateName = templateName || (returnStrategy ? "模板3 抽奖 + 消耗返" : "");
+  if (!resolvedTemplateName) {
+    return { error: "请先选择本次粘贴对应的页面模板" };
+  }
+
   const standardTables = tables
-    .map((rows) => parsePrdDocumentStandardTable(rows, templateName))
+    .map((rows) => parsePrdDocumentStandardTable(rows, resolvedTemplateName))
     .filter(Boolean);
   if (!standardTables.length && !returnStrategy && !guideTable) {
     return { error: "未识别到该模板的模块字段，请确认复制了完整表格" };
@@ -1651,7 +1657,7 @@ function adaptPrdDocumentClipboardTables(
 
   const outputRows = [
     ["模块", "字段", ...versions],
-    ["页面基础信息", "页面类型", templateName, ...versions.slice(1).map(() => "")],
+    ["页面基础信息", "页面类型", resolvedTemplateName, ...versions.slice(1).map(() => "")],
   ];
   standardTables.forEach((table) => {
     table.fields.forEach((field) => {
@@ -1675,7 +1681,7 @@ function adaptPrdDocumentClipboardTables(
   return {
     rows: outputRows,
     versions,
-    templateName,
+    templateName: resolvedTemplateName,
     guideStateId: guideTable?.stateId || "",
   };
 }
@@ -7118,7 +7124,6 @@ function renderPrdBlueprintReturnStrategyTable(group, versions) {
     ),
   ).sort((left, right) => left - right);
   const tiers = tierIndexes.length ? tierIndexes : [1, 2, 3, 4];
-  const consumeTiers = tiers.filter((tier) => tier > 1);
   return `
     <section
       class="prd-blueprint-module-paste is-return-strategy"
@@ -7134,41 +7139,52 @@ function renderPrdBlueprintReturnStrategyTable(group, versions) {
       >
         <div class="prd-blueprint-return-paste-head">
           <span>人群策略</span>
-          <span>第1档 · 抽奖任务</span>
-          ${consumeTiers.map((tier) => `
-            <span>第${tier}档 · 消耗返（门槛${tier - 1}）</span>
-          `).join("")}
+          ${tiers.map((tier) => {
+            const type = getPrdBlueprintPasteFieldValue(
+              group.rows,
+              moduleName,
+              `第${tier}档 · 类型`,
+              0,
+            );
+            return `
+              <span>第${tier}档${type ? ` · ${escapeHtml(type)}` : ""}</span>
+            `;
+          }).join("")}
         </div>
         ${versions.map((version, versionIndex) => {
-          const drawThreshold = getPrdBlueprintPasteFieldValue(
-            group.rows,
-            moduleName,
-            "第1档 · 消耗门槛",
-            versionIndex,
-          );
-          const tierValues = consumeTiers.map((tier) => ({
-            threshold: getPrdBlueprintPasteFieldValue(
+          const tierValues = tiers.map((tier) => {
+            const type = getPrdBlueprintPasteFieldValue(
               group.rows,
               moduleName,
-              `第${tier}档 · 消耗门槛`,
+              `第${tier}档 · 类型`,
               versionIndex,
-            ),
-            reward: getPrdBlueprintPasteFieldValue(
-              group.rows,
-              moduleName,
-              `第${tier}档 · 券金额`,
-              versionIndex,
-            ),
-          }));
+            );
+            return {
+              type,
+              threshold: getPrdBlueprintPasteFieldValue(
+                group.rows,
+                moduleName,
+                `第${tier}档 · 消耗门槛`,
+                versionIndex,
+              ),
+              reward: getPrdBlueprintPasteFieldValue(
+                group.rows,
+                moduleName,
+                `第${tier}档 · 券金额`,
+                versionIndex,
+              ),
+            };
+          });
           return `
             <div class="prd-blueprint-return-paste-row">
               <div contenteditable="true" data-prd-return-strategy-paste-target>${escapeHtml(version)}</div>
-              <div contenteditable="true" data-prd-return-strategy-paste-target>${escapeHtml(drawThreshold ? `累计现金消耗≥${drawThreshold}元` : "")}</div>
               ${tierValues.map((tier) => `
                 <div contenteditable="true" data-prd-return-strategy-paste-target>${escapeHtml(
-                  tier.threshold && tier.reward
-                    ? `送满${tier.threshold}赠${tier.reward}`
-                    : "",
+                  tier.threshold && tier.reward && tier.type !== "抽奖任务"
+                    ? `满${tier.threshold}赠${tier.reward}`
+                    : tier.threshold
+                      ? `满${tier.threshold}`
+                      : "",
                 )}</div>
               `).join("")}
             </div>
@@ -7183,41 +7199,40 @@ function renderPrdBlueprintModulePasteTables(rows, versions, templateName) {
   if (!templateName) {
     return `<div class="prd-blueprint-paste-empty">请先选择页面模板</div>`;
   }
+  const templateRows = rows.map((row, rowIndex) => ({ row, rowIndex }));
   const templateId = PRD_PAGE_TEMPLATE_ID_BY_NAME[templateName];
   const specs = PRD_PAGE_TEMPLATE_INPUT_SPECS[templateId] || [];
   if (!specs.length) {
     return `<div class="prd-blueprint-paste-empty">该模板没有需要粘贴的变量表格</div>`;
   }
-  const indexedRows = rows.map((row, rowIndex) => ({ row, rowIndex }));
-  return specs.map((spec) => {
-    const moduleRows = indexedRows.filter(
+  const groups = specs.map((spec) => {
+    const standardRows = templateRows.filter(
       (item) =>
         normalizePageTemplateLookupName(item.row.module) ===
         normalizePageTemplateLookupName(spec.moduleName),
     );
-    const returnFieldNames = new Set(
-      spec.sections
-        .filter((section) => section.title === "返券配置")
-        .flatMap((section) =>
-          section.fields.map(([, label]) => normalizePageTemplateLookupName(label)),
-        ),
-    );
-    const standardRows = moduleRows.filter(
-      (item) =>
-        !returnFieldNames.has(normalizePageTemplateLookupName(item.row.field)),
-    );
-    const standardTable = renderPrdBlueprintStandardModuleTable(
-      { module: spec.moduleName, rows: standardRows },
-      versions,
-    );
-    if (!returnFieldNames.size) return standardTable;
-    return `
-      ${renderPrdBlueprintReturnStrategyTable(
-        { module: spec.moduleName, rows: moduleRows },
-        versions,
-      )}
-      ${standardTable}
-    `;
+    const moduleRows = standardRows.length
+      ? standardRows
+      : spec.sections.flatMap((section) =>
+        section.fields.map(([, label]) => ({
+          row: { module: spec.moduleName, field: label, values: versions.map(() => "") },
+          rowIndex: -1,
+        })),
+      );
+    return { module: spec.moduleName, rows: moduleRows };
+  });
+  return groups.map((group) => {
+    if (
+      normalizePageTemplateLookupName(group.module).includes(
+        normalizePageTemplateLookupName("消耗返"),
+      ) ||
+      normalizePageTemplateLookupName(group.module).includes(
+        normalizePageTemplateLookupName("抽奖消耗返"),
+      )
+    ) {
+      return renderPrdBlueprintReturnStrategyTable(group, versions);
+    }
+    return renderPrdBlueprintStandardModuleTable(group, versions);
   }).join("");
 }
 
