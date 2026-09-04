@@ -8280,6 +8280,8 @@ function createPageTemplateBlueprintPreviewNode(group) {
     node.sourcePageTemplateNodeIndex = nodeIndex;
   });
   attachPageTemplateBusinessStates(nodes, pageTemplate?.id || "");
+  applyStoredPageTemplateBusinessStates(nodes, pageTemplate?.id || "");
+  applyStoredPageTemplateChildStates(nodes, pageTemplate?.id || "");
   const tableBlueprint = getPrdTableBlueprint();
   bindPrdModuleVariantsToTemplateNodes(
     nodes,
@@ -8289,8 +8291,6 @@ function createPageTemplateBlueprintPreviewNode(group) {
     state.prdTableRows,
     pageTemplate?.id || "",
   );
-  applyStoredPageTemplateBusinessStates(nodes, pageTemplate?.id || "");
-  applyStoredPageTemplateChildStates(nodes, pageTemplate?.id || "");
   let node = nodes[Number(group?.moduleIndex)];
   if (!node) return null;
 
@@ -11355,6 +11355,8 @@ function buildDemoGeneratedActivity() {
         node.sourcePageTemplateNodeIndex = nodeIndex;
       });
       attachPageTemplateBusinessStates(nodes, prdPageTemplate.id);
+      applyStoredPageTemplateBusinessStates(nodes, prdPageTemplate.id);
+      applyStoredPageTemplateChildStates(nodes, prdPageTemplate.id);
     }
     replaceGuidedLotteryNodesWithInteractive(nodes);
     if (prdPageTemplate) {
@@ -11366,8 +11368,6 @@ function buildDemoGeneratedActivity() {
         state.prdTableRows,
         prdPageTemplate.id,
       );
-      applyStoredPageTemplateBusinessStates(nodes, prdPageTemplate.id);
-      applyStoredPageTemplateChildStates(nodes, prdPageTemplate.id);
     }
     const audience = isPrdTablePackage
       ? context
@@ -11900,9 +11900,15 @@ function applyLotteryRowsToNode(node, rows) {
   if (!lotteryNode) return;
   let maxPrizeIndex = Number(lotteryNode.props?.prizeCount) || 0;
   rows.forEach((row) => {
-    if (/^prize\d+(Name|Copy)?$/.test(row.propKey || "")) {
-      lotteryNode.props[row.propKey] = row.value;
-      const prizeIndex = Number(String(row.propKey).match(/^prize(\d+)/)?.[1] || 0);
+    const prizeNumber = getPrdBlueprintPrizeNumber(row.field);
+    const propKey = /^prize\d+(Name|Copy)?$/.test(row.propKey || "")
+      ? row.propKey
+      : prizeNumber
+        ? `prize${prizeNumber}`
+        : "";
+    if (propKey) {
+      lotteryNode.props[propKey] = row.value;
+      const prizeIndex = Number(String(propKey).match(/^prize(\d+)/)?.[1] || 0);
       if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, Math.min(MAX_LOTTERY_PRIZE_COUNT, prizeIndex));
     }
   });
@@ -12523,6 +12529,9 @@ function applyPageTemplateVariableVersionRowsToNodes(nodes = [], rows = [], page
     node.guidedLineageVariants = variants;
     node.activeLineageVariantId = variants[0].id;
     node.guidedLineageGraph = buildGuidedLineageGraphByDimensions(node.name || node.schemaId || "模块", variants);
+    if (variants[0].id !== "base") {
+      applyLineageVariantToNode(node, variants[0]);
+    }
   });
 }
 
