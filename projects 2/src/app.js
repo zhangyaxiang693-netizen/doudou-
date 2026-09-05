@@ -1354,6 +1354,40 @@ function normalizePrdBlueprintPasteRows(rows, minRows = 12, versionCount = null)
   return normalized;
 }
 
+function getPrdBlueprintModuleVersionKey(moduleName) {
+  return normalizePageTemplateLookupName(moduleName);
+}
+
+function normalizePrdBlueprintPasteModuleVersions(moduleVersions = {}, fallbackVersions = []) {
+  const normalized = {};
+  Object.entries(moduleVersions || {}).forEach(([moduleName, versions]) => {
+    const key = getPrdBlueprintModuleVersionKey(moduleName);
+    const normalizedVersions = normalizePrdBlueprintPasteVersions(versions, 0);
+    if (key && normalizedVersions.length) normalized[key] = normalizedVersions;
+  });
+  const fallback = normalizePrdBlueprintPasteVersions(fallbackVersions, 0);
+  if (fallback.length) {
+    normalized[getPrdBlueprintModuleVersionKey("页面基础信息")] = fallback;
+  }
+  return normalized;
+}
+
+function getPrdBlueprintPasteModuleVersions(moduleName, moduleVersions = {}, fallbackVersions = []) {
+  const key = getPrdBlueprintModuleVersionKey(moduleName);
+  const normalizedMap = normalizePrdBlueprintPasteModuleVersions(moduleVersions);
+  return normalizedMap[key] || normalizePrdBlueprintPasteVersions(fallbackVersions, 0);
+}
+
+function getPrdBlueprintMaxVersionCount(rows = [], versions = [], moduleVersions = {}) {
+  return Math.max(
+    normalizePrdBlueprintPasteVersions(versions, 0).length,
+    ...Object.values(moduleVersions || {}).map(
+      (moduleVersionNames) => normalizePrdBlueprintPasteVersions(moduleVersionNames, 0).length,
+    ),
+    ...(Array.isArray(rows) ? rows.map((row) => row?.values?.length || 0) : [0]),
+  );
+}
+
 function isPrdBlueprintPasteHeaderCells(cells = []) {
   return PRD_BLUEPRINT_PASTE_FIXED_HEADERS.every((header, index) =>
     normalizePageTemplateLookupName(cells[index]) === normalizePageTemplateLookupName(header),
@@ -1644,33 +1678,34 @@ function adaptPrdDocumentClipboardTables(
     return { error: "未识别到该模板的模块字段，请确认复制了完整表格" };
   }
 
+  const moduleVersions = {};
+  standardTables.forEach((table) => {
+    moduleVersions[getPrdBlueprintModuleVersionKey(table.module)] =
+      normalizePrdBlueprintPasteVersions(table.versions, 0);
+  });
+  if (returnStrategy) {
+    moduleVersions[getPrdBlueprintModuleVersionKey(returnStrategy.module)] =
+      normalizePrdBlueprintPasteVersions(returnStrategy.versions, 0);
+  }
+
   const versions = returnStrategy
     ? returnStrategy.versions
     : guideTable
       ? [""]
       : hasExistingData
       ? normalizePrdBlueprintPasteVersions(existingVersions, 0)
-      : [...new Set(standardTables.flatMap((table) => table.versions))];
+      : standardTables[0]?.versions || [];
   if (!versions.length) {
     return { error: "表格中没有已填写的人群版本" };
   }
 
   const outputRows = [
     ["模块", "字段", ...versions],
-    ["页面基础信息", "页面类型", resolvedTemplateName, ...versions.slice(1).map(() => "")],
+    ["页面基础信息", "页面类型", resolvedTemplateName],
   ];
   standardTables.forEach((table) => {
     table.fields.forEach((field) => {
-      const values = versions.map((version, index) => {
-        const sourceIndex = table.versions.findIndex(
-          (sourceVersion) =>
-            normalizePageTemplateLookupName(sourceVersion) ===
-            normalizePageTemplateLookupName(version),
-        );
-        const mappedIndex = sourceIndex >= 0 ? sourceIndex : index;
-        return field.values[mappedIndex] || "";
-      });
-      outputRows.push([table.module, field.field, ...values]);
+      outputRows.push([table.module, field.field, ...field.values]);
     });
   });
   if (returnStrategy) {
@@ -1681,6 +1716,7 @@ function adaptPrdDocumentClipboardTables(
   return {
     rows: outputRows,
     versions,
+    moduleVersions,
     templateName: resolvedTemplateName,
     guideStateId: guideTable?.stateId || "",
   };
@@ -1703,10 +1739,19 @@ function mergeAdaptedPrdDocumentRows(
   targetModuleName = "",
 ) {
   const versions = adapted.versions;
+  const moduleVersions = normalizePrdBlueprintPasteModuleVersions(
+    adapted.moduleVersions,
+    versions,
+  );
+  const maxVersionCount = getPrdBlueprintMaxVersionCount(
+    currentRows,
+    versions,
+    moduleVersions,
+  );
   const rows = normalizePrdBlueprintPasteRows(
     currentRows,
     0,
-    versions.length,
+    maxVersionCount,
   );
   adapted.rows.slice(1).forEach((cells) => {
     const moduleName = String(cells[0] || "").trim();
@@ -1728,7 +1773,12 @@ function mergeAdaptedPrdDocumentRows(
           normalizePageTemplateLookupName(fieldName),
     );
     if (rowIndex < 0) return;
-    rows[rowIndex].values = versions.map(
+    const rowVersions = getPrdBlueprintPasteModuleVersions(
+      moduleName,
+      moduleVersions,
+      versions,
+    );
+    rows[rowIndex].values = rowVersions.map(
       (_, index) => String(cells[index + 2] || "").trim(),
     );
   });
@@ -1748,10 +1798,18 @@ function getPrdBlueprintPasteVersionsFromModal(modal) {
 }
 
 function getPrdBlueprintPasteRowsFromModal(modal) {
+  const moduleVersions = normalizePrdBlueprintPasteModuleVersions(
+    state.prdBlueprintPasteModuleVersions,
+    state.prdBlueprintPasteVersions,
+  );
   const rows = normalizePrdBlueprintPasteRows(
     state.prdBlueprintPasteRows,
     0,
-    state.prdBlueprintPasteVersions.length,
+    getPrdBlueprintMaxVersionCount(
+      state.prdBlueprintPasteRows,
+      state.prdBlueprintPasteVersions,
+      moduleVersions,
+    ),
   );
   [...modal.querySelectorAll("[data-prd-blueprint-paste-row]")].forEach((row) => {
     const cells = [...row.querySelectorAll("[data-prd-blueprint-cell]")];
@@ -1804,20 +1862,41 @@ function mergePrdBlueprintPasteRows(currentRows, currentVersions, incomingCells,
   };
 }
 
-function expandPrdBlueprintPasteRows(rows = [], versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS) {
+function expandPrdBlueprintPasteRows(
+  rows = [],
+  versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS,
+  moduleVersions = {},
+) {
   const normalizedVersions = normalizePrdBlueprintPasteVersions(versions, 0);
+  const normalizedModuleVersions = normalizePrdBlueprintPasteModuleVersions(
+    moduleVersions,
+    normalizedVersions,
+  );
   return getFilledPrdBlueprintPasteRows(rows).flatMap((row) =>
-    row.values.map((value, index) => ({
-      module: row.module,
-      version: normalizedVersions[index] || "",
-      field: row.field,
-      value,
-    })).filter((entry) => entry.value.trim()),
+    {
+      const rowVersions = getPrdBlueprintPasteModuleVersions(
+        row.module,
+        normalizedModuleVersions,
+        normalizedVersions,
+      );
+      return row.values.map((value, index) => ({
+        module: row.module,
+        version: rowVersions[index] || "",
+        field: row.field,
+        value,
+      })).filter((entry, index) =>
+        index < rowVersions.length && entry.value.trim(),
+      );
+    },
   );
 }
 
-function getPrdBlueprintPastePageType(rows = [], versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS) {
-  const expandedRows = expandPrdBlueprintPasteRows(rows, versions);
+function getPrdBlueprintPastePageType(
+  rows = [],
+  versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS,
+  moduleVersions = {},
+) {
+  const expandedRows = expandPrdBlueprintPasteRows(rows, versions, moduleVersions);
   const templateNames = Object.keys(PRD_PAGE_TEMPLATE_ALIASES);
   const directTemplateName = templateNames.find((templateName) =>
     expandedRows.some((row) =>
@@ -1888,10 +1967,14 @@ function getPrdBlueprintTaskNumberFromField(fieldName) {
   return match ? Number(match[1]) : 0;
 }
 
-function getPrdBlueprintTaskCountsByVersion(pasteRows = [], versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS) {
+function getPrdBlueprintTaskCountsByVersion(
+  pasteRows = [],
+  versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS,
+  moduleVersions = {},
+) {
   const explicitCounts = new Map();
   const inferredCounts = new Map();
-  expandPrdBlueprintPasteRows(pasteRows, versions).forEach((row) => {
+  expandPrdBlueprintPasteRows(pasteRows, versions, moduleVersions).forEach((row) => {
     if (!isPrdBlueprintTaskModuleName(row.module)) return;
     const versionName = row.version || "";
     if (normalizePageTemplateLookupName(row.field) === normalizePageTemplateLookupName("任务数量")) {
@@ -1923,14 +2006,23 @@ function getPrdBlueprintTaskCountsByVersion(pasteRows = [], versions = PRD_BLUEP
   return counts;
 }
 
-function getPrdBlueprintMaxTaskCount(pasteRows = [], versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS) {
-  return Math.max(0, ...getPrdBlueprintTaskCountsByVersion(pasteRows, versions).values());
+function getPrdBlueprintMaxTaskCount(
+  pasteRows = [],
+  versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS,
+  moduleVersions = {},
+) {
+  return Math.max(0, ...getPrdBlueprintTaskCountsByVersion(pasteRows, versions, moduleVersions).values());
 }
 
-function buildPageTemplateSeedBlueprintFromPasteRows(pageTemplate, pasteRows, versions) {
+function buildPageTemplateSeedBlueprintFromPasteRows(
+  pageTemplate,
+  pasteRows,
+  versions,
+  moduleVersions = {},
+) {
   const blueprint = {};
   const nodes = materializePageTemplateNodes(pageTemplate);
-  const inferredTaskCount = getPrdBlueprintMaxTaskCount(pasteRows, versions);
+  const inferredTaskCount = getPrdBlueprintMaxTaskCount(pasteRows, versions, moduleVersions);
   if (inferredTaskCount > 0) {
     const taskModuleIndex = nodes.findIndex((node, index) =>
       getPageTemplateNodeModuleAliases(pageTemplate, index).some(isPrdBlueprintTaskModuleName),
@@ -1939,7 +2031,7 @@ function buildPageTemplateSeedBlueprintFromPasteRows(pageTemplate, pasteRows, ve
       blueprint[getPageBlueprintKey(taskModuleIndex, "taskCount")] = inferredTaskCount;
     }
   }
-  expandPrdBlueprintPasteRows(pasteRows, versions).forEach((row) => {
+  expandPrdBlueprintPasteRows(pasteRows, versions, moduleVersions).forEach((row) => {
     if (normalizePageTemplateLookupName(row.field) !== normalizePageTemplateLookupName("任务数量")) return;
     const moduleIndex = nodes.findIndex((node, index) =>
       getPageTemplateNodeModuleAliases(pageTemplate, index).some((alias) =>
@@ -2336,12 +2428,20 @@ function appendInferredTaskCountRows({ rows, fields, taskCountsByVersion, explic
   });
 }
 
-function convertBlueprintPasteRowsToPrdRows(pasteRows = [], versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS) {
-  const dataRows = expandPrdBlueprintPasteRows(pasteRows, versions);
+function convertBlueprintPasteRowsToPrdRows(
+  pasteRows = [],
+  versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS,
+  moduleVersions = {},
+) {
+  const normalizedModuleVersions = normalizePrdBlueprintPasteModuleVersions(
+    moduleVersions,
+    versions,
+  );
+  const dataRows = expandPrdBlueprintPasteRows(pasteRows, versions, normalizedModuleVersions);
   const directRows = dataRows
     .filter((row) => normalizePageTemplateLookupName(row.module) === normalizePageTemplateLookupName("页面基础信息"))
     .map((row) => ({ key: row.field, value: row.value }));
-  const pageType = getPrdBlueprintPastePageType(pasteRows, versions) || getPrdPageTemplateType(directRows);
+  const pageType = getPrdBlueprintPastePageType(pasteRows, versions, normalizedModuleVersions) || getPrdPageTemplateType(directRows);
   const pageTemplate = pageType ? findLatestCustomPageTemplateByPrdType(pageType) : null;
   const manualVersions = {};
   if (!pageTemplate) {
@@ -2358,7 +2458,12 @@ function convertBlueprintPasteRowsToPrdRows(pasteRows = [], versions = PRD_BLUEP
     pageTemplate,
     getConsumptionReturnTierCountFromRows(dataRows),
   );
-  const seedBlueprint = buildPageTemplateSeedBlueprintFromPasteRows(pageTemplate, pasteRows, versions);
+  const seedBlueprint = buildPageTemplateSeedBlueprintFromPasteRows(
+    pageTemplate,
+    pasteRows,
+    versions,
+    normalizedModuleVersions,
+  );
   const fields = withDynamicPrdBlueprintPrizeFields(
     getPrdPageTemplateInputFields(pageTemplate, { blueprint: seedBlueprint }).map((field) => ({
       ...field,
@@ -2367,7 +2472,11 @@ function convertBlueprintPasteRowsToPrdRows(pasteRows = [], versions = PRD_BLUEP
     dataRows,
   );
   const rows = [...directRows];
-  const taskCountsByVersion = getPrdBlueprintTaskCountsByVersion(pasteRows, versions);
+  const taskCountsByVersion = getPrdBlueprintTaskCountsByVersion(
+    pasteRows,
+    versions,
+    normalizedModuleVersions,
+  );
   const explicitTaskCountVersions = new Set(
     dataRows
       .filter((row) =>
@@ -3332,6 +3441,7 @@ const state = {
   prdTextInput: "",
   prdBlueprintPasteRows: normalizePrdBlueprintPasteRows([]),
   prdBlueprintPasteVersions: normalizePrdBlueprintPasteVersions([]),
+  prdBlueprintPasteModuleVersions: {},
   prdBlueprintPasteTemplateName: "",
   prdBlueprintPasteError: "",
   prdTableRows: [],
@@ -7195,7 +7305,12 @@ function renderPrdBlueprintReturnStrategyTable(group, versions) {
   `;
 }
 
-function renderPrdBlueprintModulePasteTables(rows, versions, templateName) {
+function renderPrdBlueprintModulePasteTables(
+  rows,
+  versions,
+  templateName,
+  moduleVersions = {},
+) {
   if (!templateName) {
     return `<div class="prd-blueprint-paste-empty">请先选择页面模板</div>`;
   }
@@ -7206,6 +7321,8 @@ function renderPrdBlueprintModulePasteTables(rows, versions, templateName) {
     return `<div class="prd-blueprint-paste-empty">该模板没有需要粘贴的变量表格</div>`;
   }
   const groups = specs.map((spec) => {
+    const groupVersions =
+      getPrdBlueprintPasteModuleVersions(spec.moduleName, moduleVersions, versions);
     const standardRows = templateRows.filter(
       (item) =>
         normalizePageTemplateLookupName(item.row.module) ===
@@ -7215,11 +7332,11 @@ function renderPrdBlueprintModulePasteTables(rows, versions, templateName) {
       ? standardRows
       : spec.sections.flatMap((section) =>
         section.fields.map(([, label]) => ({
-          row: { module: spec.moduleName, field: label, values: versions.map(() => "") },
+          row: { module: spec.moduleName, field: label, values: groupVersions.map(() => "") },
           rowIndex: -1,
         })),
       );
-    return { module: spec.moduleName, rows: moduleRows };
+    return { module: spec.moduleName, rows: moduleRows, versions: groupVersions };
   });
   return groups.map((group) => {
     if (
@@ -7230,9 +7347,9 @@ function renderPrdBlueprintModulePasteTables(rows, versions, templateName) {
         normalizePageTemplateLookupName("抽奖消耗返"),
       )
     ) {
-      return renderPrdBlueprintReturnStrategyTable(group, versions);
+      return renderPrdBlueprintReturnStrategyTable(group, group.versions);
     }
-    return renderPrdBlueprintStandardModuleTable(group, versions);
+    return renderPrdBlueprintStandardModuleTable(group, group.versions);
   }).join("");
 }
 
@@ -7243,10 +7360,19 @@ function renderPrdFileModal() {
     state.prdBlueprintPasteVersions,
     pasteVersionCount,
   );
+  const pasteModuleVersions = normalizePrdBlueprintPasteModuleVersions(
+    state.prdBlueprintPasteModuleVersions,
+    pasteVersions,
+  );
+  const maxVersionCount = getPrdBlueprintMaxVersionCount(
+    state.prdBlueprintPasteRows,
+    pasteVersions,
+    pasteModuleVersions,
+  );
   const blueprintRows = normalizePrdBlueprintPasteRows(
     state.prdBlueprintPasteRows,
     0,
-    pasteVersions.length,
+    maxVersionCount,
   );
   return `
     <div class="prd-file-modal" data-demo-file-modal>
@@ -7307,6 +7433,7 @@ function renderPrdFileModal() {
               blueprintRows,
               pasteVersions,
               state.prdBlueprintPasteTemplateName,
+              pasteModuleVersions,
             )}
           </div>
           <div class="prd-text-import-actions">
@@ -11908,11 +12035,15 @@ function applyLotteryRowsToNode(node, rows) {
         : "";
     if (propKey) {
       lotteryNode.props[propKey] = row.value;
+      markPrdBoundProp(lotteryNode, propKey);
       const prizeIndex = Number(String(propKey).match(/^prize(\d+)/)?.[1] || 0);
       if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, Math.min(MAX_LOTTERY_PRIZE_COUNT, prizeIndex));
     }
   });
-  if (maxPrizeIndex) lotteryNode.props.prizeCount = Math.min(MAX_LOTTERY_PRIZE_COUNT, maxPrizeIndex);
+  if (maxPrizeIndex) {
+    lotteryNode.props.prizeCount = Math.min(MAX_LOTTERY_PRIZE_COUNT, maxPrizeIndex);
+    markPrdBoundProp(lotteryNode, "prizeCount");
+  }
 }
 
 function findConsumptionProgressNode(nodes = []) {
@@ -12374,7 +12505,10 @@ function assignStructuredProps(node, props) {
   node.props = node.props || {};
   Object.entries(props).forEach(([key, value]) => {
     const nextValue = String(value || "").trim();
-    if (nextValue) node.props[key] = nextValue;
+    if (nextValue) {
+      node.props[key] = nextValue;
+      markPrdBoundProp(node, key);
+    }
   });
 }
 
@@ -12405,6 +12539,7 @@ function applyPageTemplateVariableValuesToNode(node, values) {
       if (!node.props) return;
       if (compoundKey in node.props || isLotteryPrizePropKey(compoundKey) || compoundKey === "prizeCount") {
         node.props[compoundKey] = value;
+        markPrdBoundProp(node, compoundKey);
         const prizeIndex = Number(String(compoundKey).match(/^prize(\d+)/)?.[1] || 0);
         if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, Math.min(MAX_LOTTERY_PRIZE_COUNT, prizeIndex));
       }
@@ -12414,6 +12549,7 @@ function applyPageTemplateVariableValuesToNode(node, values) {
         MAX_LOTTERY_PRIZE_COUNT,
         Math.max(Number(node.props.prizeCount) || 0, maxPrizeIndex),
       );
+      markPrdBoundProp(node, "prizeCount");
     }
     return;
   }
@@ -12432,6 +12568,7 @@ function applyPageTemplateVariableValuesToNode(node, values) {
     const child = node.children?.[Number(childIndex)];
     if (child?.props && (propKey in child.props || isLotteryPrizePropKey(propKey) || propKey === "prizeCount")) {
       child.props[propKey] = value;
+      markPrdBoundProp(child, propKey);
       const prizeIndex = Number(String(propKey).match(/^prize(\d+)/)?.[1] || 0);
       if (prizeIndex) {
         prizeCountsByChild.set(
@@ -12442,6 +12579,7 @@ function applyPageTemplateVariableValuesToNode(node, values) {
       (child.guidedStates || []).forEach((entry) => {
         if (entry.node?.props && (propKey in entry.node.props || isLotteryPrizePropKey(propKey) || propKey === "prizeCount")) {
           entry.node.props[propKey] = value;
+          markPrdBoundProp(entry.node, propKey);
         }
       });
     }
@@ -12453,8 +12591,12 @@ function applyPageTemplateVariableValuesToNode(node, values) {
       MAX_LOTTERY_PRIZE_COUNT,
       Math.max(Number(child.props.prizeCount) || 0, count),
     );
+    markPrdBoundProp(child, "prizeCount");
     (child.guidedStates || []).forEach((entry) => {
-      if (entry.node?.props) entry.node.props.prizeCount = child.props.prizeCount;
+      if (entry.node?.props) {
+        entry.node.props.prizeCount = child.props.prizeCount;
+        markPrdBoundProp(entry.node, "prizeCount");
+      }
     });
   });
 }
@@ -13932,6 +14074,7 @@ function setNodeValueByPath(node, path, value) {
   if (parts.length === 1) {
     if (!node.props) node.props = {};
     node.props[parts[0]] = value;
+    markPrdBoundProp(node, parts[0]);
     return;
   }
   const [childIndex, ...rest] = parts;
@@ -14811,6 +14954,92 @@ function getGuidedChildStateGroups(node) {
     .filter(Boolean);
 }
 
+const PRD_BOUND_PROP_KEYS = "__prdBoundPropKeys";
+
+function markPrdBoundProp(node, propKey) {
+  if (!node || !propKey) return;
+  const keys = new Set(Array.isArray(node[PRD_BOUND_PROP_KEYS]) ? node[PRD_BOUND_PROP_KEYS] : []);
+  keys.add(propKey);
+  node[PRD_BOUND_PROP_KEYS] = [...keys];
+}
+
+function getPrdBoundPropKeys(node) {
+  return new Set(Array.isArray(node?.[PRD_BOUND_PROP_KEYS]) ? node[PRD_BOUND_PROP_KEYS] : []);
+}
+
+function getLotteryPrizePropMatch(propKey) {
+  return String(propKey || "").match(/^prize(\d+)(Name|Text|Copy)?$/);
+}
+
+function syncPrdBoundPrizeProp(sourceNode, targetNode, propKey) {
+  const match = getLotteryPrizePropMatch(propKey);
+  if (!match || !sourceNode?.props || !targetNode?.props) return;
+  const prizeIndex = match[1];
+  const suffix = match[2] || "";
+  const prizeKey = `prize${prizeIndex}`;
+  const nameKey = `prize${prizeIndex}Name`;
+  const textKey = `prize${prizeIndex}Text`;
+  const copyKey = `prize${prizeIndex}Copy`;
+  const sourceValue = sourceNode.props[propKey];
+
+  targetNode.props[propKey] = sourceValue;
+  markPrdBoundProp(targetNode, propKey);
+
+  if ((suffix === "Name" || suffix === "Text") && prizeKey in targetNode.props) {
+    targetNode.props[prizeKey] = serializePrizeValueWithName(
+      sourceNode.props[prizeKey] || targetNode.props[prizeKey] || sourceValue,
+      sourceValue,
+    ) || sourceValue;
+    markPrdBoundProp(targetNode, prizeKey);
+  }
+  if (suffix === "Copy" && prizeKey in targetNode.props) {
+    targetNode.props[prizeKey] = serializePrizeValueWithCopy(
+      sourceNode.props[prizeKey] || targetNode.props[prizeKey] || "",
+      sourceValue,
+    ) || targetNode.props[prizeKey];
+    markPrdBoundProp(targetNode, prizeKey);
+  }
+  if (!suffix) {
+    const parsed = parsePrizeValue(sourceValue);
+    if (parsed?.name) {
+      targetNode.props[nameKey] = parsed.name;
+      targetNode.props[textKey] = parsed.name;
+      markPrdBoundProp(targetNode, nameKey);
+      markPrdBoundProp(targetNode, textKey);
+    }
+    if (parsed?.copy) {
+      targetNode.props[copyKey] = parsed.copy;
+      markPrdBoundProp(targetNode, copyKey);
+    }
+  }
+}
+
+function applyPrdBoundPropsToStateNode(sourceNode, targetNode, lockedPropKeys = new Set()) {
+  if (!sourceNode || !targetNode) return;
+  getPrdBoundPropKeys(sourceNode).forEach((key) => {
+    if (
+      !lockedPropKeys.has(key) &&
+      sourceNode.props &&
+      targetNode.props &&
+      (key in targetNode.props || getLotteryPrizePropMatch(key))
+    ) {
+      if (getLotteryPrizePropMatch(key)) {
+        syncPrdBoundPrizeProp(sourceNode, targetNode, key);
+      } else {
+        targetNode.props[key] = sourceNode.props[key];
+        markPrdBoundProp(targetNode, key);
+      }
+    }
+  });
+  (sourceNode.children || []).forEach((sourceChild, childIndex) => {
+    applyPrdBoundPropsToStateNode(
+      sourceChild,
+      targetNode.children?.[childIndex],
+      lockedPropKeys,
+    );
+  });
+}
+
 function applyGuidedBusinessState(node, stateId) {
   const stateEntry = node?.guidedStates?.find((item) => item.id === stateId);
   if (!node || !stateEntry) return false;
@@ -14820,15 +15049,21 @@ function applyGuidedBusinessState(node, stateId) {
   node.type = stateNode.type;
   node.allowedChildren = clone(stateNode.allowedChildren || null);
   node.className = stateNode.className || "";
+  const lockedPropKeys = new Set(stateEntry.lockedPropKeys || []);
   const nextProps = clone(stateNode.props);
   if (stateEntry.preserveProps) {
-    const lockedPropKeys = new Set(stateEntry.lockedPropKeys || []);
     Object.entries(node.props || {}).forEach(([key, value]) => {
       if (!lockedPropKeys.has(key) && key in nextProps) nextProps[key] = value;
     });
   }
+  const nextChildren = clone(stateNode.children || []);
+  applyPrdBoundPropsToStateNode(
+    node,
+    { props: nextProps, children: nextChildren },
+    lockedPropKeys,
+  );
   node.props = nextProps;
-  node.children = clone(stateNode.children || []);
+  node.children = nextChildren;
   node.variants = clone(stateNode.variants || []);
   node.activeVariantId = stateNode.activeVariantId || null;
   node.activeGuidedStateId = stateEntry.id;
@@ -18231,11 +18466,20 @@ function bindEvents() {
         getPrdBlueprintPasteVersionsFromModal(modal),
         0,
       );
+      const pastedModuleVersions = normalizePrdBlueprintPasteModuleVersions(
+        state.prdBlueprintPasteModuleVersions,
+        pastedVersions,
+      );
       const pastedRows = getPrdBlueprintPasteRowsFromModal(modal);
       const filledRows = getFilledPrdBlueprintPasteRows(pastedRows);
       if (!filledRows.length) {
         state.prdBlueprintPasteVersions = pastedVersions;
-        state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(pastedRows, 12, pastedVersions.length);
+        state.prdBlueprintPasteModuleVersions = pastedModuleVersions;
+        state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(
+          pastedRows,
+          12,
+          getPrdBlueprintMaxVersionCount(pastedRows, pastedVersions, pastedModuleVersions),
+        );
         state.prdBlueprintPasteError = "请先粘贴蓝图表格";
         render();
         requestAnimationFrame(() => {
@@ -18243,9 +18487,18 @@ function bindEvents() {
         });
         return;
       }
-      const { rows, manualVersions } = convertBlueprintPasteRowsToPrdRows(filledRows, pastedVersions);
+      const { rows, manualVersions } = convertBlueprintPasteRowsToPrdRows(
+        filledRows,
+        pastedVersions,
+        pastedModuleVersions,
+      );
       state.prdBlueprintPasteVersions = pastedVersions;
-      state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(filledRows, 12, pastedVersions.length);
+      state.prdBlueprintPasteModuleVersions = pastedModuleVersions;
+      state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(
+        filledRows,
+        12,
+        getPrdBlueprintMaxVersionCount(filledRows, pastedVersions, pastedModuleVersions),
+      );
       state.prdManualModuleVersions = manualVersions;
       state.prdTableRows = rows;
       state.prdTableBlueprint = null;
@@ -18321,6 +18574,10 @@ function bindEvents() {
                 adapted.templateName,
                 adapted.versions,
               );
+              const adaptedModuleVersions = normalizePrdBlueprintPasteModuleVersions(
+                adapted.moduleVersions,
+                adapted.versions,
+              );
               const mergedRows = mergeAdaptedPrdDocumentRows(
                 templateRows,
                 adapted,
@@ -18330,13 +18587,19 @@ function bindEvents() {
                 convertBlueprintPasteRowsToPrdRows(
                   filledRows,
                   adapted.versions,
+                  adaptedModuleVersions,
                 );
               state.prdBlueprintPasteTemplateName = adapted.templateName;
               state.prdBlueprintPasteVersions = adapted.versions;
+              state.prdBlueprintPasteModuleVersions = adaptedModuleVersions;
               state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(
                 mergedRows,
                 0,
-                adapted.versions.length,
+                getPrdBlueprintMaxVersionCount(
+                  mergedRows,
+                  adapted.versions,
+                  adaptedModuleVersions,
+                ),
               );
               state.prdTableRows = rows;
               state.prdManualModuleVersions = manualVersions;
@@ -18362,6 +18625,7 @@ function bindEvents() {
             }
             state.prdTableRows = normalizePrdTableRows(rows);
             state.prdManualModuleVersions = {};
+            state.prdBlueprintPasteModuleVersions = {};
             state.prdTableBlueprint = null;
             state.prdTableBlueprintSignature = "";
             state.selectedDemoPackageId = PRD_TABLE_PACKAGE_ID;
@@ -19703,6 +19967,7 @@ function bindEvents() {
 
     const select = event.target.closest("[data-select]");
     if (select) {
+      if (state.view === "guided-export") return;
       if (event.target.closest(".guided-lineage-v3-card")) {
         if (event.target.closest("[contenteditable='true'], input, textarea, select")) {
           return;
@@ -20001,6 +20266,13 @@ function bindEvents() {
             targetModuleName,
           ),
           versions: adapted.versions,
+          moduleVersions: normalizePrdBlueprintPasteModuleVersions(
+            {
+              ...state.prdBlueprintPasteModuleVersions,
+              ...adapted.moduleVersions,
+            },
+            adapted.versions,
+          ),
         }
       : mergePrdBlueprintPasteRows(
           currentRows,
@@ -20011,10 +20283,20 @@ function bindEvents() {
         );
     state.prdBlueprintPasteTemplateName = adapted?.templateName || templateName || "";
     state.prdBlueprintPasteVersions = adapted?.versions || merged.versions;
+    state.prdBlueprintPasteModuleVersions =
+      merged.moduleVersions ||
+      normalizePrdBlueprintPasteModuleVersions(
+        state.prdBlueprintPasteModuleVersions,
+        state.prdBlueprintPasteVersions,
+      );
     state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(
       merged.rows,
       0,
-      state.prdBlueprintPasteVersions.length,
+      getPrdBlueprintMaxVersionCount(
+        merged.rows,
+        state.prdBlueprintPasteVersions,
+        state.prdBlueprintPasteModuleVersions,
+      ),
     );
     if (adapted?.guideStateId) {
       state.pageTemplateBlueprintStates["page-guide-no-incentive|1"] =
@@ -20051,7 +20333,16 @@ function bindEvents() {
       const modal = prdBlueprintCell.closest("[data-demo-file-modal]");
       const versions = normalizePrdBlueprintPasteVersions(getPrdBlueprintPasteVersionsFromModal(modal));
       state.prdBlueprintPasteVersions = versions;
-      state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(getPrdBlueprintPasteRowsFromModal(modal), 12, versions.length);
+      state.prdBlueprintPasteModuleVersions = normalizePrdBlueprintPasteModuleVersions(
+        state.prdBlueprintPasteModuleVersions,
+        versions,
+      );
+      const rows = getPrdBlueprintPasteRowsFromModal(modal);
+      state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(
+        rows,
+        12,
+        getPrdBlueprintMaxVersionCount(rows, versions, state.prdBlueprintPasteModuleVersions),
+      );
       state.prdBlueprintPasteError = "";
       return;
     }
@@ -20061,7 +20352,16 @@ function bindEvents() {
       const modal = prdBlueprintVersionCell.closest("[data-demo-file-modal]");
       const versions = normalizePrdBlueprintPasteVersions(getPrdBlueprintPasteVersionsFromModal(modal));
       state.prdBlueprintPasteVersions = versions;
-      state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(getPrdBlueprintPasteRowsFromModal(modal), 12, versions.length);
+      state.prdBlueprintPasteModuleVersions = normalizePrdBlueprintPasteModuleVersions(
+        state.prdBlueprintPasteModuleVersions,
+        versions,
+      );
+      const rows = getPrdBlueprintPasteRowsFromModal(modal);
+      state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(
+        rows,
+        12,
+        getPrdBlueprintMaxVersionCount(rows, versions, state.prdBlueprintPasteModuleVersions),
+      );
       state.prdBlueprintPasteError = "";
       return;
     }
@@ -20832,6 +21132,7 @@ function bindEvents() {
       state.prdBlueprintPasteVersions = blueprintTemplateSelect.value
         ? ["人群1", "人群2", "人群3"]
         : normalizePrdBlueprintPasteVersions([]);
+      state.prdBlueprintPasteModuleVersions = {};
       state.prdBlueprintPasteRows = blueprintTemplateSelect.value
         ? createPrdBlueprintPasteTemplateRows(
             blueprintTemplateSelect.value,

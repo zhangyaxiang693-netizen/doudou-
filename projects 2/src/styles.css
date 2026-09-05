@@ -5904,6 +5904,33 @@ button:hover {
   transform-origin: top left;
 }
 
+.app-shell[data-view="guided-export"] .guided-node {
+  cursor: default;
+}
+
+.app-shell[data-view="guided-export"] .guided-node.selected,
+.guided-export-cut-preview .guided-node.selected,
+.admin-export-capture .guided-node.selected {
+  z-index: auto;
+  border-color: transparent;
+  box-shadow: none;
+  outline: 0;
+}
+
+.app-shell[data-view="guided-export"] .guided-node-kind,
+.app-shell[data-view="guided-export"] .guided-node-actions,
+.app-shell[data-view="guided-export"] .guided-node-order-actions,
+.guided-export-cut-preview .guided-node-kind,
+.guided-export-cut-preview .guided-node-actions,
+.guided-export-cut-preview .guided-node-order-actions,
+.admin-export-capture .guided-node-kind,
+.admin-export-capture .guided-node-actions,
+.admin-export-capture .guided-node-order-actions {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .guided-export-empty {
   display: grid;
   min-height: 280px;

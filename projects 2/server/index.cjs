@@ -14,7 +14,7 @@ const app = express();
 app.use(express.json({ limit: "10mb" }));
 const execFileAsync = promisify(execFile);
 
-const PORT = process.env.DEPLOY_RUN_PORT || process.env.PORT || 5000;
+const PORT = process.env.DEPLOY_RUN_PORT || process.env.PORT || 5050;
 const HOST = "0.0.0.0";
 
 const distDir = path.join(__dirname, "..", "dist");
