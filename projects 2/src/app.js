@@ -8,6 +8,7 @@ const GUIDED_FALLBACK_HOT_BOTTOM_SPACE = 358;
 const GUIDED_FALLBACK_HOT_PAGE_HEIGHT = 1502;
 const GUIDED_FALLBACK_CASE_BOTTOM_SPACE = 154;
 const GUIDED_FALLBACK_CASE_PAGE_HEIGHT = 1759;
+const GUIDED_S_LEVEL_BACKGROUND = "#EDE5FF";
 const DEFAULT_TRAFFIC_COUPON_THRESHOLD = "00";
 const DEFAULT_LOTTERY_PRIZE_COUNT = 3;
 const MAX_LOTTERY_PRIZE_COUNT = 8;
@@ -147,6 +148,7 @@ const COMPONENT_DISPLAY_NAME_BY_ID = {
   大按钮: "按钮",
   置底按钮: "底部行动按钮",
   账户优惠券提示: "账户优惠券提醒",
+  "S级-中秋头图": "S级-中秋头图",
 };
 
 function getGlobalComponentDisplayName(schemaId, fallback = "") {
@@ -3630,6 +3632,16 @@ const guidedPageThemePresets = [
     filter: "none",
   },
   {
+    id: "s-mid-autumn",
+    name: "S级-中秋",
+    background: GUIDED_S_LEVEL_BACKGROUND,
+    solidBackground: GUIDED_S_LEVEL_BACKGROUND,
+    primary: "#7B5BFF",
+    secondary: GUIDED_S_LEVEL_BACKGROUND,
+    variantThemeId: "apricot",
+    filter: "none",
+  },
+  {
     id: "node-double-11",
     name: "节点色系-双11",
     background: makeGuidedPageBackgroundLower(["#FF7A21", "#FFD06A", "#FFF2CD", "#FFF0CD"]),
@@ -3715,6 +3727,7 @@ function findAtomSchema(schemaId) {
 
 const moduleKindMap = {
   头图: "hero",
+  "S级-中秋头图": "hero",
 };
 
 const moduleKindLabels = {
@@ -11654,6 +11667,128 @@ function syncFallbackHeaderMainVisual(mainVisualImage) {
   });
 }
 
+function getGuidedHeaderLevelId(node) {
+  return node?.schemaId === "S级-中秋头图" ? "s" : "default";
+}
+
+function getGuidedHeaderLevelOptions(sourceNode) {
+  const dateText = sourceNode?.props?.dateText || "6月10日-6月21日";
+  const defaultTitle = sourceNode?.props?.text || sourceNode?.props?.mainTitle || "抽666元流量大奖";
+  const sTitle = sourceNode?.schemaId === "S级-中秋头图"
+    ? sourceNode?.props?.mainTitle || "任务通关赢X元流量"
+    : "任务通关赢X元流量";
+  return [
+    {
+      id: "default",
+      name: "普通",
+      description: "沿用当前页面模板头图，可继续替换主体图。",
+      node: createAtomNode("头图", {
+        text: defaultTitle,
+        dateText,
+        ...(sourceNode?.props?.mainVisualImage ? { mainVisualImage: sourceNode.props.mainVisualImage } : {}),
+      }),
+    },
+    {
+      id: "s",
+      name: "S级",
+      description: `切换为中秋 S 级头图，页面背景同步为 ${GUIDED_S_LEVEL_BACKGROUND}。`,
+      node: createAtomNode("S级-中秋头图", {
+        mainTitle: sTitle,
+        subtitle: sourceNode?.props?.subtitle || "为爱加投",
+        dateText,
+      }),
+    },
+  ];
+}
+
+function createGuidedHeaderNodeForLevel(levelId, sourceNode = {}) {
+  const nextSchemaId = levelId === "s" ? "S级-中秋头图" : "头图";
+  const sourceProps = sourceNode.props || {};
+  const dateText = sourceProps.dateText || "6月10日-6月21日";
+  const overrides = nextSchemaId === "S级-中秋头图"
+    ? {
+        mainTitle: sourceNode.schemaId === "S级-中秋头图"
+          ? sourceProps.mainTitle || "任务通关赢X元流量"
+          : "任务通关赢X元流量",
+        subtitle: sourceProps.subtitle || "为爱加投",
+        dateText,
+      }
+    : {
+        text: sourceProps.text || sourceProps.mainTitle || "抽666元流量大奖",
+        dateText,
+        ...(sourceProps.mainVisualImage ? { mainVisualImage: sourceProps.mainVisualImage } : {}),
+      };
+  const nextNode = createAtomNode(nextSchemaId, overrides);
+  nextNode.id = sourceNode.id || uid();
+  [
+    "sourceContextId",
+    "sourceModuleId",
+    "sourceSlot",
+    "sourceInputScope",
+    "sourcePageTemplateId",
+    "sourcePageTemplateNodeIndex",
+    "moduleGroupId",
+    "canvasPlacement",
+    "isBlueprintInserted",
+  ].forEach((key) => {
+    if (sourceNode[key] !== undefined) nextNode[key] = sourceNode[key];
+  });
+  return nextNode;
+}
+
+function replaceGuidedHeaderNodeOnPage(page, sourceHeaderId, levelId, templateSourceNode = null) {
+  if (!page?.nodes?.length) return null;
+  const index = page.nodes.findIndex((node) => getModuleKind(node?.schemaId) === "hero");
+  if (index < 0) return null;
+  const sourceNode = page.nodes[index];
+  if (sourceHeaderId && !page.isSystemFallback && sourceNode.id !== sourceHeaderId) return null;
+  const nextNode = createGuidedHeaderNodeForLevel(levelId, templateSourceNode || sourceNode);
+  nextNode.id = sourceNode.id;
+  [
+    "sourceContextId",
+    "sourceModuleId",
+    "sourceSlot",
+    "sourceInputScope",
+    "sourcePageTemplateId",
+    "sourcePageTemplateNodeIndex",
+    "moduleGroupId",
+    "canvasPlacement",
+    "isBlueprintInserted",
+  ].forEach((key) => {
+    if (sourceNode[key] !== undefined) nextNode[key] = sourceNode[key];
+    else delete nextNode[key];
+  });
+  page.nodes.splice(index, 1, nextNode);
+  return nextNode;
+}
+
+function applyGuidedHeaderLevel(levelId) {
+  const page = activePage();
+  if (!page || page.isSystemFallback) return false;
+  const sourceHeader = getPageHeaderNode(page);
+  if (!sourceHeader) return false;
+  const activeHeaderId = sourceHeader.id;
+  const nextHeader = replaceGuidedHeaderNodeOnPage(page, activeHeaderId, levelId, sourceHeader);
+  if (!nextHeader) return false;
+  if (levelId === "s") {
+    state.pages.forEach((item) => {
+      item.canvasBackground = GUIDED_S_LEVEL_BACKGROUND;
+      item.colorThemeId = "s-mid-autumn";
+      if (item !== page) replaceGuidedHeaderNodeOnPage(item, null, levelId, nextHeader);
+      applyThemeBoundVariantsToNodes(item.nodes, "apricot");
+    });
+  } else {
+    state.pages.forEach((item) => {
+      if (item.isSystemFallback) replaceGuidedHeaderNodeOnPage(item, null, levelId, nextHeader);
+    });
+  }
+  state.selectedId = nextHeader.id;
+  state.guidedPanelMode = null;
+  state.guidedStateMenuNodeId = null;
+  state.guidedCanvasInitialized = false;
+  return true;
+}
+
   function isLotteryGridNode(node) {
     return [
       "LotteryGridInteractive",
@@ -13180,14 +13315,26 @@ function renderGuidedPreview() {
   const visiblePages = state.pages.filter((page) => visiblePageIds.has(page.id));
   const selected = state.selectedId ? findNode(state.nodes, state.selectedId)?.node : null;
   const workspaceMode = state.guidedWorkspaceMode || "split";
+  const activeHeaderLevelId = getGuidedHeaderLevelId(getPageHeaderNode(activePage()));
+  const isSLevelHeaderActive = activeHeaderLevelId === "s";
 
   center.innerHTML = `
     <div class="guided-preview-shell guided-workspace is-${workspaceMode}">
       ${renderGuidedBlueprintPane(workspaceMode, visiblePageIds)}
       <section class="guided-canvas-pane">
-        <button class="guided-theme-entry" data-guided-open-theme>
+        <button
+          class="guided-theme-entry ${isSLevelHeaderActive ? "is-disabled" : ""}"
+          data-guided-open-theme
+          ${isSLevelHeaderActive ? "disabled" : ""}
+          aria-disabled="${isSLevelHeaderActive}"
+          title="${isSLevelHeaderActive ? "S级头图锁定橘色套系，不能切换页面配色" : "页面配色"}"
+        >
           <span aria-hidden="true">◐</span>
           页面配色
+        </button>
+        <button class="guided-header-level-entry" data-guided-open-header-level>
+          <span aria-hidden="true">S</span>
+          切换等级
         </button>
         <button class="guided-add-entry" data-guided-open-add>
           <span aria-hidden="true">＋</span>
@@ -13795,9 +13942,11 @@ function renderGuidedNode(node) {
             ? ""
             : isHero
             ? `
-              <button data-guided-action="hero" data-guided-node="${node.id}" aria-label="替换主体">
-                <span>图</span><i>替换主体</i>
-              </button>
+              ${node.schemaId === "头图" ? `
+                <button data-guided-action="hero" data-guided-node="${node.id}" aria-label="替换主体">
+                  <span>图</span><i>替换主体</i>
+                </button>
+              ` : ""}
             `
             : `
               <button data-guided-action="replace" data-guided-node="${node.id}" aria-label="更改模块">
@@ -13852,9 +14001,11 @@ function refreshGuidedReactNodeContent(node, propKey, caretOffset) {
 function shouldRefreshGuidedHeaderEditable(node, propKey, event) {
   return (
     state.view === "guided-preview" &&
-    node?.schemaId === "头图" &&
-    propKey === "text" &&
-    !event.isComposing
+    !event.isComposing &&
+    (
+      (node?.schemaId === "头图" && propKey === "text") ||
+      (node?.schemaId === "S级-中秋头图" && propKey === "mainTitle")
+    )
   );
 }
 
@@ -15216,7 +15367,9 @@ function renderGuidedFloatingPanel(node, options = {}) {
       ? "更改模块"
       : mode === "states"
         ? "查看状态"
-        : mode === "global"
+        : mode === "hero-level"
+          ? "切换等级"
+          : mode === "global"
           ? node?.isLotteryResultPopup
             ? "查看变量"
             : "模块人群"
@@ -15288,6 +15441,34 @@ function renderGuidedFloatingPanel(node, options = {}) {
               </div>
             `,
           )
+          .join("")}
+      </div>
+    `;
+  } else if (mode === "hero-level") {
+    const activeLevelId = getGuidedHeaderLevelId(node);
+    body = `
+      <p>选择头图等级，S级头图会同步页面背景和系统兜底页。</p>
+      <div class="guided-business-states guided-header-level-options">
+        ${getGuidedHeaderLevelOptions(node)
+          .map((entry) => `
+            <button
+              type="button"
+              class="guided-business-state-card ${activeLevelId === entry.id ? "active" : ""}"
+              data-guided-header-level="${escapeAttr(entry.id)}"
+              aria-label="切换为${escapeAttr(entry.name)}头图"
+            >
+              <header>
+                <span>${escapeHtml(entry.name)}</span>
+                <code>${escapeHtml(entry.node.schemaId)}</code>
+              </header>
+              <div class="guided-business-state-preview">
+                <div class="guided-business-state-preview-inner">
+                  ${renderComponent(entry.node, { editable: false })}
+                </div>
+              </div>
+              <p>${escapeHtml(entry.description)}</p>
+            </button>
+          `)
           .join("")}
       </div>
     `;
@@ -16708,7 +16889,7 @@ function isStickyBottomButtonExportNode(node) {
 
 function isHeaderImageExportNode(node) {
   const schemaId = node?.schemaId || node?.id || node?.name || "";
-  return schemaId === "头图" || schemaId === "HeaderImage";
+  return schemaId === "头图" || schemaId === "HeaderImage" || schemaId === "S级-中秋头图";
 }
 
 function getGuidedCutExportBottomSpace(entry) {
@@ -16806,9 +16987,10 @@ function getExportEntryDimensions(entry) {
     };
   }
   if (isHeaderImageExportNode(node)) {
+    const schema = findAtomSchema(node.schemaId || node.name);
     return {
       width: GUIDED_CUT_EXPORT_WIDTH,
-      height: GUIDED_HEADER_IMAGE_EXPORT_HEIGHT,
+      height: Number(schema?.dimensions?.height || GUIDED_HEADER_IMAGE_EXPORT_HEIGHT),
     };
   }
   if (entry?.dimensions) {
@@ -17604,10 +17786,11 @@ function renderHeaderImageExportContent(entry) {
   const page = getGuidedExportEntryPage(entry);
   const theme = entry.pageTheme || getGuidedPageTheme(page);
   const background = getGuidedPageBackground(page, theme) || theme?.background || "#FFE0E9";
+  const { height } = getExportEntryDimensions(entry);
   return `
     <div
       class="guided-export-header-image"
-      style="background:${escapeAttr(background)};background-position:top center;--guided-page-theme-filter:${escapeAttr(theme?.filter || "none")};"
+      style="height:${Number(height || GUIDED_HEADER_IMAGE_EXPORT_HEIGHT)}px;background:${escapeAttr(background)};background-position:top center;--guided-page-theme-filter:${escapeAttr(theme?.filter || "none")};"
     >
       <div class="guided-export-themed-content">
         ${renderComponent(getExportEntryNode(entry), { editable: false })}
@@ -18936,10 +19119,22 @@ function bindEvents() {
     }
 
     if (event.target.closest("[data-guided-open-theme]")) {
+      if (getGuidedHeaderLevelId(getPageHeaderNode(activePage())) === "s") return;
       state.selectedId = null;
       state.guidedStateMenuNodeId = null;
       state.guidedPanelMode = "page";
       updateGuidedNodeSelection(null);
+      updateGuidedPanel({ enter: true });
+      return;
+    }
+
+    if (event.target.closest("[data-guided-open-header-level]")) {
+      const headerNode = getPageHeaderNode(activePage());
+      if (!headerNode) return;
+      state.selectedId = headerNode.id;
+      state.guidedStateMenuNodeId = null;
+      state.guidedPanelMode = "hero-level";
+      updateGuidedNodeSelection(headerNode.id);
       updateGuidedPanel({ enter: true });
       return;
     }
@@ -19423,6 +19618,14 @@ function bindEvents() {
         applyCurrentGuidedThemeToNode(found.node);
       }
       render();
+      return;
+    }
+
+    const guidedHeaderLevel = event.target.closest("[data-guided-header-level]");
+    if (guidedHeaderLevel) {
+      if (applyGuidedHeaderLevel(guidedHeaderLevel.dataset.guidedHeaderLevel || "default")) {
+        render();
+      }
       return;
     }
 
@@ -20874,7 +21077,6 @@ function bindEvents() {
     const prop = event.target.closest("[data-edit-prop]");
     const variantProp = event.target.closest("[data-variant-prop]");
     const propKey = prop?.dataset.editProp || variantProp?.dataset.variantProp;
-    if (propKey !== "text") return;
     const editingNodeId = (prop || variantProp)?.closest("[data-node-id]")?.dataset.nodeId;
     const found = findNode(state.nodes, editingNodeId || state.selectedId);
     if (!found?.node || !shouldRefreshGuidedHeaderEditable(found.node, propKey, event)) return;

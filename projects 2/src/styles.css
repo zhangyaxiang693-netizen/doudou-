@@ -6389,7 +6389,7 @@ button:hover {
   position: absolute;
   z-index: 45;
   top: 18px;
-  right: 282px;
+  right: 424px;
   display: inline-flex;
   width: auto;
   min-width: 108px;
@@ -6411,6 +6411,46 @@ button:hover {
 .guided-theme-entry span {
   color: #ff1372;
   font-size: 18px;
+}
+
+.guided-header-level-entry {
+  position: absolute;
+  z-index: 45;
+  top: 18px;
+  right: 282px;
+  display: inline-flex;
+  width: auto;
+  min-width: 108px;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid #d0d5dd;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.1);
+  color: #344054;
+  font-size: 13px;
+  font-weight: 750;
+  backdrop-filter: blur(10px);
+}
+
+.guided-header-level-entry span {
+  color: #f79009;
+  font-size: 18px;
+}
+
+.guided-theme-entry.is-disabled,
+.guided-theme-entry:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.guided-theme-entry.is-disabled:hover,
+.guided-theme-entry:disabled:hover {
+  border-color: #d0d5dd;
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .guided-add-entry {
@@ -6442,7 +6482,8 @@ button:hover {
 }
 
 .guided-add-entry:hover,
-.guided-theme-entry:hover {
+.guided-theme-entry:hover,
+.guided-header-level-entry:hover {
   border-color: #98a2b3;
   background: #ffffff;
 }
@@ -8003,7 +8044,7 @@ button:hover {
 
 .guided-export-header-image {
   width: 750px;
-  height: 400px;
+  height: var(--guided-header-export-height, 400px);
   overflow: hidden;
 }
 
@@ -8790,6 +8831,23 @@ button:hover {
   width: 702px;
   transform: scale(0.42);
   transform-origin: top left;
+}
+
+.guided-header-level-options .guided-business-state-preview {
+  height: 320px;
+}
+
+.guided-header-level-options .guided-business-state-preview-inner {
+  width: 750px;
+  transform: scale(0.4);
+}
+
+.guided-header-level-options .guided-business-state-card > p {
+  margin: 0;
+  padding: 10px 12px 12px;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .guided-child-state-groups {
