@@ -415,7 +415,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     description: "由标题、流量扶持券、大按钮、活动规则样式 3 组成。",
     className: "traffic-submission-style3-module",
     children: [
-      ["模块标题-正常", { iconType: "folder" }],
+      ["模块标题-正常", { iconType: "folder", titleText: "优质投稿 赢520元官方加热" }],
       ["流量扶持券", {}],
       ["大按钮", { buttonText: "立即投稿" }],
       ["正文-活动规则样式3", {}],
@@ -457,7 +457,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     description: "由模块标题和内容案例样式 2 组成，内容案例在分子容器内横向滑动。",
     className: "user-education-case-style1-module",
     children: [
-      ["模块标题-正常", { iconType: "fire" }],
+      ["模块标题-正常", { iconType: "fire", titleText: "TA们都用DOU+上热门" }],
       ["内容案例-样式2", {}],
     ],
   },
@@ -480,7 +480,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     description: "由模块标题、用户教育正文和大按钮组成。",
     className: "user-education-guide-module",
     children: [
-      ["模块标题-正常", { iconType: "tip" }],
+      ["模块标题-正常", { iconType: "tip", titleText: "快速分享DOU+攻略" }],
       ["正文-用户教育", {}],
       ["大按钮", { buttonText: "立即投稿" }],
     ],
@@ -492,7 +492,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     description: "由模块标题、智投星内容和大按钮组成。",
     className: "ai-smart-invest-module",
     children: [
-      ["模块标题-正常", {}],
+      ["模块标题-正常", { titleText: "AI智投 全新上线" }],
       ["智投星内容", {}],
       ["大按钮", { buttonText: "立即体验" }],
     ],
@@ -529,7 +529,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     description: "由模块标题和节点指南内容组成，节点指南内容在分子内横向滑动。",
     className: "node-guide-module",
     children: [
-      ["模块标题-正常", { iconType: "fire" }],
+      ["模块标题-正常", { iconType: "fire", titleText: "七夕行业节点投放指南" }],
       ["节点指南-内容", {}],
     ],
   },
@@ -540,7 +540,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     description: "由模块标题和官方小助手组成。",
     className: "official-assistant-module",
     children: [
-      ["模块标题-正常", {}],
+      ["模块标题-正常", { titleText: "官方1v1小助手" }],
       ["官方小助手", {}],
     ],
   },
@@ -567,7 +567,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
       min: 1,
     },
     children: [
-      ["模块标题-正常", { iconType: "calendar" }],
+      ["模块标题-正常", { iconType: "calendar", titleText: "任务清单" }],
     ],
   },
 ];
