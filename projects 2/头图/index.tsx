@@ -13,6 +13,8 @@ export type IGeneratedComponent = {
   burstColor?: string
   burstOpacity?: number | string
   mainVisualImage?: string
+  mainVisualOffsetY?: number | string
+  mainVisualScale?: number | string
   ribbonColor?: string
   glowOpacity?: number | string
   textColor?: string
@@ -103,6 +105,13 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const glowStyle: React.CSSProperties = {
     opacity: Number.isFinite(glowOpacity) ? glowOpacity : 0.6,
   }
+  const mainVisualOffsetY = Number(props.mainVisualOffsetY ?? 0)
+  const mainVisualScale = Number(props.mainVisualScale ?? 1)
+  const mainVisualStyle: React.CSSProperties = Number.isFinite(mainVisualOffsetY) || Number.isFinite(mainVisualScale)
+    ? {
+        transform: `translateY(${Number.isFinite(mainVisualOffsetY) ? mainVisualOffsetY : 0}px) scale(${Number.isFinite(mainVisualScale) ? mainVisualScale : 1})`,
+      }
+    : undefined
   const titleStyle = {
     color: mainTextColor,
   }
@@ -114,7 +123,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     <div className={styles.page}>
       <div className={styles.image} style={burstStyle} />
       <img src={glowUrl} className={styles.image1} style={glowStyle} />
-      <img src={props.mainVisualImage || mainVisualUrl} className={styles.image2} />
+      <img src={props.mainVisualImage || mainVisualUrl} className={styles.image2} style={mainVisualStyle} />
       <div className={styles.image3} style={ribbonStyle} />
       <div className={styles.wrap}>
         <div className={styles.text} style={titleStyle} data-react-edit-prop="text">

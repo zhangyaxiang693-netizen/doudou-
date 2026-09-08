@@ -389,12 +389,13 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     id: "核心玩法模块-抽奖-已报名",
     name: "核心玩法模块-抽奖-已报名",
     type: "molecule",
-    description: "由标题+抽奖次数、提示、九宫格抽奖报名后组成。",
+    description: "由标题+抽奖次数、提示、九宫格抽奖报名后、查看更多入口组成。",
     className: "lottery-registered-module",
     children: [
       ["标题+抽奖次数", {}],
       ["提示", {}],
       ["抽奖九宫格-报名后", {}],
+      ["查看更多", { text: "内容诊断积分查看入口 >>" }],
     ],
   },
   {
@@ -3638,7 +3639,7 @@ const guidedPageThemePresets = [
     solidBackground: GUIDED_S_LEVEL_BACKGROUND,
     primary: "#7B5BFF",
     secondary: GUIDED_S_LEVEL_BACKGROUND,
-    variantThemeId: "apricot",
+    variantThemeId: "pink",
     filter: "none",
   },
   {
@@ -3675,26 +3676,26 @@ function getGuidedThemeCategory(theme) {
 }
 
 function getHeaderMainVisualOptions() {
-  const displayNames = ["爱心", "冲出"];
   const replacementOptions = Object.entries(_headerMainVisualModules)
     .map(([path, url]) => {
       const fileName = decodeURIComponent(path.split("/").pop() || "");
+      const name = fileName.replace(/\.[^.]+$/, "");
       return {
         id: path,
-        name: fileName.replace(/\.[^.]+$/, ""),
+        name,
         url,
+        offsetY: /^主体替换-方案[2-5]$/.test(name) ? -18 : 0,
+        scale: /^主体替换-方案[4-5]$/.test(name) ? 1.08 : 1,
       };
     })
-    .sort((a, b) => a.name.localeCompare(b.name, "zh-CN"))
-    .map((item, index) => ({
-      ...item,
-      name: displayNames[index] || item.name,
-    }));
+    .sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
   return [
     {
       id: "default-main-visual",
       name: "惊喜",
       url: headerDefaultMainVisualUrl,
+      offsetY: 0,
+      scale: 1,
     },
     ...replacementOptions,
   ];
@@ -11636,25 +11637,27 @@ function createGuidedFallbackPages(sourcePageOrTheme = guidedPageThemePresets[0]
   return pages;
 }
 
-function applyHeaderMainVisualToNode(node, mainVisualImage, visited = new WeakSet()) {
+function applyHeaderMainVisualToNode(node, mainVisualImage, mainVisualOffsetY = 0, mainVisualScale = 1, visited = new WeakSet()) {
   if (!node || visited.has(node)) return;
   visited.add(node);
   if (node.schemaId === "头图" || node.name === "头图") {
     node.props = { ...(node.props || {}) };
     node.props.mainVisualImage = mainVisualImage;
+    node.props.mainVisualOffsetY = mainVisualOffsetY;
+    node.props.mainVisualScale = mainVisualScale;
   }
   (node.children || []).forEach((child) =>
-    applyHeaderMainVisualToNode(child, mainVisualImage, visited),
+    applyHeaderMainVisualToNode(child, mainVisualImage, mainVisualOffsetY, mainVisualScale, visited),
   );
   (node.guidedStates || []).forEach((entry) =>
-    applyHeaderMainVisualToNode(entry.node, mainVisualImage, visited),
+    applyHeaderMainVisualToNode(entry.node, mainVisualImage, mainVisualOffsetY, mainVisualScale, visited),
   );
   (node.guidedLineageVariants || []).forEach((variant) =>
-    applyHeaderMainVisualToNode(variant.node, mainVisualImage, visited),
+    applyHeaderMainVisualToNode(variant.node, mainVisualImage, mainVisualOffsetY, mainVisualScale, visited),
   );
 }
 
-function syncFallbackHeaderMainVisual(mainVisualImage) {
+function syncFallbackHeaderMainVisual(mainVisualImage, mainVisualOffsetY = 0, mainVisualScale = 1) {
   const page = activePage();
   if (!page || page.isSystemFallback) return;
   const sourceHeader = getPageHeaderNode(page);
@@ -11663,7 +11666,7 @@ function syncFallbackHeaderMainVisual(mainVisualImage) {
     if (!item?.isSystemFallback) return;
     const headerNode = getPageHeaderNode(item);
     if (!headerNode) return;
-    applyHeaderMainVisualToNode(headerNode, mainVisualImage);
+    applyHeaderMainVisualToNode(headerNode, mainVisualImage, mainVisualOffsetY, mainVisualScale);
   });
 }
 
@@ -11775,7 +11778,7 @@ function applyGuidedHeaderLevel(levelId) {
       item.canvasBackground = GUIDED_S_LEVEL_BACKGROUND;
       item.colorThemeId = "s-mid-autumn";
       if (item !== page) replaceGuidedHeaderNodeOnPage(item, null, levelId, nextHeader);
-      applyThemeBoundVariantsToNodes(item.nodes, "apricot");
+      applyThemeBoundVariantsToNodes(item.nodes, "pink");
     });
   } else {
     state.pages.forEach((item) => {
@@ -15570,6 +15573,8 @@ function renderGuidedFloatingPanel(node, options = {}) {
                       type="button"
                       class="guided-header-visual-card ${currentMainVisualImage === item.url ? "active" : ""}"
                       data-guided-header-main-visual="${escapeAttr(item.url)}"
+                      data-guided-header-main-visual-offset-y="${Number(item.offsetY || 0)}"
+                      data-guided-header-main-visual-scale="${Number(item.scale || 1)}"
                       aria-label="替换为${escapeAttr(item.name)}"
                     >
                       <span><img src="${escapeAttr(item.url)}" alt="" loading="lazy" /></span>
@@ -17021,7 +17026,7 @@ function getMoleculeChildExportMargin(node, index, childCount) {
     return [40, 32, 32, 40][index] ?? 0;
   }
   if (classNames.includes("lottery-unregistered-module")) return [24, 24, 24][index] ?? 0;
-  if (classNames.includes("lottery-registered-module")) return [24, 24][index] ?? 0;
+  if (classNames.includes("lottery-registered-module")) return [24, 24, 26][index] ?? 0;
   if (classNames.includes("traffic-submission-module")) return [32, 32, 32][index] ?? 0;
   if (classNames.includes("traffic-submission-style3-module")) return [32, 32, 32][index] ?? 0;
   if (classNames.includes("content-diagnosis-clicked-module")) return [32, 24, 24][index] ?? 0;
@@ -17227,9 +17232,11 @@ function getGuidedNodeLineageExportVariants(node) {
   const { base, graph } = ensureGuidedLineageTree(node);
   const mainVisualImage = node?.props?.mainVisualImage;
   if (isHeaderImageExportNode(node) && mainVisualImage !== undefined) {
-    applyHeaderMainVisualToNode(base.node, mainVisualImage);
+    const mainVisualOffsetY = Number(node?.props?.mainVisualOffsetY || 0);
+    const mainVisualScale = Number(node?.props?.mainVisualScale || 1);
+    applyHeaderMainVisualToNode(base.node, mainVisualImage, mainVisualOffsetY, mainVisualScale);
     (node.guidedLineageVariants || []).forEach((variant) =>
-      applyHeaderMainVisualToNode(variant.node, mainVisualImage),
+      applyHeaderMainVisualToNode(variant.node, mainVisualImage, mainVisualOffsetY, mainVisualScale),
     );
   }
   return (graph.nodes || []).map((graphNode, variantIndex) => {
@@ -19634,8 +19641,10 @@ function bindEvents() {
       const found = getSelectedNodeInfo();
       if (found?.node?.schemaId === "头图") {
         const mainVisualImage = headerMainVisual.dataset.guidedHeaderMainVisual || "";
-        applyHeaderMainVisualToNode(found.node, mainVisualImage);
-        syncFallbackHeaderMainVisual(mainVisualImage);
+        const mainVisualOffsetY = Number(headerMainVisual.dataset.guidedHeaderMainVisualOffsetY || 0);
+        const mainVisualScale = Number(headerMainVisual.dataset.guidedHeaderMainVisualScale || 1);
+        applyHeaderMainVisualToNode(found.node, mainVisualImage, mainVisualOffsetY, mainVisualScale);
+        syncFallbackHeaderMainVisual(mainVisualImage, mainVisualOffsetY, mainVisualScale);
       }
       render();
       return;
