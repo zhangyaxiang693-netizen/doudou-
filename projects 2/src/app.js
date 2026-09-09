@@ -16135,6 +16135,9 @@ function renderMoleculeComponent(node, options = {}) {
   const isDropTarget = state.dropMoleculeId === node.id;
   const minHeight = children.length === 0 ? "200px" : "auto";
   const moleculeClass = node.className ? ` ${node.className}` : "";
+  const useUnifiedModuleTitleTypography =
+    node.schemaId === "AI智投" ||
+    node.schemaId === "官方小助手模块";
 
   const pieces = [];
   if (!children.length) {
@@ -16156,7 +16159,17 @@ function renderMoleculeComponent(node, options = {}) {
               lineageInitialNode: options.lineageInitialNode?.children?.[index],
             }
           : options;
-      pieces.push(renderMoleculeChildNode(child, index, node.id, childOptions));
+      const renderChild =
+        child.schemaId === "模块标题-正常"
+          ? {
+              ...child,
+              props: {
+                ...(child.props || {}),
+                useUnifiedTypography: useUnifiedModuleTitleTypography,
+              },
+            }
+          : child;
+      pieces.push(renderMoleculeChildNode(renderChild, index, node.id, childOptions));
     });
     if (isDropTarget && state.dropChildIndex === children.length) {
       pieces.push('<div class="molecule-drop-marker"></div>');
