@@ -29,6 +29,27 @@ export type IGeneratedComponent = {
   iconType?: 'coupon' | 'alarm' | 'calendar' | 'gift' | 'folder' | 'fire' | 'tip'
 }
 
+function renderTitleText(value: string) {
+  return value.split(/([0-9０-９]+|[A-Za-z+]+)/g).map((segment, index) => {
+    if (!segment) return null
+    if (/^[0-9０-９]+$/.test(segment)) {
+      return (
+        <span key={`${segment}-${index}`} className={styles.douyinNumber}>
+          {segment}
+        </span>
+      )
+    }
+    if (/^[A-Za-z+]+$/.test(segment)) {
+      return (
+        <span key={`${segment}-${index}`} className={styles.douyinSans}>
+          {segment}
+        </span>
+      )
+    }
+    return segment
+  })
+}
+
 function getVariantIcon(
   iconVariant?: IGeneratedComponent['iconVariant'],
   iconType?: IGeneratedComponent['iconType'],
@@ -75,7 +96,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <div className={styles.content1}>
             <div className={styles.text}>
               <div className={styles.text__listwrap}>
-                  {titleText}
+                {renderTitleText(titleText)}
               </div>
             </div>
           </div>

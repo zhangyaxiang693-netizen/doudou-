@@ -90,3 +90,19 @@
   display: inline-flex;
   align-items: center;
 }
+
+.douyinNumber {
+  font-family: "Douyin Number ABC", "MFBenHeiNoncommercial";
+  font-size: 50px;
+  font-weight: 800;
+  margin-inline: 9px;
+}
+
+.douyinSans {
+  font-family: "Douyin Sans", "MFBenHeiNoncommercial";
+  font-size: 42px;
+  font-weight: 900;
+  margin-inline: 9px;
+  -webkit-text-stroke: 1px currentColor;
+  paint-order: stroke fill;
+}
