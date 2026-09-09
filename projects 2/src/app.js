@@ -495,7 +495,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     description: "由模块标题、智投星内容和大按钮组成。",
     className: "ai-smart-invest-module",
     children: [
-      ["模块标题-正常", { titleText: "AI智投 全新上线" }],
+      ["模块标题-正常", { titleText: "AI智投 全新上线", useUnifiedTypography: true }],
       ["智投星内容", {}],
       ["大按钮", { buttonText: "立即体验" }],
     ],
@@ -543,7 +543,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     description: "由模块标题和官方小助手组成。",
     className: "official-assistant-module",
     children: [
-      ["模块标题-正常", { titleText: "官方1v1小助手" }],
+      ["模块标题-正常", { titleText: "官方1v1小助手", useUnifiedTypography: true }],
       ["官方小助手", {}],
     ],
   },

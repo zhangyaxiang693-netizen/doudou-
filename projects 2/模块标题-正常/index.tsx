@@ -27,6 +27,7 @@ export type IGeneratedComponent = {
   titleText?: string
   iconVariant?: 'current' | 'red' | 'yellow'
   iconType?: 'coupon' | 'alarm' | 'calendar' | 'gift' | 'folder' | 'fire' | 'tip'
+  useUnifiedTypography?: boolean
 }
 
 function renderTitleText(value: string) {
@@ -96,7 +97,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <div className={styles.content1}>
             <div className={styles.text}>
               <div className={styles.text__listwrap}>
-                {renderTitleText(titleText)}
+                {props.useUnifiedTypography ? titleText : renderTitleText(titleText)}
               </div>
             </div>
           </div>
