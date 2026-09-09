@@ -96,7 +96,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           </div>
           <div className={styles.content1}>
             <div className={styles.text}>
-              <div className={styles.text__listwrap}>
+              <div className={styles.text__listwrap} data-react-edit-prop="titleText">
                 {props.useUnifiedTypography ? titleText : renderTitleText(titleText)}
               </div>
             </div>

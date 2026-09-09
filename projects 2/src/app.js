@@ -13984,13 +13984,18 @@ function renderGuidedNode(node) {
   `;
 }
 
-function refreshGuidedReactNodeContent(node, propKey, caretOffset) {
+function refreshGuidedReactNodeContent(node, propKey, caretOffset, parent = null) {
   if (state.view !== "guided-preview" || !node?.id) return false;
-  const content = document.querySelector(
+  const guidedContent = document.querySelector(
     `.guided-node[data-node-id="${CSS.escape(node.id)}"] .guided-node-theme-content`,
   );
+  const nestedContent = document.querySelector(
+    `.guided-node .molecule-child[data-node-id="${CSS.escape(node.id)}"]`,
+  );
+  const content = guidedContent || nestedContent;
   if (!content) return false;
-  content.innerHTML = renderComponent(node);
+  const renderNode = parent ? getMoleculeChildRenderNode(parent, node) : node;
+  content.innerHTML = renderComponent(renderNode);
   window.renderReactMaterials?.();
   const nextEditable = content.querySelector(
     `[data-edit-prop="${CSS.escape(propKey)}"]`,
@@ -14001,13 +14006,14 @@ function refreshGuidedReactNodeContent(node, propKey, caretOffset) {
   return true;
 }
 
-function shouldRefreshGuidedHeaderEditable(node, propKey, event) {
+function shouldRefreshGuidedReactEditable(node, propKey, event) {
   return (
     state.view === "guided-preview" &&
     !event.isComposing &&
     (
       (node?.schemaId === "头图" && propKey === "text") ||
-      (node?.schemaId === "S级-中秋头图" && propKey === "mainTitle")
+      (node?.schemaId === "S级-中秋头图" && propKey === "mainTitle") ||
+      (node?.schemaId === "模块标题-正常" && propKey === "titleText")
     )
   );
 }
@@ -16130,14 +16136,25 @@ function renderEditable(value, prop, tag = "span", options = {}) {
   return `<${tag} ${attr}>${content}</${tag}>`;
 }
 
+function getMoleculeChildRenderNode(molecule, child) {
+  if (child?.schemaId !== "模块标题-正常") return child;
+  const useUnifiedModuleTitleTypography =
+    molecule?.schemaId === "AI智投" ||
+    molecule?.schemaId === "官方小助手模块";
+  return {
+    ...child,
+    props: {
+      ...(child.props || {}),
+      useUnifiedTypography: useUnifiedModuleTitleTypography,
+    },
+  };
+}
+
 function renderMoleculeComponent(node, options = {}) {
   const children = node.children || [];
   const isDropTarget = state.dropMoleculeId === node.id;
   const minHeight = children.length === 0 ? "200px" : "auto";
   const moleculeClass = node.className ? ` ${node.className}` : "";
-  const useUnifiedModuleTitleTypography =
-    node.schemaId === "AI智投" ||
-    node.schemaId === "官方小助手模块";
 
   const pieces = [];
   if (!children.length) {
@@ -16159,16 +16176,7 @@ function renderMoleculeComponent(node, options = {}) {
               lineageInitialNode: options.lineageInitialNode?.children?.[index],
             }
           : options;
-      const renderChild =
-        child.schemaId === "模块标题-正常"
-          ? {
-              ...child,
-              props: {
-                ...(child.props || {}),
-                useUnifiedTypography: useUnifiedModuleTitleTypography,
-              },
-            }
-          : child;
+      const renderChild = getMoleculeChildRenderNode(node, child);
       pieces.push(renderMoleculeChildNode(renderChild, index, node.id, childOptions));
     });
     if (isDropTarget && state.dropChildIndex === children.length) {
@@ -21063,8 +21071,8 @@ function bindEvents() {
         syncPopupPrizesToSourceLottery(found.node);
       }
       if (
-        shouldRefreshGuidedHeaderEditable(found.node, propKey, event) &&
-        refreshGuidedReactNodeContent(found.node, propKey, caretOffset)
+        shouldRefreshGuidedReactEditable(found.node, propKey, event) &&
+        refreshGuidedReactNodeContent(found.node, propKey, caretOffset, found.parent)
       ) {
         return;
       }
@@ -21083,8 +21091,8 @@ function bindEvents() {
         const canvasField = document.querySelector(`[data-node-id="${found.node.id}"] [data-edit-prop="${variantProp.dataset.variantProp}"]`);
         if (canvasField) canvasField.textContent = value;
         if (
-          shouldRefreshGuidedHeaderEditable(found.node, variantProp.dataset.variantProp, event) &&
-          refreshGuidedReactNodeContent(found.node, variantProp.dataset.variantProp, getTextOffsetWithin(variantProp))
+          shouldRefreshGuidedReactEditable(found.node, variantProp.dataset.variantProp, event) &&
+          refreshGuidedReactNodeContent(found.node, variantProp.dataset.variantProp, getTextOffsetWithin(variantProp), found.parent)
         ) {
           return;
         }
@@ -21101,7 +21109,7 @@ function bindEvents() {
     const propKey = prop?.dataset.editProp || variantProp?.dataset.variantProp;
     const editingNodeId = (prop || variantProp)?.closest("[data-node-id]")?.dataset.nodeId;
     const found = findNode(state.nodes, editingNodeId || state.selectedId);
-    if (!found?.node || !shouldRefreshGuidedHeaderEditable(found.node, propKey, event)) return;
+    if (!found?.node || !shouldRefreshGuidedReactEditable(found.node, propKey, event)) return;
     const target = prop || variantProp;
     const value = target.textContent;
     if (prop) {
@@ -21121,7 +21129,7 @@ function bindEvents() {
       if (found.node.activeVariantId === variant.id) found.node.props[propKey] = value;
       syncGuidedInlineEditToSource(found, variant.id, propKey, value);
     }
-    refreshGuidedReactNodeContent(found.node, propKey, getTextOffsetWithin(target));
+    refreshGuidedReactNodeContent(found.node, propKey, getTextOffsetWithin(target), found.parent);
   });
 
   document.addEventListener("focusout", (event) => {
