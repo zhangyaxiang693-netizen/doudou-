@@ -1252,7 +1252,10 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
       sections: [
         {
           title: "",
-          fields: [["0.titleText", "模块标题"]],
+          fields: [
+            ["taskCount", "任务数量"],
+            ["0.titleText", "模块标题"],
+          ],
         },
         ...Array.from({ length: 3 }, (_, index) => {
           const taskNumber = index + 1;
@@ -1489,9 +1492,16 @@ function parsePrdBlueprintClipboardRows(clipboardData) {
 
 function getPrdDocumentTableHeaderIndex(rows, headerLabel) {
   const wanted = normalizePageTemplateLookupName(headerLabel);
-  return rows.findIndex(
-    (cells) => normalizePageTemplateLookupName(cells[0]) === wanted,
-  );
+  return rows.findIndex((cells) => {
+    const firstCell = normalizePageTemplateLookupName(cells[0]);
+    if (!wanted) {
+      return (
+        !firstCell ||
+        firstCell === normalizePageTemplateLookupName("模块信息")
+      );
+    }
+    return firstCell === wanted;
+  });
 }
 
 function getPrdDocumentSpecFieldLabels(spec) {
@@ -1543,17 +1553,35 @@ function parsePrdDocumentStandardTable(rows, templateName) {
   );
   if (!moduleMatch?.score) return null;
   const allowedFields = getPrdDocumentSpecFieldLabels(moduleMatch.spec);
-  const fields = rows
-    .slice(headerIndex + 1)
-    .map((cells) => ({
-      field: String(cells[0] || "").trim(),
-      values: headers.map((_, index) => String(cells[index + 1] || "").trim()),
-    }))
-    .filter(
-      (row) =>
-        allowedFields.has(normalizePageTemplateLookupName(row.field)) &&
-        row.values.some(Boolean),
+  const isTaskModule = isPrdBlueprintTaskModuleName(
+    moduleMatch.spec.moduleName,
+  );
+  let currentTaskNumber = 0;
+  const fields = [];
+  rows.slice(headerIndex + 1).forEach((cells) => {
+    const fieldName = String(cells[0] || "").trim();
+    const taskMatch = isTaskModule
+      ? fieldName.match(/^任务\s*(\d+)/)
+      : null;
+    if (taskMatch) {
+      currentTaskNumber = Number(taskMatch[1]);
+      return;
+    }
+    if (!allowedFields.has(normalizePageTemplateLookupName(fieldName))) {
+      return;
+    }
+    const values = headers.map((_, index) =>
+      String(cells[index + 1] || "").trim(),
     );
+    if (!values.some(Boolean)) return;
+    fields.push({
+      field:
+        isTaskModule && currentTaskNumber
+          ? `任务${currentTaskNumber}｜${fieldName}`
+          : fieldName,
+      values,
+    });
+  });
   return {
     module: moduleMatch.spec.moduleName,
     versions: headers,
@@ -1825,15 +1853,23 @@ function mergeAdaptedPrdDocumentRows(
         normalizePageTemplateLookupName(row.field) ===
           normalizePageTemplateLookupName(fieldName),
     );
-    if (rowIndex < 0) return;
     const rowVersions = getPrdBlueprintPasteModuleVersions(
       moduleName,
       moduleVersions,
       versions,
     );
-    rows[rowIndex].values = rowVersions.map(
+    const values = rowVersions.map(
       (_, index) => String(cells[index + 2] || "").trim(),
     );
+    if (rowIndex < 0) {
+      rows.push({
+        module: moduleName,
+        field: fieldName,
+        values,
+      });
+      return;
+    }
+    rows[rowIndex].values = values;
   });
   return rows;
 }
@@ -2065,6 +2101,40 @@ function getPrdBlueprintMaxTaskCount(
   moduleVersions = {},
 ) {
   return Math.max(0, ...getPrdBlueprintTaskCountsByVersion(pasteRows, versions, moduleVersions).values());
+}
+
+function getPrdBlueprintConsumptionTierCountsByVersion(
+  rows = [],
+  versions = PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS,
+  moduleVersions = {},
+) {
+  const counts = new Map();
+  getFilledPrdBlueprintPasteRows(rows).forEach((row) => {
+    if (
+      getNormalizedPrdBlueprintModuleName(row.module) !==
+      normalizePageTemplateLookupName("核心玩法｜抽奖消耗返")
+    ) {
+      return;
+    }
+    const tierMatch = normalizePageTemplateLookupName(row.field).match(
+      /^第([1-4])档/,
+    );
+    if (!tierMatch) return;
+    const tierIndex = Number(tierMatch[1]);
+    const rowVersions = getPrdBlueprintPasteModuleVersions(
+      row.module,
+      moduleVersions,
+      versions,
+    );
+    rowVersions.forEach((versionName, index) => {
+      if (!String(row.values[index] || "").trim()) return;
+      counts.set(
+        versionName || "",
+        Math.max(counts.get(versionName || "") || 3, tierIndex),
+      );
+    });
+  });
+  return counts;
 }
 
 function buildPageTemplateSeedBlueprintFromPasteRows(
@@ -2583,6 +2653,44 @@ function convertBlueprintPasteRowsToPrdRows(
     pageTemplate,
     manualVersions,
   });
+
+  const consumptionTierCounts =
+    getPrdBlueprintConsumptionTierCountsByVersion(
+      pasteRows,
+      versions,
+      normalizedModuleVersions,
+    );
+  if (consumptionTierCounts.size) {
+    const consumptionModuleIndex = materializePageTemplateNodes(
+      pageTemplate,
+    ).findIndex((node, moduleIndex) =>
+      getPageTemplateNodeModuleAliases(pageTemplate, moduleIndex).some(
+        (alias) =>
+          getNormalizedPrdBlueprintModuleName(alias) ===
+          normalizePageTemplateLookupName("核心玩法｜抽奖消耗返"),
+      ),
+    );
+    if (consumptionModuleIndex >= 0) {
+      const moduleKey = getPageTemplateVersionModuleKey(
+        pageTemplate.id,
+        consumptionModuleIndex,
+      );
+      consumptionTierCounts.forEach((tierCount, versionName) => {
+        addImportedManualModuleVersion(
+          moduleKey,
+          versionName,
+          manualVersions,
+        );
+        rows.push({
+          key: getConsumptionReturnTierCountRowKey(
+            consumptionModuleIndex,
+            isPrdBlueprintDefaultVersion(versionName) ? "" : versionName,
+          ),
+          value: String(tierCount),
+        });
+      });
+    }
+  }
 
   dataRows.forEach((row) => {
     if (normalizePageTemplateLookupName(row.module) === normalizePageTemplateLookupName("页面基础信息")) return;
@@ -5925,6 +6033,8 @@ function normalizePrizeLookupText(value) {
     .trim()
     .replace(/\s+/g, "")
     .replace(/[＋+]/g, "+")
+    .replace(/抖仔/g, "dou仔")
+    .replace(/[（）()]/g, "")
     .toLowerCase();
 }
 
@@ -5934,6 +6044,7 @@ function findPrizeLibraryItemByText(value) {
   if (!normalized) return null;
   const aliases = {
     券包: "coupon_pack",
+    "1000元券包": "coupon_pack",
     心动券包: "coupon_pack",
     "1314元心动券包": "coupon_pack",
     积分: "points",
@@ -5946,6 +6057,7 @@ function findPrizeLibraryItemByText(value) {
     "dou+官方推荐机会": "official_recommendation",
     dou仔周边: "douzi_merch",
     dou仔随机周边: "douzi_family_pack",
+    dou仔周边随机发: "douzi_family_pack",
     dou仔全家福: "douzi_family_pack",
     dou仔全家福随机发: "douzi_family_pack",
     dou仔周边全家福: "douzi_family_pack",
@@ -5954,6 +6066,9 @@ function findPrizeLibraryItemByText(value) {
   };
   const aliasId = aliases[normalized];
   if (aliasId) return mockPrizeLibrary.find((item) => item.id === aliasId) || null;
+  if (/^内容诊断\d*积分$/.test(normalized)) {
+    return mockPrizeLibrary.find((item) => item.id === "points") || null;
+  }
   const exactNameMatchedItem = mockPrizeLibrary.find((item) =>
     normalizePrizeLookupText(item.name) === normalized
   );
@@ -8441,6 +8556,38 @@ function getPrdPageTemplateInputFields(pageTemplate, verifier) {
           }).filter(Boolean),
         ),
       );
+  if (specs !== null) {
+    const includedKeys = new Set(
+      orderedFields.map(({ field }) => field.compoundKey),
+    );
+    const taskLabelByProp = {
+      taskTitle: "标题",
+      showNewTag: "NEW标签",
+      taskSubtitle: "说明",
+      rewardCountText: "奖励数量",
+      completionText: "完成次数说明",
+    };
+    fields.forEach((field) => {
+      if (
+        field.moduleSchemaId !== "任务列表" ||
+        includedKeys.has(field.compoundKey)
+      ) {
+        return;
+      }
+      const match = getPageTemplateFieldLocalCompoundKey(field).match(
+        /^(\d+)\.(taskTitle|showNewTag|taskSubtitle|rewardCountText|completionText)$/,
+      );
+      if (!match) return;
+      orderedFields.push({
+        field,
+        fieldSpec: {
+          moduleName: "核心玩法｜任务",
+          sectionTitle: `任务${match[1]}`,
+          label: taskLabelByProp[match[2]],
+        },
+      });
+    });
+  }
   return orderedFields.map(({ field, fieldSpec }) => ({
     ...field,
     ...fieldSpec,
@@ -19875,10 +20022,20 @@ function bindEvents() {
           try {
             json = text ? JSON.parse(text) : null;
           } catch {
+            if (!res.ok && ["127.0.0.1", "localhost"].includes(location.hostname)) {
+              throw new Error(
+                `本地飞书读取服务不可用（HTTP ${res.status}），请在 projects 2 目录执行 npm run dev`,
+              );
+            }
             throw new Error(`接口返回不是有效 JSON（HTTP ${res.status}）`);
           }
           if (!res.ok) {
-            throw new Error(json?.error || `接口请求失败（HTTP ${res.status}）`);
+            throw new Error(
+              json?.error ||
+                (["127.0.0.1", "localhost"].includes(location.hostname)
+                  ? `本地飞书读取服务不可用（HTTP ${res.status}），请在 projects 2 目录执行 npm run dev`
+                  : `接口请求失败（HTTP ${res.status}）`),
+            );
           }
           return json;
         })
