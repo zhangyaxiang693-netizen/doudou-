@@ -3455,6 +3455,15 @@ const state = {
   selectedBlueprintSceneId: "",
   demoSelectedNodeId: null,
   blueprintReturningFromPreview: false,
+  guidedHeaderLevelId: "default",
+  guidedHeaderLevelDrafts: {
+    s: {
+      mainTitle: "任务通关赢X元流量",
+      subtitle: "为爱加投",
+      dateText: "",
+    },
+  },
+  guidedHeaderDefaultPageSnapshots: [],
   guidedPanelMode: null,
   guidedWorkspaceMode: "split",
   guidedCanvasInitialized: false,
@@ -7485,6 +7494,15 @@ function startPrdParsing() {
   state.prdTemplateSelectedModuleIndex = null;
   state.prdTemplateAddModal = null;
   state.prdTemplateAddAfterIndex = null;
+  state.guidedHeaderLevelId = "default";
+  state.guidedHeaderLevelDrafts = {
+    s: {
+      mainTitle: "任务通关赢X元流量",
+      subtitle: "为爱加投",
+      dateText: "",
+    },
+  };
+  state.guidedHeaderDefaultPageSnapshots = [];
   if (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID) {
     applyConsumptionReturnMoleculeFromPrdRows(state.prdTableRows);
   }
@@ -7930,6 +7948,12 @@ function syncGuidedInlineEditToSource(found, variantId, path, value) {
   const sourcePath = found?.parent
     ? `${found.parent.children.indexOf(found.node)}.${path}`
     : path;
+  if (
+    sourceNode.schemaId === "S级-中秋头图" &&
+    setGuidedSHeaderDraftValue(sourcePath, value)
+  ) {
+    return true;
+  }
   if (syncPageTemplateInlineEditToRows(sourceNode, variantId, sourcePath, value)) return true;
   return syncBlueprintModuleInlineEditToRows(sourceNode, variantId, sourcePath, value);
 }
@@ -8154,6 +8178,8 @@ function getPageTemplateVariableGroups(pageTemplate) {
       moduleIndex,
       moduleSchemaId: activeSchemaId,
       sourceModuleSchemaId: sourceSchemaId,
+      isHeaderModule: getModuleKind(activeSchemaId) === "hero" ||
+        getModuleKind(sourceSchemaId) === "hero",
       moduleName:
         moduleSpec?.moduleName ||
         getGlobalComponentDisplayName(
@@ -8285,6 +8311,7 @@ function renderPageTemplateVariableGroup(group, index = 0) {
           >▦ 切换至页面</button>
         </div>
         ${renderPageTemplateStateSwitch(group)}
+        ${renderPageTemplateHeaderLevelSwitch(group)}
         ${renderPageTemplateEntryCardStateSwitch(group)}
         ${renderPageTemplateChildStateControls(group)}
         ${renderPageTemplateModulePreview(group)}
@@ -8293,8 +8320,59 @@ function renderPageTemplateVariableGroup(group, index = 0) {
         ${
           group.isContentLocked
             ? `<div class="prd-locked-module-note">固定内容</div>`
-            : renderModuleBoundBlueprintVersionMatrix(group)
+            : group.isHeaderModule && state.guidedHeaderLevelId === "s"
+              ? renderPageTemplateSHeaderFields(group)
+              : renderModuleBoundBlueprintVersionMatrix(group)
         }
+      </div>
+    </section>
+  `;
+}
+
+function renderPageTemplateHeaderLevelSwitch(group) {
+  if (!group?.isHeaderModule) return "";
+  const activeLevelId = state.guidedHeaderLevelId === "s" ? "s" : "default";
+  return `
+    <div class="prd-module-state-switch" aria-label="头图等级切换">
+      <button
+        type="button"
+        class="${activeLevelId === "default" ? "active" : ""}"
+        data-prd-header-level="default"
+      >普通</button>
+      <button
+        type="button"
+        class="${activeLevelId === "s" ? "active" : ""}"
+        data-prd-header-level="s"
+      >S级</button>
+    </div>
+  `;
+}
+
+function renderPageTemplateSHeaderFields(group) {
+  const draft = state.guidedHeaderLevelDrafts?.s || {};
+  const inheritedDateText = group.fields?.find(
+    (field) => getPageTemplateFieldLocalCompoundKey(field) === "dateText",
+  )?.value || "";
+  const fields = [
+    ["mainTitle", "主标题", draft.mainTitle || "任务通关赢X元流量"],
+    ["subtitle", "副标题", draft.subtitle || "为爱加投"],
+    ["dateText", "日期文案", draft.dateText || inheritedDateText],
+  ];
+  return `
+    <section class="prd-variable-section">
+      <strong>S级头图文案</strong>
+      <div class="prd-variable-field-grid">
+        ${fields.map(([key, label, value]) => `
+          <label class="prd-variable-field">
+            <span>${escapeHtml(label)}</span>
+            <textarea
+              rows="2"
+              data-prd-header-level-field="${escapeAttr(key)}"
+              data-prd-header-level-template="${escapeAttr(group.templateId)}"
+              data-prd-header-level-module-index="${Number(group.moduleIndex)}"
+            >${escapeHtml(value)}</textarea>
+          </label>
+        `).join("")}
       </div>
     </section>
   `;
@@ -8486,6 +8564,9 @@ function createPageTemplateBlueprintPreviewNode(group) {
       applyGuidedBusinessState(child, control.activeStateId);
     }
   });
+  if (group?.isHeaderModule && state.guidedHeaderLevelId === "s") {
+    node = createGuidedHeaderNodeForLevel("s", node);
+  }
   return node;
 }
 
@@ -8517,9 +8598,11 @@ function renderPageTemplateModulePreview(group) {
     const previewScale = Math.min(0.32, 208 / Math.max(1, pageWidth));
     const scaledHeight = Math.max(72, Math.ceil(previewHeight * previewScale));
     const background =
-      pageTemplate?.canvasBackground ||
-      pageTemplate?.background ||
-      "#ffffff";
+      group?.isHeaderModule && state.guidedHeaderLevelId === "s"
+        ? GUIDED_S_LEVEL_BACKGROUND
+        : pageTemplate?.canvasBackground ||
+          pageTemplate?.background ||
+          "#ffffff";
     return `
       <div
         class="prd-module-preview is-canvas"
@@ -11547,6 +11630,9 @@ function buildDemoGeneratedActivity() {
   const fallbackPages = createGuidedFallbackPages(pages[0]);
   state.pages = [...pages, ...fallbackPages];
   state.activePageId = pages[0]?.id || fallbackPages[0].id;
+  if (state.guidedHeaderLevelId === "s") {
+    applyGuidedHeaderLevel("s");
+  }
     state.guidedVisiblePageIds = [
       ...new Set([
         ...(pages[0] ? [pages[0].id] : []),
@@ -11674,6 +11760,70 @@ function getGuidedHeaderLevelId(node) {
   return node?.schemaId === "S级-中秋头图" ? "s" : "default";
 }
 
+function getGuidedSHeaderDraft() {
+  state.guidedHeaderLevelDrafts = state.guidedHeaderLevelDrafts || {};
+  state.guidedHeaderLevelDrafts.s = {
+    mainTitle: "任务通关赢X元流量",
+    subtitle: "为爱加投",
+    dateText: "",
+    ...(state.guidedHeaderLevelDrafts.s || {}),
+  };
+  return state.guidedHeaderLevelDrafts.s;
+}
+
+function setGuidedSHeaderDraftValue(key, value) {
+  if (!["mainTitle", "subtitle", "dateText"].includes(key)) return false;
+  getGuidedSHeaderDraft()[key] = String(value || "");
+  state.pages.forEach((page) => {
+    const headerNode = getPageHeaderNode(page);
+    if (headerNode?.schemaId === "S级-中秋头图") {
+      headerNode.props = {
+        ...(headerNode.props || {}),
+        [key]: String(value || ""),
+      };
+    }
+  });
+  return true;
+}
+
+function syncGuidedHeaderLevelDraftFromNode(node) {
+  if (node?.schemaId !== "S级-中秋头图") return;
+  const draft = getGuidedSHeaderDraft();
+  ["mainTitle", "subtitle", "dateText"].forEach((key) => {
+    if (node.props?.[key] !== undefined) draft[key] = String(node.props[key] || "");
+  });
+}
+
+function captureGuidedDefaultPageSnapshots() {
+  state.guidedHeaderDefaultPageSnapshots = state.pages.map((page) => {
+    const headerNode = getPageHeaderNode(page);
+    return {
+      pageId: page.id,
+      canvasBackground: page.canvasBackground,
+      colorThemeId: page.colorThemeId,
+      header: headerNode ? cloneNodeForLineage(headerNode) : null,
+    };
+  });
+}
+
+function restoreGuidedDefaultPageSnapshots() {
+  const snapshots = state.guidedHeaderDefaultPageSnapshots || [];
+  let restoredCount = 0;
+  state.pages.forEach((page) => {
+    const snapshot = snapshots.find((item) => item.pageId === page.id);
+    const currentHeader = getPageHeaderNode(page);
+    if (!snapshot?.header || !currentHeader) return;
+    const headerIndex = page.nodes.indexOf(currentHeader);
+    const restoredHeader = cloneNodeForLineage(snapshot.header);
+    restoredHeader.id = currentHeader.id;
+    page.nodes.splice(headerIndex, 1, restoredHeader);
+    page.canvasBackground = snapshot.canvasBackground;
+    page.colorThemeId = snapshot.colorThemeId;
+    restoredCount += 1;
+  });
+  return restoredCount;
+}
+
 function getGuidedHeaderLevelOptions(sourceNode) {
   const dateText = sourceNode?.props?.dateText || "6月10日-6月21日";
   const defaultTitle = sourceNode?.props?.text || sourceNode?.props?.mainTitle || "抽666元流量大奖";
@@ -11708,13 +11858,14 @@ function createGuidedHeaderNodeForLevel(levelId, sourceNode = {}) {
   const nextSchemaId = levelId === "s" ? "S级-中秋头图" : "头图";
   const sourceProps = sourceNode.props || {};
   const dateText = sourceProps.dateText || "6月10日-6月21日";
+  const sDraft = getGuidedSHeaderDraft();
   const overrides = nextSchemaId === "S级-中秋头图"
     ? {
-        mainTitle: sourceNode.schemaId === "S级-中秋头图"
-          ? sourceProps.mainTitle || "任务通关赢X元流量"
-          : "任务通关赢X元流量",
-        subtitle: sourceProps.subtitle || "为爱加投",
-        dateText,
+        mainTitle: sDraft.mainTitle ||
+          sourceProps.mainTitle ||
+          "任务通关赢X元流量",
+        subtitle: sDraft.subtitle || sourceProps.subtitle || "为爱加投",
+        dateText: sDraft.dateText || dateText,
       }
     : {
         text: sourceProps.text || sourceProps.mainTitle || "抽666元流量大奖",
@@ -11766,25 +11917,48 @@ function replaceGuidedHeaderNodeOnPage(page, sourceHeaderId, levelId, templateSo
 }
 
 function applyGuidedHeaderLevel(levelId) {
-  const page = activePage();
-  if (!page || page.isSystemFallback) return false;
+  const currentPage = activePage();
+  const page = currentPage && !currentPage.isSystemFallback
+    ? currentPage
+    : state.pages.find((item) => !item.isSystemFallback);
+  if (!page) return false;
   const sourceHeader = getPageHeaderNode(page);
   if (!sourceHeader) return false;
+  const normalizedLevelId = levelId === "s" ? "s" : "default";
+  const currentLevelId = getGuidedHeaderLevelId(sourceHeader);
+  syncGuidedHeaderLevelDraftFromNode(sourceHeader);
+  if (normalizedLevelId === "s" && currentLevelId !== "s") {
+    captureGuidedDefaultPageSnapshots();
+  }
   const activeHeaderId = sourceHeader.id;
-  const nextHeader = replaceGuidedHeaderNodeOnPage(page, activeHeaderId, levelId, sourceHeader);
+  let nextHeader = null;
+  if (normalizedLevelId === "default" && restoreGuidedDefaultPageSnapshots()) {
+    nextHeader = getPageHeaderNode(page);
+    state.guidedHeaderDefaultPageSnapshots = [];
+  } else {
+    nextHeader = replaceGuidedHeaderNodeOnPage(
+      page,
+      activeHeaderId,
+      normalizedLevelId,
+      sourceHeader,
+    );
+  }
   if (!nextHeader) return false;
-  if (levelId === "s") {
+  if (normalizedLevelId === "s") {
     state.pages.forEach((item) => {
       item.canvasBackground = GUIDED_S_LEVEL_BACKGROUND;
       item.colorThemeId = "s-mid-autumn";
-      if (item !== page) replaceGuidedHeaderNodeOnPage(item, null, levelId, nextHeader);
+      if (item !== page) replaceGuidedHeaderNodeOnPage(item, null, normalizedLevelId, nextHeader);
       applyThemeBoundVariantsToNodes(item.nodes, "pink");
     });
-  } else {
+  } else if (currentLevelId === "s") {
     state.pages.forEach((item) => {
-      if (item.isSystemFallback) replaceGuidedHeaderNodeOnPage(item, null, levelId, nextHeader);
+      if (getGuidedHeaderLevelId(getPageHeaderNode(item)) === "s") {
+        replaceGuidedHeaderNodeOnPage(item, null, normalizedLevelId, nextHeader);
+      }
     });
   }
+  state.guidedHeaderLevelId = normalizedLevelId;
   state.selectedId = nextHeader.id;
   state.guidedPanelMode = null;
   state.guidedStateMenuNodeId = null;
@@ -19118,6 +19292,15 @@ function bindEvents() {
       return;
     }
 
+    const prdHeaderLevel = event.target.closest("[data-prd-header-level]");
+    if (prdHeaderLevel) {
+      const levelId = prdHeaderLevel.dataset.prdHeaderLevel === "s" ? "s" : "default";
+      state.guidedHeaderLevelId = levelId;
+      applyGuidedHeaderLevel(levelId);
+      render();
+      return;
+    }
+
     if (event.target.closest("[data-demo-generate-activity]")) {
       enterGuidedPreviewWithTransition();
       return;
@@ -19651,7 +19834,9 @@ function bindEvents() {
 
     const guidedHeaderLevel = event.target.closest("[data-guided-header-level]");
     if (guidedHeaderLevel) {
-      if (applyGuidedHeaderLevel(guidedHeaderLevel.dataset.guidedHeaderLevel || "default")) {
+      const levelId = guidedHeaderLevel.dataset.guidedHeaderLevel === "s" ? "s" : "default";
+      state.guidedHeaderLevelId = levelId;
+      if (applyGuidedHeaderLevel(levelId)) {
         render();
       }
       return;
@@ -20745,6 +20930,17 @@ function bindEvents() {
       } else {
         demoPrdBlueprint[key] = blueprintPrdField.value;
       }
+      return;
+    }
+
+    const prdHeaderLevelField = event.target.closest("[data-prd-header-level-field]");
+    if (prdHeaderLevelField) {
+      const key = prdHeaderLevelField.dataset.prdHeaderLevelField;
+      setGuidedSHeaderDraftValue(key, prdHeaderLevelField.value);
+      refreshPageTemplateModulePreview(
+        prdHeaderLevelField.dataset.prdHeaderLevelTemplate,
+        Number(prdHeaderLevelField.dataset.prdHeaderLevelModuleIndex),
+      );
       return;
     }
 
