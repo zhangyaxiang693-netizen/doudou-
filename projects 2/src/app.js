@@ -7832,7 +7832,15 @@ function getPageTemplateSourceFieldForPath(sourceNode, path) {
     (item) => item.id === templateId,
   );
   if (!pageTemplate) return null;
-  return getPageTemplateVariableFields(pageTemplate).find((field) => {
+  const fields = sourceNode?.schemaId === "S级-中秋头图"
+    ? getPageTemplateSHeaderVariableFields({
+        templateId,
+        moduleIndex,
+        moduleName: getGlobalComponentDisplayName("S级-中秋头图", "头图"),
+        sourceModuleSchemaId: "头图",
+      })
+    : getPageTemplateVariableFields(pageTemplate);
+  return fields.find((field) => {
     if (Number(field.moduleIndex) !== moduleIndex) return false;
     const localKey = getPageTemplateFieldLocalCompoundKey(field);
     return localKey === path || field.compoundKey === path || field.key === path;
@@ -7948,11 +7956,14 @@ function syncGuidedInlineEditToSource(found, variantId, path, value) {
   const sourcePath = found?.parent
     ? `${found.parent.children.indexOf(found.node)}.${path}`
     : path;
-  if (
-    sourceNode.schemaId === "S级-中秋头图" &&
-    setGuidedSHeaderDraftValue(sourcePath, value)
-  ) {
-    return true;
+  if (sourceNode.schemaId === "S级-中秋头图") {
+    if (syncPageTemplateInlineEditToRows(sourceNode, variantId, sourcePath, value)) {
+      if (!variantId || variantId === "base") {
+        getGuidedSHeaderDraft()[sourcePath] = String(value || "");
+      }
+      return true;
+    }
+    if (setGuidedSHeaderDraftValue(sourcePath, value)) return true;
   }
   if (syncPageTemplateInlineEditToRows(sourceNode, variantId, sourcePath, value)) return true;
   return syncBlueprintModuleInlineEditToRows(sourceNode, variantId, sourcePath, value);
@@ -8106,6 +8117,40 @@ function getPageTemplateVariableFields(pageTemplate) {
   });
 }
 
+function getPageTemplateSHeaderVariableFields(group) {
+  const schema = findAtomSchema("S级-中秋头图");
+  const draft = getGuidedSHeaderDraft();
+  const specs = [
+    ["mainTitle", "主标题", draft.mainTitle || "任务通关赢X元流量"],
+    ["subtitle", "副标题", draft.subtitle || "为爱加投"],
+    ["dateText", "日期文案", draft.dateText || "6月10日-6月21日"],
+  ];
+  return specs.map(([key, label, defaultValue]) => {
+    const field = {
+      templateId: group.templateId,
+      moduleIndex: Number(group.moduleIndex),
+      moduleSchemaId: "S级-中秋头图",
+      sourceModuleSchemaId: group.sourceModuleSchemaId,
+      moduleName: group.moduleName,
+      childName: group.moduleName,
+      sectionTitle: "S级头图文案",
+      key,
+      compoundKey: key,
+      field: schema?.props?.find((item) => item.key === key) || {
+        key,
+        label,
+        type: "string",
+      },
+      label,
+      isPrdKey: false,
+      value: defaultValue,
+    };
+    field.rowKey = getPageTemplateVariableRowKey(field);
+    field.value = getPageTemplateVariableRowValue(field);
+    return field;
+  });
+}
+
 function buildPageTemplateVariableSections(fields, getRowIndex) {
   const sections = [];
   fields.forEach((field) => {
@@ -8196,7 +8241,15 @@ function getPageTemplateVariableGroups(pageTemplate) {
         moduleIndex,
       ),
     };
-  }).map((group) => {
+  }).map((sourceGroup) => {
+    const group =
+      sourceGroup.isHeaderModule && state.guidedHeaderLevelId === "s"
+        ? {
+            ...sourceGroup,
+            moduleSchemaId: "S级-中秋头图",
+            fields: getPageTemplateSHeaderVariableFields(sourceGroup),
+          }
+        : sourceGroup;
     const manualVersions = getManualModuleBlueprintVersions(group.versionModuleKey);
     const baseVersion = getBaseBlueprintAudienceVersion({
       sections: buildPageTemplateVariableSections(
@@ -8349,33 +8402,7 @@ function renderPageTemplateHeaderLevelSwitch(group) {
 }
 
 function renderPageTemplateSHeaderFields(group) {
-  const draft = state.guidedHeaderLevelDrafts?.s || {};
-  const inheritedDateText = group.fields?.find(
-    (field) => getPageTemplateFieldLocalCompoundKey(field) === "dateText",
-  )?.value || "";
-  const fields = [
-    ["mainTitle", "主标题", draft.mainTitle || "任务通关赢X元流量"],
-    ["subtitle", "副标题", draft.subtitle || "为爱加投"],
-    ["dateText", "日期文案", draft.dateText || inheritedDateText],
-  ];
-  return `
-    <section class="prd-variable-section">
-      <strong>S级头图文案</strong>
-      <div class="prd-variable-field-grid">
-        ${fields.map(([key, label, value]) => `
-          <label class="prd-variable-field">
-            <span>${escapeHtml(label)}</span>
-            <textarea
-              rows="2"
-              data-prd-header-level-field="${escapeAttr(key)}"
-              data-prd-header-level-template="${escapeAttr(group.templateId)}"
-              data-prd-header-level-module-index="${Number(group.moduleIndex)}"
-            >${escapeHtml(value)}</textarea>
-          </label>
-        `).join("")}
-      </div>
-    </section>
-  `;
+  return renderModuleBoundBlueprintVersionMatrix(group);
 }
 
 function renderPrdTemplateMoleculeAddModal() {
@@ -8532,6 +8559,9 @@ function createPageTemplateBlueprintPreviewNode(group) {
     );
     if (variant?.node) node = cloneNodeForLineage(variant.node);
   }
+  if (group?.isHeaderModule && state.guidedHeaderLevelId === "s") {
+    node = createGuidedHeaderNodeForLevel("s", node);
+  }
   const fields = activeVersion?.sections?.flatMap((section) => section.fields || []) || [];
   const prizeCountsByChild = new Map();
   fields.forEach((field) => {
@@ -8564,9 +8594,6 @@ function createPageTemplateBlueprintPreviewNode(group) {
       applyGuidedBusinessState(child, control.activeStateId);
     }
   });
-  if (group?.isHeaderModule && state.guidedHeaderLevelId === "s") {
-    node = createGuidedHeaderNodeForLevel("s", node);
-  }
   return node;
 }
 
@@ -11786,6 +11813,100 @@ function setGuidedSHeaderDraftValue(key, value) {
   return true;
 }
 
+function syncGuidedSHeaderTableRow(rowKey, value) {
+  const parsed =
+    parsePageTemplateVariableVersionRowKey(rowKey) ||
+    parsePageTemplateVariableRowKey(rowKey);
+  if (!parsed || !["mainTitle", "subtitle", "dateText"].includes(parsed.compoundKey)) {
+    return false;
+  }
+  if (!parsed.versionName) {
+    getGuidedSHeaderDraft()[parsed.compoundKey] = String(value || "");
+  }
+  state.pages.forEach((page) => {
+    const headerNode = getPageHeaderNode(page);
+    if (
+      headerNode?.schemaId !== "S级-中秋头图" ||
+      Number(headerNode.sourcePageTemplateNodeIndex) !== Number(parsed.moduleIndex)
+    ) {
+      return;
+    }
+    const versionModuleKey = getPageTemplateVersionModuleKey(
+      headerNode.sourcePageTemplateId,
+      parsed.moduleIndex,
+    );
+    const variantId = parsed.versionName
+      ? getManualModuleBlueprintVersions(versionModuleKey).find(
+          (version) =>
+            normalizePageTemplateLookupName(version.name) ===
+            normalizePageTemplateLookupName(parsed.versionName),
+        )?.id
+      : "base";
+    if (!variantId) return;
+    if (variantId !== "base" && !findLineageVariant(headerNode, variantId)) {
+      const variants = ensureGuidedLineage(headerNode);
+      const sourceVariant = variants[0];
+      variants.push({
+        id: variantId,
+        title: parsed.versionName,
+        node: cloneNodeForLineage(sourceVariant?.node || headerNode),
+      });
+      ensureGuidedLineageTree(headerNode);
+    }
+    setLineagePathValueOnNode(
+      headerNode,
+      variantId,
+      parsed.compoundKey,
+      String(value || ""),
+    );
+  });
+  return true;
+}
+
+function forEachGeneratedSHeaderForVersionModule(moduleKey, callback) {
+  const parsed = parsePageTemplateVersionModuleKey(moduleKey);
+  if (!parsed) return;
+  state.pages.forEach((page) => {
+    const headerNode = getPageHeaderNode(page);
+    if (
+      headerNode?.schemaId === "S级-中秋头图" &&
+      headerNode.sourcePageTemplateId === parsed.templateId &&
+      Number(headerNode.sourcePageTemplateNodeIndex) === parsed.moduleIndex
+    ) {
+      callback(headerNode);
+    }
+  });
+}
+
+function syncGuidedSHeaderVersionAdded(moduleKey, version) {
+  if (!version?.id) return;
+  forEachGeneratedSHeaderForVersionModule(moduleKey, (headerNode) => {
+    if (findLineageVariant(headerNode, version.id)) return;
+    const variants = ensureGuidedLineage(headerNode);
+    variants.push({
+      id: version.id,
+      title: version.name,
+      node: cloneNodeForLineage(variants[0]?.node || headerNode),
+    });
+    ensureGuidedLineageTree(headerNode);
+  });
+}
+
+function syncGuidedSHeaderVersionRenamed(moduleKey, versionId, nextName) {
+  forEachGeneratedSHeaderForVersionModule(moduleKey, (headerNode) => {
+    const variant = findLineageVariant(headerNode, versionId);
+    if (variant) variant.title = String(nextName || "").trim() || variant.title;
+  });
+}
+
+function syncGuidedSHeaderVersionDeleted(moduleKey, versionId) {
+  forEachGeneratedSHeaderForVersionModule(moduleKey, (headerNode) => {
+    if (findLineageVariant(headerNode, versionId)) {
+      deleteLineageGraphNode(headerNode, versionId);
+    }
+  });
+}
+
 function syncGuidedHeaderLevelDraftFromNode(node) {
   if (node?.schemaId !== "S级-中秋头图") return;
   const draft = getGuidedSHeaderDraft();
@@ -11854,18 +11975,18 @@ function getGuidedHeaderLevelOptions(sourceNode) {
   ];
 }
 
-function createGuidedHeaderNodeForLevel(levelId, sourceNode = {}) {
+function createGuidedHeaderNodeForLevel(levelId, sourceNode = {}, options = {}) {
   const nextSchemaId = levelId === "s" ? "S级-中秋头图" : "头图";
   const sourceProps = sourceNode.props || {};
   const dateText = sourceProps.dateText || "6月10日-6月21日";
   const sDraft = getGuidedSHeaderDraft();
   const overrides = nextSchemaId === "S级-中秋头图"
     ? {
-        mainTitle: sDraft.mainTitle ||
-          sourceProps.mainTitle ||
+        mainTitle: sourceProps.mainTitle ||
+          sDraft.mainTitle ||
           "任务通关赢X元流量",
-        subtitle: sDraft.subtitle || sourceProps.subtitle || "为爱加投",
-        dateText: sDraft.dateText || dateText,
+        subtitle: sourceProps.subtitle || sDraft.subtitle || "为爱加投",
+        dateText: sourceProps.dateText || sDraft.dateText || dateText,
       }
     : {
         text: sourceProps.text || sourceProps.mainTitle || "抽666元流量大奖",
@@ -11887,6 +12008,25 @@ function createGuidedHeaderNodeForLevel(levelId, sourceNode = {}) {
   ].forEach((key) => {
     if (sourceNode[key] !== undefined) nextNode[key] = sourceNode[key];
   });
+  if (
+    options.preserveLineage !== false &&
+    Array.isArray(sourceNode.guidedLineageVariants) &&
+    sourceNode.guidedLineageVariants.length
+  ) {
+    nextNode.guidedLineageVariants = sourceNode.guidedLineageVariants.map((variant) => ({
+      ...variant,
+      node: createGuidedHeaderNodeForLevel(levelId, variant.node, {
+        preserveLineage: false,
+      }),
+    }));
+    nextNode.activeLineageVariantId = sourceNode.activeLineageVariantId || "base";
+    if (sourceNode.guidedLineageGraph) {
+      nextNode.guidedLineageGraph = clone(sourceNode.guidedLineageGraph);
+    }
+    if (sourceNode.guidedLineageDimensions) {
+      nextNode.guidedLineageDimensions = clone(sourceNode.guidedLineageDimensions);
+    }
+  }
   return nextNode;
 }
 
@@ -12849,7 +12989,15 @@ function applyPageTemplateVariableValuesToNode(node, values) {
     let maxPrizeIndex = 0;
     values.forEach((value, compoundKey) => {
       if (!node.props) return;
-      if (compoundKey in node.props || isLotteryPrizePropKey(compoundKey) || compoundKey === "prizeCount") {
+      const isSHeaderTextProp =
+        getModuleKind(node.schemaId) === "hero" &&
+        ["mainTitle", "subtitle"].includes(compoundKey);
+      if (
+        compoundKey in node.props ||
+        isSHeaderTextProp ||
+        isLotteryPrizePropKey(compoundKey) ||
+        compoundKey === "prizeCount"
+      ) {
         node.props[compoundKey] = value;
         markPrdBoundProp(node, compoundKey);
         const prizeIndex = Number(String(compoundKey).match(/^prize(\d+)/)?.[1] || 0);
@@ -19158,7 +19306,9 @@ function bindEvents() {
 
     const addModuleVersion = event.target.closest("[data-prd-add-module-version]");
     if (addModuleVersion) {
-      addManualModuleBlueprintVersion(addModuleVersion.dataset.prdAddModuleVersion);
+      const moduleKey = addModuleVersion.dataset.prdAddModuleVersion;
+      const version = addManualModuleBlueprintVersion(moduleKey);
+      syncGuidedSHeaderVersionAdded(moduleKey, version);
       render();
       return;
     }
@@ -19167,7 +19317,10 @@ function bindEvents() {
     if (deleteModuleVersion) {
       const moduleKey = deleteModuleVersion.dataset.prdVersionModuleKey;
       const versionId = deleteModuleVersion.dataset.prdDeleteModuleVersion;
-      if (deleteManualModuleBlueprintVersion(moduleKey, versionId)) render();
+      if (deleteManualModuleBlueprintVersion(moduleKey, versionId)) {
+        syncGuidedSHeaderVersionDeleted(moduleKey, versionId);
+        render();
+      }
       return;
     }
 
@@ -20795,9 +20948,16 @@ function bindEvents() {
 
     const prdVersionNameInput = event.target.closest("[data-prd-version-name]");
     if (prdVersionNameInput) {
+      const moduleKey = prdVersionNameInput.dataset.prdVersionModuleKey;
+      const versionId = prdVersionNameInput.dataset.prdVersionId;
       renameManualModuleBlueprintVersion(
-        prdVersionNameInput.dataset.prdVersionModuleKey,
-        prdVersionNameInput.dataset.prdVersionId,
+        moduleKey,
+        versionId,
+        prdVersionNameInput.value,
+      );
+      syncGuidedSHeaderVersionRenamed(
+        moduleKey,
+        versionId,
         prdVersionNameInput.value,
       );
       return;
@@ -20964,6 +21124,10 @@ function bindEvents() {
       state.prdTableRows[rowIndex].value = prdTemplateVariableInput.type === "checkbox"
         ? (prdTemplateVariableInput.checked ? "true" : "")
         : prdTemplateVariableInput.value;
+      syncGuidedSHeaderTableRow(
+        rowKey,
+        state.prdTableRows[rowIndex].value,
+      );
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
       const variableKey = prdTemplateVariableInput.dataset.prdTemplateVariableKey || "";
@@ -21024,6 +21188,10 @@ function bindEvents() {
         state.prdTableRows[rowIndex].value = prdTableRowInput.type === "checkbox"
           ? (prdTableRowInput.checked ? "true" : "")
           : prdTableRowInput.value;
+        syncGuidedSHeaderTableRow(
+          rowKey,
+          state.prdTableRows[rowIndex].value,
+        );
         state.prdTableBlueprint = null;
         state.prdTableBlueprintSignature = "";
         if (
