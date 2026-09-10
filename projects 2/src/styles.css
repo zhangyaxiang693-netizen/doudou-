@@ -10638,6 +10638,25 @@ button:hover {
 .prd-variable-matrix-head .prd-variable-matrix-actions {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.prd-consumption-return-detail-mode-select {
+  width: 96px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #d0d5dd;
+  border-radius: 7px;
+  outline: 0;
+  background: #ffffff;
+  color: #344054;
+  font: 700 11px/1.2 "Source Han Sans CN", sans-serif;
+}
+
+.prd-consumption-return-detail-mode-select:focus {
+  border-color: #667085;
+  box-shadow: 0 0 0 3px rgba(16, 24, 40, 0.07);
 }
 
 .prd-variable-matrix-add-version {
@@ -10752,6 +10771,38 @@ button:hover {
   color: #1d2939;
   font-size: 12px;
   font-weight: 850;
+}
+
+.prd-variable-matrix-section-head.has-versioned-count-controls {
+  display: grid;
+  grid-template-columns: 220px repeat(var(--prd-version-count), minmax(220px, 1fr));
+  gap: 0;
+  min-width: calc(220px + var(--prd-version-count) * 220px);
+  padding: 0;
+}
+
+.prd-variable-version-matrix.has-long-copy
+  .prd-variable-matrix-section-head.has-versioned-count-controls {
+  grid-template-columns: 220px repeat(var(--prd-version-count), minmax(460px, 1fr));
+  min-width: calc(220px + var(--prd-version-count) * 460px);
+}
+
+.prd-variable-matrix-section-head.has-versioned-count-controls > strong {
+  align-self: stretch;
+  padding: 11px 14px;
+  border-right: 1px solid #eef0f3;
+}
+
+.prd-variable-section-actions.is-versioned {
+  display: grid;
+  grid-column: 2 / -1;
+  grid-template-columns: repeat(var(--prd-version-count), minmax(0, 1fr));
+  gap: 0;
+}
+
+.prd-variable-section-actions.is-versioned .prd-paragraph-stepper {
+  justify-self: center;
+  align-self: center;
 }
 
 .prd-task-new-tag-toggle {
@@ -10879,13 +10930,13 @@ button:hover {
 
 .prd-consumption-return-matrix {
   display: grid;
-  min-width: 980px;
+  min-width: 1080px;
 }
 
 .prd-consumption-return-head,
 .prd-consumption-return-row {
   display: grid;
-  grid-template-columns: 180px repeat(var(--prd-return-tier-count, 4), minmax(190px, 1fr));
+  grid-template-columns: 280px repeat(var(--prd-return-tier-count, 4), minmax(190px, 1fr));
 }
 
 .prd-consumption-return-head {
@@ -10940,16 +10991,23 @@ button:hover {
   gap: 8px;
 }
 
-.prd-consumption-return-module-select {
-  width: 104px;
+.prd-consumption-return-version-tier-select {
+  justify-self: start;
+  width: 72px;
   height: 28px;
-  padding: 0 8px;
-  border: 1px solid rgba(152, 162, 179, 0.38);
-  border-radius: 7px;
+  padding: 0 7px;
+  border: 1px solid #a6e5bd;
+  border-radius: 6px;
   outline: 0;
-  background: #ffffff;
-  color: #101828;
-  font: 750 12px/1.2 "Source Han Sans CN", sans-serif;
+  background: #eaf8ef;
+  color: #16794b;
+  font: 800 11px/1.2 "Source Han Sans CN", sans-serif;
+}
+
+.prd-consumption-return-version-tier-select.is-4-tier {
+  border-color: #f5b8d2;
+  background: #fff0f5;
+  color: #c11574;
 }
 
 .prd-consumption-return-title b {
@@ -10998,7 +11056,7 @@ button:hover {
 }
 
 .prd-consumption-return-version.is-manual {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
 }
@@ -11174,6 +11232,43 @@ button:hover {
   opacity: 0.35;
 }
 
+.prd-variable-prize-order {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.prd-variable-prize-order button {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-right: 1px solid #e4e7ec;
+  background: #ffffff;
+  color: #475467;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.prd-variable-prize-order button:last-child {
+  border-right: 0;
+}
+
+.prd-variable-prize-order button:hover:not(:disabled) {
+  background: #f2f4f7;
+  color: #101828;
+}
+
+.prd-variable-prize-order button:disabled {
+  background: #f9fafb;
+  color: #d0d5dd;
+  cursor: not-allowed;
+}
+
 .prd-variable-matrix-row.is-prd-key textarea {
   background: #f8faff;
 }
@@ -11205,6 +11300,16 @@ button:hover {
 
 .prd-variable-matrix-row .prize-library-control:last-child,
 .prd-variable-matrix-row textarea:last-child {
+  border-right: 0;
+}
+
+.prd-variable-matrix-empty-cell {
+  min-height: 38px;
+  border-right: 1px solid #eef0f3;
+  background: #f8fafc;
+}
+
+.prd-variable-matrix-empty-cell:last-child {
   border-right: 0;
 }
 

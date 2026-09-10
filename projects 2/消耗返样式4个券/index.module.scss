@@ -547,48 +547,23 @@
   height: 24px;
 }
 .wrap1 {
+  width: 604px;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(4, 130px);
+  column-gap: 28px;
   align-items: flex-start;
   margin-top: 20px;
 }
-.text10 {
-  margin-right: 40px;
-  transform: rotate(-6.909522671007686e-15deg);
-  font-family: "Source Han Sans CN Regular";
-  font-size: 24px;
-  white-space: nowrap;
-  text-align: center;
-  color: rgba(129, 129, 129, 1);
-  line-height: 30px;
-  font-weight: 400;
-}
-.text11 {
-  margin-right: 40px;
-  transform: rotate(-6.909522671007686e-15deg);
-  font-family: "Source Han Sans CN Regular";
-  font-size: 24px;
-  white-space: nowrap;
-  text-align: center;
-  color: rgba(129, 129, 129, 1);
-  line-height: 30px;
-  font-weight: 400;
-}
-.text12 {
-  margin-right: 40px;
-  transform: rotate(-6.909522671007686e-15deg);
-  font-family: "Source Han Sans CN Regular";
-  font-size: 24px;
-  white-space: nowrap;
-  text-align: center;
-  color: rgba(129, 129, 129, 1);
-  line-height: 30px;
-  font-weight: 400;
-}
+.text10,
+.text11,
+.text12,
 .text13 {
+  width: 130px;
+  display: grid;
+  grid-template-columns: 48px 50px 24px;
+  column-gap: 4px;
+  align-items: center;
   transform: rotate(-6.909522671007686e-15deg);
   font-family: "Source Han Sans CN Regular";
   font-size: 24px;
@@ -597,4 +572,14 @@
   color: rgba(129, 129, 129, 1);
   line-height: 30px;
   font-weight: 400;
+}
+.consumePrefix,
+.consumeAmount,
+.consumeUnit {
+  display: block;
+  min-width: 0;
+  text-align: center;
+}
+.consumeAmount {
+  font-variant-numeric: tabular-nums;
 }

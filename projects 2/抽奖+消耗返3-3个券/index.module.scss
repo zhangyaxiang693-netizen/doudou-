@@ -391,37 +391,22 @@
   left: 76px;
 }
 .wrap1 {
+  width: 580px;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(3, 160px);
+  column-gap: 50px;
   align-items: flex-start;
   margin-top: 20px;
 }
-.text6 {
-  margin-right: 72px;
-  transform: rotate(-6.909522671007686e-15deg);
-  font-family: "Source Han Sans CN Regular";
-  font-size: 24px;
-  white-space: nowrap;
-  text-align: center;
-  color: rgba(129, 129, 129, 1);
-  line-height: 30px;
-  font-weight: 400;
-}
-.text7 {
-  margin-right: 72px;
-  transform: rotate(-6.909522671007686e-15deg);
-  font-family: "Source Han Sans CN Regular";
-  font-size: 24px;
-  white-space: nowrap;
-  text-align: center;
-  color: rgba(129, 129, 129, 1);
-  line-height: 30px;
-  font-weight: 400;
-}
+.text6,
+.text7,
 .text8 {
+  width: 160px;
+  display: grid;
+  grid-template-columns: 48px 64px 24px;
+  column-gap: 12px;
+  align-items: center;
   transform: rotate(-6.909522671007686e-15deg);
   font-family: "Source Han Sans CN Regular";
   font-size: 24px;
@@ -430,4 +415,14 @@
   color: rgba(129, 129, 129, 1);
   line-height: 30px;
   font-weight: 400;
+}
+.consumePrefix,
+.consumeAmount,
+.consumeUnit {
+  display: block;
+  min-width: 0;
+  text-align: center;
+}
+.consumeAmount {
+  font-variant-numeric: tabular-nums;
 }

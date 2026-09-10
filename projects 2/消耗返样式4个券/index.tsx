@@ -71,6 +71,10 @@ function normalizeAmount(value: string | undefined, fallback: string) {
     .trim()
 }
 
+function normalizeConsumeAmount(value: string | undefined, fallback: string) {
+  return normalizeAmount(value, fallback).replace(/\D/g, '') || fallback
+}
+
 function normalizeRewardType(value: string | undefined, fallback: '抽奖任务' | '消耗返') {
   const normalized = String(value || fallback).trim()
   return normalized === '抽奖' || normalized === '抽奖任务' ? '抽奖任务' : '消耗返'
@@ -117,10 +121,10 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const displayAmount2 = usesTierAmountMapping ? amountText2 : amountText1
   const displayAmount3 = usesTierAmountMapping ? amountText3 : amountText2
   const displayAmount4 = usesTierAmountMapping ? amountText4 : amountText3
-  const consumeAmountText1 = normalizeAmount(props.consumeAmountText1, '30')
-  const consumeAmountText2 = normalizeAmount(props.consumeAmountText2, '30')
-  const consumeAmountText3 = normalizeAmount(props.consumeAmountText3, '30')
-  const consumeAmountText4 = normalizeAmount(props.consumeAmountText4, '30')
+  const consumeAmountText1 = normalizeConsumeAmount(props.consumeAmountText1, '30')
+  const consumeAmountText2 = normalizeConsumeAmount(props.consumeAmountText2, '30')
+  const consumeAmountText3 = normalizeConsumeAmount(props.consumeAmountText3, '30')
+  const consumeAmountText4 = normalizeConsumeAmount(props.consumeAmountText4, '30')
   const amountTextStyle =
     props.amountTextColor && !sameColor(props.amountTextColor, originalColors.amountTextColor)
       ? { color: props.amountTextColor }
@@ -297,10 +301,13 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
         </div>
       </div>
       <div className={styles.wrap1}>
-        <div className={styles.text10}>消耗&nbsp;&nbsp;{consumeAmountText1}&nbsp;&nbsp;元</div>
-        <div className={styles.text11}>消耗&nbsp;&nbsp;{consumeAmountText2}&nbsp;&nbsp;元</div>
-        <div className={styles.text12}>消耗&nbsp;&nbsp;{consumeAmountText3}&nbsp;&nbsp;元</div>
-        <div className={styles.text13}>消耗&nbsp;&nbsp;{consumeAmountText4}&nbsp;&nbsp;元</div>
+        {[consumeAmountText1, consumeAmountText2, consumeAmountText3, consumeAmountText4].map((amount, index) => (
+          <div className={[styles.text10, styles.text11, styles.text12, styles.text13][index]} key={index}>
+            <span className={styles.consumePrefix}>消耗</span>
+            <span className={styles.consumeAmount}>{amount}</span>
+            <span className={styles.consumeUnit}>元</span>
+          </div>
+        ))}
       </div>
     </div>
   )
