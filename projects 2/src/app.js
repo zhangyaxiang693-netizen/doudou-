@@ -17012,6 +17012,12 @@ function exportPage() {
 }
 
 const guidedCutExportRules = {
+  "核心玩法模块-抽奖消返-3列": {
+    exportWidth: 702,
+  },
+  "核心玩法模块-抽奖消返-4列": {
+    exportWidth: 702,
+  },
   账户优惠券提示: {
     exportPropOverrides: {
       hideExportMetaNumbers: true,
@@ -17200,9 +17206,10 @@ function getExportEntryDimensions(entry) {
     };
   }
   const dimensions = getNodeEstimatedExportDimensions(node);
+  const rule = getGuidedCutExportRule(node);
   return {
     ...dimensions,
-    width: GUIDED_CUT_EXPORT_WIDTH,
+    width: Number(rule.exportWidth || GUIDED_CUT_EXPORT_WIDTH),
     height: Number(dimensions.height || 300) + bottomSpace,
   };
 }
@@ -18216,7 +18223,9 @@ async function waitForExportPreviewReady() {
 async function captureGuidedExportEntry(entry, options = {}) {
   const element = findGuidedExportElement(entry.id);
   if (!element) throw new Error("找不到导出组件");
+  const exportRule = getGuidedCutExportRule(entry.node || entry.sourceNode || {});
   const shouldUseFixedDimensions =
+    Boolean(exportRule.exportWidth) ||
     entry.exportKind === "page-background" ||
     entry.isFallbackContentEntry ||
     isHeaderImageExportNode(entry.node || entry.sourceNode) ||
