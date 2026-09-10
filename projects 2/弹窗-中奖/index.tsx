@@ -69,7 +69,11 @@ function getDefaultTrafficCouponThreshold(amount?: string) {
   const thresholds: Record<string, string> = {
     5: '30',
     6: '68',
+    9: '98',
     10: '100',
+    12: '150',
+    16: '198',
+    22: '280',
   }
   return thresholds[String(amount || '').trim()] || '00'
 }
@@ -162,7 +166,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       : selectedPrize.name
   )
   const displayedPrizeSubText = prizeSubText || selectedPrize.copy || '满30元赠价值5元流量'
-  const isTrafficCouponPrize = /^(?:5|6|10)元流量券$/.test(selectedPrize.name)
+  const isTrafficCouponPrize = /^\d+(?:\.\d+)?元流量券$/.test(selectedPrize.name)
   const isOfficialRecommendationPrize = selectedPrize.name === 'DOU+官方推荐机会'
   const isDouziFamilyPackPrize = selectedPrize.name === 'DOU仔周边全家福' ||
     selectedPrize.name === 'DOU仔全家福' ||

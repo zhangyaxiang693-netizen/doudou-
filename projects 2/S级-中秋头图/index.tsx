@@ -7,6 +7,7 @@ import subtitleBadgeUrl from './assets/image_3.svg'
 
 export type IGeneratedComponent = {
   mainTitle?: string
+  highlightText?: string
   subtitle?: string
   dateText?: string
 }
@@ -27,27 +28,28 @@ function renderTitleTextWithNumberFont(value: string) {
   })
 }
 
-function renderMainTitle(value: string) {
-  const prefix = '任务通关赢'
-  const index = value.indexOf(prefix)
-  if (index < 0) return renderTitleTextWithNumberFont(value)
+function renderMainTitle(value: string, highlightText: string) {
+  const highlight = highlightText.trim()
+  if (!highlight || !value.includes(highlight)) {
+    return renderTitleTextWithNumberFont(value)
+  }
 
-  const before = value.slice(0, index + prefix.length)
-  const after = value.slice(index + prefix.length)
-  return (
-    <>
-      {renderTitleTextWithNumberFont(before)}
-      {after ? (
+  const segments = value.split(highlight)
+  return segments.map((segment, index) => (
+    <React.Fragment key={`${segment}-${index}`}>
+      {renderTitleTextWithNumberFont(segment)}
+      {index < segments.length - 1 ? (
         <span className={styles.titleHighlight}>
-          {renderTitleTextWithNumberFont(after)}
+          {renderTitleTextWithNumberFont(highlight)}
         </span>
       ) : null}
-    </>
-  )
+    </React.Fragment>
+  ))
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
   const mainTitle = props.mainTitle || '任务通关赢X元流量'
+  const highlightText = props.highlightText === undefined ? 'X元流量' : props.highlightText
   const subtitle = props.subtitle || '为爱加投'
   const dateText = props.dateText || '6月10日-6月21日'
 
@@ -60,7 +62,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
         <div className={styles.text} data-react-edit-prop="dateText">{dateText}</div>
         <div className={styles.text1} data-react-edit-prop="subtitle">{subtitle}</div>
       </div>
-      <div className={styles.text2} data-react-edit-prop="mainTitle">{renderMainTitle(mainTitle)}</div>
+      <div className={styles.text2} data-react-edit-prop="mainTitle">{renderMainTitle(mainTitle, highlightText)}</div>
     </div>
   )
 }

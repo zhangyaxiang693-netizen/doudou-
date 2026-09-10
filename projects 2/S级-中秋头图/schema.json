@@ -20,6 +20,7 @@
     ],
     "textProps": [
       "mainTitle",
+      "highlightText",
       "subtitle",
       "dateText"
     ]
@@ -32,6 +33,14 @@
       "type": "string",
       "default": "任务通关赢X元流量",
       "description": "头图主标题文案。"
+    },
+    {
+      "key": "highlightText",
+      "name": "highlightText",
+      "label": "高亮文案",
+      "type": "string",
+      "default": "X元流量",
+      "description": "主标题中需要使用高亮色展示的文案。"
     },
     {
       "key": "subtitle",

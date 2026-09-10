@@ -9,15 +9,20 @@ const GUIDED_FALLBACK_HOT_PAGE_HEIGHT = 1502;
 const GUIDED_FALLBACK_CASE_BOTTOM_SPACE = 154;
 const GUIDED_FALLBACK_CASE_PAGE_HEIGHT = 1759;
 const GUIDED_S_LEVEL_BACKGROUND = "#E2DCFF";
+const ADMIN_ACCESS_PASSWORD = "zhangyaxiang";
 const DEFAULT_TRAFFIC_COUPON_THRESHOLD = "00";
 const DEFAULT_LOTTERY_PRIZE_COUNT = 3;
-const MAX_LOTTERY_PRIZE_COUNT = 8;
+const INITIAL_LOTTERY_PRIZE_COUNT = 8;
 
 function getDefaultTrafficCouponThreshold(amount) {
   const thresholds = {
     5: "30",
     6: "68",
+    9: "98",
     10: "100",
+    12: "150",
+    16: "198",
+    22: "280",
   };
   return thresholds[String(amount || "").trim()] || DEFAULT_TRAFFIC_COUPON_THRESHOLD;
 }
@@ -47,12 +52,54 @@ const mockPrizeLibrary = [
     copy: "满68元赠价值6元流量",
   },
   {
+    id: "traffic_coupon_9",
+    name: "9元流量券",
+    image: new URL("../九宫格-奖品库/9元流量券.png", import.meta.url).href,
+    copyAmount: "9",
+    copyThreshold: "98",
+    copy: "满98元赠价值9元流量",
+  },
+  {
     id: "traffic_coupon_10",
     name: "10元流量券",
     image: new URL("../九宫格-奖品库/10元流量券.png", import.meta.url).href,
     copyAmount: "10",
     copyThreshold: "100",
     copy: "满100元赠价值10元流量",
+  },
+  {
+    id: "traffic_coupon_12",
+    name: "12元流量券",
+    image: new URL("../九宫格-奖品库/12元流量券.png", import.meta.url).href,
+    copyAmount: "12",
+    copyThreshold: "150",
+    copy: "满150元赠价值12元流量",
+  },
+  {
+    id: "traffic_coupon_16_198",
+    name: "16元流量券",
+    optionLabel: "16元流量券（满198元）",
+    image: new URL("../九宫格-奖品库/16元流量券.png", import.meta.url).href,
+    copyAmount: "16",
+    copyThreshold: "198",
+    copy: "满198元赠价值16元流量",
+  },
+  {
+    id: "traffic_coupon_22_visual_16",
+    name: "22元流量券",
+    image: new URL("../九宫格-奖品库/22元流量券.png", import.meta.url).href,
+    copyAmount: "22",
+    copyThreshold: "280",
+    copy: "满280元赠价值22元流量",
+  },
+  {
+    id: "traffic_coupon_16_190",
+    name: "16元流量券",
+    optionLabel: "16元流量券（满190元）",
+    image: new URL("../九宫格-奖品库/16元流量券.png", import.meta.url).href,
+    copyAmount: "16",
+    copyThreshold: "190",
+    copy: "满190元赠价值16元流量",
   },
   {
     id: "official_recommendation",
@@ -1046,7 +1093,7 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
         },
         {
           title: "奖品配置",
-          fields: Array.from({ length: MAX_LOTTERY_PRIZE_COUNT }, (_, index) => [
+          fields: Array.from({ length: INITIAL_LOTTERY_PRIZE_COUNT }, (_, index) => [
             `1.prize${index + 1}`,
             `奖品${index + 1}`,
           ]),
@@ -2156,7 +2203,7 @@ function withDynamicPrdBlueprintPrizeFields(fields, dataRows) {
   const nextFields = [...fields];
   dataRows.forEach((row) => {
     const prizeIndex = getPrdBlueprintPrizeNumber(row.field);
-    if (!prizeIndex || prizeIndex > MAX_LOTTERY_PRIZE_COUNT || !String(row.value || "").trim()) return;
+    if (!prizeIndex || !String(row.value || "").trim()) return;
     const baseField = nextFields.find((field) =>
       isPrdBlueprintModuleMatch(field, row.module) &&
       getPrdBlueprintPrizeNumber(field.label) === 1,
@@ -2219,27 +2266,24 @@ function withDynamicPageTemplatePrizeFields(fields, rows) {
     const localKey = parsed?.compoundKey || "";
     const countMatch = localKey.match(/^(\d+)\.prizeCount$/);
     if (countMatch) {
-      ensureGroup(parsed.moduleIndex, Number(countMatch[1])).explicitCount = Math.min(
-        MAX_LOTTERY_PRIZE_COUNT,
-        Math.max(1, Number(row.value) || 1),
+      ensureGroup(parsed.moduleIndex, Number(countMatch[1])).explicitCount = Math.max(
+        1,
+        Number(row.value) || 1,
       );
       return;
     }
     const prizeMatch = localKey.match(/^(\d+)\.prize(\d+)$/);
     if (!prizeMatch) return;
     const group = ensureGroup(parsed.moduleIndex, Number(prizeMatch[1]));
-    group.maxPrizeIndex = Math.max(
-      group.maxPrizeIndex,
-      Math.min(MAX_LOTTERY_PRIZE_COUNT, Number(prizeMatch[2])),
-    );
+    group.maxPrizeIndex = Math.max(group.maxPrizeIndex, Number(prizeMatch[2]));
   });
   let nextFields = fields.filter((field) => {
     const localKey = getPageTemplateFieldLocalCompoundKey(field);
     const match = localKey.match(/^(\d+)\.prize(\d+)$/);
     if (!match) return true;
     const group = groups.get(getGroupKey(Number(field.moduleIndex), Number(match[1])));
-    const count = Math.min(
-      MAX_LOTTERY_PRIZE_COUNT,
+    const count = Math.max(
+      1,
       group?.explicitCount || group?.maxPrizeIndex || DEFAULT_LOTTERY_PRIZE_COUNT,
     );
     return Number(match[2]) <= count;
@@ -2250,8 +2294,8 @@ function withDynamicPageTemplatePrizeFields(fields, rows) {
       getPageTemplateFieldLocalCompoundKey(field) === getMoleculeBlueprintKey(group.childIndex, "prize1"),
     );
     if (!baseField) return;
-    const count = Math.min(
-      MAX_LOTTERY_PRIZE_COUNT,
+    const count = Math.max(
+      1,
       group.explicitCount || group.maxPrizeIndex || DEFAULT_LOTTERY_PRIZE_COUNT,
     );
     for (let prizeIndex = 1; prizeIndex <= count; prizeIndex += 1) {
@@ -2348,17 +2392,11 @@ function getPageTemplateBlueprintPrizeCount(moduleIndex, childIndex) {
       maxPrizeIndex = Math.max(maxPrizeIndex, Number(prizeMatch[2]));
     }
   });
-  return Math.min(
-    MAX_LOTTERY_PRIZE_COUNT,
-    Math.max(1, explicitCount || maxPrizeIndex || DEFAULT_LOTTERY_PRIZE_COUNT),
-  );
+  return Math.max(1, explicitCount || maxPrizeIndex || DEFAULT_LOTTERY_PRIZE_COUNT);
 }
 
 function setPageTemplateBlueprintPrizeCount(moduleIndex, childIndex, count, versionNames = []) {
-  const nextCount = Math.min(
-    MAX_LOTTERY_PRIZE_COUNT,
-    Math.max(1, Math.round(Number(count) || 1)),
-  );
+  const nextCount = Math.max(1, Math.round(Number(count) || 1));
   upsertPrdTableRow(getPageTemplatePrizeCountRowKey(moduleIndex, childIndex), String(nextCount));
   versionNames.forEach((versionName) => {
     if (versionName) {
@@ -3440,6 +3478,8 @@ const state = {
     },
   },
   prdDemoStep: "upload",
+  adminAuthModalOpen: false,
+  adminAuthError: "",
   prdFileModalOpen: false,
   prdTextInput: "",
   prdBlueprintPasteRows: normalizePrdBlueprintPasteRows([]),
@@ -3459,6 +3499,7 @@ const state = {
   guidedHeaderLevelDrafts: {
     s: {
       mainTitle: "任务通关赢X元流量",
+      highlightText: "X元流量",
       subtitle: "为爱加投",
       dateText: "",
     },
@@ -5428,8 +5469,40 @@ function renderActivityCenter() {
             ? renderPrdFileModal()
             : ""
         }
+        ${state.adminAuthModalOpen ? renderAdminAuthModal() : ""}
       </section>
       ${state.createModalOpen ? renderCreateModal() : ""}
+    </div>
+  `;
+}
+
+function renderAdminAuthModal() {
+  return `
+    <div class="admin-auth-modal" data-admin-auth-modal>
+      <form class="admin-auth-dialog" data-admin-auth-form>
+        <header>
+          <div>
+            <span>ADMIN ACCESS</span>
+            <h2>进入后台管理</h2>
+          </div>
+          <button type="button" data-close-admin-auth aria-label="关闭">×</button>
+        </header>
+        <label>
+          <span>密码</span>
+          <input
+            type="password"
+            autocomplete="current-password"
+            data-admin-auth-password
+            aria-invalid="${state.adminAuthError ? "true" : "false"}"
+            autofocus
+          />
+        </label>
+        <p class="admin-auth-error" role="alert">${escapeHtml(state.adminAuthError || "")}</p>
+        <footer>
+          <button type="button" data-close-admin-auth>取消</button>
+          <button type="submit" class="primary">进入后台</button>
+        </footer>
+      </form>
     </div>
   `;
 }
@@ -5639,6 +5712,7 @@ function findPrizeLibraryItemByText(value) {
     dou仔全家福随机发: "douzi_family_pack",
     dou仔周边全家福: "douzi_family_pack",
     dou仔周边帆布包: "douzi_canvas_bag",
+    "22元流量券": "traffic_coupon_22_visual_16",
   };
   const aliasId = aliases[normalized];
   if (aliasId) return mockPrizeLibrary.find((item) => item.id === aliasId) || null;
@@ -5662,6 +5736,11 @@ function findPrizeLibraryItemByText(value) {
 }
 
 function normalizePrizeLibraryValue(value) {
+  const rawValue = String(value ?? "");
+  const exactItem = mockPrizeLibrary.find(
+    (item) => serializePrizeOption(item) === rawValue,
+  );
+  if (exactItem) return rawValue;
   const item = findPrizeLibraryItemByText(value);
   return item ? serializePrizeOption(normalizePrizeCopyMeta(item, value)) : "";
 }
@@ -5688,7 +5767,7 @@ function renderPrizeLibrarySelect(value, dataAttr, ariaLabel, nameDataAttr = "",
           const optionValue = serializePrizeOption(item);
           return `
             <option value="${escapeAttr(optionValue)}" ${rawValue === optionValue ? "selected" : ""}>
-              ${escapeHtml(item.name)}
+              ${escapeHtml(item.optionLabel || item.name)}
             </option>
           `;
         }).join("")}
@@ -5764,7 +5843,7 @@ function renderFixedPrizeLibrarySelect(value, dataAttr, ariaLabel) {
           const optionValue = serializePrizeOption(item);
           return `
             <option value="${escapeAttr(optionValue)}" ${selectedValue === optionValue ? "selected" : ""}>
-              ${escapeHtml(item.name)}
+              ${escapeHtml(item.optionLabel || item.name)}
             </option>
           `;
         }).join("")}
@@ -6375,7 +6454,7 @@ function createAdminVerifierMoleculeNode(molecule, verifier) {
       }
     });
     const prizeCount = prizeCountsByChild.get(childIndex);
-    if (prizeCount) child.props.prizeCount = Math.min(MAX_LOTTERY_PRIZE_COUNT, prizeCount);
+    if (prizeCount) child.props.prizeCount = prizeCount;
   });
   applyMoleculeChildStates(node, verifier?.childStates);
   applyThemeToMoleculeNodeChildren(node, verifier?.parentThemeId);
@@ -6439,7 +6518,7 @@ function createAdminVerifierPageNodes(template, verifier) {
       });
       prizeCountsByChild.forEach((count, childIndex) => {
         const child = node.children?.[Number(childIndex)];
-        if (child?.props) child.props.prizeCount = Math.min(MAX_LOTTERY_PRIZE_COUNT, count);
+        if (child?.props) child.props.prizeCount = count;
       });
       return;
     }
@@ -7498,6 +7577,7 @@ function startPrdParsing() {
   state.guidedHeaderLevelDrafts = {
     s: {
       mainTitle: "任务通关赢X元流量",
+      highlightText: "X元流量",
       subtitle: "为爱加投",
       dateText: "",
     },
@@ -8122,6 +8202,7 @@ function getPageTemplateSHeaderVariableFields(group) {
   const draft = getGuidedSHeaderDraft();
   const specs = [
     ["mainTitle", "主标题", draft.mainTitle || "任务通关赢X元流量"],
+    ["highlightText", "高亮文案", draft.highlightText ?? "X元流量"],
     ["subtitle", "副标题", draft.subtitle || "为爱加投"],
     ["dateText", "日期文案", draft.dateText || "6月10日-6月21日"],
   ];
@@ -8586,7 +8667,7 @@ function createPageTemplateBlueprintPreviewNode(group) {
   });
   prizeCountsByChild.forEach((count, childIndex) => {
     const child = node.children?.[Number(childIndex)];
-    if (child?.props) child.props.prizeCount = Math.min(MAX_LOTTERY_PRIZE_COUNT, count);
+    if (child?.props) child.props.prizeCount = count;
   });
   (group?.childStateControls || []).forEach((control) => {
     const child = node.children?.[Number(control.childIndex)];
@@ -11791,6 +11872,7 @@ function getGuidedSHeaderDraft() {
   state.guidedHeaderLevelDrafts = state.guidedHeaderLevelDrafts || {};
   state.guidedHeaderLevelDrafts.s = {
     mainTitle: "任务通关赢X元流量",
+    highlightText: "X元流量",
     subtitle: "为爱加投",
     dateText: "",
     ...(state.guidedHeaderLevelDrafts.s || {}),
@@ -11799,7 +11881,7 @@ function getGuidedSHeaderDraft() {
 }
 
 function setGuidedSHeaderDraftValue(key, value) {
-  if (!["mainTitle", "subtitle", "dateText"].includes(key)) return false;
+  if (!["mainTitle", "highlightText", "subtitle", "dateText"].includes(key)) return false;
   getGuidedSHeaderDraft()[key] = String(value || "");
   state.pages.forEach((page) => {
     const headerNode = getPageHeaderNode(page);
@@ -11817,7 +11899,10 @@ function syncGuidedSHeaderTableRow(rowKey, value) {
   const parsed =
     parsePageTemplateVariableVersionRowKey(rowKey) ||
     parsePageTemplateVariableRowKey(rowKey);
-  if (!parsed || !["mainTitle", "subtitle", "dateText"].includes(parsed.compoundKey)) {
+  if (
+    !parsed ||
+    !["mainTitle", "highlightText", "subtitle", "dateText"].includes(parsed.compoundKey)
+  ) {
     return false;
   }
   if (!parsed.versionName) {
@@ -11910,7 +11995,7 @@ function syncGuidedSHeaderVersionDeleted(moduleKey, versionId) {
 function syncGuidedHeaderLevelDraftFromNode(node) {
   if (node?.schemaId !== "S级-中秋头图") return;
   const draft = getGuidedSHeaderDraft();
-  ["mainTitle", "subtitle", "dateText"].forEach((key) => {
+  ["mainTitle", "highlightText", "subtitle", "dateText"].forEach((key) => {
     if (node.props?.[key] !== undefined) draft[key] = String(node.props[key] || "");
   });
 }
@@ -11968,6 +12053,7 @@ function getGuidedHeaderLevelOptions(sourceNode) {
       description: `切换为中秋 S 级头图，页面背景同步为 ${GUIDED_S_LEVEL_BACKGROUND}。`,
       node: createAtomNode("S级-中秋头图", {
         mainTitle: sTitle,
+        highlightText: sourceNode?.props?.highlightText ?? "X元流量",
         subtitle: sourceNode?.props?.subtitle || "为爱加投",
         dateText,
       }),
@@ -11985,6 +12071,7 @@ function createGuidedHeaderNodeForLevel(levelId, sourceNode = {}, options = {}) 
         mainTitle: sourceProps.mainTitle ||
           sDraft.mainTitle ||
           "任务通关赢X元流量",
+        highlightText: sourceProps.highlightText ?? sDraft.highlightText ?? "X元流量",
         subtitle: sourceProps.subtitle || sDraft.subtitle || "为爱加投",
         dateText: sourceProps.dateText || sDraft.dateText || dateText,
       }
@@ -12176,13 +12263,10 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       .filter(Boolean)
       .map(Number);
     const explicitCount = Number(lotteryNode?.props?.prizeCount) || 0;
-    return Math.min(
-      MAX_LOTTERY_PRIZE_COUNT,
-      Math.max(
-        1,
-        explicitCount || configuredCount || 0,
-        ...propPrizeIndexes,
-      ),
+    return Math.max(
+      1,
+      explicitCount || configuredCount || 0,
+      ...propPrizeIndexes,
     );
   }
 
@@ -12376,10 +12460,7 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     if (!popupNode?.props || !lotteryNode?.props) return;
     syncLotteryPopupCurrentPrizeCopy(popupNode);
     const winProps = popupNode.lotteryWinProps || popupNode.props || {};
-    const prizeCount = Math.min(
-      MAX_LOTTERY_PRIZE_COUNT,
-      Math.max(1, Number(winProps.prizeCount) || 1),
-    );
+    const prizeCount = Math.max(1, Number(winProps.prizeCount) || 1);
     lotteryNode.props.prizeCount = prizeCount;
     for (let index = 1; index <= prizeCount; index += 1) {
       lotteryNode.props[`prize${index}`] = winProps[`prize${index}`] || "";
@@ -12411,6 +12492,102 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     (page?.nodes || [])
       .filter((node) => node.isLotteryResultPopup)
       .forEach((popupNode) => syncGuidedLotteryPopupNode(popupNode, lotteryNode));
+  }
+
+  function getPageTemplateModuleVariableValues(moduleIndex, versionName = null) {
+    const values = new Map();
+    normalizePrdTableRows(state.prdTableRows).forEach((row) => {
+      const parsed = versionName === null
+        ? parsePageTemplateVariableRowKey(row.key)
+        : parsePageTemplateVariableVersionRowKey(row.key);
+      if (
+        !parsed ||
+        Number(parsed.moduleIndex) !== Number(moduleIndex) ||
+        (versionName !== null && parsed.versionName !== versionName)
+      ) {
+        return;
+      }
+      values.set(parsed.compoundKey, row.value ?? "");
+    });
+    return values;
+  }
+
+  function trimLotteryPrizeProps(node, prizeCount) {
+    const normalizedCount = Math.max(1, Math.round(Number(prizeCount) || 1));
+    collectInteractiveLotteryGridNodes([node]).forEach((lotteryNode) => {
+      lotteryNode.props = lotteryNode.props || {};
+      lotteryNode.props.prizeCount = normalizedCount;
+      markPrdBoundProp(lotteryNode, "prizeCount");
+      Object.keys(lotteryNode.props).forEach((key) => {
+        const match = key.match(/^prize(\d+)(Name|Text|Copy)?$/);
+        if (match && Number(match[1]) > normalizedCount) {
+          delete lotteryNode.props[key];
+        }
+      });
+    });
+  }
+
+  function applyLotteryBlueprintValuesToNode(node, values) {
+    if (!node || !values) return;
+    applyPageTemplateVariableValuesToNode(node, values);
+    const explicitPrizeCounts = new Map();
+    values.forEach((value, compoundKey) => {
+      const match = String(compoundKey || "").match(/^(\d+)\.prizeCount$/);
+      if (!match) return;
+      explicitPrizeCounts.set(Number(match[1]), Math.max(1, Number(value) || 1));
+    });
+    explicitPrizeCounts.forEach((prizeCount, childIndex) => {
+      const child = node.type === "molecule"
+        ? node.children?.[childIndex]
+        : node;
+      if (child) trimLotteryPrizeProps(child, prizeCount);
+    });
+  }
+
+  function syncGeneratedLotteryBlueprintModule(moduleIndex) {
+    const baseValues = getPageTemplateModuleVariableValues(moduleIndex);
+    (state.pages || []).forEach((page) => {
+      const moduleNode = (page.nodes || []).find(
+        (node) =>
+          Number(node.sourcePageTemplateNodeIndex) === Number(moduleIndex) &&
+          Boolean(findLotteryGridNode([node])),
+      );
+      if (!moduleNode) return;
+      const activeVariantId = moduleNode.activeLineageVariantId;
+      applyLotteryBlueprintValuesToNode(moduleNode, baseValues);
+      const versionModuleKey = getPageTemplateVersionModuleKey(
+        moduleNode.sourcePageTemplateId || page.sourcePageTemplateId,
+        moduleIndex,
+      );
+      const versionNamesById = new Map(
+        getManualModuleBlueprintVersions(versionModuleKey).map((version) => [
+          version.id,
+          version.name,
+        ]),
+      );
+      (moduleNode.guidedLineageVariants || []).forEach((variant) => {
+        applyLotteryBlueprintValuesToNode(variant.node, baseValues);
+        if (variant.id === "base") return;
+        const versionName = versionNamesById.get(variant.id) || variant.title;
+        applyLotteryBlueprintValuesToNode(
+          variant.node,
+          getPageTemplateModuleVariableValues(moduleIndex, versionName),
+        );
+      });
+      const activeVariant = (moduleNode.guidedLineageVariants || []).find(
+        (variant) => variant.id === activeVariantId,
+      );
+      if (activeVariant) applyLineageVariantToNode(moduleNode, activeVariant);
+      syncGuidedLotteryPopupsForPage(page);
+    });
+  }
+
+  function syncGeneratedLotteryBlueprintRow(rowKey) {
+    const parsed =
+      parsePageTemplateVariableRowKey(rowKey) ||
+      parsePageTemplateVariableVersionRowKey(rowKey);
+    if (!parsed || !/^\d+\.prize(?:Count|\d+(?:Name|Text|Copy)?)$/.test(parsed.compoundKey)) return;
+    syncGeneratedLotteryBlueprintModule(parsed.moduleIndex);
   }
 
   function refreshAfterGuidedNodePropChange() {
@@ -12489,11 +12666,11 @@ function applyLotteryRowsToNode(node, rows) {
       lotteryNode.props[propKey] = row.value;
       markPrdBoundProp(lotteryNode, propKey);
       const prizeIndex = Number(String(propKey).match(/^prize(\d+)/)?.[1] || 0);
-      if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, Math.min(MAX_LOTTERY_PRIZE_COUNT, prizeIndex));
+      if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, prizeIndex);
     }
   });
   if (maxPrizeIndex) {
-    lotteryNode.props.prizeCount = Math.min(MAX_LOTTERY_PRIZE_COUNT, maxPrizeIndex);
+    lotteryNode.props.prizeCount = maxPrizeIndex;
     markPrdBoundProp(lotteryNode, "prizeCount");
   }
 }
@@ -12991,7 +13168,7 @@ function applyPageTemplateVariableValuesToNode(node, values) {
       if (!node.props) return;
       const isSHeaderTextProp =
         getModuleKind(node.schemaId) === "hero" &&
-        ["mainTitle", "subtitle"].includes(compoundKey);
+        ["mainTitle", "highlightText", "subtitle"].includes(compoundKey);
       if (
         compoundKey in node.props ||
         isSHeaderTextProp ||
@@ -13001,13 +13178,13 @@ function applyPageTemplateVariableValuesToNode(node, values) {
         node.props[compoundKey] = value;
         markPrdBoundProp(node, compoundKey);
         const prizeIndex = Number(String(compoundKey).match(/^prize(\d+)/)?.[1] || 0);
-        if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, Math.min(MAX_LOTTERY_PRIZE_COUNT, prizeIndex));
+        if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, prizeIndex);
       }
     });
     if (maxPrizeIndex) {
-      node.props.prizeCount = Math.min(
-        MAX_LOTTERY_PRIZE_COUNT,
-        Math.max(Number(node.props.prizeCount) || 0, maxPrizeIndex),
+      node.props.prizeCount = Math.max(
+        Number(node.props.prizeCount) || 0,
+        maxPrizeIndex,
       );
       markPrdBoundProp(node, "prizeCount");
     }
@@ -13033,7 +13210,7 @@ function applyPageTemplateVariableValuesToNode(node, values) {
       if (prizeIndex) {
         prizeCountsByChild.set(
           childIndex,
-          Math.max(prizeCountsByChild.get(childIndex) || 0, Math.min(MAX_LOTTERY_PRIZE_COUNT, prizeIndex)),
+          Math.max(prizeCountsByChild.get(childIndex) || 0, prizeIndex),
         );
       }
       (child.guidedStates || []).forEach((entry) => {
@@ -13047,9 +13224,9 @@ function applyPageTemplateVariableValuesToNode(node, values) {
   prizeCountsByChild.forEach((count, childIndex) => {
     const child = node.children?.[Number(childIndex)];
     if (!child?.props) return;
-    child.props.prizeCount = Math.min(
-      MAX_LOTTERY_PRIZE_COUNT,
-      Math.max(Number(child.props.prizeCount) || 0, count),
+    child.props.prizeCount = Math.max(
+      Number(child.props.prizeCount) || 0,
+      count,
     );
     markPrdBoundProp(child, "prizeCount");
     (child.guidedStates || []).forEach((entry) => {
@@ -18989,6 +19166,31 @@ function bindEvents() {
     true,
   );
 
+  document.addEventListener("submit", (event) => {
+    const adminAuthForm = event.target.closest("[data-admin-auth-form]");
+    if (!adminAuthForm) return;
+    event.preventDefault();
+    const password = adminAuthForm.querySelector("[data-admin-auth-password]")?.value || "";
+    if (password !== ADMIN_ACCESS_PASSWORD) {
+      state.adminAuthError = "密码错误，请重新输入";
+      render();
+      requestAnimationFrame(() => {
+        const input = document.querySelector("[data-admin-auth-password]");
+        input?.focus();
+        input?.select();
+      });
+      return;
+    }
+    state.adminAuthModalOpen = false;
+    state.adminAuthError = "";
+    state.view = "admin";
+    state.createModalOpen = false;
+    state.draftTemplateModalOpen = false;
+    state.draftTemplateModalTarget = null;
+    state.libraryReturnView = null;
+    render();
+  });
+
   document.addEventListener("click", (event) => {
     if (event.target.closest("[data-placement-case-scrollbar]")) return;
 
@@ -19260,6 +19462,9 @@ function bindEvents() {
         Number(prizeAddControl.dataset.prdPrizeChildIndex),
         Array.isArray(versionNames) ? versionNames : [],
       );
+      syncGeneratedLotteryBlueprintModule(
+        Number(prizeAddControl.dataset.prdPrizeModuleIndex),
+      );
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
       render();
@@ -19279,6 +19484,9 @@ function bindEvents() {
         Number(prizeDeleteControl.dataset.prdPrizeChildIndex),
         Number(prizeDeleteControl.dataset.prdPrizeIndex),
         Array.isArray(versionNames) ? versionNames : [],
+      );
+      syncGeneratedLotteryBlueprintModule(
+        Number(prizeDeleteControl.dataset.prdPrizeModuleIndex),
       );
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
@@ -20068,11 +20276,21 @@ function bindEvents() {
     }
 
     if (event.target.closest("[data-open-admin-dashboard]")) {
-      state.view = "admin";
-      state.createModalOpen = false;
-      state.draftTemplateModalOpen = false;
-      state.draftTemplateModalTarget = null;
-      state.libraryReturnView = null;
+      state.adminAuthModalOpen = true;
+      state.adminAuthError = "";
+      render();
+      requestAnimationFrame(() => {
+        document.querySelector("[data-admin-auth-password]")?.focus();
+      });
+      return;
+    }
+
+    if (
+      event.target.closest("[data-close-admin-auth]") ||
+      event.target.matches("[data-admin-auth-modal]")
+    ) {
+      state.adminAuthModalOpen = false;
+      state.adminAuthError = "";
       render();
       return;
     }
@@ -21128,6 +21346,7 @@ function bindEvents() {
         rowKey,
         state.prdTableRows[rowIndex].value,
       );
+      syncGeneratedLotteryBlueprintRow(rowKey);
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
       const variableKey = prdTemplateVariableInput.dataset.prdTemplateVariableKey || "";
@@ -21192,6 +21411,7 @@ function bindEvents() {
           rowKey,
           state.prdTableRows[rowIndex].value,
         );
+        syncGeneratedLotteryBlueprintRow(rowKey);
         state.prdTableBlueprint = null;
         state.prdTableBlueprintSignature = "";
         if (
@@ -21829,6 +22049,7 @@ function bindEvents() {
       const rowIndex = Number(prdPrizeTableSelect.dataset.prdPrizeTableRow);
       if (state.prdTableRows[rowIndex]) {
         state.prdTableRows[rowIndex].value = prdPrizeTableSelect.value;
+        syncGeneratedLotteryBlueprintRow(state.prdTableRows[rowIndex].key || "");
         state.prdTableBlueprint = null;
         state.prdTableBlueprintSignature = "";
         syncPrizeLibraryControl(prdPrizeTableSelect);
