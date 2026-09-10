@@ -8,7 +8,7 @@
   "reactComponent": "S级-中秋头图",
   "dimensions": {
     "width": 750,
-    "height": 735
+    "height": 682
   },
   "blueprint": {
     "autoExposeProps": true,

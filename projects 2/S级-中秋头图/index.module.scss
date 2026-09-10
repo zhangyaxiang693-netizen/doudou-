@@ -1,14 +1,15 @@
 .page {
   position: relative;
   width: 750px;
-  height: 735px;
+  height: 682px;
 }
 .image {
   width: 750px;
-  height: 735px;
+  height: 682px;
   position: absolute;
   top: 0px;
   left: 0px;
+  object-fit: contain;
 }
 .wrap {
   position: absolute;

@@ -71,8 +71,8 @@ function prizeImageClass(prize: {name: string; image: string}) {
   return `${styles.prizeImage} ${prize.name.trim() === '内容诊断积分' ? styles.pointsPrizeImage : ''}`
 }
 
-function isRecommendPrize(prize: {name: string; image: string}) {
-  return prize.name.trim() === 'DOU+官方推荐机会'
+function isSingleLinePrize(prize: {name: string; image: string}) {
+  return ['DOU+官方推荐机会', 'DOU仔帆布包'].includes(prize.name.trim())
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
@@ -89,7 +89,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <div className={styles.content}></div>
           <div className={styles.content1}>
             <div className={styles.text}>
-              <div className={styles.text__listwrap}>{prize1.name}</div>
+              <div className={`${styles.text__listwrap} ${isSingleLinePrize(prize1) ? styles.prizeNameRecommend : ''}`}>{prize1.name}</div>
             </div>
           </div>
           <div className={styles.content2}>
@@ -100,7 +100,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <div className={styles.content3}></div>
           <div className={styles.content4}>
             <div className={styles.text1}>
-              <div className={styles.text1__listwrap}>{prize2.name}</div>
+              <div className={`${styles.text1__listwrap} ${isSingleLinePrize(prize2) ? styles.prizeNameRecommend : ''}`}>{prize2.name}</div>
             </div>
           </div>
           <div className={styles.content5}>
@@ -112,14 +112,14 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             <div className={styles.main}>
               <div className={styles.section}></div>
               <img src={prize3.image} className={prizeImageClass(prize3)} />
-              <div className={styles.text2}>{prize3.name}</div>
+              <div className={`${styles.text2} ${isSingleLinePrize(prize3) ? styles.prizeNameRecommend : ''}`}>{prize3.name}</div>
             </div>
           </div>
         </div>
         <div className={styles.container3}>
           <div className={styles.content8}></div>
           <div className={styles.content9}>
-            <div className={`${styles.text5} ${isRecommendPrize(prize4) ? styles.text5Recommend : ''}`}>{prize4.name}</div>
+            <div className={`${styles.text5} ${isSingleLinePrize(prize4) ? styles.prizeNameRecommend : ''}`}>{prize4.name}</div>
           </div>
           <div className={styles.content10}>
             <img src={prize4.image} className={prizeImageClass(prize4)} />
@@ -128,7 +128,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
         <div className={styles.container4}>
           <div className={styles.content11}></div>
           <div className={styles.content12}>
-            <div className={styles.text7}>{prize5.name}</div>
+            <div className={`${styles.text7} ${isSingleLinePrize(prize5) ? styles.prizeNameRecommend : ''}`}>{prize5.name}</div>
           </div>
           <div className={styles.content13}>
             <img src={prize5.image} className={prizeImageClass(prize5)} />

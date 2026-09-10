@@ -90,8 +90,8 @@ function isPointsPrize(prize: {name: string; image: string}) {
   return prize.name.trim() === '内容诊断积分'
 }
 
-function isRecommendPrize(prize: {name: string; image: string}) {
-  return prize.name.trim() === 'DOU+官方推荐机会'
+function isSingleLinePrize(prize: {name: string; image: string}) {
+  return ['DOU+官方推荐机会', 'DOU仔帆布包'].includes(prize.name.trim())
 }
 
 function PrizeCard({prize}: {prize: {name: string; image: string}}) {
@@ -101,7 +101,7 @@ function PrizeCard({prize}: {prize: {name: string; image: string}}) {
         src={prize.image}
         className={`${styles.prizeImage} ${isPointsPrize(prize) ? styles.pointsPrizeImage : ''}`}
       />
-      <div className={`${styles.prizeName} ${isRecommendPrize(prize) ? styles.prizeNameRecommend : ''}`}>{prize.name}</div>
+      <div className={`${styles.prizeName} ${isSingleLinePrize(prize) ? styles.prizeNameRecommend : ''}`}>{prize.name}</div>
     </div>
   )
 }

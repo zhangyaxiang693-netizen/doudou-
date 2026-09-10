@@ -8,7 +8,7 @@ const GUIDED_FALLBACK_HOT_BOTTOM_SPACE = 358;
 const GUIDED_FALLBACK_HOT_PAGE_HEIGHT = 1502;
 const GUIDED_FALLBACK_CASE_BOTTOM_SPACE = 154;
 const GUIDED_FALLBACK_CASE_PAGE_HEIGHT = 1759;
-const GUIDED_S_LEVEL_BACKGROUND = "#EDE5FF";
+const GUIDED_S_LEVEL_BACKGROUND = "#E2DCFF";
 const DEFAULT_TRAFFIC_COUPON_THRESHOLD = "00";
 const DEFAULT_LOTTERY_PRIZE_COUNT = 3;
 const MAX_LOTTERY_PRIZE_COUNT = 8;
@@ -74,7 +74,7 @@ const mockPrizeLibrary = [
   },
   {
     id: "douzi_canvas_bag",
-    name: "DOU仔周边帆布包",
+    name: "DOU仔帆布包",
     image: new URL("../九宫格-奖品库/dou仔周边帆布包.png", import.meta.url).href,
     copy: "",
   },

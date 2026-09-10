@@ -106,6 +106,14 @@ function resolvePrize(value: PrizeValue | undefined, fallbackName: string) {
   return {name: fallbackName, image: '', copy: ''}
 }
 
+function renderPrizeName(name: string) {
+  return name.split(/(DOU)/g).map((part, index) => (
+    part === 'DOU'
+      ? <span className={styles.douPrizeText} key={`${part}-${index}`}>{part}</span>
+      : part
+  ))
+}
+
 export default function GeneratedComponent(props: IGeneratedComponent) {
   const {
     titleText = '恭喜抽中',
@@ -169,11 +177,11 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     selectedPrize.name === 'DOU仔周边' ||
     selectedPrize.name === 'DOU仔玩偶' ||
     selectedPrize.name === 'DOU仔挂件' ||
-    selectedPrize.name === 'DOU仔周边帆布包' ||
+    selectedPrize.name === 'DOU仔帆布包' ||
     isContentDiagnosisPrize
   const isThemeColoredPrizeName = isOfficialRecommendationPrize ||
     selectedPrize.name === 'DOU仔周边' ||
-    selectedPrize.name === 'DOU仔周边帆布包' ||
+    selectedPrize.name === 'DOU仔帆布包' ||
     selectedPrize.name === 'DOU仔挂件' ||
     selectedPrize.name === 'DOU仔玩偶' ||
     selectedPrize.name === '剪映VIP' ||
@@ -232,14 +240,14 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           </div>
         ) : isDouziFamilyPackPrize ? (
           <div className={styles.familyPackTitle}>
-            恭喜抽中<span style={{color: amountColor}}>DOU仔周边！</span>
+            恭喜抽中<span style={{color: amountColor}}>{renderPrizeName('DOU仔周边！')}</span>
           </div>
         ) : (
           <>
             <div className={styles.text2} style={{color: amountColor}}>
                 <span className={styles.text2__seg0}>{amountText}</span>
             </div>
-                <div className={`${styles.text1} ${isThemeColoredPrizeName ? styles.officialRecommendationPrizeName : ''}`} style={isThemeColoredPrizeName ? {color: amountColor} : undefined}>{displayedPrizeText}</div>
+                <div className={`${styles.text1} ${isThemeColoredPrizeName ? styles.officialRecommendationPrizeName : ''}`} style={isThemeColoredPrizeName ? {color: amountColor} : undefined}>{renderPrizeName(displayedPrizeText)}</div>
           </>
         )}
       </div>

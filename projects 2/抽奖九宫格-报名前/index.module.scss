@@ -183,7 +183,7 @@
 }
 
 .pointsPrizeImage {
-  transform: translateX(18px);
+  transform: translateX(6px);
 }
 .content2 .prizeImage,
 .content5 .prizeImage,
@@ -262,9 +262,11 @@
   justify-content: center;
   flex-wrap: wrap;
 }
-.text5Recommend {
-  letter-spacing: -0.1em;
-  white-space: nowrap;
+.prizeNameRecommend {
+  letter-spacing: -0.1em !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  flex-wrap: nowrap !important;
 }
 .content10 {
   position: absolute;

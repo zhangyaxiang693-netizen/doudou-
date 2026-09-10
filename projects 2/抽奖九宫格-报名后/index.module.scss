@@ -53,7 +53,7 @@
 }
 
 .pointsPrizeImage {
-  transform: translateX(18px);
+  transform: translateX(6px);
 }
 
 .prizeName {
@@ -80,8 +80,10 @@
   flex-wrap: wrap;
 }
 .prizeNameRecommend {
-  letter-spacing: -0.1em;
-  white-space: nowrap;
+  letter-spacing: -0.1em !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  flex-wrap: nowrap !important;
 }
 
 .container4 {
