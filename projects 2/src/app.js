@@ -18080,10 +18080,10 @@ function exportPage() {
 
 const guidedCutExportRules = {
   "核心玩法模块-抽奖消返-3列": {
-    exportWidth: 702,
+    exportWidth: GUIDED_CUT_EXPORT_WIDTH,
   },
   "核心玩法模块-抽奖消返-4列": {
-    exportWidth: 702,
+    exportWidth: GUIDED_CUT_EXPORT_WIDTH,
   },
   账户优惠券提示: {
     exportPropOverrides: {
