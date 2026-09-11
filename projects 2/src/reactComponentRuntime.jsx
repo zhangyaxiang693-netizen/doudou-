@@ -57,6 +57,84 @@ import HeaderImage from "../头图";
 import MidAutumnSHeader from "../S级-中秋头图";
 
 const roots = new WeakMap();
+const projectFontFamilies = new Set([
+  "Source Han Sans CN",
+  "Source Han Sans CN ExtraLight",
+  "Source Han Sans CN Light",
+  "Source Han Sans CN Regular",
+  "Source Han Sans CN Medium",
+  "Source Han Sans CN Bold",
+  "Source Han Sans CN Heavy",
+  "MFBenHeiNoncommercial",
+  "MFYuanHeiNoncommercial",
+  "OPPOSans",
+  "Douyin Sans",
+  "Douyin Number ABC",
+  "Douyin Number ABC Medium",
+  "Douyin Number ABC Bold",
+  "Douyin Number ABC ExtraBold",
+  "Douyin Number ABC Condensed",
+  "Douyin Number ABC Condensed Medium",
+]);
+const fontSamples = {
+  MFYuanHeiNoncommercial: "抽",
+  "Douyin Number ABC": "0123456789+.-",
+  "Douyin Number ABC Medium": "0123456789+.-",
+  "Douyin Number ABC Bold": "0123456789+.-",
+  "Douyin Number ABC ExtraBold": "0123456789+.-",
+  "Douyin Number ABC Condensed": "0123456789+.-",
+  "Douyin Number ABC Condensed Medium": "0123456789+.-",
+};
+const fontLoadPromises = new Map();
+
+function parseFontFamilies(value) {
+  return String(value || "")
+    .split(",")
+    .map((family) => family.trim().replace(/^['"]|['"]$/g, ""))
+    .filter((family) => projectFontFamilies.has(family));
+}
+
+function loadProjectFont(family, weight, style) {
+  const fontSpec = `${style || "normal"} ${weight || "400"} 16px "${family}"`;
+  const sample = fontSamples[family] || "字体DOU+0123456789";
+  const cacheKey = `${fontSpec}|${sample}`;
+  if (!fontLoadPromises.has(cacheKey)) {
+    const promise = document.fonts.load(fontSpec, sample).then((faces) => {
+      if (!faces.length) throw new Error(`字体未注册：${family} ${weight}`);
+      return faces;
+    }).catch((error) => {
+      fontLoadPromises.delete(cacheKey);
+      throw error;
+    });
+    fontLoadPromises.set(cacheKey, promise);
+  }
+  return fontLoadPromises.get(cacheKey);
+}
+
+export async function waitForReactMaterialFonts(root = document) {
+  if (!document.fonts || !root) return;
+  const elements = root instanceof Element
+    ? [root, ...root.querySelectorAll("*")]
+    : [...root.querySelectorAll("[data-react-component], [data-react-component] *")];
+  const requests = new Map();
+
+  elements.forEach((element) => {
+    const style = window.getComputedStyle(element);
+    parseFontFamilies(style.fontFamily).forEach((family) => {
+      const key = `${family}|${style.fontWeight}|${style.fontStyle}`;
+      requests.set(key, [family, style.fontWeight, style.fontStyle]);
+    });
+  });
+
+  await Promise.all(
+    [...requests.values()].map(([family, weight, style]) =>
+      loadProjectFont(family, weight, style)
+    ),
+  );
+  await document.fonts.ready;
+}
+
+window.waitForReactMaterialFonts = waitForReactMaterialFonts;
 
 const componentMap = {
   账户优惠券提示: AccountCouponNotice,
@@ -331,6 +409,15 @@ export function renderReactMaterials() {
         root.render(<Component {...props} />);
       });
       markEditableFields(element, props);
+      waitForReactMaterialFonts(element)
+        .then(() => {
+          element.dataset.fontsReady = "true";
+          delete element.dataset.fontsFailed;
+        })
+        .catch((error) => {
+          element.dataset.fontsFailed = "true";
+          console.error(`组件字体加载失败：${componentName}`, error);
+        });
     } catch (error) {
       console.error(`组件渲染失败：${componentName}`, error);
       element.dataset.renderFailed = "true";

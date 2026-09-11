@@ -17,7 +17,7 @@
 @font-face {
   font-family: "Source Han Sans CN ExtraLight";
   src: local('NoSuchFont__XL_v2'),
-       url("../fonts/SOURCEHANSANSCN-EXTRALIGHT.ttf") format("truetype");
+       url("../fonts/SOURCEHANSANSCN-EXTRALIGHT.otf") format("opentype");
   font-weight: 200;
   font-style: normal;
   font-display: block;
@@ -25,7 +25,7 @@
 @font-face {
   font-family: "Source Han Sans CN Light";
   src: local('NoSuchFont__L_v2'),
-       url("../fonts/SOURCEHANSANSCN-LIGHT.ttf") format("truetype");
+       url("../fonts/SOURCEHANSANSCN-LIGHT.otf") format("opentype");
   font-weight: 300;
   font-style: normal;
   font-display: block;
@@ -33,7 +33,7 @@
 @font-face {
   font-family: "Source Han Sans CN Regular";
   src: local('NoSuchFont__R_v2'),
-       url("../fonts/SOURCEHANSANSCN-REGULAR.ttf") format("truetype");
+       url("../fonts/SOURCEHANSANSCN-REGULAR.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
   font-display: block;
@@ -41,7 +41,7 @@
 @font-face {
   font-family: "Source Han Sans CN Medium";
   src: local('NoSuchFont__M_v2'),
-       url("../fonts/SOURCEHANSANSCN-MEDIUM.ttf") format("truetype");
+       url("../fonts/SOURCEHANSANSCN-MEDIUM.otf") format("opentype");
   font-weight: 500;
   font-style: normal;
   font-display: block;
@@ -49,7 +49,7 @@
 @font-face {
   font-family: "Source Han Sans CN Bold";
   src: local('NoSuchFont__B_v2'),
-       url("../fonts/SOURCEHANSANSCN-BOLD.ttf") format("truetype");
+       url("../fonts/SOURCEHANSANSCN-BOLD.otf") format("opentype");
   font-weight: 700;
   font-style: normal;
   font-display: block;
@@ -57,7 +57,7 @@
 @font-face {
   font-family: "Source Han Sans CN Heavy";
   src: local('NoSuchFont__H_v2'),
-       url("../fonts/SOURCEHANSANSCN-HEAVY.ttf") format("truetype");
+       url("../fonts/SOURCEHANSANSCN-HEAVY.otf") format("opentype");
   font-weight: 900;
   font-style: normal;
   font-display: block;
@@ -68,7 +68,7 @@
 @font-face {
   font-family: "Source Han Sans CN";
   src: local('NoSuchFont__XL_v2'),
-       url("../fonts/SOURCEHANSANSCN-EXTRALIGHT.ttf") format("truetype");
+       url("../fonts/SOURCEHANSANSCN-EXTRALIGHT.otf") format("opentype");
   font-weight: 200;
   font-style: normal;
   font-display: block;
@@ -76,15 +76,23 @@
 @font-face {
   font-family: "Source Han Sans CN";
   src: local('NoSuchFont__L_v2'),
-       url("../fonts/SOURCEHANSANSCN-LIGHT.ttf") format("truetype");
+       url("../fonts/SOURCEHANSANSCN-LIGHT.otf") format("opentype");
   font-weight: 300;
   font-style: normal;
   font-display: block;
 }
 @font-face {
   font-family: "Source Han Sans CN";
+  src: local('NoSuchFont__L350_v2'),
+       url("../fonts/SOURCEHANSANSCN-LIGHT.otf") format("opentype");
+  font-weight: 350;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: "Source Han Sans CN";
   src: local('NoSuchFont__R_v2'),
-       url("../fonts/SOURCEHANSANSCN-REGULAR.ttf") format("truetype");
+       url("../fonts/SOURCEHANSANSCN-REGULAR.otf") format("opentype");
   font-weight: 400;
   font-style: normal;
   font-display: block;
@@ -92,23 +100,39 @@
 @font-face {
   font-family: "Source Han Sans CN";
   src: local('NoSuchFont__M_v2'),
-       url("../fonts/SOURCEHANSANSCN-MEDIUM.ttf") format("truetype");
-  font-weight: 500 600;
+       url("../fonts/SOURCEHANSANSCN-MEDIUM.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: "Source Han Sans CN";
+  src: local('NoSuchFont__M600_v2'),
+       url("../fonts/SOURCEHANSANSCN-MEDIUM.otf") format("opentype");
+  font-weight: 600;
   font-style: normal;
   font-display: block;
 }
 @font-face {
   font-family: "Source Han Sans CN";
   src: local('NoSuchFont__B_v2'),
-       url("../fonts/SOURCEHANSANSCN-BOLD.ttf") format("truetype");
-  font-weight: 700 800;
+       url("../fonts/SOURCEHANSANSCN-BOLD.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: "Source Han Sans CN";
+  src: local('NoSuchFont__B800_v2'),
+       url("../fonts/SOURCEHANSANSCN-BOLD.otf") format("opentype");
+  font-weight: 800;
   font-style: normal;
   font-display: block;
 }
 @font-face {
   font-family: "Source Han Sans CN";
   src: local('NoSuchFont__H_v2'),
-       url("../fonts/SOURCEHANSANSCN-HEAVY.ttf") format("truetype");
+       url("../fonts/SOURCEHANSANSCN-HEAVY.otf") format("opentype");
   font-weight: 900;
   font-style: normal;
   font-display: block;
@@ -118,7 +142,25 @@
 @font-face {
   font-family: MFBenHeiNoncommercial;
   src: local('NoSuchFont__MBH_v2'),
-       url("../fonts/造字工房本黑体.ttf") format("truetype");
+       url("../fonts/造字工房本黑体.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: MFBenHeiNoncommercial;
+  src: local('NoSuchFont__MBH800_v2'),
+       url("../fonts/造字工房本黑体.otf") format("opentype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: MFBenHeiNoncommercial;
+  src: local('NoSuchFont__MBH900_v2'),
+       url("../fonts/造字工房本黑体.otf") format("opentype");
+  font-weight: 900;
+  font-style: normal;
   font-display: block;
 }
 @font-face {
@@ -137,10 +179,31 @@
   font-display: block;
 }
 @font-face {
+  font-family: OPPOSans;
+  src: local('NoSuchFont__OP300_v2'),
+       url("../fonts/DouyinSansBold.ttf") format("truetype");
+  font-weight: 300;
+  font-display: block;
+}
+@font-face {
   font-family: "Douyin Sans";
   src: local('NoSuchFont__DS_v2'),
        url("../fonts/DouyinSansBold.ttf") format("truetype");
   font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "Douyin Sans";
+  src: local('NoSuchFont__DS300_v2'),
+       url("../fonts/DouyinSansBold.ttf") format("truetype");
+  font-weight: 300;
+  font-display: block;
+}
+@font-face {
+  font-family: "Douyin Sans";
+  src: local('NoSuchFont__DS400_v2'),
+       url("../fonts/DouyinSansBold.ttf") format("truetype");
+  font-weight: 400;
   font-display: block;
 }
 
@@ -148,28 +211,28 @@
 @font-face {
   font-family: "Douyin Number ABC Medium";
   src: local('NoSuchFont__DNM_v2'),
-       url("../fonts/DouyinNumberABC-Medium.ttf") format("truetype");
+       url("../fonts/DouyinNumberABC-Medium.otf") format("opentype");
   font-weight: 500;
   font-display: block;
 }
 @font-face {
   font-family: "Douyin Number ABC Bold";
   src: local('NoSuchFont__DNB_v2'),
-       url("../fonts/DouyinNumberABC-Bold.ttf") format("truetype");
+       url("../fonts/DouyinNumberABC-Bold.otf") format("opentype");
   font-weight: 700;
   font-display: block;
 }
 @font-face {
   font-family: "Douyin Number ABC ExtraBold";
   src: local('NoSuchFont__DNEB_v2'),
-       url("../fonts/DouyinNumberABC-ExtraBold.ttf") format("truetype");
+       url("../fonts/DouyinNumberABC-ExtraBold.otf") format("opentype");
   font-weight: 800;
   font-display: block;
 }
 @font-face {
   font-family: "Douyin Number ABC Condensed Medium";
   src: local('NoSuchFont__DNCM_v2'),
-       url("../fonts/DouyinNumberABC-CondensedMedium.ttf") format("truetype");
+       url("../fonts/DouyinNumberABC-CondensedMedium.otf") format("opentype");
   font-weight: 500;
   font-display: block;
 }
@@ -177,29 +240,50 @@
 @font-face {
   font-family: "Douyin Number ABC";
   src: local('NoSuchFont__DNM_v2'),
-       url("../fonts/DouyinNumberABC-Medium.ttf") format("truetype");
-  font-weight: 500 600;
+       url("../fonts/DouyinNumberABC-Medium.otf") format("opentype");
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "Douyin Number ABC";
+  src: local('NoSuchFont__DNM500_v2'),
+       url("../fonts/DouyinNumberABC-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-display: block;
+}
+@font-face {
+  font-family: "Douyin Number ABC";
+  src: local('NoSuchFont__DNM600_v2'),
+       url("../fonts/DouyinNumberABC-Medium.otf") format("opentype");
+  font-weight: 600;
   font-display: block;
 }
 @font-face {
   font-family: "Douyin Number ABC";
   src: local('NoSuchFont__DNB_v2'),
-       url("../fonts/DouyinNumberABC-Bold.ttf") format("truetype");
+       url("../fonts/DouyinNumberABC-Bold.otf") format("opentype");
   font-weight: 700;
   font-display: block;
 }
 @font-face {
   font-family: "Douyin Number ABC";
   src: local('NoSuchFont__DNEB_v2'),
-       url("../fonts/DouyinNumberABC-ExtraBold.ttf") format("truetype");
+       url("../fonts/DouyinNumberABC-ExtraBold.otf") format("opentype");
   font-weight: 800;
   font-display: block;
 }
 @font-face {
   font-family: "Douyin Number ABC Condensed";
   src: local('NoSuchFont__DNCM_v2'),
-       url("../fonts/DouyinNumberABC-CondensedMedium.ttf") format("truetype");
-  font-weight: 500 600;
+       url("../fonts/DouyinNumberABC-CondensedMedium.otf") format("opentype");
+  font-weight: 500;
+  font-display: block;
+}
+@font-face {
+  font-family: "Douyin Number ABC Condensed";
+  src: local('NoSuchFont__DNCM600_v2'),
+       url("../fonts/DouyinNumberABC-CondensedMedium.otf") format("opentype");
+  font-weight: 600;
   font-display: block;
 }
 
@@ -2254,6 +2338,7 @@ button:hover {
 .react-component-host {
   transform: scale(var(--react-component-scale));
   transform-origin: top left;
+  font-synthesis: none;
 }
 
 .material-preview .react-component-fit {

@@ -18851,6 +18851,9 @@ async function exportElementToPngBlob(element, options = {}) {
   );
   if (!width || !height) throw new Error("empty export component");
 
+  if (window.waitForReactMaterialFonts) {
+    await window.waitForReactMaterialFonts(element);
+  }
   const fontEmbedCSS = await getGuidedExportFontCss(element);
   const blob = await exportNodeToBlob(element, {
     width,
