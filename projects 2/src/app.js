@@ -1,6 +1,7 @@
 import { getFontEmbedCSS, toBlob as exportNodeToBlob } from "html-to-image";
 
 const GUIDED_CUT_EXPORT_WIDTH = 750;
+const GUIDED_CONSUMPTION_RETURN_EXPORT_SIDE_SPACE = 24;
 const GUIDED_HEADER_IMAGE_EXPORT_HEIGHT = 400;
 const GUIDED_CUT_EXPORT_BOTTOM_SPACE = 32;
 const GUIDED_TASK_BAR_EXPORT_BOTTOM_SPACE = 16;
@@ -18081,9 +18082,11 @@ function exportPage() {
 const guidedCutExportRules = {
   "核心玩法模块-抽奖消返-3列": {
     exportWidth: GUIDED_CUT_EXPORT_WIDTH,
+    exportSideSpace: GUIDED_CONSUMPTION_RETURN_EXPORT_SIDE_SPACE,
   },
   "核心玩法模块-抽奖消返-4列": {
     exportWidth: GUIDED_CUT_EXPORT_WIDTH,
+    exportSideSpace: GUIDED_CONSUMPTION_RETURN_EXPORT_SIDE_SPACE,
   },
   账户优惠券提示: {
     exportPropOverrides: {
@@ -19105,6 +19108,10 @@ function renderPageBackgroundExportContent(entry) {
 function renderGuidedExportPreview(entry) {
   const { width, height } = getExportEntryDimensions(entry);
   const bottomSpace = getGuidedCutExportBottomSpace(entry);
+  const exportSideSpace = Math.max(
+    0,
+    Number(getGuidedCutExportRule(entry?.node || entry?.sourceNode).exportSideSpace || 0),
+  );
   const previewScale = width > 720 ? 0.44 : 0.46;
   const previewWidth = Math.ceil(width * previewScale);
   const previewHeight = Math.ceil(height * previewScale);
@@ -19134,7 +19141,7 @@ function renderGuidedExportPreview(entry) {
       <div
         class="guided-export-cut-preview"
         data-export-cut-id="${escapeAttr(entry.id)}"
-        style="width:${width}px;height:${height}px;padding-bottom:${bottomSpace}px;box-sizing:border-box;--export-preview-scale:${previewScale};"
+        style="width:${width}px;height:${height}px;padding:0 ${exportSideSpace}px ${bottomSpace}px;box-sizing:border-box;--export-preview-scale:${previewScale};"
       >
         ${content}
       </div>
