@@ -124,9 +124,10 @@
 @font-face {
   font-family: MFYuanHeiNoncommercial;
   src: local('NoSuchFont__MYH_v2'),
-       url("../fonts/MFYUANHEI_NONCOMMERCIAL-REGULAR.TTF") format("truetype");
+       url("../fonts/MFYUANHEI_CHOU.woff2") format("woff2");
   font-weight: 400;
   font-display: block;
+  unicode-range: U+62BD;
 }
 @font-face {
   font-family: OPPOSans;
