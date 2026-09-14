@@ -6072,9 +6072,7 @@ function renderTrafficCouponCopy(amount, threshold) {
 
 function isNoPrizeCopyName(name) {
   const normalized = normalizePrizeLookupText(name);
-  return normalized === "1314心动券包" ||
-    normalized === "1314元心动券包" ||
-    normalized === "1000元心动券包" ||
+  return normalized === "1000元心动券包" ||
     normalized === "剪映vip" ||
     normalized === "剪映vip月卡" ||
     normalized === "内容诊断积分" ||
@@ -6083,6 +6081,28 @@ function isNoPrizeCopyName(name) {
     normalized === "dou仔玩偶" ||
     normalized === "dou仔挂件" ||
     normalized === "dou仔周边帆布包";
+}
+
+function normalizeLegacyCouponPackText(value) {
+  return String(value ?? "")
+    .replace(/1314\s*元?心动券包/g, "1000元心动券包");
+}
+
+function normalizeLegacyCouponPackProps(schemaId, props = {}) {
+  const normalized = { ...props };
+  Object.keys(normalized).forEach((key) => {
+    if (/^prize\d+(?:Name|Text)?$/.test(key) && typeof normalized[key] === "string") {
+      normalized[key] = normalizeLegacyCouponPackText(normalized[key]);
+    }
+  });
+  if (
+    schemaId === "弹窗-中奖" &&
+    String(normalized.amountText || "").trim() === "1314" &&
+    String(normalized.prizeText || "").replace(/\s+/g, "").includes("心动券包")
+  ) {
+    normalized.amountText = "1000";
+  }
+  return normalized;
 }
 
 function normalizePrizeCopyMeta(prize = {}, sourceText = "") {
@@ -13145,7 +13165,9 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       mockPrizeLibrary[index - 1] ||
       {};
     return {
-      name: nameValue || parsed?.name || style2Fallback?.name || fallback.name || `奖品${index}`,
+      name: normalizeLegacyCouponPackText(
+        nameValue || parsed?.name || style2Fallback?.name || fallback.name || `奖品${index}`,
+      ),
       image: parsed?.image || fallback.image || "",
       copy: parsed?.copy || props[`prize${index}Copy`] || fallback.copy || "满30元赠价值5元流量",
     };
@@ -13351,8 +13373,13 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       1,
       Math.max(1, Number(winProps.prizeCount || popupNode.lotteryWinProps?.prizeCount || 1)),
     );
-    const amountText = String(winProps.amountText ?? "").trim();
+    const rawAmountText = String(winProps.amountText ?? "").trim();
     const prizeText = String(winProps.prizeText ?? "").trim();
+    const amountText =
+      rawAmountText === "1314" &&
+      prizeText.replace(/\s+/g, "").includes("心动券包")
+        ? "1000"
+        : rawAmountText;
     const prizeSubText = String(winProps.prizeSubText ?? "").trim();
     const prizeName = `${amountText}${prizeText}`.trim();
     const copyKey = `prize${selectedPrizeIndex}Copy`;
@@ -17841,7 +17868,8 @@ function renderComponent(node, options = {}) {
   }
 
   const schema = findAtomSchema(node.schemaId);
-  const p = schema ? defaultProps(node.schemaId, node.props || {}) : (node.props || {});
+  const rawProps = schema ? defaultProps(node.schemaId, node.props || {}) : (node.props || {});
+  const p = normalizeLegacyCouponPackProps(node.schemaId, rawProps);
   if (schema?.id === "StickyBottomButton" || node.schemaId === "StickyBottomButton") {
     return renderStickyBottomButtonFallback(p, editOptions);
   }

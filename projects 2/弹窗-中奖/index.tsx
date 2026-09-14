@@ -121,7 +121,7 @@ function renderPrizeName(name: string) {
 export default function GeneratedComponent(props: IGeneratedComponent) {
   const {
     titleText = '恭喜抽中',
-    amountText = '1314',
+    amountText = '1000',
     prizeText = '元心动券包',
     prizeSubText = '',
     buttonText = '去查看',
@@ -174,7 +174,6 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     selectedPrize.name === 'DOU仔全家福随机发'
   const isContentDiagnosisPrize = selectedPrize.name === '内容诊断积分'
   const hasNoSubText = selectedPrize.name === '1000元心动券包' ||
-    selectedPrize.name === '1314心动券包' ||
     selectedPrize.name === '剪映VIP' ||
     selectedPrize.name === '剪映VIP月卡' ||
     selectedPrize.name === '流量扶持' ||

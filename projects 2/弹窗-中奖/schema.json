@@ -21,7 +21,7 @@
       "usage": "标题文案"
     },
     {
-      "text": "1314",
+      "text": "1000",
       "family": "Douyin Number ABC",
       "weight": 600,
       "size": "95px",
@@ -113,7 +113,7 @@
       "name": "amountText",
       "label": "金额文案",
       "type": "string",
-      "default": "1314",
+      "default": "1000",
       "description": "中奖金额或数字文案。"
     },
     {
