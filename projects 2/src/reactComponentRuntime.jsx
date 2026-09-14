@@ -391,8 +391,15 @@ function markEditableFields(host, props) {
   });
 }
 
-export function renderReactMaterials() {
-  document.querySelectorAll("[data-react-component]").forEach((element) => {
+export function renderReactMaterials(scope = document) {
+  const elements = [];
+  if (scope instanceof Element && scope.matches("[data-react-component]")) {
+    elements.push(scope);
+  }
+  elements.push(...scope.querySelectorAll("[data-react-component]"));
+
+  const renderJobs = [];
+  elements.forEach((element) => {
     const componentName = element.dataset.reactComponent || "";
     const Component = componentMap[componentName];
     if (!Component) return;
@@ -404,10 +411,21 @@ export function renderReactMaterials() {
         root = createRoot(element);
         roots.set(element, root);
       }
+      renderJobs.push({ element, componentName, Component, props, root });
+    } catch (error) {
+      console.error(`组件渲染准备失败：${componentName}`, error);
+      element.dataset.renderFailed = "true";
+    }
+  });
 
-      flushSync(() => {
-        root.render(<Component {...props} />);
-      });
+  flushSync(() => {
+    renderJobs.forEach(({ Component, props, root }) => {
+      root.render(<Component {...props} />);
+    });
+  });
+
+  renderJobs.forEach(({ element, componentName, props }) => {
+    try {
       markEditableFields(element, props);
       waitForReactMaterialFonts(element)
         .then(() => {

@@ -6606,8 +6606,22 @@ function getMoleculeVerifierFields(molecule, verifier) {
   return [...moleculeFields, ...childFields];
 }
 
-function getPageTemplateVerifierFields(template, verifier) {
-  return materializePageTemplateNodes(template).flatMap((node, nodeIndex) => {
+function getPageTemplateVerifierFields(
+  template,
+  verifier,
+  targetModuleIndex = null,
+) {
+  const nodes = materializePageTemplateNodes(template);
+  const moduleEntries =
+    targetModuleIndex === null || targetModuleIndex === undefined
+      ? nodes.map((node, nodeIndex) => ({ node, nodeIndex }))
+      : nodes[Number(targetModuleIndex)]
+        ? [{
+            node: nodes[Number(targetModuleIndex)],
+            nodeIndex: Number(targetModuleIndex),
+          }]
+        : [];
+  return moduleEntries.flatMap(({ node, nodeIndex }) => {
     const stateConfig = getPageTemplateBusinessStateConfig(
       node?.schemaId,
       template?.id,
@@ -8714,8 +8728,16 @@ function getPageTemplateVariableBlueprintFromRows(rows = []) {
   return blueprint;
 }
 
-function getPrdPageTemplateInputFields(pageTemplate, verifier) {
-  const fields = getPageTemplateVerifierFields(pageTemplate, verifier);
+function getPrdPageTemplateInputFields(
+  pageTemplate,
+  verifier,
+  targetModuleIndex = null,
+) {
+  const fields = getPageTemplateVerifierFields(
+    pageTemplate,
+    verifier,
+    targetModuleIndex,
+  );
   const specs = getPrdPageTemplateInputSpecs(pageTemplate);
   const orderedFields = specs === null
     ? fields.map((field) => ({
@@ -8784,13 +8806,21 @@ function getPrdPageTemplateInputFields(pageTemplate, verifier) {
   }));
 }
 
-function getPageTemplateVariableFields(pageTemplate) {
+function getPageTemplateVariableFields(pageTemplate, targetModuleIndex = null) {
   const verifier = {
     blueprint: getPageTemplateVariableBlueprintFromRows(state.prdTableRows),
   };
-  const allFields = getPageTemplateVerifierFields(pageTemplate, verifier);
+  const allFields = getPageTemplateVerifierFields(
+    pageTemplate,
+    verifier,
+    targetModuleIndex,
+  );
   const prdInputFields = withDynamicPageTemplatePrizeFields(
-    getPrdPageTemplateInputFields(pageTemplate, verifier),
+    getPrdPageTemplateInputFields(
+      pageTemplate,
+      verifier,
+      targetModuleIndex,
+    ),
     state.prdTableRows,
   );
   const prdFieldByKey = new Map(
@@ -8912,10 +8942,19 @@ function buildPageTemplateVariableSections(fields, getRowIndex) {
   return sections;
 }
 
-function getPageTemplateVariableGroups(pageTemplate) {
+function getPageTemplateVariableGroups(pageTemplate, targetModuleIndex = null) {
   const nodes = materializePageTemplateNodes(pageTemplate);
-  const editableFields = getPageTemplateVariableFields(pageTemplate);
-  return nodes.map((node, moduleIndex) => {
+  const editableFields = getPageTemplateVariableFields(
+    pageTemplate,
+    targetModuleIndex,
+  );
+  const moduleEntries =
+    targetModuleIndex === null || targetModuleIndex === undefined
+      ? nodes.map((node, moduleIndex) => ({ node, moduleIndex }))
+      : nodes[Number(targetModuleIndex)]
+        ? [{ node: nodes[Number(targetModuleIndex)], moduleIndex: Number(targetModuleIndex) }]
+        : [];
+  return moduleEntries.map(({ node, moduleIndex }) => {
     const moduleFields = editableFields.filter(
       (field) => Number(field.moduleIndex) === moduleIndex,
     );
@@ -9117,6 +9156,54 @@ function renderPageTemplateVariableGroup(group, index = 0) {
       </div>
     </section>
   `;
+}
+
+function refreshPageTemplateVariableGroupRow(rowElement) {
+  const rowKey = rowElement?.dataset.prdTemplateModuleRow;
+  if (!rowKey) return false;
+  const [templateId, moduleIndexText] = rowKey.split("|");
+  const moduleIndex = Number(moduleIndexText);
+  const pageTemplate = [...pageTemplates, ...customPageTemplates].find(
+    (item) => item.id === templateId,
+  );
+  if (!pageTemplate || !Number.isInteger(moduleIndex)) return false;
+  const group = getPageTemplateVariableGroups(pageTemplate, moduleIndex)[0];
+  if (!group) return false;
+
+  const template = document.createElement("template");
+  template.innerHTML = renderPageTemplateVariableGroup(
+    group,
+    moduleIndex,
+  ).trim();
+  const nextRow = template.content.firstElementChild;
+  if (!nextRow) return false;
+  rowElement.replaceWith(nextRow);
+  window.renderReactMaterials?.(nextRow);
+  return true;
+}
+
+function refreshPageTemplateVariableModuleList() {
+  const list = document.querySelector(".prd-variable-module-list");
+  const pageTemplate = getActivePrdPageTemplate();
+  if (!list || !pageTemplate) return false;
+  const groups = getPageTemplateVariableGroups(pageTemplate);
+  list.innerHTML = groups.map(renderPageTemplateVariableGroup).join("");
+  window.renderReactMaterials?.(list);
+  return true;
+}
+
+function refreshPrdTemplateMoleculeAddModalElement() {
+  const overview = document.querySelector(".blueprint-overview");
+  if (!overview) return false;
+  overview.querySelector("[data-prd-add-modal]")?.remove();
+  const modalHtml = renderPrdTemplateMoleculeAddModal();
+  if (!modalHtml) return true;
+  const template = document.createElement("template");
+  template.innerHTML = modalHtml.trim();
+  const modal = template.content.firstElementChild;
+  if (!modal) return false;
+  overview.append(modal);
+  return true;
 }
 
 function renderPageTemplateHeaderLevelSwitch(group) {
@@ -9416,9 +9503,10 @@ function refreshPageTemplateModulePreview(templateId, moduleIndex) {
     (item) => item.id === templateId,
   );
   if (!pageTemplate) return;
-  const group = getPageTemplateVariableGroups(pageTemplate).find(
-    (item) => Number(item.moduleIndex) === Number(moduleIndex),
-  );
+  const group = getPageTemplateVariableGroups(
+    pageTemplate,
+    Number(moduleIndex),
+  )[0];
   if (!group) return;
   const preview = document.querySelector(
     `[data-prd-module-preview="${CSS.escape(`${templateId}|${moduleIndex}`)}"]`,
@@ -9434,7 +9522,7 @@ function refreshPageTemplateModulePreview(templateId, moduleIndex) {
   const nextPreview = template.content.firstElementChild;
   if (!nextPreview) return;
   preview.replaceWith(nextPreview);
-  window.renderReactMaterials?.();
+  window.renderReactMaterials?.(nextPreview);
 }
 
 function refreshPageTemplateModulePreviewByRowIndex(rowIndex) {
@@ -9453,6 +9541,42 @@ function refreshPageTemplateModulePreviewByRowIndex(rowIndex) {
   state.prdTemplatePreviewVersions = state.prdTemplatePreviewVersions || {};
   state.prdTemplatePreviewVersions[previewVersionKey] = parsed.versionName || "base";
   refreshPageTemplateModulePreview(pageTemplate.id, parsed.moduleIndex);
+}
+
+const pendingPageTemplatePreviewRefreshes = new Map();
+
+function getPageTemplatePreviewRefreshKey(rowIndex) {
+  const key = state.prdTableRows[Number(rowIndex)]?.key;
+  const parsed =
+    parsePageTemplateVariableRowKey(key) ||
+    parsePageTemplateVariableVersionRowKey(key) ||
+    parseConsumptionReturnStateDetailRowKey(key);
+  if (!parsed) return "";
+  return String(parsed.moduleIndex);
+}
+
+function schedulePageTemplateModulePreviewByRowIndex(rowIndex) {
+  const refreshKey = getPageTemplatePreviewRefreshKey(rowIndex);
+  if (!refreshKey) return;
+  const pendingTimer = pendingPageTemplatePreviewRefreshes.get(refreshKey);
+  if (pendingTimer) window.clearTimeout(pendingTimer);
+  pendingPageTemplatePreviewRefreshes.set(
+    refreshKey,
+    window.setTimeout(() => {
+      pendingPageTemplatePreviewRefreshes.delete(refreshKey);
+      refreshPageTemplateModulePreviewByRowIndex(rowIndex);
+    }, 72),
+  );
+}
+
+function flushPageTemplateModulePreviewByRowIndex(rowIndex) {
+  const refreshKey = getPageTemplatePreviewRefreshKey(rowIndex);
+  if (!refreshKey) return;
+  const pendingTimer = pendingPageTemplatePreviewRefreshes.get(refreshKey);
+  if (!pendingTimer) return;
+  window.clearTimeout(pendingTimer);
+  pendingPageTemplatePreviewRefreshes.delete(refreshKey);
+  refreshPageTemplateModulePreviewByRowIndex(rowIndex);
 }
 
 function renderPageTemplateVariableField(field) {
@@ -15006,7 +15130,7 @@ function renderGuidedPreview() {
   const stage = $(".guided-device-stage");
   bindCanvasStageInteractions(stage);
   try {
-    window.renderReactMaterials?.();
+    window.renderReactMaterials?.(center);
   } finally {
     if (!state.guidedCanvasInitialized && workspaceMode !== "blueprint-full") {
       initializeGuidedCanvasView();
@@ -15017,6 +15141,48 @@ function renderGuidedPreview() {
       });
     }
   }
+}
+
+function refreshGuidedVisiblePages() {
+  if (state.view !== "guided-preview") return false;
+  const shell = document.querySelector(".guided-preview-shell");
+  const pane = shell?.querySelector(".guided-blueprint-pane");
+  const canvasWorld = shell?.querySelector(".guided-canvas-world");
+  if (!shell || !pane || !canvasWorld) return false;
+
+  const visiblePageIds = new Set(state.guidedVisiblePageIds);
+  const visiblePages = state.pages.filter((page) => visiblePageIds.has(page.id));
+  const paneTemplate = document.createElement("template");
+  paneTemplate.innerHTML = renderGuidedBlueprintPane(
+    state.guidedWorkspaceMode || "split",
+    visiblePageIds,
+  ).trim();
+  const nextPane = paneTemplate.content.firstElementChild;
+  if (!nextPane) return false;
+
+  pane.replaceWith(nextPane);
+  canvasWorld.innerHTML = visiblePages.length
+    ? renderGuidedPageTree(visiblePages)
+    : `<div class="guided-canvas-empty">从左侧选择要同时预览的页面</div>`;
+  canvasWorld.classList.toggle(
+    "is-initializing",
+    !state.guidedCanvasInitialized,
+  );
+  updateGuidedPanel();
+  window.renderReactMaterials?.(canvasWorld);
+
+  if (
+    !state.guidedCanvasInitialized &&
+    state.guidedWorkspaceMode !== "blueprint-full"
+  ) {
+    initializeGuidedCanvasView();
+  } else {
+    requestAnimationFrame(() => {
+      invalidateStageRect();
+      updateCanvasZoom();
+    });
+  }
+  return true;
 }
 
 function getGuidedTitleScale() {
@@ -15591,7 +15757,7 @@ function renderGuidedNode(node) {
   `;
 }
 
-function refreshGuidedReactNodeContent(node, propKey, caretOffset, parent = null) {
+function refreshGuidedReactNodeContent(node, propKey = "", caretOffset = null, parent = null) {
   if (state.view !== "guided-preview" || !node?.id) return false;
   const guidedContent = document.querySelector(
     `.guided-node[data-node-id="${CSS.escape(node.id)}"] .guided-node-theme-content`,
@@ -15603,13 +15769,46 @@ function refreshGuidedReactNodeContent(node, propKey, caretOffset, parent = null
   if (!content) return false;
   const renderNode = parent ? getMoleculeChildRenderNode(parent, node) : node;
   content.innerHTML = renderComponent(renderNode);
-  window.renderReactMaterials?.();
-  const nextEditable = content.querySelector(
-    `[data-edit-prop="${CSS.escape(propKey)}"]`,
-  );
-  if (nextEditable) restoreTextOffsetWithin(nextEditable, caretOffset);
+  window.renderReactMaterials?.(content);
+  if (propKey) {
+    const nextEditable = content.querySelector(
+      `[data-edit-prop="${CSS.escape(propKey)}"]`,
+    );
+    if (nextEditable && caretOffset !== null) {
+      restoreTextOffsetWithin(nextEditable, caretOffset);
+    }
+  }
   syncMeasuredComponentFrames();
   positionContextControls();
+  return true;
+}
+
+function refreshGuidedStateControls() {
+  document.querySelectorAll("[data-guided-inline-state]").forEach((button) => {
+    const node = findNode(state.nodes, button.dataset.guidedNode)?.node;
+    button.classList.toggle(
+      "active",
+      node?.activeGuidedStateId === button.dataset.guidedInlineState,
+    );
+  });
+  document.querySelectorAll("[data-guided-child-state]").forEach((button) => {
+    const node = findNode(
+      state.nodes,
+      button.dataset.guidedChildStateNode,
+    )?.node;
+    button.classList.toggle(
+      "active",
+      node?.activeGuidedStateId === button.dataset.guidedChildState,
+    );
+  });
+}
+
+function refreshGuidedStateNode(node, parent = null) {
+  const renderTarget = parent || node;
+  if (!refreshGuidedReactNodeContent(renderTarget)) return false;
+  refreshGuidedStateControls();
+  if (state.guidedPanelMode) updateGuidedPanel();
+  updateGuidedNodeSelection(state.selectedId);
   return true;
 }
 
@@ -15701,7 +15900,7 @@ function updateGuidedPanel(options = {}) {
   host.innerHTML = state.guidedPanelMode && (selected || shouldRenderPagePanel || shouldRenderAddPanel)
     ? renderGuidedFloatingPanel(selected, options)
     : "";
-  window.renderReactMaterials?.();
+  window.renderReactMaterials?.(host);
   requestAnimationFrame(() => updateGuidedLineageTransform());
 }
 
@@ -19973,7 +20172,7 @@ function render() {
     $(".variant-inspector")?.classList.remove("open");
     $(".richtext-editor")?.classList.remove("open");
     renderPrdDemoFlow();
-    window.renderReactMaterials?.();
+    window.renderReactMaterials?.($(".activity-center") || document);
     return;
   }
 
@@ -20365,6 +20564,32 @@ function escapeAttr(value) {
   return escapeHtml(value).replaceAll("\n", " ");
 }
 
+let deferredBlueprintRenderTimer = null;
+
+function cancelDeferredBlueprintRender() {
+  if (deferredBlueprintRenderTimer === null) return;
+  window.clearTimeout(deferredBlueprintRenderTimer);
+  deferredBlueprintRenderTimer = null;
+}
+
+function scheduleDeferredBlueprintRender() {
+  cancelDeferredBlueprintRender();
+  const center = $(".activity-center");
+  const scrollTop = center?.scrollTop || 0;
+  const scrollLeft = center?.scrollLeft || 0;
+  deferredBlueprintRenderTimer = window.setTimeout(() => {
+    deferredBlueprintRenderTimer = null;
+    if (state.view !== "prd-demo") return;
+    render();
+    requestAnimationFrame(() => {
+      const nextCenter = $(".activity-center");
+      if (!nextCenter) return;
+      nextCenter.scrollTop = scrollTop;
+      nextCenter.scrollLeft = scrollLeft;
+    });
+  }, 180);
+}
+
 function bindEvents() {
   document.addEventListener(
     "click",
@@ -20635,7 +20860,13 @@ function bindEvents() {
       });
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          taskCountControl.closest("[data-prd-template-module-row]"),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
@@ -20667,7 +20898,13 @@ function bindEvents() {
       }
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          paragraphCountControl.closest("[data-prd-template-module-row]"),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
@@ -20689,7 +20926,13 @@ function bindEvents() {
       );
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          prizeAddControl.closest("[data-prd-template-module-row]"),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
@@ -20712,7 +20955,13 @@ function bindEvents() {
       );
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          prizeDeleteControl.closest("[data-prd-template-module-row]"),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
@@ -20741,7 +20990,13 @@ function bindEvents() {
         syncGeneratedLotteryBlueprintModule(moduleIndex);
         state.prdTableBlueprint = null;
         state.prdTableBlueprintSignature = "";
-        render();
+        if (
+          !refreshPageTemplateVariableGroupRow(
+            prizeMoveControl.closest("[data-prd-template-module-row]"),
+          )
+        ) {
+          render();
+        }
       }
       return;
     }
@@ -20760,26 +21015,34 @@ function bindEvents() {
         });
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          taskNewTagToggle.closest("[data-prd-template-module-row]"),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
     const addModuleVersion = event.target.closest("[data-prd-add-module-version]");
     if (addModuleVersion) {
+      const moduleRow = addModuleVersion.closest("[data-prd-template-module-row]");
       const moduleKey = addModuleVersion.dataset.prdAddModuleVersion;
       const version = addManualModuleBlueprintVersion(moduleKey);
       syncGuidedSHeaderVersionAdded(moduleKey, version);
-      render();
+      if (!refreshPageTemplateVariableGroupRow(moduleRow)) render();
       return;
     }
 
     const deleteModuleVersion = event.target.closest("[data-prd-delete-module-version]");
     if (deleteModuleVersion) {
+      const moduleRow = deleteModuleVersion.closest("[data-prd-template-module-row]");
       const moduleKey = deleteModuleVersion.dataset.prdVersionModuleKey;
       const versionId = deleteModuleVersion.dataset.prdDeleteModuleVersion;
       if (deleteManualModuleBlueprintVersion(moduleKey, versionId)) {
         syncGuidedSHeaderVersionDeleted(moduleKey, versionId);
-        render();
+        if (!refreshPageTemplateVariableGroupRow(moduleRow)) render();
       }
       return;
     }
@@ -20787,7 +21050,12 @@ function bindEvents() {
     const deleteTemplateModule = event.target.closest("[data-prd-delete-template-module]");
     if (deleteTemplateModule) {
       const [templateId, moduleIndex] = deleteTemplateModule.dataset.prdDeleteTemplateModule.split("|");
-      if (deleteMoleculeFromPrdPageTemplate(templateId, Number(moduleIndex))) render();
+      if (
+        deleteMoleculeFromPrdPageTemplate(templateId, Number(moduleIndex)) &&
+        !refreshPageTemplateVariableModuleList()
+      ) {
+        render();
+      }
       return;
     }
 
@@ -20801,7 +21069,16 @@ function bindEvents() {
     const moveTemplateModule = event.target.closest("[data-prd-move-template-module]");
     if (moveTemplateModule) {
       const [templateId, moduleIndex, direction] = moveTemplateModule.dataset.prdMoveTemplateModule.split("|");
-      if (moveMoleculeInPrdPageTemplate(templateId, Number(moduleIndex), direction)) render();
+      if (
+        moveMoleculeInPrdPageTemplate(
+          templateId,
+          Number(moduleIndex),
+          direction,
+        ) &&
+        !refreshPageTemplateVariableModuleList()
+      ) {
+        render();
+      }
       return;
     }
 
@@ -20809,7 +21086,13 @@ function bindEvents() {
     if (prdTemplateState) {
       const [templateId, moduleIndex, stateId] = prdTemplateState.dataset.prdTemplateState.split("|");
       setPageTemplateBlueprintBusinessState(templateId, Number(moduleIndex), stateId);
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          prdTemplateState.closest("[data-prd-template-module-row]"),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
@@ -20820,7 +21103,13 @@ function bindEvents() {
       const [templateId, moduleIndex, stateId] =
         prdTemplateEntryState.dataset.prdTemplateEntryState.split("|");
       setPageTemplateEntryCardState(templateId, Number(moduleIndex), stateId);
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          prdTemplateEntryState.closest("[data-prd-template-module-row]"),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
@@ -20834,7 +21123,13 @@ function bindEvents() {
         Number(childIndex),
         stateId,
       );
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          prdTemplateChildState.closest("[data-prd-template-module-row]"),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
@@ -20844,10 +21139,22 @@ function bindEvents() {
       !event.target.closest("button, input, textarea, select, a")
     ) {
       const [templateId, moduleIndex] = prdTemplateModuleRow.dataset.prdTemplateModuleRow.split("|");
+      const previousModuleIndex = state.prdTemplateSelectedModuleIndex;
       state.prdTemplateSelectedModuleIndex = Number(moduleIndex);
       state.prdTemplateAddModal = null;
       state.prdTemplateAddAfterIndex = null;
-      render();
+      const previousRow =
+        previousModuleIndex === null || previousModuleIndex === undefined
+          ? null
+          : document.querySelector(
+              `[data-prd-template-module-row="${CSS.escape(
+                `${templateId}|${previousModuleIndex}`,
+              )}"]`,
+            );
+      if (previousRow && previousRow !== prdTemplateModuleRow) {
+        refreshPageTemplateVariableGroupRow(previousRow);
+      }
+      if (!refreshPageTemplateVariableGroupRow(prdTemplateModuleRow)) render();
       return;
     }
 
@@ -20858,10 +21165,13 @@ function bindEvents() {
       event.target.closest(".blueprint-overview, .prd-variable-table") &&
       !event.target.closest("[data-prd-template-module-row], [data-prd-add-modal], button, input, textarea, select, a")
     ) {
+      const selectedRow = document.querySelector(
+        `[data-prd-template-module-row$="|${state.prdTemplateSelectedModuleIndex}"]`,
+      );
       state.prdTemplateSelectedModuleIndex = null;
       state.prdTemplateAddModal = null;
       state.prdTemplateAddAfterIndex = null;
-      render();
+      if (!refreshPageTemplateVariableGroupRow(selectedRow)) render();
       return;
     }
 
@@ -20875,7 +21185,7 @@ function bindEvents() {
         insertIndex: Number(insertIndex),
         direction,
       };
-      render();
+      if (!refreshPrdTemplateMoleculeAddModalElement()) render();
       return;
     }
 
@@ -20885,7 +21195,7 @@ function bindEvents() {
     ) {
       state.prdTemplateAddAfterIndex = null;
       state.prdTemplateAddModal = null;
-      render();
+      if (!refreshPrdTemplateMoleculeAddModalElement()) render();
       return;
     }
 
@@ -20895,7 +21205,10 @@ function bindEvents() {
       const insertIndex = Number(prdTemplateInsertMolecule.dataset.prdTemplateInsertIndex);
       const moleculeId = prdTemplateInsertMolecule.dataset.prdTemplateInsertMolecule;
       if (insertMoleculeIntoPrdPageTemplate(templateId, insertIndex, moleculeId)) {
-        render();
+        state.prdTemplateAddModal = null;
+        state.prdTemplateAddAfterIndex = null;
+        if (!refreshPageTemplateVariableModuleList()) render();
+        refreshPrdTemplateMoleculeAddModalElement();
       }
       return;
     }
@@ -20922,7 +21235,13 @@ function bindEvents() {
       }
       state.guidedHeaderLevelId = levelId;
       applyGuidedHeaderLevel(levelId);
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          prdHeaderLevel.closest("[data-prd-template-module-row]"),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
@@ -21120,7 +21439,7 @@ function bindEvents() {
 
       state.guidedVisibleCompanionNodeIds = Array.from(visibleCompanionIds);
       state.guidedCanvasInitialized = false;
-      render();
+      if (!refreshGuidedVisiblePages()) render();
       return;
     }
 
@@ -21132,7 +21451,7 @@ function bindEvents() {
         setActivePage(pageId);
         state.selectedId = null;
         state.guidedPanelMode = null;
-        render();
+        if (!refreshGuidedVisiblePages()) render();
         return;
       }
       const visibleIds = new Set(state.guidedVisiblePageIds);
@@ -21151,7 +21470,7 @@ function bindEvents() {
       }
       state.selectedId = null;
       state.guidedPanelMode = null;
-      render();
+      if (!refreshGuidedVisiblePages()) render();
       return;
     }
 
@@ -21248,7 +21567,7 @@ function bindEvents() {
       if (!found?.node?.isLotteryResultPopup) return;
       setLotteryPopupResult(found.node, popupResultOption.dataset.guidedPopupResult || "win");
       ensureLotteryPopupResultStates(found.node);
-      render();
+      if (!refreshGuidedStateNode(found.node, found.parent)) render();
       return;
     }
 
@@ -21260,7 +21579,7 @@ function bindEvents() {
       );
       if (!found?.node?.isLotteryResultPopup) return;
       setPopupSelectedPrize(found.node, popupPrizeOption.dataset.guidedPopupPrizeIndex || 1);
-      render();
+      if (!refreshGuidedStateNode(found.node, found.parent)) render();
       return;
     }
 
@@ -21337,8 +21656,8 @@ function bindEvents() {
       const variant = findLineageVariant(found.node, lineageApply.dataset.guidedLineageApply);
       if (!variant) return;
       applyLineageVariantToNode(found.node, variant);
-        syncGuidedLotteryPopupsForPage(activePage());
-      render();
+      syncGuidedLotteryPopupsForPage(activePage());
+      if (!refreshGuidedStateNode(found.node, found.parent)) render();
       return;
     }
 
@@ -21399,7 +21718,8 @@ function bindEvents() {
       if (variantNode && variant) {
         variantNode.activeVariantId = variant.id;
         variantNode.props = { ...variantNode.props, ...variant.props };
-        render();
+        const found = findNode(state.nodes, variantNode.id);
+        if (!refreshGuidedStateNode(variantNode, found?.parent)) render();
       }
       return;
     }
@@ -21413,14 +21733,14 @@ function bindEvents() {
         state.selectedId = found.node.id;
         state.guidedStateMenuNodeId = found.node.id;
         state.guidedPanelMode = null;
-        render();
+        if (!refreshGuidedStateNode(found.node, found.parent)) render();
       } else if (found?.node && applyGuidedBusinessState(found.node, guidedInlineState.dataset.guidedInlineState)) {
         applyCurrentGuidedThemeToNode(found.node);
         persistPageTemplateBusinessState(found.node);
         state.selectedId = found.node.id;
         state.guidedStateMenuNodeId = found.node.id;
         state.guidedPanelMode = null;
-        render();
+        if (!refreshGuidedStateNode(found.node, found.parent)) render();
       }
       return;
     }
@@ -21431,11 +21751,11 @@ function bindEvents() {
       if (found?.node?.isLotteryResultPopup) {
         setLotteryPopupResult(found.node, guidedBusinessState.dataset.guidedBusinessState || "win");
         ensureLotteryPopupResultStates(found.node);
-        render();
+        if (!refreshGuidedStateNode(found.node, found.parent)) render();
       } else if (found?.node && applyGuidedBusinessState(found.node, guidedBusinessState.dataset.guidedBusinessState)) {
         applyCurrentGuidedThemeToNode(found.node);
         persistPageTemplateBusinessState(found.node);
-        render();
+        if (!refreshGuidedStateNode(found.node, found.parent)) render();
       }
       return;
     }
@@ -21463,7 +21783,7 @@ function bindEvents() {
         applyGuidedBusinessState(found.node, stateId);
         applyCurrentGuidedThemeToNode(found.node);
       }
-      render();
+      if (!refreshGuidedStateNode(found.node, parent)) render();
       return;
     }
 
@@ -22638,15 +22958,12 @@ function bindEvents() {
         variableKey === "taskCount" ||
         normalizePageTemplateLookupName(variableLabel) === normalizePageTemplateLookupName("任务数量")
       ) {
-        render();
-        requestAnimationFrame(() => {
-          const nextInput = document.querySelector(
-            `[data-prd-template-variable-row="${CSS.escape(rowKey)}"]`,
-          );
-          nextInput?.focus();
-        });
+        const moduleRow = prdTemplateVariableInput.closest(
+          "[data-prd-template-module-row]",
+        );
+        if (!refreshPageTemplateVariableGroupRow(moduleRow)) render();
       } else {
-        refreshPageTemplateModulePreviewByRowIndex(rowIndex);
+        schedulePageTemplateModulePreviewByRowIndex(rowIndex);
       }
       return;
     }
@@ -22662,7 +22979,13 @@ function bindEvents() {
       });
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          prdReturnTierTypeSelect.closest("[data-prd-template-module-row]"),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
@@ -22689,7 +23012,15 @@ function bindEvents() {
       }
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          prdConsumptionDetailModeSelect.closest(
+            "[data-prd-template-module-row]",
+          ),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
@@ -22754,7 +23085,15 @@ function bindEvents() {
 
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
-      render();
+      if (
+        !refreshPageTemplateVariableGroupRow(
+          prdConsumptionVersionTierSelect.closest(
+            "[data-prd-template-module-row]",
+          ),
+        )
+      ) {
+        render();
+      }
       return;
     }
 
@@ -22789,9 +23128,15 @@ function bindEvents() {
           prdTableRowInput.tagName === "SELECT" &&
           /(?:rewardType[1-4]|第[1-4]档\s*·\s*类型)/.test(rowKey)
         ) {
-          render();
+          if (
+            !refreshPageTemplateVariableGroupRow(
+              prdTableRowInput.closest("[data-prd-template-module-row]"),
+            )
+          ) {
+            render();
+          }
         } else {
-          refreshPageTemplateModulePreviewByRowIndex(rowIndex);
+          schedulePageTemplateModulePreviewByRowIndex(rowIndex);
         }
       }
       return;
@@ -22825,6 +23170,7 @@ function bindEvents() {
 
     const blueprintVariantInput = event.target.closest("[data-blueprint-variant-value]");
     if (blueprintVariantInput) {
+      cancelDeferredBlueprintRender();
       const textareaRows = getBlueprintTextareaRows(blueprintVariantInput.value);
       blueprintVariantInput.rows = textareaRows;
       blueprintVariantInput
@@ -22842,7 +23188,7 @@ function bindEvents() {
           const syncedRows = getMoleculePropRows({ ...module, rows: group.rows });
           if (syncedRows?.length) group.rows = syncedRows;
           if (groups[0]?.id === groupId) module.rows = clone(group.rows);
-          render();
+          blueprintVariantInput.dataset.blueprintRefreshOnBlur = "true";
           return;
         }
         if (groups[0]?.id === groupId) module.rows = clone(group.rows);
@@ -22852,6 +23198,7 @@ function bindEvents() {
 
     const blueprintInput = event.target.closest("[data-blueprint-value]");
     if (blueprintInput) {
+      cancelDeferredBlueprintRender();
       const textareaRows = getBlueprintTextareaRows(blueprintInput.value);
       blueprintInput.rows = textareaRows;
       blueprintInput
@@ -22866,7 +23213,7 @@ function bindEvents() {
         row.value = blueprintInput.value;
         if (row.moleculePropKey) {
           syncMoleculeBlueprintRows(module);
-          render();
+          blueprintInput.dataset.blueprintRefreshOnBlur = "true";
           return;
         }
         if (module.inputScope === "activity") {
@@ -22921,7 +23268,7 @@ function bindEvents() {
             <div class="guided-node-kind">${escapeHtml(moduleKindLabels[getModuleKind(found.node.schemaId)] || "模块")}</div>
             ${renderComponent(found.node)}
           `;
-          window.renderReactMaterials?.();
+          window.renderReactMaterials?.(previewHost);
         }
       }
       return;
@@ -23101,6 +23448,23 @@ function bindEvents() {
 
   document.addEventListener("focusout", (event) => {
     if (event.target.closest("[data-edit-page-dimension], [data-edit-dimension]")) render();
+    const prdTemplateVariableInput = event.target.closest(
+      "[data-prd-template-variable-row]",
+    );
+    const prdTableRowInput = event.target.closest("[data-prd-table-row]");
+    const previewRowIndex = Number(
+      prdTemplateVariableInput?.dataset.prdTemplateVariableRow
+        ? findPrdTableRowIndexByKey(
+            prdTemplateVariableInput.dataset.prdTemplateVariableRow,
+          )
+        : prdTableRowInput?.dataset.prdTableRow,
+    );
+    if (Number.isInteger(previewRowIndex) && previewRowIndex >= 0) {
+      flushPageTemplateModulePreviewByRowIndex(previewRowIndex);
+    }
+    if (event.target.closest("[data-blueprint-refresh-on-blur]")) {
+      scheduleDeferredBlueprintRender();
+    }
     if (state.view !== "guided-preview") return;
     const editable = event.target.closest("[data-edit-prop], [data-variant-prop]");
     const editingNodeId = editable?.closest("[data-node-id]")?.dataset.nodeId;
