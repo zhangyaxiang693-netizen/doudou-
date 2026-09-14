@@ -6025,6 +6025,12 @@ button:hover {
   pointer-events: none;
 }
 
+.app-shell[data-view="guided-export"] [data-consume-tier]:not([data-consume-tier="1"]) [data-consume-amount],
+.guided-export-cut-preview [data-consume-tier]:not([data-consume-tier="1"]) [data-consume-amount],
+.admin-export-capture [data-consume-tier]:not([data-consume-tier="1"]) [data-consume-amount] {
+  visibility: hidden;
+}
+
 .guided-export-empty {
   display: grid;
   min-height: 280px;

@@ -302,9 +302,13 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       </div>
       <div className={styles.wrap1}>
         {[consumeAmountText1, consumeAmountText2, consumeAmountText3, consumeAmountText4].map((amount, index) => (
-          <div className={[styles.text10, styles.text11, styles.text12, styles.text13][index]} key={index}>
+          <div
+            className={[styles.text10, styles.text11, styles.text12, styles.text13][index]}
+            data-consume-tier={index + 1}
+            key={index}
+          >
             <span className={styles.consumePrefix}>消耗</span>
-            <span className={styles.consumeAmount}>{amount}</span>
+            <span className={styles.consumeAmount} data-consume-amount>{amount}</span>
             <span className={styles.consumeUnit}>元</span>
           </div>
         ))}

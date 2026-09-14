@@ -402,11 +402,12 @@
 .text6,
 .text7,
 .text8 {
-  width: 160px;
+  width: 130px;
   display: grid;
-  grid-template-columns: 48px 64px 24px;
-  column-gap: 12px;
+  grid-template-columns: 48px 50px 24px;
+  column-gap: 4px;
   align-items: center;
+  justify-self: center;
   transform: rotate(-6.909522671007686e-15deg);
   font-family: "Source Han Sans CN Regular";
   font-size: 24px;
@@ -424,5 +425,8 @@
   text-align: center;
 }
 .consumeAmount {
+  font-family: "Source Han Sans CN Medium";
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
+  color: #2d2d2d;
 }

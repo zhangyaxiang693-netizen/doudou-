@@ -5801,7 +5801,7 @@ function renderActivityCenter() {
             <button class="prd-upload-target" data-demo-open-file-modal>
               <span class="prd-upload-target-icon">↑</span>
               <strong>上传活动 PRD</strong>
-              <em>粘贴蓝图表格、文本或文档链接</em>
+              <em>导入文档或选择模板直接进入</em>
             </button>
             <div class="prd-tool-footer">
               <span>DOCX</span>
@@ -7810,26 +7810,6 @@ function renderPrdBlueprintModulePasteTables(
 }
 
 function renderPrdFileModal() {
-  const pasteVersionCount = state.prdBlueprintPasteVersions.length ||
-    PRD_BLUEPRINT_PASTE_DEFAULT_VERSIONS.length;
-  const pasteVersions = normalizePrdBlueprintPasteVersions(
-    state.prdBlueprintPasteVersions,
-    pasteVersionCount,
-  );
-  const pasteModuleVersions = normalizePrdBlueprintPasteModuleVersions(
-    state.prdBlueprintPasteModuleVersions,
-    pasteVersions,
-  );
-  const maxVersionCount = getPrdBlueprintMaxVersionCount(
-    state.prdBlueprintPasteRows,
-    pasteVersions,
-    pasteModuleVersions,
-  );
-  const blueprintRows = normalizePrdBlueprintPasteRows(
-    state.prdBlueprintPasteRows,
-    0,
-    maxVersionCount,
-  );
   return `
     <div class="prd-file-modal" data-demo-file-modal>
       <section role="dialog" aria-modal="true" aria-labelledby="prd-file-modal-title">
@@ -7863,14 +7843,14 @@ function renderPrdFileModal() {
             </span>
           </div>
         </div>
-        <div class="prd-file-divider"><span>或粘贴蓝图表格</span></div>
+        <div class="prd-file-divider"><span>或直接进入</span></div>
         <div class="prd-blueprint-paste">
           <div class="prd-text-import-head">
             <div>
-              <strong>粘贴蓝图表格</strong>
-              <span>选择一个模板后，可直接粘贴 PRD 文档中的模块表格</span>
+              <strong>直接进入</strong>
+              <span>选择一个页面模板，直接进入编辑</span>
             </div>
-            <em>表格</em>
+            <em>模板</em>
           </div>
           <label class="prd-blueprint-template-select">
             <span>页面模板</span>
@@ -7884,19 +7864,11 @@ function renderPrdFileModal() {
               `).join("")}
             </select>
           </label>
-          <div class="prd-blueprint-module-paste-list">
-            ${renderPrdBlueprintModulePasteTables(
-              blueprintRows,
-              pasteVersions,
-              state.prdBlueprintPasteTemplateName,
-              pasteModuleVersions,
-            )}
-          </div>
           <div class="prd-text-import-actions">
             <span class="${state.prdBlueprintPasteError ? "error" : ""}">
-              ${escapeHtml(state.prdBlueprintPasteError || "支持文档原表格式；返券策略表会自动转换为纵向版本")}
+              ${escapeHtml(state.prdBlueprintPasteError || "可选择以上任一模板")}
             </span>
-            <button type="button" data-prd-blueprint-table-submit>使用蓝图表格</button>
+            <button type="button" data-prd-blueprint-table-submit>直接进入</button>
           </div>
         </div>
         <footer>
@@ -19957,44 +19929,29 @@ function bindEvents() {
     }
 
     if (event.target.closest("[data-prd-blueprint-table-submit]")) {
-      const modal = event.target.closest("[data-demo-file-modal]");
-      const pastedVersions = normalizePrdBlueprintPasteVersions(
-        getPrdBlueprintPasteVersionsFromModal(modal),
-        0,
-      );
-      const pastedModuleVersions = normalizePrdBlueprintPasteModuleVersions(
-        state.prdBlueprintPasteModuleVersions,
-        pastedVersions,
-      );
-      const pastedRows = getPrdBlueprintPasteRowsFromModal(modal);
-      const filledRows = getFilledPrdBlueprintPasteRows(pastedRows);
-      if (!filledRows.length) {
-        state.prdBlueprintPasteVersions = pastedVersions;
-        state.prdBlueprintPasteModuleVersions = pastedModuleVersions;
-        state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(
-          pastedRows,
-          12,
-          getPrdBlueprintMaxVersionCount(pastedRows, pastedVersions, pastedModuleVersions),
-        );
-        state.prdBlueprintPasteError = "请先粘贴蓝图表格";
+      const templateName = state.prdBlueprintPasteTemplateName;
+      if (!templateName) {
+        state.prdBlueprintPasteError = "请先选择页面模板";
         render();
         requestAnimationFrame(() => {
-          document.querySelector("[data-prd-blueprint-cell]")?.focus();
+          document.querySelector("[data-prd-blueprint-template-select]")?.focus();
         });
         return;
       }
+      const pastedVersions = ["人群1", "人群2", "人群3"];
+      const pastedModuleVersions = {};
+      const pastedRows = createPrdBlueprintPasteTemplateRows(
+        templateName,
+        pastedVersions,
+      );
       const { rows, manualVersions } = convertBlueprintPasteRowsToPrdRows(
-        filledRows,
+        pastedRows,
         pastedVersions,
         pastedModuleVersions,
       );
       state.prdBlueprintPasteVersions = pastedVersions;
       state.prdBlueprintPasteModuleVersions = pastedModuleVersions;
-      state.prdBlueprintPasteRows = normalizePrdBlueprintPasteRows(
-        filledRows,
-        12,
-        getPrdBlueprintMaxVersionCount(filledRows, pastedVersions, pastedModuleVersions),
-      );
+      state.prdBlueprintPasteRows = pastedRows;
       state.prdManualModuleVersions = manualVersions;
       state.prdTableRows = rows;
       state.prdTableBlueprint = null;
