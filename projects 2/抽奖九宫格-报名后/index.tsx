@@ -43,7 +43,7 @@ export type IGeneratedComponent = {
 }
 
 const placeholderPrizes = [
-  {name: '1314元心动券包', image: prizeCouponPackUrl},
+  {name: '1000元心动券包', image: prizeCouponPackUrl},
   {name: '6元流量券', image: prizeTrafficCoupon6Url},
   {name: '10元流量券', image: prizeTrafficCoupon10Url},
   {name: 'DOU仔周边', image: prizeDouziUrl},

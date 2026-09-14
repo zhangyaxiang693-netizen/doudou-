@@ -127,7 +127,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     buttonText = '去查看',
     selectedPrizeIndex = 1,
     prizeCount = 8,
-    prize1Text = '1314元心动券包',
+    prize1Text = '1000元心动券包',
     prize2Text = '6元流量券',
     prize3Text = '10元流量券',
     prize4Text = 'DOU仔周边',
@@ -173,7 +173,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     selectedPrize.name === 'DOU仔随机周边' ||
     selectedPrize.name === 'DOU仔全家福随机发'
   const isContentDiagnosisPrize = selectedPrize.name === '内容诊断积分'
-  const hasNoSubText = selectedPrize.name === '1314元心动券包' ||
+  const hasNoSubText = selectedPrize.name === '1000元心动券包' ||
     selectedPrize.name === '1314心动券包' ||
     selectedPrize.name === '剪映VIP' ||
     selectedPrize.name === '剪映VIP月卡' ||

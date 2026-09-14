@@ -140,7 +140,7 @@ const mockPrizeLibrary = [
   },
   {
     id: "coupon_pack",
-    name: "1314元心动券包",
+    name: "1000元心动券包",
     image: new URL("../九宫格-奖品库/券包.png", import.meta.url).href,
     copy: "",
   },
@@ -6074,6 +6074,7 @@ function isNoPrizeCopyName(name) {
   const normalized = normalizePrizeLookupText(name);
   return normalized === "1314心动券包" ||
     normalized === "1314元心动券包" ||
+    normalized === "1000元心动券包" ||
     normalized === "剪映vip" ||
     normalized === "剪映vip月卡" ||
     normalized === "内容诊断积分" ||
@@ -6184,6 +6185,7 @@ function findPrizeLibraryItemByText(value) {
     "1000元券包": "coupon_pack",
     心动券包: "coupon_pack",
     "1314元心动券包": "coupon_pack",
+    "1000元心动券包": "coupon_pack",
     积分: "points",
     内容诊断积分: "points",
     剪映vip: "jianying_vip",
@@ -13092,6 +13094,13 @@ function applyGuidedHeaderLevel(levelId) {
     ].includes(node?.schemaId);
   }
 
+  function isGuidedLotteryResultPopupNode(node) {
+    return Boolean(
+      node?.isLotteryResultPopup ||
+      ["弹窗-中奖", "弹窗-未中奖"].includes(node?.schemaId),
+    );
+  }
+
 function createLotteryAnnouncementMoleculeFromNode(sourceNode) {
   return sourceNode;
 }
@@ -13125,8 +13134,8 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       { name: "DOU+流量券", sourceName: "6元流量券" },
     ];
     const fallbackPrizeNames = lotteryNode?.schemaId === "抽奖九宫格-报名前"
-      ? ["DOU仔周边", "6元流量券", "内容诊断积分", "DOU+官方推荐机会", "1314元心动券包"]
-      : ["1314元心动券包", "6元流量券", "10元流量券", "DOU仔周边", "DOU仔周边", "5元流量券", "DOU+官方推荐机会", "内容诊断积分"];
+      ? ["DOU仔周边", "6元流量券", "内容诊断积分", "DOU+官方推荐机会", "1000元心动券包"]
+      : ["1000元心动券包", "6元流量券", "10元流量券", "DOU仔周边", "DOU仔周边", "5元流量券", "DOU+官方推荐机会", "内容诊断积分"];
     const fallbackName = fallbackPrizeNames[index - 1];
     const style2Fallback = lotteryNode?.schemaId === "抽奖样式2"
       ? style2Fallbacks[index - 1]
@@ -13233,7 +13242,8 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
   }
 
   function ensureLotteryPopupResultStates(popupNode) {
-    if (!popupNode?.isLotteryResultPopup) return;
+    if (!isGuidedLotteryResultPopupNode(popupNode)) return;
+    popupNode.isLotteryResultPopup = true;
     const winNode = createAtomNode("弹窗-中奖", popupNode.lotteryWinProps || popupNode.props || {});
     const loseNode = createAtomNode("弹窗-未中奖", getLotteryPopupLoseProps(popupNode));
     popupNode.guidedStates = [
@@ -13275,13 +13285,37 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     ensureLotteryPopupResultStates(popupNode);
   }
 
-  function findSourceLotteryNodeForPopup(popupNode) {
+  function findSourceLotteryNodeInfoForPopup(popupNode) {
+    const findInRoots = (nodes, nodeId) => {
+      for (const root of nodes || []) {
+        const found = findNode([root], nodeId);
+        if (found?.node) return { ...found, root };
+      }
+      return null;
+    };
     const sourceId = popupNode?.sourceLotteryNodeId;
     if (sourceId) {
-      const found = findNode(state.nodes, sourceId) || findNode(activePage()?.nodes || [], sourceId);
-      if (found?.node) return found.node;
+      const found =
+        findInRoots(state.nodes, sourceId) ||
+        findInRoots(activePage()?.nodes || [], sourceId) ||
+        (state.pages || [])
+          .map((page) => findInRoots(page.nodes || [], sourceId))
+          .find(Boolean);
+      if (found?.node) return found;
     }
-    return findLotteryGridNode(activePage()?.nodes || state.nodes || []);
+    const lotteryNode =
+      findLotteryGridNode(activePage()?.nodes || state.nodes || []) ||
+      (state.pages || [])
+        .map((page) => findLotteryGridNode(page.nodes || []))
+        .find(Boolean);
+    if (!lotteryNode) return null;
+    return (
+      findInRoots(state.nodes, lotteryNode.id) ||
+      (state.pages || [])
+        .map((page) => findInRoots(page.nodes || [], lotteryNode.id))
+        .find(Boolean) ||
+      { node: lotteryNode, parent: null, root: lotteryNode }
+    );
   }
 
   function setPopupSelectedPrize(popupNode, prizeIndex) {
@@ -13307,7 +13341,8 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
   }
 
   function syncLotteryPopupCurrentPrizeCopy(popupNode) {
-    if (!popupNode?.isLotteryResultPopup) return;
+    if (!isGuidedLotteryResultPopupNode(popupNode)) return;
+    popupNode.isLotteryResultPopup = true;
     const winProps = popupNode.schemaId === "弹窗-中奖"
       ? popupNode.props || {}
       : popupNode.lotteryWinProps || {};
@@ -13316,24 +13351,48 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       1,
       Math.max(1, Number(winProps.prizeCount || popupNode.lotteryWinProps?.prizeCount || 1)),
     );
+    const amountText = String(winProps.amountText ?? "").trim();
+    const prizeText = String(winProps.prizeText ?? "").trim();
     const prizeSubText = String(winProps.prizeSubText ?? "").trim();
-    if (!prizeSubText) return;
+    const prizeName = `${amountText}${prizeText}`.trim();
     const copyKey = `prize${selectedPrizeIndex}Copy`;
     const prizeKey = `prize${selectedPrizeIndex}`;
+    const textKey = `prize${selectedPrizeIndex}Text`;
+    if (!popupNode.pendingLotteryPrizeOriginalName) {
+      popupNode.pendingLotteryPrizeOriginalValue =
+        popupNode.lotteryWinProps?.[prizeKey] ||
+        winProps[prizeKey] ||
+        "";
+      popupNode.pendingLotteryPrizeOriginalName = String(
+        popupNode.lotteryWinProps?.[textKey] ||
+        winProps[textKey] ||
+        parsePrizeValue(winProps[prizeKey])?.name ||
+        prizeName,
+      ).trim();
+    }
     const nextWinProps = {
       ...(popupNode.lotteryWinProps || {}),
       ...(popupNode.schemaId === "弹窗-中奖" ? popupNode.props || {} : {}),
+      [textKey]: prizeName,
       [copyKey]: prizeSubText,
+      amountText,
+      prizeText,
       prizeSubText,
     };
     if (nextWinProps[prizeKey]) {
-      nextWinProps[prizeKey] = serializePrizeValueWithCopy(nextWinProps[prizeKey], prizeSubText);
+      nextWinProps[prizeKey] = serializePrizeValueWithCopy(
+        serializePrizeValueWithName(nextWinProps[prizeKey], prizeName),
+        prizeSubText,
+      );
     }
     popupNode.lotteryWinProps = nextWinProps;
     if (popupNode.schemaId === "弹窗-中奖") {
       popupNode.props = {
         ...(popupNode.props || {}),
+        [textKey]: prizeName,
         [copyKey]: prizeSubText,
+        amountText,
+        prizeText,
         prizeSubText,
       };
       if (popupNode.props[prizeKey]) {
@@ -13344,21 +13403,85 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
   }
 
   function syncPopupPrizesToSourceLottery(popupNode) {
-    const lotteryNode = findSourceLotteryNodeForPopup(popupNode);
+    const lotteryInfo = findSourceLotteryNodeInfoForPopup(popupNode);
+    const lotteryNode = lotteryInfo?.node;
     if (!popupNode?.props || !lotteryNode?.props) return;
     syncLotteryPopupCurrentPrizeCopy(popupNode);
     const winProps = popupNode.lotteryWinProps || popupNode.props || {};
-    const prizeCount = Math.max(1, Number(winProps.prizeCount) || 1);
-    lotteryNode.props.prizeCount = prizeCount;
-    for (let index = 1; index <= prizeCount; index += 1) {
-      lotteryNode.props[`prize${index}`] = winProps[`prize${index}`] || "";
-      lotteryNode.props[`prize${index}Name`] = winProps[`prize${index}Text`] || "";
-      lotteryNode.props[`prize${index}Copy`] = winProps[`prize${index}Copy`] || "";
-    }
-    Object.keys(lotteryNode.props).forEach((key) => {
-      const match = key.match(/^prize(\d+)(Name|Copy)?$/);
-      if (match && Number(match[1]) > prizeCount) delete lotteryNode.props[key];
+    const selectedPrizeIndex = clamp(
+      Number(winProps.selectedPrizeIndex) || 1,
+      1,
+      Math.max(1, Number(winProps.prizeCount) || 1),
+    );
+    state.guidedLotteryPrizeOverrides = {
+      originalName:
+        popupNode.pendingLotteryPrizeOriginalName ||
+        winProps[`prize${selectedPrizeIndex}Text`] ||
+        "",
+      originalValue:
+        popupNode.pendingLotteryPrizeOriginalValue ||
+        winProps[`prize${selectedPrizeIndex}`] ||
+        "",
+      name: winProps[`prize${selectedPrizeIndex}Text`] || "",
+      value: winProps[`prize${selectedPrizeIndex}`] || "",
+      copy: winProps[`prize${selectedPrizeIndex}Copy`] || "",
+      fallbackIndex: selectedPrizeIndex,
+    };
+    (state.pages || []).forEach((page) => {
+      (page.nodes || []).forEach(applyGuidedLotteryPrizeOverridesToNode);
     });
+  }
+
+  function findLotteryPrizeIndexByReference(node, override, fallbackIndex = 1) {
+    const expectedName = normalizePrizeLookupText(override?.originalName);
+    const expectedImage = parsePrizeValue(override?.originalValue)?.image || "";
+    const prizeCount = Math.max(1, getLotteryPrizeCount(node));
+    for (let index = 1; index <= prizeCount; index += 1) {
+      const currentPrize = getLotteryPrize(node, index);
+      if (
+        (expectedImage && currentPrize.image === expectedImage) ||
+        (expectedName &&
+          normalizePrizeLookupText(currentPrize.name) === expectedName)
+      ) {
+        return index;
+      }
+    }
+    return clamp(Number(fallbackIndex) || 1, 1, prizeCount);
+  }
+
+  function applyGuidedLotteryPrizeOverridesToNode(rootNode) {
+    const override = state.guidedLotteryPrizeOverrides;
+    if (!rootNode || !override) return;
+    const visited = new Set();
+    const applyToTree = (node) => {
+      if (!node || visited.has(node)) return;
+      visited.add(node);
+      if (isLotteryGridNode(node)) {
+        const index = findLotteryPrizeIndexByReference(
+          node,
+          override,
+          override.fallbackIndex,
+        );
+        const prizeKey = `prize${index}`;
+        const currentValue =
+          node.props?.[prizeKey] ||
+          serializePrizeOption(getLotteryPrize(node, index)) ||
+          override.value;
+        if (!node.props) node.props = {};
+        node.props[prizeKey] = serializePrizeValueWithCopy(
+          serializePrizeValueWithName(currentValue, override.name),
+          override.copy,
+        );
+        node.props[`prize${index}Name`] = override.name;
+        node.props[`prize${index}Copy`] = override.copy;
+      }
+      (node.children || []).forEach(applyToTree);
+      (node.guidedStates || []).forEach((entry) => applyToTree(entry.node));
+      (node.guidedLineageVariants || []).forEach((variant) =>
+        applyToTree(variant.node),
+      );
+    };
+    applyToTree(rootNode);
   }
 
   function createGuidedLotteryPopupNode(lotteryNode) {
@@ -13378,7 +13501,7 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     const lotteryNode = findLotteryGridNode(page?.nodes || []);
     if (!lotteryNode) return;
     (page?.nodes || [])
-      .filter((node) => node.isLotteryResultPopup)
+      .filter(isGuidedLotteryResultPopupNode)
       .forEach((popupNode) => syncGuidedLotteryPopupNode(popupNode, lotteryNode));
   }
 
@@ -13480,9 +13603,13 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
 
   function refreshAfterGuidedNodePropChange() {
     const selected = getSelectedNodeInfo();
-    if (selected?.node?.isLotteryResultPopup) {
+    if (isGuidedLotteryResultPopupNode(selected?.node)) {
       syncLotteryPopupCurrentPrizeCopy(selected.node);
       syncPopupPrizesToSourceLottery(selected.node);
+      if (state.view === "guided-preview") {
+        renderGuidedPreview();
+        return;
+      }
     }
     syncGuidedLotteryPopupsForPage(activePage());
     if (state.view === "guided-preview") {
@@ -17696,6 +17823,9 @@ function renderStickyBottomButtonFallback(props = {}, editOptions = {}) {
 }
 
 function renderComponent(node, options = {}) {
+  if (isLotteryGridNode(node) && state.guidedLotteryPrizeOverrides) {
+    applyGuidedLotteryPrizeOverridesToNode(node);
+  }
   const editOptions =
     options.editable === false
       ? {}
@@ -18737,6 +18867,7 @@ function makeGuidedCutExportEntry({
 }
 
 function getGuidedNodeLineageExportVariants(node) {
+  applyGuidedLotteryPrizeOverridesToNode(node);
   const { base, graph } = ensureGuidedLineageTree(node);
   const mainVisualImage = node?.props?.mainVisualImage;
   if (isHeaderImageExportNode(node) && mainVisualImage !== undefined) {
@@ -19032,6 +19163,7 @@ function getStatefulGuidedCutExportEntries(page, node, nodeIndex) {
         const exportNode = hasExplicitState
           ? createStatefulExportNode(variant.node, stateEntry)
           : cloneNodeForLineage(variant.node);
+        applyGuidedLotteryPrizeOverridesToNode(exportNode);
         return {
           ...makeGuidedCutExportEntry({
             page,
@@ -22870,7 +23002,10 @@ function bindEvents() {
         propKey,
         value,
       );
-      if (state.view === "guided-preview" && found.node?.isLotteryResultPopup) {
+      if (
+        state.view === "guided-preview" &&
+        isGuidedLotteryResultPopupNode(found.node)
+      ) {
         syncLotteryPopupCurrentPrizeCopy(found.node);
         syncPopupPrizesToSourceLottery(found.node);
       }
@@ -22938,6 +23073,18 @@ function bindEvents() {
 
   document.addEventListener("focusout", (event) => {
     if (event.target.closest("[data-edit-page-dimension], [data-edit-dimension]")) render();
+    if (state.view !== "guided-preview") return;
+    const editable = event.target.closest("[data-edit-prop], [data-variant-prop]");
+    const editingNodeId = editable?.closest("[data-node-id]")?.dataset.nodeId;
+    const found = findNode(state.nodes, editingNodeId || state.selectedId);
+    if (!isGuidedLotteryResultPopupNode(found?.node)) return;
+    syncLotteryPopupCurrentPrizeCopy(found.node);
+    syncPopupPrizesToSourceLottery(found.node);
+    found.node.pendingLotteryPrizeOriginalName = "";
+    found.node.pendingLotteryPrizeOriginalValue = "";
+    window.requestAnimationFrame(() => {
+      if (state.view === "guided-preview") renderGuidedPreview();
+    });
   });
 
   document.addEventListener("input", (event) => {
@@ -23152,6 +23299,14 @@ function bindEvents() {
       input.dataset.nodePropInput,
       value,
     );
+    if (
+      state.view === "guided-preview" &&
+      isGuidedLotteryResultPopupNode(found.node)
+    ) {
+      syncLotteryPopupCurrentPrizeCopy(found.node);
+      syncPopupPrizesToSourceLottery(found.node);
+      return;
+    }
     if (targetNode.type === "molecule") {
       syncDynamicMoleculeChildren(targetNode);
       applyThemeBoundVariantsToNodes([targetNode], getGuidedPageTheme(activePage()).id);

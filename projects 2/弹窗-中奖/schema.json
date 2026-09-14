@@ -225,7 +225,7 @@
       "name": "prize1Text",
       "label": "奖品1文案",
       "type": "string",
-      "default": "1314元心动券包",
+      "default": "1000元心动券包",
       "description": "同步九宫格奖品1文案。"
     },
     {

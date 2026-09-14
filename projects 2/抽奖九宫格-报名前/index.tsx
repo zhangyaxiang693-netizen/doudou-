@@ -80,7 +80,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const prize2 = resolvePrize(props.prize2, '6元流量券', prizeTrafficCouponUrl, props.prize2Name)
   const prize3 = resolvePrize(props.prize3, '内容诊断积分', prizePointsUrl, props.prize3Name)
   const prize4 = resolvePrize(props.prize4, 'DOU+官方推荐机会', prizeRecommendUrl, props.prize4Name)
-  const prize5 = resolvePrize(props.prize5, '1314元心动券包', prizeCouponPackUrl, props.prize5Name)
+  const prize5 = resolvePrize(props.prize5, '1000元心动券包', prizeCouponPackUrl, props.prize5Name)
 
   return (
     <div className={styles.page}>
