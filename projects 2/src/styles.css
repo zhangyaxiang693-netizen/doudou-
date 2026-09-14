@@ -3187,6 +3187,12 @@ button:hover {
   margin-bottom: 0;
 }
 
+.component.molecule.molecule-container.lottery-consumption-return-3col,
+.component.molecule.molecule-container.lottery-consumption-return-4col {
+  display: flex;
+  flex-direction: column;
+}
+
 .component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(1) {
   margin-bottom: 40px;
 }
@@ -3200,6 +3206,12 @@ button:hover {
 }
 
 .component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(4) {
+  order: 5;
+  margin-bottom: 0;
+}
+
+.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(5) {
+  order: 4;
   margin-bottom: 40px;
 }
 
@@ -3220,6 +3232,12 @@ button:hover {
 }
 
 .component.molecule.molecule-container.lottery-consumption-return-4col .molecule-child:nth-child(4) {
+  order: 5;
+  margin-bottom: 0;
+}
+
+.component.molecule.molecule-container.lottery-consumption-return-4col .molecule-child:nth-child(5) {
+  order: 4;
   margin-bottom: 40px;
 }
 
@@ -5891,6 +5909,27 @@ button:hover {
   font-weight: 750;
 }
 
+.guided-export-module-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.guided-export-module-actions button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #344054;
+  font: 700 12px/1 "Source Han Sans CN", sans-serif;
+}
+
+.guided-export-module-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .guided-export-dimension-list {
   display: grid;
   gap: 22px;
@@ -5922,6 +5961,14 @@ button:hover {
 .guided-export-card-grid {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.guided-export-state-pair {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   align-items: flex-start;
   gap: 16px;
 }

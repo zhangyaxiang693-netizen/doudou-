@@ -705,6 +705,50 @@ const PAGE_TEMPLATE_BUSINESS_STATES = {
       { id: "clicked", name: "点击后", schemaId: "内容诊断-样式-点击后" },
     ],
   },
+  "核心玩法模块-抽奖消返-3列": {
+    label: "核心玩法｜抽奖消耗返（三档）",
+    states: [
+      {
+        id: "default",
+        name: "报名状态",
+        schemaId: "核心玩法模块-抽奖消返-3列",
+        preserveProps: true,
+      },
+      {
+        id: "unregistered",
+        name: "未报名",
+        schemaId: "核心玩法模块-抽奖消返-3列",
+        preserveProps: true,
+        lockedPropKeys: ["buttonText"],
+        childProps: {
+          1: { hideProgressGraphic: false },
+          4: { buttonText: "立即报名" },
+        },
+      },
+    ],
+  },
+  "核心玩法模块-抽奖消返-4列": {
+    label: "核心玩法｜抽奖消耗返（四档）",
+    states: [
+      {
+        id: "default",
+        name: "报名状态",
+        schemaId: "核心玩法模块-抽奖消返-4列",
+        preserveProps: true,
+      },
+      {
+        id: "unregistered",
+        name: "未报名",
+        schemaId: "核心玩法模块-抽奖消返-4列",
+        preserveProps: true,
+        lockedPropKeys: ["buttonText"],
+        childProps: {
+          1: { hideProgressGraphic: false },
+          4: { buttonText: "立即报名" },
+        },
+      },
+    ],
+  },
 };
 const PAGE_TEMPLATE_DEFAULT_BUSINESS_STATES = {};
 const PAGE_TEMPLATE_MODULE_BUSINESS_STATES = {
@@ -4113,6 +4157,13 @@ function createStateNodeFromSchema(stateSchema, overrides = {}, stateConfig = {}
       ...getMoleculeDefaultProps(stateSchema),
       ...(stateConfig.props || {}),
     };
+    const children = getMoleculeChildEntries(stateSchema, props).map(
+      ([schemaId, childOverrides], childIndex) =>
+        createAtomNode(schemaId, {
+          ...childOverrides,
+          ...(stateConfig.childProps?.[childIndex] || {}),
+        }),
+    );
     return {
       id: uid(),
       schemaId: stateSchema.id,
@@ -4121,9 +4172,7 @@ function createStateNodeFromSchema(stateSchema, overrides = {}, stateConfig = {}
       allowedChildren: stateSchema.allowedChildren || null,
       className: stateSchema.className || "",
       props,
-      children: getMoleculeChildEntries(stateSchema, props).map(([schemaId, childOverrides]) =>
-        createAtomNode(schemaId, childOverrides),
-      ),
+      children,
     };
   }
   const variants = normalizeVariants(stateSchema);
@@ -4562,6 +4611,40 @@ const CONSUMPTION_RETURN_TIER_COUNT_KEY = "__consumptionReturnTierCount";
 const CONSUMPTION_RETURN_DETAIL_MODE_KEY = "__consumptionReturnDetailMode";
 const CONSUMPTION_RETURN_DETAIL_MODE_SHARED = "shared";
 const CONSUMPTION_RETURN_DETAIL_MODE_AUDIENCE = "audience";
+const CONSUMPTION_RETURN_STATE_DETAIL_ROW_PREFIX = "页面模板状态变量";
+
+function getConsumptionReturnStateDetailRowKey(
+  templateId,
+  moduleIndex,
+  stateId,
+  compoundKey,
+) {
+  return [
+    CONSUMPTION_RETURN_STATE_DETAIL_ROW_PREFIX,
+    templateId,
+    String(Number(moduleIndex) + 1),
+    stateId,
+    compoundKey,
+  ].join("｜");
+}
+
+function parseConsumptionReturnStateDetailRowKey(key) {
+  const parts = String(key || "").split("｜");
+  if (
+    parts[0] !== CONSUMPTION_RETURN_STATE_DETAIL_ROW_PREFIX ||
+    parts.length < 5
+  ) {
+    return null;
+  }
+  const moduleIndex = Number(parts[2]) - 1;
+  if (!Number.isFinite(moduleIndex)) return null;
+  return {
+    templateId: parts[1],
+    moduleIndex,
+    stateId: parts[3],
+    compoundKey: parts.slice(4).join("｜"),
+  };
+}
 
 function getConsumptionReturnTierCountRowKey(moduleIndex, versionName = "") {
   return versionName
@@ -4733,6 +4816,7 @@ function createConsumptionReturnNodeForTier(sourceNode, tierCount) {
   ].forEach((key) => {
     if (sourceNode[key] !== undefined) targetNode[key] = clone(sourceNode[key]);
   });
+  ensureConsumptionReturnBusinessStates(targetNode);
   return targetNode;
 }
 
@@ -4862,8 +4946,60 @@ function createPageTemplateBusinessStateEntry(stateConfig) {
     id: stateConfig.id,
     name: stateConfig.name,
     component: stateConfig.schemaId,
+    preserveProps: Boolean(stateConfig.preserveProps),
+    lockedPropKeys: [...(stateConfig.lockedPropKeys || [])],
     node: stateNode,
   };
+}
+
+function ensureConsumptionReturnBusinessStates(node) {
+  if (!isConsumptionReturnMoleculeNode(node)) return node;
+  const config = PAGE_TEMPLATE_BUSINESS_STATES[node.schemaId];
+  if (!config?.states?.length) return node;
+  const expectedStateIds = config.states.map((item) => item.id);
+  const hasCompleteStates =
+    node.guidedStates?.length === expectedStateIds.length &&
+    expectedStateIds.every((stateId) =>
+      node.guidedStates.some(
+        (entry) => entry.id === stateId && entry.node?.schemaId === node.schemaId,
+      ),
+    );
+  if (!hasCompleteStates) {
+    const activeStateId = expectedStateIds.includes(node.activeGuidedStateId)
+      ? node.activeGuidedStateId
+      : expectedStateIds[0];
+    node.guidedStates = config.states
+      .map(createPageTemplateBusinessStateEntry)
+      .filter(Boolean);
+    node.activeGuidedStateId = activeStateId;
+  }
+  const templateId = node.sourcePageTemplateId || "";
+  const moduleIndex = Number(node.sourcePageTemplateNodeIndex);
+  if (!templateId || !Number.isInteger(moduleIndex)) return node;
+  node.guidedStates.forEach((entry) => {
+    const values = new Map();
+    state.prdTableRows.forEach((row) => {
+      const baseParsed = parsePageTemplateVariableRowKey(row.key);
+      if (
+        entry.id === "default" &&
+        baseParsed?.moduleIndex === moduleIndex &&
+        !isConsumptionReturnAudienceSpecificKey(baseParsed.compoundKey)
+      ) {
+        values.set(baseParsed.compoundKey, row.value ?? "");
+      }
+      const parsed = parseConsumptionReturnStateDetailRowKey(row.key);
+      if (
+        parsed?.templateId === templateId &&
+        parsed.moduleIndex === moduleIndex &&
+        parsed.stateId === entry.id
+      ) {
+        values.set(parsed.compoundKey, row.value ?? "");
+      }
+    });
+    entry.detailValues = Object.fromEntries(values);
+    if (values.size) applyPageTemplateVariableValuesToNode(entry.node, values);
+  });
+  return node;
 }
 
 function attachPageTemplateBusinessStates(nodes = [], templateId = "") {
@@ -6819,6 +6955,13 @@ function applyCutExportRulesToNode(node) {
   if (!node) return node;
   if (node.type === "molecule") {
     (node.children || []).forEach(applyCutExportRulesToNode);
+    if (
+      isConsumptionReturnMoleculeNode(node) &&
+      node.activeGuidedStateId === "unregistered"
+    ) {
+      const progressChild = node.children?.[1];
+      if (progressChild?.props) progressChild.props.hideProgressGraphic = false;
+    }
     return node;
   }
   const rule = getGuidedCutExportRule(node);
@@ -8220,6 +8363,56 @@ function ensurePageTemplateVariableRow(field) {
   return state.prdTableRows.length - 1;
 }
 
+function ensureConsumptionReturnStateDetailRow(
+  field,
+  templateId,
+  stateId,
+) {
+  if (!field || stateId === "default") return field?.rowIndex;
+  const compoundKey = getPageTemplateFieldLocalCompoundKey(field);
+  const rowKey = getConsumptionReturnStateDetailRowKey(
+    templateId,
+    field.moduleIndex,
+    stateId,
+    compoundKey,
+  );
+  const existingIndex = findPrdTableRowIndexByKey(rowKey);
+  if (existingIndex >= 0) return existingIndex;
+  const baseValue = state.prdTableRows[field.rowIndex]?.value ?? field.value ?? "";
+  state.prdTableRows.push({
+    key: rowKey,
+    value:
+      stateId === "unregistered" && compoundKey === "4.buttonText"
+        ? "立即报名"
+        : baseValue,
+  });
+  return state.prdTableRows.length - 1;
+}
+
+function getConsumptionReturnSharedDetailVersion(group, sharedVersion) {
+  if (!sharedVersion || group.activeStateId === "default") return sharedVersion;
+  return {
+    ...sharedVersion,
+    name: group.stateOptions?.find((item) => item.id === group.activeStateId)?.name ||
+      sharedVersion.name,
+    sections: (sharedVersion.sections || []).map((section) => ({
+      ...section,
+      fields: (section.fields || []).map((field) => {
+        const compoundKey = getPageTemplateFieldLocalCompoundKey(field);
+        if (isConsumptionReturnAudienceSpecificKey(compoundKey)) return field;
+        return {
+          ...field,
+          rowIndex: ensureConsumptionReturnStateDetailRow(
+            field,
+            group.templateId,
+            group.activeStateId,
+          ),
+        };
+      }),
+    })),
+  };
+}
+
 function setPrdTableRowValueByKey(rowKey, value) {
   const rowIndex = findPrdTableRowIndexByKey(rowKey);
   if (rowIndex >= 0) {
@@ -8270,7 +8463,9 @@ function getLineageVersionNameForVariant(sourceNode, variantId) {
 function setNodeAndGuidedStatesValueByPath(node, path, value) {
   if (!node) return;
   setNodeValueByPath(node, path, value);
+  const propKey = String(path || "").split(".").pop();
   (node.guidedStates || []).forEach((entry) => {
+    if ((entry.lockedPropKeys || []).includes(propKey)) return;
     setNodeValueByPath(entry.node, path, value);
   });
 }
@@ -8708,26 +8903,20 @@ function getPageTemplateVariableGroups(pageTemplate) {
       pageTemplate.id,
       moduleIndex,
     );
+    const activeStateId = getPageTemplateActiveBusinessStateId(
+      pageTemplate.id,
+      moduleIndex,
+      stateConfig,
+    );
     const activeSchemaId =
-      moduleFields[0]?.moduleSchemaId ||
       getPageTemplateBusinessStateSchemaId(
         pageTemplate.id,
         moduleIndex,
         stateConfig,
-        getPageTemplateActiveBusinessStateId(
-          pageTemplate.id,
-          moduleIndex,
-          stateConfig,
-        ),
+        activeStateId,
       ) ||
+      moduleFields[0]?.moduleSchemaId ||
       sourceSchemaId;
-    const activeStateId =
-      stateConfig?.states?.find((item) => item.schemaId === activeSchemaId)?.id ||
-      getPageTemplateActiveBusinessStateId(
-        pageTemplate.id,
-        moduleIndex,
-        stateConfig,
-      );
     const moduleSpec =
       getPrdPageTemplateModuleSpec(pageTemplate, activeSchemaId) ||
       getPrdPageTemplateModuleSpec(pageTemplate, sourceSchemaId);
@@ -8770,6 +8959,11 @@ function getPageTemplateVariableGroups(pageTemplate) {
         ensurePageTemplateVariableRow,
       ),
     });
+    const sharedDetailVersion = isConsumptionReturnMoleculeNode({
+      schemaId: group.moduleSchemaId,
+    })
+      ? getConsumptionReturnSharedDetailVersion(group, baseVersion)
+      : baseVersion;
     const importedVersions = manualVersions.map((version) => ({
       ...version,
       sections: buildPageTemplateVariableSections(
@@ -8784,7 +8978,9 @@ function getPageTemplateVariableGroups(pageTemplate) {
         ...importedVersions,
       ];
     const molecule = moleculeSchemas.find((item) => item.id === group.moduleSchemaId);
-    if (!molecule) return { ...group, versions };
+    if (!molecule) {
+      return { ...group, versions, baseVersion, sharedDetailVersion };
+    }
     const blueprint = {};
     group.fields.forEach((field) => {
       const localKey = getPageTemplateFieldLocalCompoundKey(field);
@@ -8801,7 +8997,13 @@ function getPageTemplateVariableGroups(pageTemplate) {
         control.stateOptions,
       ),
     }));
-    return { ...group, versions, childStateControls };
+    return {
+      ...group,
+      versions,
+      baseVersion,
+      sharedDetailVersion,
+      childStateControls,
+    };
   });
 }
 
@@ -9075,7 +9277,26 @@ function createPageTemplateBlueprintPreviewNode(group) {
   if (group?.isHeaderModule && state.guidedHeaderLevelId === "s") {
     node = createGuidedHeaderNodeForLevel("s", node);
   }
-  const fields = activeVersion?.sections?.flatMap((section) => section.fields || []) || [];
+  const activeFields =
+    activeVersion?.sections?.flatMap((section) => section.fields || []) || [];
+  const sharedDetailVersion =
+    group?.sharedDetailVersion ||
+    getConsumptionReturnSharedDetailVersion(group, group?.baseVersion);
+  const sharedBaseFields =
+    node.consumptionReturnDetailMode === CONSUMPTION_RETURN_DETAIL_MODE_SHARED
+      ? sharedDetailVersion?.sections?.flatMap((section) => section.fields || []) || []
+      : [];
+  const sharedBaseFieldsByKey = new Map(
+    sharedBaseFields.map((field) => [
+      getPageTemplateFieldLocalCompoundKey(field),
+      field,
+    ]),
+  );
+  const fields = activeFields.map((field) => {
+    const localKey = getPageTemplateFieldLocalCompoundKey(field);
+    if (isConsumptionReturnAudienceSpecificKey(localKey)) return field;
+    return sharedBaseFieldsByKey.get(localKey) || field;
+  });
   const prizeCountsByChild = new Map();
   fields.forEach((field) => {
     const localKey = getPageTemplateFieldLocalCompoundKey(field);
@@ -9198,7 +9419,8 @@ function refreshPageTemplateModulePreviewByRowIndex(rowIndex) {
   const key = state.prdTableRows[Number(rowIndex)]?.key;
   const parsed =
     parsePageTemplateVariableRowKey(key) ||
-    parsePageTemplateVariableVersionRowKey(key);
+    parsePageTemplateVariableVersionRowKey(key) ||
+    parseConsumptionReturnStateDetailRowKey(key);
   if (!parsed) return;
   const blueprint = getPrdTableBlueprint();
   const pageTemplate = blueprint?.pageType
@@ -9705,7 +9927,13 @@ function renderModuleBoundBlueprintVersionMatrix(group) {
     ]),
     versions.length,
   );
-  const sharedVersion = versions.find((version) => !version.isManual) || versions[0];
+  const baseSharedVersion =
+    group.baseVersion ||
+    versions.find((version) => !version.isManual) ||
+    versions[0];
+  const sharedVersion =
+    group.sharedDetailVersion ||
+    getConsumptionReturnSharedDetailVersion(group, baseSharedVersion);
   const detailVersions =
     detailMode === CONSUMPTION_RETURN_DETAIL_MODE_SHARED && sharedVersion
       ? [
@@ -14185,6 +14413,17 @@ function bindPrdModuleVariantsToTemplateNodes(
     applyLotteryConsumptionStructuredFields(stateNodes, structuredRows);
     bindStructuredModuleVersionFields(stateNodes, structuredRows);
   }
+  nodes.forEach((node) => {
+    [node, ...(node.guidedLineageVariants || []).map((variant) => variant.node)]
+      .filter(isConsumptionReturnMoleculeNode)
+      .forEach((consumptionNode) => {
+        ensureConsumptionReturnBusinessStates(consumptionNode);
+        applyGuidedBusinessState(
+          consumptionNode,
+          consumptionNode.activeGuidedStateId || "default",
+        );
+      });
+  });
 }
 
 function findDemoMoleculeByName(name) {
@@ -15233,7 +15472,12 @@ function shouldRefreshGuidedReactEditable(node, propKey, event) {
 }
 
 function getGuidedInlineStateLabel(entry) {
-  return entry.id === "default" ? "点击前" : entry.id === "clicked" || entry.id === "registered" ? "点击后" : entry.name;
+  if (entry?.name) return entry.name;
+  return entry?.id === "default"
+    ? "默认状态"
+    : entry?.id === "clicked" || entry?.id === "registered"
+      ? "切换后"
+      : entry?.id || "默认状态";
 }
 
 function renderGuidedInlineStatePopover(node, stateEntries = [], childStateGroups = []) {
@@ -16441,6 +16685,21 @@ function applyGuidedBusinessState(node, stateId) {
   node.variants = clone(stateNode.variants || []);
   node.activeVariantId = stateNode.activeVariantId || null;
   node.activeGuidedStateId = stateEntry.id;
+  if (stateEntry.detailValues) {
+    applyPageTemplateVariableValuesToNode(
+      node,
+      new Map(Object.entries(stateEntry.detailValues)),
+    );
+  }
+  if (
+    isConsumptionReturnMoleculeNode(node) &&
+    stateEntry.id === "unregistered"
+  ) {
+    const progressChild = node.children?.[1];
+    const buttonChild = node.children?.[4];
+    if (progressChild?.props) progressChild.props.hideProgressGraphic = false;
+    if (buttonChild?.props) buttonChild.props.buttonText = "立即报名";
+  }
   return true;
 }
 
@@ -18421,6 +18680,7 @@ function applyCurrentGuidedThemeToNode(node) {
 }
 
 function getExportStateEntries(node) {
+  ensureConsumptionReturnBusinessStates(node);
   const entries = getGuidedStateEntries(node);
   return entries.length ? entries : [{ id: "default", name: "默认状态", node }];
 }
@@ -18434,6 +18694,7 @@ function makeGuidedCutExportEntry({
   variantTitle,
   idParts = [],
   fileParts = [],
+  stateFolderTitle = "",
   exportKind = "",
   dimensions,
 }) {
@@ -18445,6 +18706,7 @@ function makeGuidedCutExportEntry({
     nodeIndex,
     dimensionTitle,
     variantTitle,
+    stateFolderTitle,
     {
       pageName,
       exportKind,
@@ -18467,8 +18729,10 @@ function makeGuidedCutExportEntry({
     fileName,
     filePath: [
       sanitizeExportFilename(pageName),
+      moduleFolderTitle,
+      stateFolderTitle ? sanitizeExportFilename(stateFolderTitle) : "",
       fileName,
-    ].join("/"),
+    ].filter(Boolean).join("/"),
   };
 }
 
@@ -18768,19 +19032,26 @@ function getStatefulGuidedCutExportEntries(page, node, nodeIndex) {
         const exportNode = hasExplicitState
           ? createStatefulExportNode(variant.node, stateEntry)
           : cloneNodeForLineage(variant.node);
-        return makeGuidedCutExportEntry({
-          page,
-          node,
-          nodeIndex,
-          exportNode,
-          dimensionTitle,
-          variantTitle: stateTitle ? `${variantTitle} · ${stateTitle}` : variantTitle,
-          idParts: [
+        return {
+          ...makeGuidedCutExportEntry({
+            page,
+            node,
+            nodeIndex,
+            exportNode,
+            dimensionTitle,
+            variantTitle: stateTitle ? `${variantTitle} · ${stateTitle}` : variantTitle,
+            stateFolderTitle: stateTitle,
+            idParts: [
+              graphNode.dimensionId || "dimension",
+              variant.id || variantIndex,
+              stateEntry.id || "default",
+            ],
+          }),
+          stateGroupKey: [
             graphNode.dimensionId || "dimension",
             variant.id || variantIndex,
-            stateEntry.id || "default",
-          ],
-        });
+          ].join("|"),
+        };
       });
     },
   );
@@ -19140,6 +19411,12 @@ function renderGuidedExportCard(entry) {
 }
 
 function renderGuidedExportDimensionGroup(dimensionTitle, entries) {
+  const stateGroups = new Map();
+  entries.forEach((entry) => {
+    const key = entry.stateGroupKey || entry.id;
+    if (!stateGroups.has(key)) stateGroups.set(key, []);
+    stateGroups.get(key).push(entry);
+  });
   return `
     <section class="guided-export-dimension">
       <header>
@@ -19147,7 +19424,11 @@ function renderGuidedExportDimensionGroup(dimensionTitle, entries) {
         <span>${entries.length} 个版本</span>
       </header>
       <div class="guided-export-card-grid">
-        ${entries.map(renderGuidedExportCard).join("")}
+        ${[...stateGroups.values()].map((groupEntries) => `
+          <div class="guided-export-state-pair">
+            ${groupEntries.map(renderGuidedExportCard).join("")}
+          </div>
+        `).join("")}
       </div>
     </section>
   `;
@@ -19155,6 +19436,8 @@ function renderGuidedExportDimensionGroup(dimensionTitle, entries) {
 
 function renderGuidedExportModuleGroup(moduleTitle, entries) {
   const dimensionGroups = new Map();
+  const sourceNode = entries[0]?.sourceNode || entries[0]?.node;
+  const canDownloadModule = isConsumptionReturnMoleculeNode(sourceNode);
   entries.forEach((entry) => {
     if (!dimensionGroups.has(entry.dimensionTitle)) {
       dimensionGroups.set(entry.dimensionTitle, []);
@@ -19168,7 +19451,17 @@ function renderGuidedExportModuleGroup(moduleTitle, entries) {
           <span>模块</span>
           <strong>${escapeHtml(moduleTitle)}</strong>
         </div>
-        <em>${entries.length} 张</em>
+        <div class="guided-export-module-actions">
+          <em>${entries.length} 张</em>
+          ${canDownloadModule ? `
+            <button
+              type="button"
+              data-guided-export-module
+              data-guided-export-module-page="${escapeAttr(entries[0]?.pageId || "")}"
+              data-guided-export-module-node="${escapeAttr(entries[0]?.nodeId || "")}"
+            >下载本模块全部切图</button>
+          ` : ""}
+        </div>
       </header>
       <div class="guided-export-dimension-list">
         ${[...dimensionGroups.entries()]
@@ -19459,6 +19752,48 @@ async function downloadGuidedExportBatch() {
   } finally {
     button?.removeAttribute("disabled");
     if (button) button.textContent = "批量下载 ZIP";
+  }
+}
+
+async function downloadGuidedExportModule(pageId, nodeId, button) {
+  const entries = getGuidedCutExportEntries().filter(
+    (entry) => entry.pageId === pageId && entry.nodeId === nodeId,
+  );
+  if (!entries.length) return;
+  await waitForExportPreviewReady();
+  button?.setAttribute("disabled", "true");
+  if (button) button.textContent = `正在生成 0/${entries.length}`;
+  try {
+    const files = [];
+    let completed = 0;
+    await mapLimit(entries, 2, async (entry) => {
+      const blob = await captureGuidedExportEntry(entry);
+      files.push({
+        path: [
+          entry.stateFolderTitle
+            ? sanitizeExportFilename(entry.stateFolderTitle)
+            : "默认状态",
+          entry.fileName,
+        ].join("/"),
+        bytes: await blobToBytes(blob),
+      });
+      completed += 1;
+      if (button) button.textContent = `正在生成 ${completed}/${entries.length}`;
+    });
+    files.sort((a, b) => a.path.localeCompare(b.path, "zh-Hans-CN"));
+    if (button) button.textContent = "正在打包 ZIP";
+    const moduleTitle = entries[0]?.moduleTitle || "模块";
+    const pageName = entries[0]?.pageName || "页面";
+    downloadBlob(
+      `${sanitizeExportFilename(`${pageName}_${moduleTitle}_全部切图`)}.zip`,
+      createZipBlob(files),
+    );
+  } catch (error) {
+    console.error("[guided-export] module export failed", error);
+    window.alert(`模块切图导出失败：${error?.message || "未知错误"}`);
+  } finally {
+    button?.removeAttribute("disabled");
+    if (button) button.textContent = "下载本模块全部切图";
   }
 }
 
@@ -20310,6 +20645,14 @@ function bindEvents() {
       return;
     }
 
+    const prdTemplateState = event.target.closest("[data-prd-template-state]");
+    if (prdTemplateState) {
+      const [templateId, moduleIndex, stateId] = prdTemplateState.dataset.prdTemplateState.split("|");
+      setPageTemplateBlueprintBusinessState(templateId, Number(moduleIndex), stateId);
+      render();
+      return;
+    }
+
     const prdTemplateEntryState = event.target.closest(
       "[data-prd-template-entry-state]",
     );
@@ -20317,14 +20660,6 @@ function bindEvents() {
       const [templateId, moduleIndex, stateId] =
         prdTemplateEntryState.dataset.prdTemplateEntryState.split("|");
       setPageTemplateEntryCardState(templateId, Number(moduleIndex), stateId);
-      render();
-      return;
-    }
-
-    const prdTemplateState = event.target.closest("[data-prd-template-state]");
-    if (prdTemplateState) {
-      const [templateId, moduleIndex, stateId] = prdTemplateState.dataset.prdTemplateState.split("|");
-      setPageTemplateBlueprintBusinessState(templateId, Number(moduleIndex), stateId);
       render();
       return;
     }
@@ -20489,6 +20824,16 @@ function bindEvents() {
     const guidedExportSingle = event.target.closest("[data-guided-export-single]");
     if (guidedExportSingle) {
       downloadGuidedExportEntry(guidedExportSingle.dataset.guidedExportSingle);
+      return;
+    }
+
+    const guidedExportModule = event.target.closest("[data-guided-export-module]");
+    if (guidedExportModule) {
+      downloadGuidedExportModule(
+        guidedExportModule.dataset.guidedExportModulePage,
+        guidedExportModule.dataset.guidedExportModuleNode,
+        guidedExportModule,
+      );
       return;
     }
 

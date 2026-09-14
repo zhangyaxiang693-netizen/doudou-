@@ -361,9 +361,9 @@
 }
 .main2 {
   width: 600px;
-  border-radius: var(var(--promo-radius-pill), 99px);
+  border-radius: 999px;
   box-sizing: border-box;
-  background: rgba(240, 240, 240, 1);
+  background: #ffdbdb;
   min-height: 12px;
   position: absolute;
   top: 6px;
