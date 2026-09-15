@@ -18738,6 +18738,10 @@ function exportPage() {
 }
 
 const guidedCutExportRules = {
+  "投稿赢流量-样式3": {
+    exportBottomSpace: 22,
+    dynamicExportHeight: true,
+  },
   "核心玩法模块-抽奖消返-3列": {
     exportWidth: GUIDED_CUT_EXPORT_WIDTH,
     exportSideSpace: GUIDED_CONSUMPTION_RETURN_EXPORT_SIDE_SPACE,
@@ -18843,6 +18847,10 @@ function getGuidedCutExportBottomSpace(entry) {
     return 0;
   }
   const node = entry?.node || entry?.sourceNode || {};
+  const rule = getGuidedCutExportRule(node);
+  if (Number.isFinite(Number(rule.exportBottomSpace))) {
+    return Math.max(0, Number(rule.exportBottomSpace));
+  }
   if (node?.type === "atom" && isHeaderImageExportNode(node)) return 0;
   if (node?.type === "atom" && isStickyBottomButtonExportNode(node)) return 0;
   return node?.type === "atom" && isTaskBarStyle1ExportNode(node)
@@ -19780,10 +19788,9 @@ function renderPageBackgroundExportContent(entry) {
 function renderGuidedExportPreview(entry) {
   const { width, height } = getExportEntryDimensions(entry);
   const bottomSpace = getGuidedCutExportBottomSpace(entry);
-  const exportSideSpace = Math.max(
-    0,
-    Number(getGuidedCutExportRule(entry?.node || entry?.sourceNode).exportSideSpace || 0),
-  );
+  const exportRule = getGuidedCutExportRule(entry?.node || entry?.sourceNode);
+  const exportSideSpace = Math.max(0, Number(exportRule.exportSideSpace || 0));
+  const dynamicExportHeight = Boolean(exportRule.dynamicExportHeight);
   const previewScale = width > 720 ? 0.44 : 0.46;
   const previewWidth = Math.ceil(width * previewScale);
   const previewHeight = Math.ceil(height * previewScale);
@@ -19813,12 +19820,26 @@ function renderGuidedExportPreview(entry) {
       <div
         class="guided-export-cut-preview"
         data-export-cut-id="${escapeAttr(entry.id)}"
-        style="width:${width}px;height:${height}px;padding:0 ${exportSideSpace}px ${bottomSpace}px;box-sizing:border-box;--export-preview-scale:${previewScale};"
+        ${dynamicExportHeight ? 'data-dynamic-export-height="true"' : ""}
+        style="width:${width}px;${dynamicExportHeight ? "height:auto;" : `height:${height}px;`}padding:0 ${exportSideSpace}px ${bottomSpace}px;box-sizing:border-box;--export-preview-scale:${previewScale};"
       >
         ${content}
       </div>
     </div>
   `;
+}
+
+function syncGuidedDynamicExportPreviewHeights() {
+  document
+    .querySelectorAll('[data-dynamic-export-height="true"]')
+    .forEach((preview) => {
+      const frame = preview.closest(".guided-export-cut-frame");
+      if (!frame) return;
+      const scale = Number(
+        getComputedStyle(preview).getPropertyValue("--export-preview-scale"),
+      ) || 1;
+      frame.style.height = `${Math.ceil(preview.scrollHeight * scale)}px`;
+    });
 }
 
 function renderGuidedExportCard(entry) {
@@ -19973,6 +19994,9 @@ function renderGuidedExportPage() {
     </section>
   `;
   window.renderReactMaterials?.();
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(syncGuidedDynamicExportPreviewHeights);
+  });
 }
 
 function getExportEntryById(entryId) {
