@@ -2440,10 +2440,19 @@ function withDynamicPageTemplatePrizeFields(fields, rows) {
   return nextFields;
 }
 
-function getPageTemplatePrizeRowKey(moduleIndex, childIndex, prizeIndex, versionName = "") {
+function getPageTemplatePrizeRowKey(
+  moduleIndex,
+  childIndex,
+  prizeIndex,
+  versionName = "",
+  suffix = "",
+) {
   const compoundKey = getPageBlueprintKey(
     Number(moduleIndex),
-    getMoleculeBlueprintKey(Number(childIndex), `prize${Number(prizeIndex)}`),
+    getMoleculeBlueprintKey(
+      Number(childIndex),
+      `prize${Number(prizeIndex)}${suffix}`,
+    ),
   );
   if (versionName) {
     return [
@@ -2549,7 +2558,9 @@ function deletePageTemplateBlueprintPrize(moduleIndex, childIndex, deleteIndex, 
       const parsedVersion = parsePageTemplateVariableVersionRowKey(row.key);
       const parsed = parsedBase || parsedVersion;
       if (!parsed || Number(parsed.moduleIndex) !== Number(moduleIndex)) return row;
-      const prizeMatch = String(parsed.compoundKey || "").match(/^(\d+)\.prize(\d+)$/);
+      const prizeMatch = String(parsed.compoundKey || "").match(
+        /^(\d+)\.prize(\d+)(Name|Text|Copy)?$/,
+      );
       if (!prizeMatch || Number(prizeMatch[1]) !== Number(childIndex)) return row;
       const prizeIndex = Number(prizeMatch[2]);
       if (prizeIndex === Number(deleteIndex)) return null;
@@ -2559,6 +2570,7 @@ function deletePageTemplateBlueprintPrize(moduleIndex, childIndex, deleteIndex, 
         childIndex,
         prizeIndex - 1,
         parsedVersion?.versionName || "",
+        prizeMatch[3] || "",
       );
       return { ...row, key: nextKey };
     })
@@ -2587,26 +2599,31 @@ function movePageTemplateBlueprintPrize(
   }
 
   ["", ...versionNames.filter(Boolean)].forEach((versionName) => {
-    const currentKey = getPageTemplatePrizeRowKey(
-      moduleIndex,
-      childIndex,
-      prizeIndex,
-      versionName,
-    );
-    const targetKey = getPageTemplatePrizeRowKey(
-      moduleIndex,
-      childIndex,
-      targetIndex,
-      versionName,
-    );
-    const currentRowIndex = findPrdTableRowIndexByKey(currentKey);
-    const targetRowIndex = findPrdTableRowIndexByKey(targetKey);
-    const currentValue =
-      currentRowIndex >= 0 ? state.prdTableRows[currentRowIndex].value : "";
-    const targetValue =
-      targetRowIndex >= 0 ? state.prdTableRows[targetRowIndex].value : "";
-    setPrdTableRowValueByKey(currentKey, targetValue);
-    setPrdTableRowValueByKey(targetKey, currentValue);
+    ["", "Name", "Text", "Copy"].forEach((suffix) => {
+      const currentKey = getPageTemplatePrizeRowKey(
+        moduleIndex,
+        childIndex,
+        prizeIndex,
+        versionName,
+        suffix,
+      );
+      const targetKey = getPageTemplatePrizeRowKey(
+        moduleIndex,
+        childIndex,
+        targetIndex,
+        versionName,
+        suffix,
+      );
+      const currentRowIndex = findPrdTableRowIndexByKey(currentKey);
+      const targetRowIndex = findPrdTableRowIndexByKey(targetKey);
+      if (currentRowIndex < 0 && targetRowIndex < 0) return;
+      const currentValue =
+        currentRowIndex >= 0 ? state.prdTableRows[currentRowIndex].value : "";
+      const targetValue =
+        targetRowIndex >= 0 ? state.prdTableRows[targetRowIndex].value : "";
+      setPrdTableRowValueByKey(currentKey, targetValue);
+      setPrdTableRowValueByKey(targetKey, currentValue);
+    });
   });
   return true;
 }
@@ -13689,9 +13706,49 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     });
   }
 
+  function syncLotteryPrizeMetadataFromValues(node, values) {
+    values.forEach((value, compoundKey) => {
+      const moleculeMatch = String(compoundKey || "").match(
+        /^(\d+)\.prize(\d+)$/,
+      );
+      const atomMatch = String(compoundKey || "").match(/^prize(\d+)$/);
+      if (!moleculeMatch && !atomMatch) return;
+      const childIndex = moleculeMatch ? Number(moleculeMatch[1]) : null;
+      const prizeIndex = Number(moleculeMatch?.[2] || atomMatch?.[1]);
+      const lotteryNode =
+        childIndex === null ? node : node.children?.[childIndex];
+      if (!lotteryNode?.props || !isLotteryGridNode(lotteryNode)) return;
+
+      const keyPrefix = childIndex === null ? "" : `${childIndex}.`;
+      const prizeKey = `prize${prizeIndex}`;
+      const nameKey = `${prizeKey}Name`;
+      const textKey = `${prizeKey}Text`;
+      const copyKey = `${prizeKey}Copy`;
+      const parsedPrize = parsePrizeValue(value);
+      const explicitName = values.has(`${keyPrefix}${nameKey}`)
+        ? values.get(`${keyPrefix}${nameKey}`)
+        : values.get(`${keyPrefix}${textKey}`);
+      const explicitCopy = values.get(`${keyPrefix}${copyKey}`);
+      const prizeName = String(explicitName || parsedPrize?.name || "").trim();
+      const prizeCopy = String(explicitCopy || parsedPrize?.copy || "").trim();
+
+      if (prizeName) {
+        lotteryNode.props[nameKey] = prizeName;
+        lotteryNode.props[textKey] = prizeName;
+        markPrdBoundProp(lotteryNode, nameKey);
+        markPrdBoundProp(lotteryNode, textKey);
+      }
+      if (prizeCopy) {
+        lotteryNode.props[copyKey] = prizeCopy;
+        markPrdBoundProp(lotteryNode, copyKey);
+      }
+    });
+  }
+
   function applyLotteryBlueprintValuesToNode(node, values) {
     if (!node || !values) return;
     applyPageTemplateVariableValuesToNode(node, values);
+    syncLotteryPrizeMetadataFromValues(node, values);
     const explicitPrizeCounts = new Map();
     values.forEach((value, compoundKey) => {
       const match = String(compoundKey || "").match(/^(\d+)\.prizeCount$/);
@@ -13706,6 +13763,19 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     });
   }
 
+  function applyLotteryBlueprintValuesToNodeStates(
+    node,
+    values,
+    visited = new Set(),
+  ) {
+    if (!node || visited.has(node)) return;
+    visited.add(node);
+    applyLotteryBlueprintValuesToNode(node, values);
+    (node.guidedStates || []).forEach((entry) => {
+      applyLotteryBlueprintValuesToNodeStates(entry.node, values, visited);
+    });
+  }
+
   function syncGeneratedLotteryBlueprintModule(moduleIndex) {
     const baseValues = getPageTemplateModuleVariableValues(moduleIndex);
     (state.pages || []).forEach((page) => {
@@ -13716,7 +13786,7 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       );
       if (!moduleNode) return;
       const activeVariantId = moduleNode.activeLineageVariantId;
-      applyLotteryBlueprintValuesToNode(moduleNode, baseValues);
+      applyLotteryBlueprintValuesToNodeStates(moduleNode, baseValues);
       const versionModuleKey = getPageTemplateVersionModuleKey(
         moduleNode.sourcePageTemplateId || page.sourcePageTemplateId,
         moduleIndex,
@@ -13728,10 +13798,10 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
         ]),
       );
       (moduleNode.guidedLineageVariants || []).forEach((variant) => {
-        applyLotteryBlueprintValuesToNode(variant.node, baseValues);
+        applyLotteryBlueprintValuesToNodeStates(variant.node, baseValues);
         if (variant.id === "base") return;
         const versionName = versionNamesById.get(variant.id) || variant.title;
-        applyLotteryBlueprintValuesToNode(
+        applyLotteryBlueprintValuesToNodeStates(
           variant.node,
           getPageTemplateModuleVariableValues(moduleIndex, versionName),
         );

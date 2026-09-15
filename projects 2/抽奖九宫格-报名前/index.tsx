@@ -89,11 +89,11 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <div className={styles.content}></div>
           <div className={styles.content1}>
             <div className={styles.text}>
-              <div className={`${styles.text__listwrap} ${isSingleLinePrize(prize1) ? styles.prizeNameRecommend : ''}`}>{prize1.name}</div>
+              <div className={`${styles.text__listwrap} ${isSingleLinePrize(prize3) ? styles.prizeNameRecommend : ''}`}>{prize3.name}</div>
             </div>
           </div>
           <div className={styles.content2}>
-            <img src={prize1.image} className={prizeImageClass(prize1)} />
+            <img src={prize3.image} className={prizeImageClass(prize3)} />
           </div>
         </div>
         <div className={styles.container1}>
@@ -111,8 +111,8 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <div className={styles.content6}>
             <div className={styles.main}>
               <div className={styles.section}></div>
-              <img src={prize3.image} className={prizeImageClass(prize3)} />
-              <div className={`${styles.text2} ${isSingleLinePrize(prize3) ? styles.prizeNameRecommend : ''}`}>{prize3.name}</div>
+              <img src={prize5.image} className={prizeImageClass(prize5)} />
+              <div className={`${styles.text2} ${isSingleLinePrize(prize5) ? styles.prizeNameRecommend : ''}`}>{prize5.name}</div>
             </div>
           </div>
         </div>
@@ -128,10 +128,10 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
         <div className={styles.container4}>
           <div className={styles.content11}></div>
           <div className={styles.content12}>
-            <div className={`${styles.text7} ${isSingleLinePrize(prize5) ? styles.prizeNameRecommend : ''}`}>{prize5.name}</div>
+            <div className={`${styles.text7} ${isSingleLinePrize(prize1) ? styles.prizeNameRecommend : ''}`}>{prize1.name}</div>
           </div>
           <div className={styles.content13}>
-            <img src={prize5.image} className={prizeImageClass(prize5)} />
+            <img src={prize1.image} className={prizeImageClass(prize1)} />
           </div>
         </div>
         <div className={styles.container5}>
