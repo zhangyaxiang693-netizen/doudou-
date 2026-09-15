@@ -73,6 +73,7 @@ const projectFontFamilies = new Set([
   "Douyin Number ABC Medium",
   "Douyin Number ABC Bold",
   "Douyin Number ABC ExtraBold",
+  "Popup Number ExtraBold",
   "Douyin Number ABC Condensed",
   "Douyin Number ABC Condensed Medium",
 ]);
@@ -82,6 +83,7 @@ const fontSamples = {
   "Douyin Number ABC Medium": "0123456789+.-",
   "Douyin Number ABC Bold": "0123456789+.-",
   "Douyin Number ABC ExtraBold": "0123456789+.-",
+  "Popup Number ExtraBold": "0123456789+.-",
   "Douyin Number ABC Condensed": "0123456789+.-",
   "Douyin Number ABC Condensed Medium": "0123456789+.-",
 };

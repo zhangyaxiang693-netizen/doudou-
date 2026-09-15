@@ -19514,17 +19514,31 @@ function findGuidedExportElement(entryId) {
     .find((element) => element.dataset.exportCutId === entryId);
 }
 
-let guidedExportFontCssPromise = null;
+const guidedExportFontCssPromises = new Map();
+
+function getGuidedExportFontCacheKey(element) {
+  const families = new Set();
+  [element, ...element.querySelectorAll("*")].forEach((item) => {
+    String(getComputedStyle(item).fontFamily || "")
+      .split(",")
+      .map((family) => family.trim().replace(/^['"]|['"]$/g, ""))
+      .filter(Boolean)
+      .forEach((family) => families.add(family));
+  });
+  return [...families].sort().join("|");
+}
 
 function getGuidedExportFontCss(element) {
-  if (!guidedExportFontCssPromise) {
-    guidedExportFontCssPromise = getFontEmbedCSS(element).catch((error) => {
-      guidedExportFontCssPromise = null;
+  const cacheKey = getGuidedExportFontCacheKey(element);
+  if (!guidedExportFontCssPromises.has(cacheKey)) {
+    const promise = getFontEmbedCSS(element).catch((error) => {
+      guidedExportFontCssPromises.delete(cacheKey);
       console.warn("[guided-export] font embedding skipped", error);
       return "";
     });
+    guidedExportFontCssPromises.set(cacheKey, promise);
   }
-  return guidedExportFontCssPromise;
+  return guidedExportFontCssPromises.get(cacheKey);
 }
 
 async function exportElementToPngBlob(element, options = {}) {
