@@ -96,7 +96,22 @@ function getSupabaseClient(token) {
 
   return createClient(url, key, {
     auth: token ? { persistSession: false, autoRefreshToken: false } : undefined,
+    global: token
+      ? { headers: { Authorization: `Bearer ${token}` } }
+      : undefined,
   });
 }
 
-module.exports = { getSupabaseClient };
+function getSupabaseServiceClient() {
+  const { url } = getSupabaseCredentials();
+  const serviceRoleKey = getSupabaseServiceRoleKey();
+  if (!serviceRoleKey) {
+    throw new Error("COZE_SUPABASE_SERVICE_ROLE_KEY is not set");
+  }
+
+  return createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+module.exports = { getSupabaseClient, getSupabaseServiceClient };

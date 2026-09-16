@@ -373,6 +373,7 @@ button:hover {
 }
 
 .app-shell[data-view="home"] .workspace,
+.app-shell[data-view="mine"] .workspace,
 .app-shell[data-view="admin"] .workspace,
 .app-shell[data-view="admin-component-verifier"] .workspace,
 .app-shell[data-view="home"] [data-export-json],
@@ -395,6 +396,7 @@ button:hover {
 
 .app-shell[data-view="animation-preview-library"] .topbar,
 .app-shell[data-view="home"] .topbar,
+.app-shell[data-view="mine"] .topbar,
 .app-shell[data-view="admin"] .topbar,
 .app-shell[data-view="admin-component-verifier"] .topbar {
   display: none;
@@ -402,6 +404,7 @@ button:hover {
 
 .app-shell[data-view="animation-preview-library"],
 .app-shell[data-view="home"],
+.app-shell[data-view="mine"],
 .app-shell[data-view="admin"],
 .app-shell[data-view="admin-component-verifier"] {
   grid-template-rows: 1fr;
@@ -6212,12 +6215,39 @@ button:hover {
   min-width: 0;
   height: 100vh;
   min-height: 100vh;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   border-right: 1px solid #e4e7ec;
   background: #fbfbfc;
   contain: layout paint;
   transition: border-color 0.72s cubic-bezier(0.22, 0.8, 0.22, 1);
+}
+
+.guided-history-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #e4e7ec;
+  background: #ffffff;
+}
+
+.guided-history-actions button {
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 12px;
+  border-color: #d0d5dd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.guided-history-actions button:first-child {
+  border-color: #101828;
+  background: #101828;
+  color: #ffffff;
 }
 
 .guided-workspace.is-blueprint-full .guided-blueprint-pane {
@@ -6728,7 +6758,7 @@ button:hover {
 
 .guided-table-nav {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 12px;
   padding: 18px 14px;
 }
@@ -9474,6 +9504,12 @@ button:hover {
   width: 18px;
   height: 1px;
   background: #e4e7ec;
+}
+
+.prd-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .prd-admin-link {
@@ -17409,5 +17445,230 @@ button:hover {
 
   .prd-upload-tool {
     width: 100%;
+  }
+}
+
+.app-shell[data-view="mine"] .activity-center {
+  padding: 0;
+  background: #f7f8fa;
+}
+
+.project-history-shell {
+  width: min(1080px, calc(100% - 48px));
+  min-height: 100%;
+  margin: 0 auto;
+  padding-bottom: 64px;
+}
+
+.project-history-back {
+  min-height: 34px;
+  padding: 0 14px;
+  border-color: #d0d5dd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #344054;
+}
+
+.project-history-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 52px 0 28px;
+  border-bottom: 1px solid #dfe3e8;
+}
+
+.project-history-header > div {
+  min-width: 0;
+}
+
+.project-history-header span {
+  color: #087e5b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.project-history-header h1 {
+  margin: 8px 0 6px;
+  color: #182230;
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.project-history-header p {
+  margin: 0;
+  color: #667085;
+  font-size: 13px;
+}
+
+.project-history-header > button {
+  min-height: 36px;
+  padding: 0 16px;
+  border-color: #cbd2da;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #344054;
+}
+
+.project-history-notice {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-left: 3px solid #d97706;
+  background: #fff8e8;
+  color: #7a4b00;
+  font-size: 13px;
+}
+
+.project-history-empty {
+  display: grid;
+  min-height: 180px;
+  place-content: center;
+  gap: 8px;
+  color: #667085;
+  text-align: center;
+}
+
+.project-history-empty strong {
+  color: #344054;
+  font-size: 16px;
+}
+
+.project-history-empty span {
+  font-size: 13px;
+}
+
+.project-history-section {
+  margin-top: 32px;
+}
+
+.project-history-section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  color: #667085;
+  font-size: 12px;
+}
+
+.project-history-section > header strong {
+  color: #182230;
+  font-size: 14px;
+}
+
+.project-history-list {
+  border-top: 1px solid #dfe3e8;
+}
+
+.project-history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 76px;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 0;
+  border-bottom: 1px solid #dfe3e8;
+}
+
+.project-history-item.is-local {
+  border-left: 3px solid #d97706;
+  padding-left: 14px;
+  background: #fffdf8;
+}
+
+.project-history-item > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.project-history-item strong {
+  overflow: hidden;
+  color: #182230;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-history-item span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.project-history-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.project-history-actions button {
+  min-height: 32px;
+  padding: 0 10px;
+  border-color: #d0d5dd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #344054;
+  font-size: 12px;
+}
+
+.project-history-actions button:first-child {
+  border-color: #182230;
+  background: #182230;
+  color: #ffffff;
+}
+
+.project-version-list {
+  display: grid;
+  padding: 4px 0 12px 24px;
+  border-bottom: 1px solid #dfe3e8;
+}
+
+.project-version-list > button {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #344054;
+  text-align: left;
+}
+
+.project-version-list > button:hover {
+  background: #eef1f4;
+}
+
+.project-version-list time,
+.project-version-list > span {
+  color: #667085;
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .project-history-shell {
+    width: min(100% - 28px, 1080px);
+  }
+
+  .project-history-header {
+    align-items: flex-start;
+    padding-top: 32px;
+  }
+
+  .project-history-header h1 {
+    font-size: 26px;
+  }
+
+  .project-history-item {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .project-history-actions {
+    flex-wrap: wrap;
+  }
+
+  .project-version-list {
+    padding-left: 0;
   }
 }

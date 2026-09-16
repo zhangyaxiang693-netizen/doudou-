@@ -3,6 +3,7 @@ const fs = require("fs/promises");
 const path = require("path");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
+const { createHistoryRouter } = require("./history-routes.cjs");
 
 try {
   process.loadEnvFile?.(path.join(__dirname, "..", ".env.local"));
@@ -717,6 +718,7 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
 });
 
 app.use("/api", apiRouter);
+app.use("/api", createHistoryRouter());
 
 // Serve static files from dist/
 app.use(express.static(distDir, {

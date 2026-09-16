@@ -1,4 +1,25 @@
 import { getFontEmbedCSS, toBlob as exportNodeToBlob } from "html-to-image";
+import {
+  applyProjectSnapshot,
+  createProjectSnapshot,
+} from "./project-history/snapshot.js";
+import {
+  ProjectHistoryApiError,
+  createProject,
+  createVersion,
+  deleteProject,
+  getCurrentUser,
+  getVersion,
+  listProjects,
+  listVersions,
+  saveAutosave,
+} from "./project-history/api.js";
+import {
+  deleteLocalDraft,
+  getLocalDraft,
+  listLocalDrafts,
+  saveLocalDraft,
+} from "./project-history/offline-store.js";
 
 const GUIDED_CUT_EXPORT_WIDTH = 750;
 const GUIDED_CONSUMPTION_RETURN_EXPORT_SIDE_SPACE = 24;
@@ -3649,6 +3670,36 @@ function loadActivityFromStorage(templateId) {
   }
 }
 
+function createHistoryLocalDraftId() {
+  return `local_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+function getActiveHistoryLocalDraftId() {
+  try {
+    const stored = sessionStorage.getItem("builder_active_history_draft_id");
+    if (stored) return stored;
+    const id = createHistoryLocalDraftId();
+    sessionStorage.setItem("builder_active_history_draft_id", id);
+    return id;
+  } catch {
+    return createHistoryLocalDraftId();
+  }
+}
+
+function resetActiveHistoryLocalDraftId() {
+  const id = createHistoryLocalDraftId();
+  return setActiveHistoryLocalDraftId(id);
+}
+
+function setActiveHistoryLocalDraftId(id) {
+  try {
+    sessionStorage.setItem("builder_active_history_draft_id", id);
+  } catch {
+    // Session storage may be unavailable in privacy-restricted browsers.
+  }
+  return id;
+}
+
 const state = {
   view: "home",
   currentTemplateId: null,
@@ -3704,6 +3755,7 @@ const state = {
   adminAuthModalOpen: false,
   adminAuthError: "",
   prdFileModalOpen: false,
+  prdFeishuUrl: "",
   prdTextInput: "",
   prdBlueprintPasteRows: normalizePrdBlueprintPasteRows([]),
   prdBlueprintPasteVersions: normalizePrdBlueprintPasteVersions([]),
@@ -3728,6 +3780,7 @@ const state = {
     },
   },
   guidedHeaderDefaultPageSnapshots: [],
+  guidedLotteryPrizeOverrides: null,
   guidedPanelMode: null,
   guidedWorkspaceMode: "split",
   guidedCanvasInitialized: false,
@@ -3749,6 +3802,16 @@ const state = {
   selectedLineageVariantId: "base",
   prdManualModuleVersions: {},
   libraryReturnView: null,
+  historyUser: null,
+  historyProjects: [],
+  historyLocalDrafts: [],
+  historyVersions: {},
+  historyStatus: "idle",
+  historyError: "",
+  historyExpandedProjectId: null,
+  historyCurrentProjectId: null,
+  historyCurrentVersionId: null,
+  historyLocalDraftId: getActiveHistoryLocalDraftId(),
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -5151,6 +5214,7 @@ function openMoleculeTemplateEditor(moleculeId) {
   const schema = moleculeSchemas.find((item) => item.id === moleculeId);
   const node = createMoleculeNode(moleculeId);
   if (!schema || !node) return;
+  startNewHistorySession();
   node.sourceMoleculeTemplateId = moleculeId;
   const page = {
     id: `page_${Date.now()}_${Math.random().toString(16).slice(2)}`,
@@ -5240,6 +5304,7 @@ function createActivityPage(config, index) {
 }
 
 function openActivity(activity) {
+  startNewHistorySession();
   const pages = activity.pages.map(createActivityPage);
   state.activity = {
     name: activity.name,
@@ -5919,6 +5984,488 @@ function renderTemplatePreviewNode(entry) {
   return molecule ? renderMoleculePreview(molecule) : renderAtomPreview(schemaId, overrides);
 }
 
+const PROJECT_HISTORY_APP_VERSION = "0.1.0";
+let projectHistoryAutosaveTimer = null;
+let lastProjectHistoryAutosaveSignature = "";
+let projectHistorySaveChain = Promise.resolve();
+
+function startNewHistorySession() {
+  window.clearTimeout(projectHistoryAutosaveTimer);
+  state.historyCurrentProjectId = null;
+  state.historyCurrentVersionId = null;
+  state.historyLocalDraftId = resetActiveHistoryLocalDraftId();
+  lastProjectHistoryAutosaveSignature = "";
+}
+
+function collectReferencedSchemaIds(nodes, result = new Set()) {
+  (nodes || []).forEach((node) => {
+    if (node?.schemaId) result.add(node.schemaId);
+    collectReferencedSchemaIds(node?.children, result);
+  });
+  return result;
+}
+
+function createCurrentProjectSnapshot() {
+  const referencedIds = new Set();
+  state.pages.forEach((page) =>
+    collectReferencedSchemaIds(page.nodes, referencedIds),
+  );
+  const currentPage = activePage();
+  const templateId =
+    state.currentTemplateId ||
+    currentPage?.sourcePageTemplateId ||
+    currentPage?.templateId ||
+    "";
+  const availablePageTemplates = [...pageTemplates, ...customPageTemplates];
+  const activePageTemplate = availablePageTemplates.find(
+    (template) => template.id === templateId,
+  );
+  const referencedPageTemplateIds = new Set(
+    state.pages.flatMap((page) =>
+      [page.sourcePageTemplateId, page.templateId].filter(Boolean),
+    ),
+  );
+  if (templateId) referencedPageTemplateIds.add(templateId);
+  const referencedPageTemplates = availablePageTemplates.filter((template) =>
+    referencedPageTemplateIds.has(template.id),
+  );
+  const referencedMoleculeTemplates = moleculeSchemas.filter((template) =>
+    referencedIds.has(template.id),
+  );
+
+  return createProjectSnapshot(state, {
+    appVersion: PROJECT_HISTORY_APP_VERSION,
+    activePageTemplate: activePageTemplate || null,
+    referencedPageTemplates,
+    referencedMoleculeTemplates,
+    stage: state.view === "guided-preview" ? "preview" : "blueprint",
+  });
+}
+
+async function persistCurrentLocalDraft(snapshot, synced = false) {
+  try {
+    const draft = await saveLocalDraft({
+      id: state.historyLocalDraftId,
+      ownerId: state.historyUser?.id || "anonymous",
+      projectId: state.historyCurrentProjectId,
+      baseVersionId: state.historyCurrentVersionId,
+      name: state.activity?.name || "未命名活动",
+      snapshot,
+      synced,
+    });
+    const draftIndex = state.historyLocalDrafts.findIndex(
+      (item) => item.id === draft.id,
+    );
+    if (draftIndex >= 0) state.historyLocalDrafts[draftIndex] = draft;
+    else state.historyLocalDrafts.unshift(draft);
+    return draft;
+  } catch (error) {
+    console.warn("保存本地项目草稿失败", error);
+    return null;
+  }
+}
+
+function upsertHistoryProject(project) {
+  const index = state.historyProjects.findIndex(
+    (item) => item.id === project.id,
+  );
+  if (index >= 0) state.historyProjects[index] = project;
+  else state.historyProjects.unshift(project);
+}
+
+async function performProjectSnapshotSave({
+  saveType = "manual",
+  silent = false,
+} = {}) {
+  const snapshot = createCurrentProjectSnapshot();
+  const localDraft = await persistCurrentLocalDraft(snapshot, false);
+
+  try {
+    if (!state.historyUser) {
+      state.historyUser = await getCurrentUser();
+      await persistCurrentLocalDraft(snapshot, false);
+    }
+    if (!state.historyCurrentProjectId) {
+      if (saveType === "autosave") {
+        return {
+          cloudSaved: false,
+          localSaved: Boolean(localDraft),
+          snapshot,
+        };
+      }
+      const result = await createProject({
+        name: state.activity?.name || "未命名活动",
+        prdUrl: state.prdFeishuUrl || "",
+        templateId: state.currentTemplateId || "",
+        snapshot,
+      });
+      state.historyCurrentProjectId = result.project.id;
+      state.historyCurrentVersionId = result.version.id;
+      upsertHistoryProject(result.project);
+    } else if (saveType === "autosave") {
+      await saveAutosave(state.historyCurrentProjectId, {
+        baseVersionId: state.historyCurrentVersionId,
+        snapshot,
+      });
+    } else {
+      const result = await createVersion(state.historyCurrentProjectId, {
+        baseVersionId: state.historyCurrentVersionId,
+        snapshot,
+      });
+      state.historyCurrentVersionId = result.version.id;
+      const existing = state.historyProjects.find(
+        (item) => item.id === state.historyCurrentProjectId,
+      );
+      if (existing) {
+        existing.name = state.activity?.name || existing.name;
+        existing.prdUrl = state.prdFeishuUrl || "";
+        existing.templateId = state.currentTemplateId || "";
+        existing.latestVersionId = result.version.id;
+        existing.updatedAt = result.version.createdAt;
+      }
+    }
+
+    state.historyError = "";
+    await persistCurrentLocalDraft(snapshot, true);
+    return { cloudSaved: true, localSaved: Boolean(localDraft), snapshot };
+  } catch (error) {
+    const cloudError =
+      error instanceof ProjectHistoryApiError
+        ? error.message
+        : "云端保存失败";
+    state.historyError = localDraft
+      ? `${cloudError}，本次修改已保存在本地`
+      : `${cloudError}，且本地草稿保存失败`;
+    if (!silent) window.alert(state.historyError);
+    return {
+      cloudSaved: false,
+      localSaved: Boolean(localDraft),
+      snapshot,
+    };
+  }
+}
+
+function saveCurrentProjectSnapshot(options = {}) {
+  const saveOperation = projectHistorySaveChain
+    .catch(() => null)
+    .then(() => performProjectSnapshotSave(options));
+  projectHistorySaveChain = saveOperation;
+  return saveOperation;
+}
+
+function scheduleProjectHistoryAutosave() {
+  if (
+    !["workbench", "prd-demo", "guided-preview"].includes(state.view)
+  ) {
+    return;
+  }
+  window.clearTimeout(projectHistoryAutosaveTimer);
+  projectHistoryAutosaveTimer = window.setTimeout(async () => {
+    const snapshot = createCurrentProjectSnapshot();
+    const signature = JSON.stringify(snapshot.editor);
+    if (signature === lastProjectHistoryAutosaveSignature) return;
+    lastProjectHistoryAutosaveSignature = signature;
+    await persistCurrentLocalDraft(snapshot, false);
+    if (state.historyCurrentProjectId) {
+      await saveCurrentProjectSnapshot({
+        saveType: "autosave",
+        silent: true,
+      });
+    }
+  }, 1500);
+}
+
+async function loadProjectHistory() {
+  state.historyStatus = "loading";
+  state.historyError = "";
+  render();
+  try {
+    const user = await getCurrentUser();
+    state.historyUser = user;
+    const activeDraft = await getLocalDraft(
+      state.historyLocalDraftId,
+    ).catch(() => null);
+    if (activeDraft?.ownerId === "anonymous") {
+      await saveLocalDraft({
+        ...activeDraft,
+        ownerId: user.id,
+      }).catch(() => null);
+    }
+    const [projects, drafts] = await Promise.all([
+      listProjects(),
+      listLocalDrafts(user.id),
+    ]);
+    state.historyProjects = projects;
+    state.historyLocalDrafts = drafts;
+    state.historyStatus = "ready";
+  } catch (error) {
+    state.historyUser = null;
+    state.historyProjects = [];
+    state.historyLocalDrafts = await listLocalDrafts("anonymous").catch(
+      () => [],
+    );
+    state.historyError =
+      error instanceof ProjectHistoryApiError
+        ? error.message
+        : "项目历史加载失败";
+    state.historyStatus = "error";
+  }
+  render();
+}
+
+function openProjectHistory() {
+  state.view = "mine";
+  state.historyStatus = "loading";
+  render();
+  loadProjectHistory();
+}
+
+async function toggleProjectVersions(projectId) {
+  if (state.historyExpandedProjectId === projectId) {
+    state.historyExpandedProjectId = null;
+    render();
+    return;
+  }
+  state.historyExpandedProjectId = projectId;
+  render();
+  try {
+    state.historyVersions[projectId] = await listVersions(projectId);
+    state.historyError = "";
+  } catch (error) {
+    state.historyError = error.message || "版本列表加载失败";
+  }
+  render();
+}
+
+function restoreSnapshotTemplates(snapshot) {
+  const templates = snapshot.templates || {};
+  (templates.referencedMoleculeTemplates || []).forEach((template) => {
+    if (
+      template?.id &&
+      !moleculeSchemas.some((item) => item.id === template.id)
+    ) {
+      moleculeSchemas.push(clone(template));
+    }
+  });
+  const restoredPageTemplates = [
+    ...(templates.referencedPageTemplates || []),
+    templates.activePageTemplate,
+  ].filter(Boolean);
+  restoredPageTemplates.forEach((pageTemplate) => {
+    if (
+      pageTemplate?.id &&
+      ![...pageTemplates, ...customPageTemplates].some(
+        (item) => item.id === pageTemplate.id,
+      )
+    ) {
+      customPageTemplates.push({ ...clone(pageTemplate), isCustom: true });
+    }
+  });
+  saveCustomPageTemplatesToStorage();
+  saveMoleculeTemplatesToStorage();
+}
+
+function applyRestoredProject(snapshot, projectId, versionId) {
+  const migrated = applyProjectSnapshot(state, snapshot);
+  restoreSnapshotTemplates(migrated);
+  state.historyCurrentProjectId = projectId || null;
+  state.historyCurrentVersionId = versionId || null;
+  state.historyLocalDraftId = resetActiveHistoryLocalDraftId();
+  state.prdDemoStep = "analysis";
+  state.view =
+    migrated.resume?.stage === "preview" ? "guided-preview" : "prd-demo";
+  lastProjectHistoryAutosaveSignature = JSON.stringify(migrated.editor);
+  render();
+}
+
+async function restoreCloudProject(projectId, versionId) {
+  try {
+    const project = state.historyProjects.find(
+      (item) => item.id === projectId,
+    );
+    const targetVersionId = versionId || project?.latestVersionId;
+    if (!targetVersionId) throw new Error("该项目没有可恢复的版本");
+    const version = await getVersion(projectId, targetVersionId);
+    applyRestoredProject(
+      version.snapshot,
+      projectId,
+      project?.latestVersionId || version.id,
+    );
+  } catch (error) {
+    state.historyError = error.message || "项目恢复失败";
+    render();
+  }
+}
+
+async function restoreOfflineProject(draftId) {
+  try {
+    const draft = await getLocalDraft(draftId);
+    if (!draft?.snapshot) throw new Error("本地草稿不存在");
+    const project = state.historyProjects.find(
+      (item) => item.id === draft.projectId,
+    );
+    applyRestoredProject(
+      draft.snapshot,
+      draft.projectId,
+      draft.baseVersionId || project?.latestVersionId || null,
+    );
+    state.historyLocalDraftId = setActiveHistoryLocalDraftId(draft.id);
+  } catch (error) {
+    state.historyError = error.message || "本地草稿恢复失败";
+    render();
+  }
+}
+
+async function removeHistoryProject(projectId) {
+  if (!window.confirm("删除后将无法在“我的”中恢复该项目，确定继续吗？")) {
+    return;
+  }
+  try {
+    await deleteProject(projectId);
+    state.historyProjects = state.historyProjects.filter(
+      (item) => item.id !== projectId,
+    );
+    if (state.historyCurrentProjectId === projectId) {
+      state.historyCurrentProjectId = null;
+      state.historyCurrentVersionId = null;
+    }
+    render();
+  } catch (error) {
+    state.historyError = error.message || "项目删除失败";
+    render();
+  }
+}
+
+function formatHistoryTime(value) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function renderProjectHistory() {
+  const center = $(".activity-center");
+  if (!center) return;
+  const unsyncedDrafts = state.historyLocalDrafts.filter(
+    (draft) => !draft.synced,
+  );
+  center.innerHTML = `
+    <div class="project-history-shell">
+      <nav class="prd-minimal-nav">
+        <button class="prd-brand" data-back-home aria-label="返回活动中心">
+          <span>+</span>
+          <strong>DOU+ 活动生成器</strong>
+        </button>
+        <button type="button" class="project-history-back" data-back-home>返回活动中心</button>
+      </nav>
+      <header class="project-history-header">
+        <div>
+          <span>MY PROJECTS</span>
+          <h1>我的项目</h1>
+          <p>${state.historyUser ? `已绑定 ${escapeHtml(state.historyUser.name || "当前飞书用户")}` : "云端登录态未接入时，仅展示本地草稿"}</p>
+        </div>
+        <button type="button" data-history-refresh>刷新</button>
+      </header>
+      ${
+        state.historyError
+          ? `<div class="project-history-notice">${escapeHtml(state.historyError)}</div>`
+          : ""
+      }
+      ${
+        state.historyStatus === "loading"
+          ? `<div class="project-history-empty">正在加载项目...</div>`
+          : ""
+      }
+      ${
+        state.historyStatus !== "loading" &&
+        !state.historyProjects.length &&
+        !unsyncedDrafts.length
+          ? `<div class="project-history-empty"><strong>还没有保存的项目</strong><span>完成 PRD 编辑后使用保存按钮创建第一个版本。</span></div>`
+          : ""
+      }
+      ${
+        unsyncedDrafts.length
+          ? `
+            <section class="project-history-section">
+              <header><strong>本地草稿</strong><span>云端不可用时自动保留</span></header>
+              <div class="project-history-list">
+                ${unsyncedDrafts
+                  .map(
+                    (draft) => `
+                      <article class="project-history-item is-local">
+                        <div>
+                          <strong>${escapeHtml(draft.name)}</strong>
+                          <span>${formatHistoryTime(draft.updatedAt)} · 待同步</span>
+                        </div>
+                        <div class="project-history-actions">
+                          <button type="button" data-restore-local="${draft.id}">继续编辑</button>
+                          <button type="button" data-delete-local="${draft.id}" aria-label="删除本地草稿">删除</button>
+                        </div>
+                      </article>
+                    `,
+                  )
+                  .join("")}
+              </div>
+            </section>
+          `
+          : ""
+      }
+      ${
+        state.historyProjects.length
+          ? `
+            <section class="project-history-section">
+              <header><strong>云端项目</strong><span>${state.historyProjects.length} 个项目</span></header>
+              <div class="project-history-list">
+                ${state.historyProjects
+                  .map((project) => {
+                    const versions = state.historyVersions[project.id];
+                    const expanded =
+                      state.historyExpandedProjectId === project.id;
+                    return `
+                      <article class="project-history-item">
+                        <div>
+                          <strong>${escapeHtml(project.name)}</strong>
+                          <span>${formatHistoryTime(project.updatedAt)}${project.prdUrl ? " · 飞书 PRD" : ""}</span>
+                        </div>
+                        <div class="project-history-actions">
+                          <button type="button" data-restore-project="${project.id}">打开</button>
+                          <button type="button" data-toggle-versions="${project.id}">${expanded ? "收起版本" : "查看版本"}</button>
+                          <button type="button" data-delete-project="${project.id}" aria-label="删除项目">删除</button>
+                        </div>
+                      </article>
+                      ${
+                        expanded
+                          ? `<div class="project-version-list">${
+                              versions
+                                ? versions
+                                    .map(
+                                      (version) => `
+                                        <button type="button" data-restore-project="${project.id}" data-version-id="${version.id}">
+                                          <span>V${version.versionNo} · ${version.saveType === "autosave" ? "自动草稿" : "正式版本"}</span>
+                                          <time>${formatHistoryTime(version.createdAt)}</time>
+                                        </button>
+                                      `,
+                                    )
+                                    .join("")
+                                : "<span>正在加载版本...</span>"
+                            }</div>`
+                          : ""
+                      }
+                    `;
+                  })
+                  .join("")}
+              </div>
+            </section>
+          `
+          : ""
+      }
+    </div>
+  `;
+}
+
 function renderActivityCenter() {
   const center = $(".activity-center");
   if (!center) return;
@@ -5937,7 +6484,10 @@ function renderActivityCenter() {
           <i></i>
           <span>03 预览</span>
         </div>
-        <button type="button" class="prd-admin-link" data-open-admin-dashboard>后台管理</button>
+        <div class="prd-nav-actions">
+          <button type="button" class="prd-admin-link" data-open-my-projects>我的</button>
+          <button type="button" class="prd-admin-link" data-open-admin-dashboard>后台管理</button>
+        </div>
       </nav>
       <section class="prd-home">
         <header class="prd-home-hero">
@@ -7787,6 +8337,10 @@ function renderPrdDemoFlow() {
           <span class="${isParsing ? "active" : isUpload ? "" : "active"}">02 确认</span>
           <i></i>
           <span>03 预览</span>
+        </div>
+        <div class="prd-nav-actions">
+          <button type="button" class="prd-admin-link" data-save>保存版本</button>
+          <button type="button" class="prd-admin-link" data-open-my-projects>我的</button>
         </div>
       </nav>
       ${isParsing ? renderPrdParsingStep() : ""}
@@ -15495,6 +16049,10 @@ function renderGuidedBlueprintPane(mode, visiblePageIds) {
       <div class="guided-page-list">
         ${renderGuidedSidebarItems(visiblePageIds)}
       </div>
+      <footer class="guided-history-actions">
+        <button type="button" data-save>保存版本</button>
+        <button type="button" data-open-my-projects>我的</button>
+      </footer>
     </aside>
   `;
 }
@@ -15565,6 +16123,10 @@ function renderGuidedBlueprintTablePane(visiblePageIds) {
           }
         </div>
       </div>
+      <footer class="guided-history-actions">
+        <button type="button" data-save>保存版本</button>
+        <button type="button" data-open-my-projects>我的</button>
+      </footer>
     </aside>
   `;
 }
@@ -20275,6 +20837,14 @@ function render() {
   const appShell = $(".app-shell");
   if (appShell) appShell.dataset.view = state.view;
 
+  if (state.view === "mine") {
+    $(".quick-toolbar")?.classList.remove("open");
+    $(".variant-inspector")?.classList.remove("open");
+    $(".richtext-editor")?.classList.remove("open");
+    renderProjectHistory();
+    return;
+  }
+
   if (state.view === "prd-demo") {
     $(".quick-toolbar")?.classList.remove("open");
     $(".variant-inspector")?.classList.remove("open");
@@ -20746,7 +21316,63 @@ function bindEvents() {
   document.addEventListener("click", (event) => {
     if (event.target.closest("[data-placement-case-scrollbar]")) return;
 
+    if (event.target.closest("[data-open-my-projects]")) {
+      openProjectHistory();
+      return;
+    }
+
+    if (event.target.closest("[data-history-refresh]")) {
+      loadProjectHistory();
+      return;
+    }
+
+    const toggleVersions = event.target.closest("[data-toggle-versions]");
+    if (toggleVersions) {
+      toggleProjectVersions(toggleVersions.dataset.toggleVersions);
+      return;
+    }
+
+    const restoreProject = event.target.closest("[data-restore-project]");
+    if (restoreProject) {
+      restoreCloudProject(
+        restoreProject.dataset.restoreProject,
+        restoreProject.dataset.versionId || null,
+      );
+      return;
+    }
+
+    const restoreLocal = event.target.closest("[data-restore-local]");
+    if (restoreLocal) {
+      restoreOfflineProject(restoreLocal.dataset.restoreLocal);
+      return;
+    }
+
+    const deleteHistoryProject = event.target.closest(
+      "[data-delete-project]",
+    );
+    if (deleteHistoryProject) {
+      removeHistoryProject(deleteHistoryProject.dataset.deleteProject);
+      return;
+    }
+
+    const deleteHistoryLocal = event.target.closest("[data-delete-local]");
+    if (deleteHistoryLocal) {
+      deleteLocalDraft(deleteHistoryLocal.dataset.deleteLocal)
+        .then(() => {
+          state.historyLocalDrafts = state.historyLocalDrafts.filter(
+            (draft) => draft.id !== deleteHistoryLocal.dataset.deleteLocal,
+          );
+          render();
+        })
+        .catch((error) => {
+          state.historyError = error.message || "本地草稿删除失败";
+          render();
+        });
+      return;
+    }
+
     if (event.target.closest("[data-demo-open-file-modal]")) {
+      startNewHistorySession();
       state.prdBlueprintPasteError = "";
       if (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID) {
         state.selectedDemoPackageId = demoActivityPackage.id;
@@ -22252,15 +22878,30 @@ function bindEvents() {
     }
 
     if (event.target.closest("[data-save]")) {
-      saveActivityToStorage();
       const btn = event.target.closest("[data-save]");
       const originalText = btn.textContent;
-      btn.textContent = "已保存";
-      btn.classList.add("saved");
-      setTimeout(() => {
-        btn.textContent = originalText;
-        btn.classList.remove("saved");
-      }, 1500);
+      btn.disabled = true;
+      btn.textContent = "保存中";
+      saveCurrentProjectSnapshot()
+        .then((result) => {
+          btn.textContent = result.cloudSaved
+            ? "已保存"
+            : result.localSaved
+              ? "已存本地"
+              : "保存失败";
+          btn.classList.toggle("saved", result.cloudSaved);
+        })
+        .catch((error) => {
+          console.error("保存项目失败", error);
+          btn.textContent = "保存失败";
+        })
+        .finally(() => {
+          window.setTimeout(() => {
+            btn.disabled = false;
+            btn.textContent = originalText;
+            btn.classList.remove("saved");
+          }, 1500);
+        });
       return;
     }
 
@@ -24331,6 +24972,7 @@ function mount() {
         </div>
         <div class="top-actions">
           <button data-back-home>活动中心</button>
+          <button data-open-my-projects>我的</button>
           <button data-save class="save-btn">保存</button>
         </div>
       </header>
@@ -24391,6 +25033,11 @@ function mount() {
     </main>
   `;
   bindEvents();
+  document.addEventListener("input", scheduleProjectHistoryAutosave);
+  document.addEventListener("change", scheduleProjectHistoryAutosave);
+  document.addEventListener("click", () => {
+    window.setTimeout(scheduleProjectHistoryAutosave, 0);
+  });
   render();
 }
 
