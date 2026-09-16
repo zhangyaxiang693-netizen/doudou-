@@ -4602,11 +4602,6 @@ button:hover {
   display: none;
 }
 
-.app-shell[data-view="prd-demo"] [data-save],
-.app-shell[data-view="guided-preview"] [data-save] {
-  display: none;
-}
-
 .app-shell[data-view="prd-demo"] .quick-toolbar,
 .app-shell[data-view="prd-demo"] .variant-inspector,
 .app-shell[data-view="prd-demo"] .richtext-editor,
