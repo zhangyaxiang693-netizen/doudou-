@@ -8245,7 +8245,7 @@ function renderAdminComponentVerifier() {
               <div
                 class="admin-export-capture"
                 data-admin-export-cut-capture
-                style="width:${exportWidth}px;${isHeaderAtomExport ? `height:${GUIDED_HEADER_IMAGE_EXPORT_HEIGHT}px;` : isAutoHeight ? `min-height:${exportHeight}px` : `height:${exportHeight}px`};padding-bottom:${isHeaderAtomExport ? 0 : exportBottomSpace}px;box-sizing:border-box;"
+                style="width:${exportWidth}px;${isHeaderAtomExport ? `height:${GUIDED_HEADER_IMAGE_EXPORT_HEIGHT}px;` : isAutoHeight ? "height:auto;" : `height:${exportHeight}px`};padding-bottom:${isHeaderAtomExport ? 0 : exportBottomSpace}px;box-sizing:border-box;"
                 >${exportPreview}</div>
             </div>
           </section>
@@ -19302,7 +19302,6 @@ function exportPage() {
 const guidedCutExportRules = {
   "投稿赢流量-样式3": {
     exportBottomSpace: 22,
-    dynamicExportHeight: true,
   },
   "核心玩法模块-抽奖消返-3列": {
     exportWidth: GUIDED_CUT_EXPORT_WIDTH,
@@ -19510,6 +19509,17 @@ function getExportEntryDimensions(entry) {
     width: Number(rule.exportWidth || GUIDED_CUT_EXPORT_WIDTH),
     height: Number(dimensions.height || 300) + bottomSpace,
   };
+}
+
+function hasFixedGuidedExportHeight(entry) {
+  const node = entry?.node || entry?.sourceNode || {};
+  return (
+    entry?.exportKind === "page-background" ||
+    entry?.exportKind === "fallback-page" ||
+    entry?.exportKind === "case-showcase-card" ||
+    entry?.exportKind === "node-guide-card" ||
+    isHeaderImageExportNode(node)
+  );
 }
 
 function getMoleculeChildExportMargin(node, index, childCount) {
@@ -20105,14 +20115,24 @@ function getGuidedExportFontCss(element) {
 
 async function exportElementToPngBlob(element, options = {}) {
   const width = Number(options.width || GUIDED_CUT_EXPORT_WIDTH);
-  const height = Number(
-    options.height || Math.ceil(element.scrollHeight || element.offsetHeight),
-  );
-  if (!width || !height) throw new Error("empty export component");
 
   if (window.waitForReactMaterialFonts) {
     await window.waitForReactMaterialFonts(element);
   }
+  if (document.fonts?.ready) {
+    try {
+      await document.fonts.ready;
+    } catch (error) {
+      console.warn("[guided-export] font readiness skipped", error);
+    }
+  }
+  await waitForNextFrame();
+  const height = Number(
+    options.height ||
+      Math.ceil(Math.max(element.scrollHeight, element.offsetHeight)),
+  );
+  if (!width || !height) throw new Error("empty export component");
+
   const fontEmbedCSS = await getGuidedExportFontCss(element);
   const blob = await exportNodeToBlob(element, {
     width,
@@ -20366,7 +20386,7 @@ function renderGuidedExportPreview(entry) {
   const bottomSpace = getGuidedCutExportBottomSpace(entry);
   const exportRule = getGuidedCutExportRule(entry?.node || entry?.sourceNode);
   const exportSideSpace = Math.max(0, Number(exportRule.exportSideSpace || 0));
-  const dynamicExportHeight = Boolean(exportRule.dynamicExportHeight);
+  const dynamicExportHeight = !hasFixedGuidedExportHeight(entry);
   const previewScale = width > 720 ? 0.44 : 0.46;
   const previewWidth = Math.ceil(width * previewScale);
   const previewHeight = Math.ceil(height * previewScale);
@@ -20594,20 +20614,12 @@ async function waitForExportPreviewReady() {
 async function captureGuidedExportEntry(entry, options = {}) {
   const element = findGuidedExportElement(entry.id);
   if (!element) throw new Error("找不到导出组件");
-  const exportRule = getGuidedCutExportRule(entry.node || entry.sourceNode || {});
-  const shouldUseFixedDimensions =
-    Boolean(exportRule.exportWidth) ||
-    entry.exportKind === "page-background" ||
-    entry.isFallbackContentEntry ||
-    isHeaderImageExportNode(entry.node || entry.sourceNode) ||
-    entry.exportKind === "case-showcase-shell" ||
-    entry.exportKind === "case-showcase-card" ||
-    entry.exportKind === "lottery-popup" ||
-    entry.exportKind === "task-list-title" ||
-    entry.exportKind === "node-guide-title" ||
-    entry.exportKind === "node-guide-card";
-  const fixedDimensions = shouldUseFixedDimensions ? getExportEntryDimensions(entry) : {};
-  return exportElementToPngBlob(element, { ...options, ...fixedDimensions });
+  const dimensions = getExportEntryDimensions(entry);
+  const captureDimensions = {
+    width: dimensions.width,
+    ...(hasFixedGuidedExportHeight(entry) ? { height: dimensions.height } : {}),
+  };
+  return exportElementToPngBlob(element, { ...options, ...captureDimensions });
 }
 
 async function downloadGuidedExportEntry(entryId) {
