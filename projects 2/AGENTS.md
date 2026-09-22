@@ -61,11 +61,22 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 
 ## API 接口
 
-后端仅保留飞书文档抓取代理接口（用于解决浏览器跨域问题）。分子模板和页面模板数据保存在浏览器 localStorage 中（key：`builder_molecule_templates`、`builder_page_templates`）。
+后端仅保留飞书文档抓取代理接口（用于解决浏览器跨域问题）。分子模板和页面模板数据保存在浏览器 localStorage 中（key：`builder_molecule_templates`、`builder_page_templates`）。项目历史（云端版本）功能依赖飞书 OAuth 登录态。
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/api/fetch-feishu-doc` | 读取飞书内部或公开文档正文（body: `{url}`） |
+| GET | `/api/auth/login`、`/api/auth/callback`、`/api/auth/me`、POST `/api/auth/logout` | 飞书 OAuth 登录/登出（需要 `express-session`、`FEISHU_APP_ID/SECRET`、`DEPLOY_BASE_URL`） |
+| GET | `/api/me`、`/api/projects` 等 | 项目历史版本管理，需登录态 |
+
+## 项目历史登录态（关键）
+
+- `server/history-auth.cjs` 通过环境变量 `PROJECT_HISTORY_AUTH_ADAPTER` 加载"在线身份适配器"，从飞书登录 Session 解析当前用户。
+- 该变量指向 `server/deployment-auth.cjs`（从 `req.session.user` 解析用户，优先 employeeId/userId → union_id → open_id）。
+- **若 `.env.local` 缺失 `PROJECT_HISTORY_AUTH_ADAPTER` 或 `deployment-auth.cjs` 文件丢失，历史接口会返回 503「项目历史服务尚未接入部署平台登录态」**，前端降级为本地草稿保存，历史记录将无法云端保存。
+- 恢复方式：确保 `server/deployment-auth.cjs` 存在，且 `.env.local` 含 `PROJECT_HISTORY_AUTH_ADAPTER=server/deployment-auth.cjs` 与 `DEPLOY_BASE_URL`（OAuth 回调域名）。
+- 未携带登录态访问历史接口时返回 401「请先登录」（这是正常的，区别于 503）。
+
+## 常见问题和预防
 
 ## 组件开发
 

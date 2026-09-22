@@ -3,6 +3,7 @@ const fs = require("fs/promises");
 const path = require("path");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
+const session = require("express-session");
 const { createHistoryRouter } = require("./history-routes.cjs");
 
 try {
@@ -21,8 +22,160 @@ const HOST = "0.0.0.0";
 const distDir = path.join(__dirname, "..", "dist");
 const projectRoot = path.join(__dirname, "..");
 
+// Session 配置
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "h5-builder-secret-key-change-in-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
+    },
+  })
+);
+
+// 白名单配置
+const ALLOWED_EMPLOYEE_IDS = new Set([
+  "6729972",
+  "8202619",
+]);
+
+// 飞书 OAuth 配置
+const FEISHU_APP_ID = process.env.FEISHU_APP_ID || process.env.LARK_APP_ID;
+const FEISHU_APP_SECRET = process.env.FEISHU_APP_SECRET || process.env.LARK_APP_SECRET;
+const FEISHU_OPEN_API_BASE = process.env.FEISHU_OPEN_API_BASE || "https://open.feishu.cn";
+const DEPLOY_BASE_URL = process.env.DEPLOY_BASE_URL || "https://doujiadacu.coze.bytedance.net";
+
 // API routes
 const apiRouter = express.Router();
+
+// 认证中间件：检查用户是否已登录且在白名单中
+function requireAuth(req, res, next) {
+  if (!req.session.user) {
+    return res.status(401).json({ success: false, error: "未登录" });
+  }
+  if (!ALLOWED_EMPLOYEE_IDS.has(req.session.user.employeeId)) {
+    return res.status(403).json({ success: false, error: "无访问权限" });
+  }
+  next();
+}
+
+// 飞书 OAuth 登录：重定向到飞书授权页
+apiRouter.get("/auth/login", (req, res) => {
+  if (!FEISHU_APP_ID) {
+    return res.status(500).json({ success: false, error: "未配置飞书应用" });
+  }
+  const redirectUri = `${DEPLOY_BASE_URL}/api/auth/callback`;
+  const authUrl = `${FEISHU_OPEN_API_BASE}/open-apis/authen/v1/authorize?app_id=${FEISHU_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${req.query.state || ""}`;
+  res.redirect(authUrl);
+});
+
+// 飞书 OAuth 回调：处理授权码，换取用户信息
+apiRouter.get("/auth/callback", async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    if (!code) {
+      return res.status(400).json({ success: false, error: "缺少授权码" });
+    }
+
+    console.log("OAuth 回调收到 code:", code);
+
+    // 用 code 换取 user_access_token（10s 超时，避免挂起）
+    let tokenResponse;
+    try {
+      tokenResponse = await fetch(`${FEISHU_OPEN_API_BASE}/open-apis/authen/v1/access_token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          grant_type: "authorization_code",
+          code: code,
+          app_id: FEISHU_APP_ID,
+          app_secret: FEISHU_APP_SECRET,
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      console.log("access_token 请求返回 HTTP", tokenResponse.status);
+    } catch (err) {
+      const reason =
+        err?.name === "TimeoutError" || err?.name === "AbortError"
+          ? "请求超时（10s）"
+          : `网络错误: ${err?.message || err}`;
+      console.error("换取 access_token 失败:", reason);
+      return res.status(502).json({ success: false, error: `换取 access_token 失败：${reason}` });
+    }
+
+    const tokenData = await tokenResponse.json();
+    console.log("获取 access_token 响应:", JSON.stringify(tokenData, null, 2));
+    
+    if (tokenData.code !== 0) {
+      console.error("获取 access_token 失败:", tokenData);
+      return res.status(400).json({ 
+        success: false, 
+        error: `登录失败：${tokenData.msg || tokenData.error || "未知错误"}`,
+        detail: tokenData 
+      });
+    }
+
+    const accessToken = tokenData.data.access_token;
+
+    // 用 access_token 获取用户信息（10s 超时，避免挂起）
+    let userResponse;
+    try {
+      userResponse = await fetch(`${FEISHU_OPEN_API_BASE}/open-apis/authen/v1/user_info`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(10000),
+      });
+      console.log("user_info 请求返回 HTTP", userResponse.status);
+    } catch (err) {
+      const reason =
+        err?.name === "TimeoutError" || err?.name === "AbortError"
+          ? "请求超时（10s）"
+          : `网络错误: ${err?.message || err}`;
+      console.error("获取用户信息失败:", reason);
+      return res.status(502).json({ success: false, error: `获取用户信息失败：${reason}` });
+    }
+
+    const userData = await userResponse.json();
+    if (userData.code !== 0) {
+      console.error("获取用户信息失败:", userData);
+      return res.status(400).json({ success: false, error: "获取用户信息失败" });
+    }
+
+    const userInfo = userData.data;
+    req.session.user = {
+      employeeId: userInfo.employee_no || userInfo.user_id,
+      userId: userInfo.user_id,
+      unionId: userInfo.union_id,
+      openId: userInfo.open_id,
+      name: userInfo.name,
+      email: userInfo.email,
+      avatar: userInfo.avatar_url,
+    };
+
+    console.log("飞书用户信息获取成功:", req.session.user.name, req.session.user.employeeId);
+
+    // 重定向回首页
+    res.redirect(state || "/");
+  } catch (error) {
+    console.error("OAuth 回调错误:", error);
+    res.status(500).json({ success: false, error: "登录失败" });
+  }
+});
+
+// 获取当前登录用户信息
+apiRouter.get("/auth/me", (req, res) => {
+  if (!req.session.user) {
+    return res.json({ success: true, data: null });
+  }
+  res.json({ success: true, data: req.session.user });
+});
+
+// 登出
+apiRouter.post("/auth/logout", (req, res) => {
+  req.session.destroy();
+  res.json({ success: true });
+});
 
 const ignoredComponentDirs = new Set([
   ".git",
