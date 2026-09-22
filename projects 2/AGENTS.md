@@ -68,6 +68,12 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 | GET | `/api/auth/login`、`/api/auth/callback`、`/api/auth/me`、POST `/api/auth/logout` | 飞书 OAuth 登录/登出（需要 `express-session`、`FEISHU_APP_ID/SECRET`、`DEPLOY_BASE_URL`） |
 | GET | `/api/me`、`/api/projects` 等 | 项目历史版本管理，需登录态 |
 
+## 飞书登录系统（关键）
+
+- **前端入口拦截**：`src/builder-entry.js` 的 `checkAuth()` 在加载应用前请求 `/api/auth/me`，未登录则重定向到 `/api/auth/login?state=...`；`index.html` 含 `#auth-loading` 登录加载页。**若这两处被移除/回退，登录系统会"消失"（应用直接进入、无登录拦截）。**
+- **后端 OAuth**：`server/index.cjs` 提供 `/api/auth/login`（重定向飞书授权页）、`/api/auth/callback`（换 token + 取用户 + 写 session）、`/api/auth/me`、`/api/auth/logout`，依赖 `express-session`。
+- OAuth 回调地址 = `DEPLOY_BASE_URL/api/auth/callback`，`DEPLOY_BASE_URL` 默认 `https://doujiadacu.coze.bytedance.net`，需与环境匹配，且飞书应用后台已配置该回调白名单。
+
 ## 项目历史登录态（关键）
 
 - `server/history-auth.cjs` 通过环境变量 `PROJECT_HISTORY_AUTH_ADAPTER` 加载"在线身份适配器"，从飞书登录 Session 解析当前用户。
