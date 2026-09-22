@@ -1,0 +1,190 @@
+.page {
+  --retention-popup-background: linear-gradient(
+    165deg,
+    #ff88c1 0%,
+    #ffc1d5 20%,
+    #fff1f4 100%
+  );
+  --retention-popup-campaign-color: #b64cff;
+  --retention-popup-text-color: #240939;
+  --retention-popup-highlight-color: #8d16e8;
+  width: 560px;
+  height: 740px;
+  overflow: hidden;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.mainVisual {
+  width: 309.35px;
+  height: 244.6px;
+  position: absolute;
+  z-index: 0;
+  top: 9px;
+  left: 119px;
+  object-fit: fill;
+}
+
+.container {
+  position: absolute;
+  z-index: 1;
+  top: 229px;
+  left: 0;
+  width: 560px;
+  height: 511px;
+  border-radius: 90px;
+  box-sizing: border-box;
+  background: var(--retention-popup-background);
+}
+
+.campaignBadge {
+  width: 302px;
+  height: 60px;
+  position: absolute;
+  top: 0;
+  left: 129px;
+  border-radius: 0 0 48px 48px;
+  background: var(--retention-popup-campaign-color);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.campaignText {
+  width: 250px;
+  height: 28px;
+  overflow: hidden;
+  margin-top: 15px;
+  font-family: "Douyin Sans", "Source Han Sans CN Bold", sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 28px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: center;
+  color: #ffffff;
+}
+
+.headline {
+  width: 407px;
+  height: 192px;
+  overflow: hidden;
+  position: absolute;
+  top: 116px;
+  left: 70.8px;
+  font-family: MFBenHeiNoncommercial, "Source Han Sans CN Heavy", sans-serif;
+  font-size: 66px;
+  font-weight: 900;
+  line-height: 96px;
+  letter-spacing: 0;
+  white-space: normal;
+  text-align: center;
+  color: var(--retention-popup-text-color);
+}
+
+.headlineLine {
+  display: block;
+  width: 100%;
+  height: 96px;
+  white-space: nowrap;
+}
+
+.headlineLine:nth-child(2) {
+  font-size: 80px;
+}
+
+.headlineHighlight {
+  color: var(--retention-popup-highlight-color);
+}
+
+.button {
+  width: 350px;
+  height: 110px;
+  position: absolute;
+  top: 345px;
+  left: 105px;
+  overflow: hidden;
+  border-radius: 999px;
+  transform-origin: center;
+  animation: popupButtonPulse 1.2s ease-in-out infinite;
+}
+
+.button::after {
+  position: absolute;
+  z-index: 2;
+  top: -20%;
+  left: -42%;
+  width: 28%;
+  height: 140%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.72),
+    transparent
+  );
+  content: "";
+  pointer-events: none;
+  transform: skewX(-20deg);
+  animation: popupButtonShine 1.8s ease-in-out infinite;
+}
+
+.hand {
+  width: 130.98px;
+  height: 113.51px;
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  top: 387px;
+  left: 375px;
+  transform-origin: 28% 18%;
+  animation: popupHandTap 1.2s ease-in-out infinite;
+}
+
+@keyframes popupButtonPulse {
+  0%,
+  100% {
+    transform: scale(0.96);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes popupButtonShine {
+  0%,
+  24% {
+    opacity: 0;
+    transform: translateX(0) skewX(-20deg);
+  }
+  34% {
+    opacity: 1;
+  }
+  66% {
+    opacity: 1;
+    transform: translateX(520%) skewX(-20deg);
+  }
+  76%,
+  100% {
+    opacity: 0;
+    transform: translateX(520%) skewX(-20deg);
+  }
+}
+
+@keyframes popupHandTap {
+  0%,
+  100% {
+    transform: translate(7px, 7px) rotate(1deg);
+  }
+  48%,
+  62% {
+    transform: translate(-4px, -4px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .button::after,
+  .hand {
+    animation: none;
+  }
+}

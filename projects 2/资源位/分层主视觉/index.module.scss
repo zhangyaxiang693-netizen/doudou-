@@ -1,0 +1,250 @@
+.viewport {
+  overflow: visible;
+  position: absolute;
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.canvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-origin: center;
+  animation-duration: 1.2s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.layer {
+  position: absolute;
+}
+
+.layer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: center;
+  user-select: none;
+}
+
+[data-main-visual-scheme="subject-1"] .canvas {
+  transform-origin: 58% 82%;
+  animation-name: giftPresent;
+}
+
+[data-main-visual-scheme="subject-2"] .canvas {
+  transform-origin: 50% 88%;
+  animation-name: cheerBounce;
+}
+
+[data-main-visual-scheme="subject-3"] .canvas {
+  transform-origin: 56% 76%;
+  animation-name: announceRock;
+}
+
+[data-main-visual-scheme="subject-4"] .canvas {
+  transform-origin: 50% 90%;
+  animation-name: giftLift;
+}
+
+.floatSlow,
+.floatFast,
+.coinFloat,
+.rocketFloat,
+.driftLeft,
+.driftRight {
+  animation-name: accentFollow;
+  animation-duration: 1.2s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.coreFloat {
+  animation: none;
+}
+
+.floatFast {
+  transform-origin: 48% 28%;
+  animation-name: lightFollow;
+  animation-duration: 1.2s;
+}
+
+.floatSlow {
+  transform-origin: 38% 68%;
+  animation-name: softFollow;
+  animation-duration: 1.2s;
+}
+
+.driftLeft {
+  transform-origin: 72% 64%;
+  animation-name: ribbonFollow;
+  animation-duration: 1.2s;
+}
+
+.driftRight {
+  transform-origin: 28% 64%;
+  animation-name: ribbonFollow;
+  animation-duration: 1.2s;
+}
+
+.coinFloat,
+.rocketFloat {
+  animation-name: accentEmphasis;
+  animation-duration: 1.2s;
+}
+
+.coinFloat {
+  transform-origin: center;
+}
+
+.rocketFloat {
+  transform-origin: 42% 72%;
+  animation-name: rocketFollow;
+  animation-duration: 1.2s;
+}
+
+@keyframes giftPresent {
+  0% {
+    transform: translate(-2px, 3px) rotate(-0.8deg) scale(0.995);
+  }
+  50% {
+    transform: translate(5px, -6px) rotate(0.9deg) scale(1.018);
+  }
+  100% {
+    transform: translate(-2px, 3px) rotate(-0.8deg) scale(0.995);
+  }
+}
+
+@keyframes cheerBounce {
+  0% {
+    transform: translate(-2px, 3px) rotate(-0.5deg) scale(0.995);
+  }
+  50% {
+    transform: translate(4px, -7px) rotate(0.7deg) scale(1.02);
+  }
+  100% {
+    transform: translate(-2px, 3px) rotate(-0.5deg) scale(0.995);
+  }
+}
+
+@keyframes announceRock {
+  0% {
+    transform: translate(-2px, 3px) rotate(-0.8deg) scale(0.995);
+  }
+  50% {
+    transform: translate(5px, -5px) rotate(1.1deg) scale(1.018);
+  }
+  100% {
+    transform: translate(-2px, 3px) rotate(-0.8deg) scale(0.995);
+  }
+}
+
+@keyframes giftLift {
+  0% {
+    transform: translate(-2px, 3px) rotate(-0.6deg) scale(0.995);
+  }
+  50% {
+    transform: translate(4px, -8px) rotate(0.8deg) scale(1.02);
+  }
+  100% {
+    transform: translate(-2px, 3px) rotate(-0.6deg) scale(0.995);
+  }
+}
+
+@keyframes accentFollow {
+  0% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) scale(0.99);
+  }
+  50% {
+    transform: translate(var(--bloom-x), var(--bloom-y))
+      rotate(var(--bloom-rotate)) scale(1.025);
+  }
+  100% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) scale(0.99);
+  }
+}
+
+@keyframes softFollow {
+  0% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) scale(0.99);
+  }
+  50% {
+    transform: translate(var(--bloom-x), var(--bloom-y))
+      rotate(var(--bloom-rotate)) scale(1.03);
+  }
+  100% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) scale(0.99);
+  }
+}
+
+@keyframes lightFollow {
+  0% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) scale(0.98);
+  }
+  50% {
+    transform: translate(var(--bloom-x), var(--bloom-y))
+      rotate(var(--bloom-rotate)) scale(1.05);
+  }
+  100% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) scale(0.98);
+  }
+}
+
+@keyframes ribbonFollow {
+  0% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) skewX(-1deg);
+  }
+  50% {
+    transform: translate(var(--bloom-x), var(--bloom-y))
+      rotate(var(--bloom-rotate)) skewX(1.5deg);
+  }
+  100% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) skewX(-1deg);
+  }
+}
+
+@keyframes accentEmphasis {
+  0% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) scale(0.97);
+  }
+  50% {
+    transform: translate(var(--bloom-x), var(--bloom-y))
+      rotate(var(--bloom-rotate)) scale(1.07);
+  }
+  100% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) scale(0.97);
+  }
+}
+
+@keyframes rocketFollow {
+  0% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) scale(0.97);
+  }
+  50% {
+    transform: translate(var(--bloom-x), var(--bloom-y))
+      rotate(var(--bloom-rotate)) scale(1.08);
+  }
+  100% {
+    transform: translate(var(--bloom-in-x), var(--bloom-in-y))
+      rotate(var(--bloom-in-rotate)) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas,
+  .layer img {
+    animation: none;
+  }
+}

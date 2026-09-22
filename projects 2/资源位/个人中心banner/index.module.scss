@@ -1,0 +1,105 @@
+.page {
+  --profile-banner-background: linear-gradient(90deg, #d39aff 0%, #f7ebff 73.03%);
+  --profile-banner-text-color: #240939;
+  --profile-banner-highlight-color: #8d16e8;
+  --profile-banner-button-start: #ff180e;
+  --profile-banner-button-end: #ff166f;
+  width: 686px;
+  height: 120px;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+  background: var(--profile-banner-background);
+}
+
+.copy {
+  width: 303.18px;
+  height: 71px;
+  position: absolute;
+  z-index: 2;
+  top: 23.2px;
+  left: 21.8px;
+}
+
+.campaignText {
+  width: 196.99px;
+  height: 23.53px;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0.43px;
+  font-family: "Source Han Sans CN Bold", "Source Han Sans CN", sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 23.53px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: left;
+  color: var(--profile-banner-text-color);
+}
+
+.headline {
+  width: 303.18px;
+  height: 32.23px;
+  overflow: hidden;
+  position: absolute;
+  top: 38.76px;
+  left: 0;
+  font-family: MFBenHeiNoncommercial, "Source Han Sans CN Heavy", sans-serif;
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 32.23px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: left;
+  color: var(--profile-banner-text-color);
+}
+
+.headlineHighlight {
+  color: var(--profile-banner-highlight-color);
+}
+
+.mainVisual {
+  width: 167px;
+  height: 120px;
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 338px;
+  object-fit: fill;
+  transform-origin: center;
+}
+
+.actionButton {
+  width: 146px;
+  height: 56px;
+  overflow: hidden;
+  position: absolute;
+  z-index: 2;
+  top: 32px;
+  left: 516px;
+  border-radius: 66px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    var(--profile-banner-button-start) 0%,
+    var(--profile-banner-button-end) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.buttonText {
+  width: 118px;
+  height: 34px;
+  overflow: hidden;
+  font-family: "Source Han Sans CN Bold", "Source Han Sans CN", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 34px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: center;
+  color: #ffffff;
+}

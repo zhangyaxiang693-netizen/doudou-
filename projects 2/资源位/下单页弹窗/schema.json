@@ -1,0 +1,151 @@
+{
+  "id": "下单页弹窗",
+  "name": "下单页弹窗",
+  "title": "下单页弹窗",
+  "type": "atom",
+  "category": "资源位",
+  "description": "下单页弹窗原子组件。",
+  "reactComponent": "下单页弹窗",
+  "dimensions": {
+    "width": 560,
+    "height": 740
+  },
+  "blueprint": {
+    "autoExposeProps": false,
+    "excludeFromPrd": true,
+    "matchKeywords": [
+      "下单页弹窗",
+      "下单页",
+      "弹窗",
+      "资源位"
+    ],
+    "textProps": [
+      "headlineText",
+      "campaignText",
+      "buttonText"
+    ]
+  },
+  "props": [
+    {
+      "key": "headlineText",
+      "name": "headlineText",
+      "label": "主标题文案",
+      "type": "string",
+      "default": "好礼天天抽 赢千元流量",
+      "description": "主标题作为一段文案输入，每行最多 6 个字符，空格可主动分行，整体保持居中。"
+    },
+    {
+      "key": "campaignText",
+      "name": "campaignText",
+      "label": "活动标签文案",
+      "type": "string",
+      "default": "DOU+双节狂欢投",
+      "description": "顶部活动标签文案，随内容长度保持居中并自动缩放。"
+    },
+    {
+      "key": "headlineHighlightText",
+      "name": "headlineHighlightText",
+      "label": "标题高亮内容",
+      "type": "string",
+      "default": "赢千元流量",
+      "description": "填写主标题中需要高亮显示的文案内容。"
+    },
+    {
+      "key": "mainVisualImage",
+      "name": "mainVisualImage",
+      "label": "主体替换",
+      "type": "select",
+      "default": "subject-1",
+      "description": "主视觉图片，复用头图的主体替换素材。",
+      "options": [
+        {
+          "label": "主体替换-方案1",
+          "value": "subject-1"
+        },
+        {
+          "label": "主体替换-方案2",
+          "value": "subject-2"
+        },
+        {
+          "label": "主体替换-方案3",
+          "value": "subject-3"
+        },
+        {
+          "label": "主体替换-方案4",
+          "value": "subject-4"
+        }
+      ]
+    },
+    {
+      "key": "burstColor",
+      "name": "burstColor",
+      "label": "爆炸图形颜色",
+      "type": "color",
+      "default": "#0FB3FF",
+      "description": "爆炸图形使用头图素材作为遮罩并应用该颜色。"
+    },
+    {
+      "key": "burstOpacity",
+      "name": "burstOpacity",
+      "label": "爆炸图形透明度",
+      "type": "number",
+      "default": 0.3
+    },
+    {
+      "key": "glowOpacity",
+      "name": "glowOpacity",
+      "label": "光束透明度",
+      "type": "number",
+      "default": 0.6
+    },
+    {
+      "key": "background",
+      "name": "background",
+      "label": "背景色",
+      "type": "string",
+      "default": "linear-gradient(180deg, #ABF9FF 0%, #B5FBFF 30%, #CAF1F3 100%)"
+    },
+    {
+      "key": "ribbonColor",
+      "name": "ribbonColor",
+      "label": "顶部标签颜色",
+      "type": "color",
+      "default": "#00C8F5"
+    },
+    {
+      "key": "textColor",
+      "name": "textColor",
+      "label": "标题默认颜色",
+      "type": "color",
+      "default": "#092E39"
+    },
+    {
+      "key": "headlineGradientTop",
+      "name": "headlineGradientTop",
+      "label": "标题高亮颜色",
+      "type": "color",
+      "default": "#008BD4"
+    },
+    {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮渐变开始",
+      "type": "color",
+      "default": "#FF180E"
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮渐变结束",
+      "type": "color",
+      "default": "#FF166F"
+    },
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "立即参与"
+    }
+  ]
+}

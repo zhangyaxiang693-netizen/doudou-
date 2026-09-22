@@ -55,6 +55,12 @@ import TitleDrawCount from "../标题+抽奖次数";
 import NoActivityNotice from "../无活动提示";
 import HeaderImage from "../头图";
 import MidAutumnSHeader from "../S级-中秋头图";
+import ResourcePopup1 from "../资源位/资源弹窗1";
+import ResourcePopup2 from "../资源位/资源弹窗2";
+import ProfileCenterBanner from "../资源位/个人中心banner";
+import TopBanner from "../资源位/顶部banner";
+import CheckoutPopup from "../资源位/下单页弹窗";
+import Pendant from "../资源位/挂件";
 
 const roots = new WeakMap();
 const projectFontFamilies = new Set([
@@ -193,6 +199,14 @@ const componentMap = {
   "无活动提示": NoActivityNotice,
   "头图": HeaderImage,
   "S级-中秋头图": MidAutumnSHeader,
+  "详情页弹窗": ResourcePopup1,
+  "挽留页弹窗": ResourcePopup2,
+  "资源弹窗1": ResourcePopup1,
+  "资源弹窗2": ResourcePopup2,
+  "个人中心banner": ProfileCenterBanner,
+  "顶部banner": TopBanner,
+  "下单页弹窗": CheckoutPopup,
+  "挂件": Pendant,
 };
 
 function parseProps(element) {

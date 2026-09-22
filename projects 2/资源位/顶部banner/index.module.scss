@@ -1,0 +1,112 @@
+.page {
+  width: 1029px;
+  height: 270px;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+.container {
+  --top-banner-background: linear-gradient(90deg, #d39aff 0%, #f7ebff 81.44%);
+  --top-banner-text-color: #240939;
+  --top-banner-highlight-color: #8d16e8;
+  --top-banner-button-start: #ff180e;
+  --top-banner-button-end: #ff166f;
+  width: 1029px;
+  height: 270px;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+  background: var(--top-banner-background);
+}
+
+.content {
+  width: 577.96px;
+  height: 206.42px;
+  position: absolute;
+  z-index: 2;
+  top: 32.8px;
+  left: 35px;
+}
+
+.campaignText {
+  width: 295.48px;
+  height: 35.29px;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 15.35px;
+  font-family: "Source Han Sans CN Bold", "Source Han Sans CN", sans-serif;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 35.29px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: left;
+  color: var(--top-banner-text-color);
+}
+
+.headline {
+  width: 563.85px;
+  height: 52.49px;
+  overflow: hidden;
+  position: absolute;
+  top: 54.91px;
+  left: 14.12px;
+  font-family: MFBenHeiNoncommercial, "Source Han Sans CN Heavy", sans-serif;
+  font-size: 58px;
+  font-weight: 900;
+  line-height: 52.49px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: left;
+  color: var(--top-banner-text-color);
+}
+
+.headlineHighlight {
+  color: var(--top-banner-highlight-color);
+}
+
+.actionButton {
+  width: 212.24px;
+  height: 72.84px;
+  overflow: hidden;
+  position: absolute;
+  top: 133.58px;
+  left: 0;
+  border-radius: 85.85px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    var(--top-banner-button-start) 0%,
+    var(--top-banner-button-end) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.buttonText {
+  width: 176px;
+  height: 48px;
+  overflow: hidden;
+  font-family: "Source Han Sans CN Bold", "Source Han Sans CN", sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 48px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  text-align: center;
+  color: #ffffff;
+}
+
+.mainVisual {
+  width: 331px;
+  height: 262px;
+  position: absolute;
+  z-index: 1;
+  top: 1.6px;
+  left: 653.35px;
+  object-fit: contain;
+  transform-origin: center;
+}

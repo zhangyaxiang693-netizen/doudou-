@@ -1,0 +1,123 @@
+{
+  "id": "个人中心banner",
+  "name": "个人中心banner",
+  "title": "个人中心banner",
+  "type": "atom",
+  "category": "资源位",
+  "description": "个人中心 Banner 原子组件。",
+  "reactComponent": "个人中心banner",
+  "dimensions": {
+    "width": 686,
+    "height": 120
+  },
+  "blueprint": {
+    "autoExposeProps": false,
+    "excludeFromPrd": true,
+    "matchKeywords": [
+      "个人中心banner",
+      "个人中心",
+      "banner",
+      "资源位"
+    ],
+    "textProps": [
+      "campaignText",
+      "headlineText",
+      "buttonText"
+    ]
+  },
+  "props": [
+    {
+      "key": "campaignText",
+      "name": "campaignText",
+      "label": "活动标签文案",
+      "type": "string",
+      "default": "DOU+双节狂欢投",
+      "description": "活动标签保持原位置单行展示，超长时自动缩放。"
+    },
+    {
+      "key": "headlineText",
+      "name": "headlineText",
+      "label": "主标题文案",
+      "type": "string",
+      "default": "完成任务 抽赢好礼",
+      "description": "主标题保持原位置单行展示，超长时自动缩放。"
+    },
+    {
+      "key": "headlineHighlightText",
+      "name": "headlineHighlightText",
+      "label": "标题高亮内容",
+      "type": "string",
+      "default": "抽赢",
+      "description": "填写主标题中需要高亮显示的连续文案内容。"
+    },
+    {
+      "key": "mainVisualImage",
+      "name": "mainVisualImage",
+      "label": "主体替换",
+      "type": "select",
+      "default": "subject-1",
+      "description": "主视觉图片，复用头图的主体替换素材。",
+      "options": [
+        {
+          "label": "主体替换-方案1",
+          "value": "subject-1"
+        },
+        {
+          "label": "主体替换-方案2",
+          "value": "subject-2"
+        },
+        {
+          "label": "主体替换-方案3",
+          "value": "subject-3"
+        },
+        {
+          "label": "主体替换-方案4",
+          "value": "subject-4"
+        }
+      ]
+    },
+    {
+      "key": "background",
+      "name": "background",
+      "label": "背景渐变",
+      "type": "string",
+      "default": "linear-gradient(90deg, #D39AFF 0%, #F7EBFF 73.03%)",
+      "description": "仅使用父级色系的第一个颜色和最后一个颜色。"
+    },
+    {
+      "key": "textColor",
+      "name": "textColor",
+      "label": "标题默认颜色",
+      "type": "color",
+      "default": "#240939"
+    },
+    {
+      "key": "headlineHighlightColor",
+      "name": "headlineHighlightColor",
+      "label": "标题高亮颜色",
+      "type": "color",
+      "default": "#8D16E8"
+    },
+    {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮渐变开始",
+      "type": "color",
+      "default": "#FF180E"
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮渐变结束",
+      "type": "color",
+      "default": "#FF166F"
+    },
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "立即参与"
+    }
+  ]
+}

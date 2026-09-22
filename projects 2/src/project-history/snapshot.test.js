@@ -8,6 +8,14 @@ import {
 
 function createState() {
   return {
+    workflowType: "resource",
+    resourceLevel: "daily",
+    resourceDrafts: {
+      daily: {
+        activityName: "测试资源位",
+        audiences: [],
+      },
+    },
     activity: { name: "测试项目" },
     pages: [
       {
@@ -33,9 +41,11 @@ test("creates a business snapshot without transient selection state", () => {
     appVersion: "0.1.0",
   });
 
-  assert.equal(snapshot.schemaVersion, 1);
+  assert.equal(snapshot.schemaVersion, 2);
   assert.equal(snapshot.source.prdText, "PRD 正文");
   assert.equal(snapshot.editor.guidedLotteryPrizeOverrides.prize1, "5元流量券");
+  assert.equal(snapshot.editor.workflowType, "resource");
+  assert.equal(snapshot.editor.resourceDrafts.daily.activityName, "测试资源位");
   assert.equal("selectedId" in snapshot.editor, false);
   assert.equal("colorPanelOpen" in snapshot.editor, false);
 });
@@ -68,4 +78,17 @@ test("rejects snapshots created by a newer schema", () => {
       }),
     /更高版本/,
   );
+});
+
+test("migrates venue snapshots from schema version 1", () => {
+  const migrated = migrateProjectSnapshot({
+    schemaVersion: 1,
+    editor: {
+      pages: [],
+    },
+  });
+
+  assert.equal(migrated.schemaVersion, 2);
+  assert.equal(migrated.editor.workflowType, "venue");
+  assert.equal(migrated.editor.resourceLevel, "daily");
 });

@@ -1,6 +1,9 @@
-export const SNAPSHOT_SCHEMA_VERSION = 1;
+export const SNAPSHOT_SCHEMA_VERSION = 2;
 
 const EDITOR_FIELDS = [
+  "workflowType",
+  "resourceLevel",
+  "resourceDrafts",
   "activity",
   "pages",
   "currentTemplateId",
@@ -128,6 +131,16 @@ function migrateV1(snapshot) {
   return migrated;
 }
 
+function migrateV1ToV2(snapshot) {
+  const migrated = clone(snapshot);
+  migrated.schemaVersion = 2;
+  migrated.editor ||= {};
+  migrated.editor.workflowType ||= "venue";
+  migrated.editor.resourceLevel ||= "daily";
+  migrated.editor.resourceDrafts ||= {};
+  return migrated;
+}
+
 export function migrateProjectSnapshot(snapshot) {
   if (!snapshot || typeof snapshot !== "object") {
     throw new Error("项目快照不存在");
@@ -138,6 +151,10 @@ export function migrateProjectSnapshot(snapshot) {
 
   let migrated = clone(snapshot);
   while (migrated.schemaVersion < SNAPSHOT_SCHEMA_VERSION) {
+    if (migrated.schemaVersion === 1) {
+      migrated = migrateV1ToV2(migrated);
+      continue;
+    }
     throw new Error(`暂不支持快照版本 ${migrated.schemaVersion}`);
   }
   migrated = migrateV1(migrated);

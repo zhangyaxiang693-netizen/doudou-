@@ -1,0 +1,321 @@
+.page {
+  --detail-popup-background: linear-gradient(
+    165deg,
+    #ff88c1 0%,
+    #ffc1d5 20%,
+    #fff1f4 100%
+  );
+  --detail-popup-text-color: #2c0113;
+  --detail-popup-highlight-color: #f00073;
+  width: 560px;
+  height: 740px;
+  overflow: hidden;
+  box-sizing: border-box;
+  position: relative;
+}
+.wrap {
+  position: absolute;
+  z-index: 1;
+  top: 198px;
+  left: 0px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 560px;
+  height: 511px;
+}
+.container {
+  position: relative;
+  width: 560px;
+  height: 511px;
+  border-radius: 90px;
+  box-sizing: border-box;
+  background: var(--detail-popup-background);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.content1 {
+  margin-top: 98px;
+  margin-left: 114px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 327.75px;
+  height: 26.95px;
+}
+.main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.main1 {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 4.14px;
+  margin-left: 8.7px;
+}
+.section1 {
+  width: 314.6px;
+  height: 26px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+}
+.image4 {
+  flex: 1 1 42.3px;
+  min-width: 16px;
+  height: 2.7px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--detail-popup-text-color) 100%
+  );
+}
+.image5 {
+  width: max-content;
+  max-width: calc(100% - 68px);
+  height: 26px;
+  flex: 0 1 auto;
+  color: var(--detail-popup-text-color);
+  font-family: "Douyin Sans", sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 26px;
+  text-align: center;
+  white-space: nowrap;
+}
+.subSection {
+  flex: 1 1 42.3px;
+  min-width: 16px;
+  border-radius: 41.4px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    var(--detail-popup-text-color) 0%,
+    transparent 99.29%
+  );
+  min-height: 2.7px;
+}
+.headline {
+  width: 360px;
+  height: 156px;
+  margin-top: 39.29px;
+  margin-left: 100px;
+  position: relative;
+  font-family: MFBenHeiNoncommercial, sans-serif;
+  font-size: 66px;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  white-space: normal;
+  overflow: hidden;
+  color: var(--detail-popup-text-color);
+}
+
+.headlineLine {
+  display: block;
+  width: 100%;
+  height: 66px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  line-height: 66px;
+  white-space: nowrap;
+}
+
+.headlineLine:nth-child(2) {
+  top: 90px;
+}
+
+.headlineHighlight {
+  color: var(--detail-popup-highlight-color);
+}
+
+.button {
+  width: 350px;
+  height: 110px;
+  position: absolute;
+  top: 358.99px;
+  left: 105px;
+  overflow: hidden;
+  border-radius: 999px;
+  transform-origin: center;
+  animation: popupButtonPulse 1.2s ease-in-out infinite;
+}
+
+.button::after {
+  position: absolute;
+  z-index: 2;
+  top: -20%;
+  left: -42%;
+  width: 28%;
+  height: 140%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.72),
+    transparent
+  );
+  content: "";
+  pointer-events: none;
+  transform: skewX(-20deg);
+  animation: popupButtonShine 1.8s ease-in-out infinite;
+}
+
+.hand {
+  width: 130.98px;
+  height: 113.51px;
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  top: 394.92px;
+  left: 383.32px;
+  transform-origin: 28% 18%;
+  animation: popupHandTap 1.2s ease-in-out infinite;
+}
+
+.mainVisual {
+  width: 427px;
+  height: 317px;
+  position: absolute;
+  z-index: 3;
+  top: 37px;
+  left: 67px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.mainVisualCanvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-origin: 50% 82%;
+  animation: detailVisualPulse 1.2s ease-in-out infinite;
+}
+
+.detailRibbon,
+.detailCoin,
+.detailSpark {
+  position: absolute;
+  display: block;
+  object-fit: contain;
+  transform-origin: center;
+}
+
+.detailRibbon {
+  z-index: 0;
+  top: 69px;
+  left: 0;
+  width: 101px;
+  height: 150px;
+  transform-origin: 74% 58%;
+  animation: detailRibbonBloom 1.2s ease-in-out infinite;
+}
+
+.detailCoin {
+  z-index: 1;
+  top: 0;
+  left: 42px;
+  width: 294px;
+  height: 317px;
+}
+
+.detailSpark {
+  z-index: 2;
+  top: 96px;
+  left: 291px;
+  width: 136px;
+  height: 140px;
+  transform-origin: 18% 65%;
+  animation: detailSparkBloom 1.2s ease-in-out infinite;
+}
+
+@keyframes detailVisualPulse {
+  0%,
+  100% {
+    transform: translateY(3px) rotate(-0.5deg) scale(0.98);
+  }
+  50% {
+    transform: translateY(-6px) rotate(0.6deg) scale(1.025);
+  }
+}
+
+@keyframes detailRibbonBloom {
+  0%,
+  100% {
+    transform: translate(2px, 1px) rotate(1.5deg) scale(0.98);
+  }
+  50% {
+    transform: translate(-7px, -4px) rotate(-4deg) scale(1.06);
+  }
+}
+
+@keyframes detailSparkBloom {
+  0%,
+  100% {
+    transform: translate(-2px, 1px) rotate(-1deg) scale(0.98);
+  }
+  50% {
+    transform: translate(8px, -5px) rotate(4deg) scale(1.07);
+  }
+}
+
+@keyframes popupButtonPulse {
+  0%,
+  100% {
+    transform: scale(0.96);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes popupButtonShine {
+  0%,
+  24% {
+    opacity: 0;
+    transform: translateX(0) skewX(-20deg);
+  }
+  34% {
+    opacity: 1;
+  }
+  66% {
+    opacity: 1;
+    transform: translateX(520%) skewX(-20deg);
+  }
+  76%,
+  100% {
+    opacity: 0;
+    transform: translateX(520%) skewX(-20deg);
+  }
+}
+
+@keyframes popupHandTap {
+  0%,
+  100% {
+    transform: translate(7px, 7px) rotate(1deg);
+  }
+  48%,
+  62% {
+    transform: translate(-4px, -4px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .button::after,
+  .hand,
+  .mainVisualCanvas,
+  .detailRibbon,
+  .detailSpark {
+    animation: none;
+  }
+}

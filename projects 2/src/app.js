@@ -1,4 +1,9 @@
-import { getFontEmbedCSS, toBlob as exportNodeToBlob } from "html-to-image";
+import {
+  getFontEmbedCSS,
+  toBlob as exportNodeToBlob,
+  toCanvas as exportNodeToCanvas,
+} from "html-to-image";
+import { GIFEncoder, applyPalette, quantize } from "gifenc";
 import {
   applyProjectSnapshot,
   createProjectSnapshot,
@@ -49,8 +54,8 @@ function getDefaultTrafficCouponThreshold(amount) {
   return thresholds[String(amount || "").trim()] || DEFAULT_TRAFFIC_COUPON_THRESHOLD;
 }
 
-const _schemaModules = import.meta.glob('../*/schema.json', { eager: true, as: 'json' });
-const _cssVarModules = import.meta.glob('../*/index.module.scss', { eager: true, query: '?raw', import: 'default' });
+const _schemaModules = import.meta.glob('../**/schema.json', { eager: true, as: 'json' });
+const _cssVarModules = import.meta.glob('../**/index.module.scss', { eager: true, query: '?raw', import: 'default' });
 const _headerMainVisualModules = import.meta.glob("../头图/主体替换/*.png", { eager: true, query: "?url", import: "default" });
 const headerDefaultMainVisualUrl = new URL("../头图/assets/主视觉.png", import.meta.url).href;
 const navigationBarSvgUrl = new URL("../导航栏/顶栏.svg", import.meta.url).href;
@@ -266,8 +271,7 @@ function _buildDynamicSchemas() {
   const result = [];
   for (const [path, schema] of Object.entries(_schemaModules)) {
     const normalized = _normalizeDynamicSchema(path, schema);
-    const dirName = path.split('/').slice(-2)[0];
-    const scssKey = `../${dirName}/index.module.scss`;
+    const scssKey = path.replace(/\/schema\.json$/, "/index.module.scss");
     const scssRaw = _cssVarModules[scssKey];
     const scssContent = typeof scssRaw === 'string' ? scssRaw : (scssRaw?.default || '');
     const cssVars = _extractCssVars(scssContent);
@@ -704,7 +708,34 @@ const PRD_PAGE_TEMPLATE_ALIASES = {
   "模板3 抽奖 + 消耗返": ["模板3 抽奖 + 消耗返"],
   "模板4 无激励攻略": ["模板4 无激励攻略"],
 };
+const BIGDAY_COUPON_BUSINESS_STATE_CONFIG = {
+  label: "核心权益｜big-day发券",
+  states: [
+    {
+      id: "default",
+      name: "报名前",
+      schemaId: "核心权益模块-bigday发券-样式1",
+      preserveProps: true,
+      preserveBoundProps: false,
+    },
+    {
+      id: "postSignup",
+      name: "已报名",
+      schemaId: "核心权益模块-bigday发券-样式1-已报名",
+      preserveProps: true,
+      preserveBoundProps: false,
+      lockedPropKeys: ["buttonText"],
+    },
+  ],
+};
+const BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS = new Set([
+  "核心权益模块-bigday发券-样式1",
+  "核心权益模块-bigday发券-样式1-已报名",
+]);
 const PAGE_TEMPLATE_BUSINESS_STATES = {
+  "核心权益模块-bigday发券-样式1": BIGDAY_COUPON_BUSINESS_STATE_CONFIG,
+  "核心权益模块-bigday发券-样式1-已报名":
+    BIGDAY_COUPON_BUSINESS_STATE_CONFIG,
   "核心玩法模块-抽奖-未报名": {
     label: "核心玩法｜抽奖-九宫格",
     states: [
@@ -3700,8 +3731,249 @@ function setActiveHistoryLocalDraftId(id) {
   return id;
 }
 
+const RESOURCE_THEME_FIELD = {
+  key: "__themeId",
+  label: "颜色",
+  type: "select",
+  default: "pink",
+  options: [
+    { label: "日常色系-粉色", value: "pink" },
+    { label: "日常色系-蓝色", value: "sky" },
+    { label: "日常色系-青色", value: "daily-cyan" },
+    { label: "日常色系-紫色", value: "daily-purple" },
+    { label: "日常色系-绿色", value: "daily-green" },
+    { label: "日常色系-卡其色", value: "apricot" },
+    { label: "日常色系-黄色", value: "daily-yellow" },
+  ],
+};
+
+function getResourceSlotFields(slot) {
+  return [
+    {
+      ...RESOURCE_THEME_FIELD,
+      default: slot.defaultThemeId || RESOURCE_THEME_FIELD.default,
+    },
+    ...(slot.fields || []),
+  ];
+}
+
+const RESOURCE_LEVEL_CONFIGS = {
+  daily: {
+    id: "daily",
+    name: "日常级别",
+    description: "用于常规运营场景，包含 6 个日常资源位。",
+    slots: [
+      {
+        id: "pendant",
+        name: "挂件",
+        schemaId: "挂件",
+        defaultThemeId: "pink",
+        fields: [
+          {
+            key: "mainVisualImage",
+            label: "主体替换",
+            type: "select",
+            default: "subject-1",
+            options: [
+              { label: "主体替换-方案1", value: "subject-1" },
+              { label: "主体替换-方案2", value: "subject-2" },
+              { label: "主体替换-方案3", value: "subject-3" },
+              { label: "主体替换-方案4", value: "subject-4" },
+            ],
+          },
+          { key: "buttonText", label: "按钮文案", default: "七夕抽奖" },
+          {
+            key: "buttonColor",
+            label: "按钮颜色",
+            type: "select",
+            default: "#FF1372",
+            options: [
+              { label: "粉色", value: "#FF1372" },
+              { label: "红色", value: "#FF180E" },
+              { label: "橙色", value: "#FF4501" },
+            ],
+          },
+        ],
+      },
+      {
+        id: "checkout-popup",
+        name: "下单页弹窗",
+        schemaId: "下单页弹窗",
+        defaultThemeId: "pink",
+        fields: [
+          {
+            key: "mainVisualImage",
+            label: "主体替换",
+            type: "select",
+            default: "subject-1",
+            options: [
+              { label: "主体替换-方案1", value: "subject-1" },
+              { label: "主体替换-方案2", value: "subject-2" },
+              { label: "主体替换-方案3", value: "subject-3" },
+              { label: "主体替换-方案4", value: "subject-4" },
+            ],
+          },
+          { key: "headlineText", label: "主标题文案", default: "好礼天天抽 赢千元流量" },
+          { key: "campaignText", label: "活动标签文案", default: "DOU+双节狂欢投" },
+          { key: "headlineHighlightText", label: "标题高亮内容", default: "赢千元流量" },
+          { key: "buttonText", label: "按钮文案", default: "立即参与" },
+        ],
+      },
+      {
+        id: "top-banner",
+        name: "顶部banner",
+        schemaId: "顶部banner",
+        defaultThemeId: "pink",
+        fields: [
+          {
+            key: "mainVisualImage",
+            label: "主体替换",
+            type: "select",
+            default: "subject-1",
+            options: [
+              { label: "主体替换-方案1", value: "subject-1" },
+              { label: "主体替换-方案2", value: "subject-2" },
+              { label: "主体替换-方案3", value: "subject-3" },
+              { label: "主体替换-方案4", value: "subject-4" },
+            ],
+          },
+          { key: "campaignText", label: "活动标签文案", default: "DOU+双节狂欢投" },
+          { key: "headlineText", label: "主标题文案", default: "好礼天天抽 赢千元流量" },
+          { key: "headlineHighlightText", label: "标题高亮内容", default: "千元流量" },
+          { key: "buttonText", label: "按钮文案", default: "立即参与" },
+        ],
+      },
+      {
+        id: "profile-center-banner",
+        name: "个人中心banner",
+        schemaId: "个人中心banner",
+        defaultThemeId: "pink",
+        fields: [
+          {
+            key: "mainVisualImage",
+            label: "主体替换",
+            type: "select",
+            default: "subject-1",
+            options: [
+              { label: "主体替换-方案1", value: "subject-1" },
+              { label: "主体替换-方案2", value: "subject-2" },
+              { label: "主体替换-方案3", value: "subject-3" },
+              { label: "主体替换-方案4", value: "subject-4" },
+            ],
+          },
+          { key: "campaignText", label: "活动标签文案", default: "DOU+双节狂欢投" },
+          { key: "headlineText", label: "主标题文案", default: "完成任务 抽赢好礼" },
+          { key: "headlineHighlightText", label: "标题高亮内容", default: "抽赢" },
+          { key: "buttonText", label: "按钮文案", default: "立即参与" },
+        ],
+      },
+      {
+        id: "resource-popup-2",
+        name: "挽留页弹窗",
+        schemaId: "挽留页弹窗",
+        defaultThemeId: "pink",
+        fields: [
+          {
+            key: "mainVisualImage",
+            label: "主体替换",
+            type: "select",
+            default: "subject-1",
+            options: [
+              { label: "主体替换-方案1", value: "subject-1" },
+              { label: "主体替换-方案2", value: "subject-2" },
+              { label: "主体替换-方案3", value: "subject-3" },
+              { label: "主体替换-方案4", value: "subject-4" },
+            ],
+          },
+          { key: "campaignText", label: "活动标签文案", default: "DOU+双节狂欢投" },
+          { key: "headlineText", label: "主标题文案", default: "投一单DOU+ 抽千元流量" },
+          { key: "headlineHighlightText", label: "标题高亮内容", default: "DOU+" },
+          { key: "buttonText", label: "按钮文案", default: "立即参与" },
+        ],
+      },
+      {
+        id: "resource-popup-1",
+        name: "详情页弹窗",
+        schemaId: "详情页弹窗",
+        defaultThemeId: "pink",
+        fields: [
+          { key: "campaignText", label: "活动标签文案", default: "DOU+双节狂欢投" },
+          { key: "headlineText", label: "主标题文案", default: "完成任务 抽流量好礼" },
+          { key: "headlineHighlightText", label: "标题高亮内容", default: "流量好礼" },
+          { key: "buttonText", label: "按钮文案", default: "立即参与" },
+        ],
+      },
+    ],
+  },
+  s: {
+    id: "s",
+    name: "S级别",
+    description: "用于重点活动场景，当前资源位与日常级别保持一致。",
+    slots: [],
+  },
+};
+
+const RESOURCE_DAILY_SLOT_ORDER = [
+  "pendant",
+  "checkout-popup",
+  "resource-popup-2",
+  "resource-popup-1",
+  "top-banner",
+  "profile-center-banner",
+];
+RESOURCE_LEVEL_CONFIGS.daily.slots.sort(
+  (left, right) =>
+    RESOURCE_DAILY_SLOT_ORDER.indexOf(left.id) -
+    RESOURCE_DAILY_SLOT_ORDER.indexOf(right.id),
+);
+RESOURCE_LEVEL_CONFIGS.s.slots = RESOURCE_LEVEL_CONFIGS.daily.slots.map((slot) => ({
+  ...slot,
+  fields: (slot.fields || []).map((field) => ({
+    ...field,
+    ...(field.options
+      ? { options: field.options.map((option) => ({ ...option })) }
+      : {}),
+  })),
+}));
+
+function createDefaultResourceVersion(slot, index) {
+  return {
+    id: index === 0
+      ? "base"
+      : `resource_version_${Date.now()}_${index}_${Math.random().toString(16).slice(2)}`,
+    name: `人群${index + 1}`,
+    values: Object.fromEntries(
+      getResourceSlotFields(slot).map((field) => [field.key, field.default]),
+    ),
+  };
+}
+
+function createDefaultResourceDraft(levelId) {
+  const level = RESOURCE_LEVEL_CONFIGS[levelId] || RESOURCE_LEVEL_CONFIGS.daily;
+  return {
+    activityName: levelId === "s" ? "S级资源位活动" : "日常资源位活动",
+    modules: Object.fromEntries(
+      level.slots.map((slot) => [
+        slot.id,
+        {
+          versions: [
+            createDefaultResourceVersion(slot, 0),
+          ],
+        },
+      ]),
+    ),
+  };
+}
+
 const state = {
   view: "home",
+  workflowType: "venue",
+  resourceLevel: "daily",
+  resourceDrafts: {
+    daily: createDefaultResourceDraft("daily"),
+    s: createDefaultResourceDraft("s"),
+  },
+  resourcePreviewVersionIds: {},
   currentTemplateId: null,
   createDraft: {
     name: "新活动",
@@ -3990,6 +4262,16 @@ const guidedPageThemePresets = [
   },
 ];
 const canvasColorChoices = guidedPageThemePresets.map((theme) => theme.background);
+const DISABLED_GUIDED_THEME_IDS = new Set([
+  "node-womens-day",
+  "node-breath",
+  "node-anniversary",
+  "node-double-festival",
+  "node-new-year",
+  "node-mid-autumn",
+  "node-double-11",
+  "s-mid-autumn",
+]);
 
 function getThemeColorInputValue(value, fallback = "#ffffff") {
   const text = String(value || "").trim();
@@ -4037,13 +4319,73 @@ function getHeaderMainVisualOptions() {
   ];
 }
 
+function getResourceMainVisualOptions() {
+  return getHeaderMainVisualOptions()
+    .map((item) => {
+      const match = item.name.match(/主体替换-方案([1-4])$/);
+      return match
+        ? {
+            ...item,
+            id: `subject-${match[1]}`,
+          }
+        : null;
+    })
+    .filter(Boolean);
+}
+
+function applyResourceMainVisualToNode(node, mainVisualImage, visited = new WeakSet()) {
+  if (!node || visited.has(node)) return;
+  visited.add(node);
+  if (Object.prototype.hasOwnProperty.call(node.props || {}, "mainVisualImage")) {
+    node.props = {
+      ...(node.props || {}),
+      mainVisualImage,
+    };
+  }
+  (node.children || []).forEach((child) =>
+    applyResourceMainVisualToNode(child, mainVisualImage, visited),
+  );
+  (node.guidedStates || []).forEach((entry) =>
+    applyResourceMainVisualToNode(entry.node, mainVisualImage, visited),
+  );
+  (node.guidedLineageVariants || []).forEach((variant) =>
+    applyResourceMainVisualToNode(variant.node, mainVisualImage, visited),
+  );
+}
+
+function applyResourceMainVisual(mainVisualImage) {
+  applyResourceGlobalDraftValue("mainVisualImage", mainVisualImage);
+  state.pages.forEach((page) => {
+    (page.nodes || []).forEach((node) =>
+      applyResourceMainVisualToNode(node, mainVisualImage),
+    );
+  });
+  renderResourcePreview();
+}
+
+function getActiveResourceMainVisual() {
+  for (const page of state.pages) {
+    const queue = [...(page.nodes || [])];
+    while (queue.length) {
+      const node = queue.shift();
+      if (Object.prototype.hasOwnProperty.call(node?.props || {}, "mainVisualImage")) {
+        return node.props.mainVisualImage || "subject-1";
+      }
+      queue.push(...(node?.children || []));
+    }
+  }
+  return "subject-1";
+}
+
 function renderGuidedThemeButton(item, activeThemeId) {
+  const disabled = DISABLED_GUIDED_THEME_IDS.has(item.id);
   return `
     <button
-      class="${item.id === activeThemeId ? "active" : ""}"
+      class="${item.id === activeThemeId ? "active" : ""}${disabled ? " is-disabled" : ""}"
       data-guided-page-theme="${escapeAttr(item.id)}"
-      aria-label="使用${escapeAttr(item.name)}色系"
-      title="${escapeAttr(item.name)}"
+      aria-label="${disabled ? `${escapeAttr(item.name)}暂不可用` : `使用${escapeAttr(item.name)}色系`}"
+      title="${escapeAttr(item.name)}${disabled ? "（暂不可用）" : ""}"
+      ${disabled ? "disabled aria-disabled=\"true\"" : ""}
     >
       <i style="background:linear-gradient(135deg, ${escapeAttr(item.primary)} 0 50%, ${escapeAttr(item.secondary)} 50% 100%)"></i>
       <span>${escapeHtml(item.name)}</span>
@@ -4281,6 +4623,7 @@ function createComponentStateEntries(schema, overrides = {}) {
         name: stateConfig.name || stateSchema.name || stateSchema.id,
         component: stateSchema.id,
         preserveProps: Boolean(stateConfig.preserveProps),
+        preserveBoundProps: stateConfig.preserveBoundProps !== false,
         lockedPropKeys: [...(stateConfig.lockedPropKeys || [])],
         node: createStateNodeFromSchema(stateSchema, overrides, stateConfig),
       };
@@ -4691,16 +5034,16 @@ const CONSUMPTION_RETURN_TIER_COUNT_KEY = "__consumptionReturnTierCount";
 const CONSUMPTION_RETURN_DETAIL_MODE_KEY = "__consumptionReturnDetailMode";
 const CONSUMPTION_RETURN_DETAIL_MODE_SHARED = "shared";
 const CONSUMPTION_RETURN_DETAIL_MODE_AUDIENCE = "audience";
-const CONSUMPTION_RETURN_STATE_DETAIL_ROW_PREFIX = "页面模板状态变量";
+const PAGE_TEMPLATE_STATE_DETAIL_ROW_PREFIX = "页面模板状态变量";
 
-function getConsumptionReturnStateDetailRowKey(
+function getPageTemplateStateDetailRowKey(
   templateId,
   moduleIndex,
   stateId,
   compoundKey,
 ) {
   return [
-    CONSUMPTION_RETURN_STATE_DETAIL_ROW_PREFIX,
+    PAGE_TEMPLATE_STATE_DETAIL_ROW_PREFIX,
     templateId,
     String(Number(moduleIndex) + 1),
     stateId,
@@ -4708,10 +5051,10 @@ function getConsumptionReturnStateDetailRowKey(
   ].join("｜");
 }
 
-function parseConsumptionReturnStateDetailRowKey(key) {
+function parsePageTemplateStateDetailRowKey(key) {
   const parts = String(key || "").split("｜");
   if (
-    parts[0] !== CONSUMPTION_RETURN_STATE_DETAIL_ROW_PREFIX ||
+    parts[0] !== PAGE_TEMPLATE_STATE_DETAIL_ROW_PREFIX ||
     parts.length < 5
   ) {
     return null;
@@ -5027,6 +5370,7 @@ function createPageTemplateBusinessStateEntry(stateConfig) {
     name: stateConfig.name,
     component: stateConfig.schemaId,
     preserveProps: Boolean(stateConfig.preserveProps),
+    preserveBoundProps: stateConfig.preserveBoundProps !== false,
     lockedPropKeys: [...(stateConfig.lockedPropKeys || [])],
     node: stateNode,
   };
@@ -5067,7 +5411,7 @@ function ensureConsumptionReturnBusinessStates(node) {
       ) {
         values.set(baseParsed.compoundKey, row.value ?? "");
       }
-      const parsed = parseConsumptionReturnStateDetailRowKey(row.key);
+      const parsed = parsePageTemplateStateDetailRowKey(row.key);
       if (
         parsed?.templateId === templateId &&
         parsed.moduleIndex === moduleIndex &&
@@ -6272,8 +6616,11 @@ function applyRestoredProject(snapshot, projectId, versionId) {
   state.historyCurrentVersionId = versionId || null;
   state.historyLocalDraftId = resetActiveHistoryLocalDraftId();
   state.prdDemoStep = "analysis";
-  state.view =
-    migrated.resume?.stage === "preview" ? "guided-preview" : "prd-demo";
+  state.view = migrated.resume?.stage === "preview"
+    ? "guided-preview"
+    : state.workflowType === "resource"
+      ? "resource-blueprint"
+      : "prd-demo";
   lastProjectHistoryAutosaveSignature = JSON.stringify(migrated.editor);
   render();
 }
@@ -6495,7 +6842,7 @@ function renderActivityCenter() {
           <h1>从 PRD 开始<br />生成完整活动</h1>
           <p>自动识别页面、人群和业务内容，生成可直接确认的活动蓝图。</p>
         </header>
-        <div class="prd-home-side">
+        <div class="prd-home-side flow-entry-grid">
           <div class="prd-upload-tool">
             <div class="prd-tool-head">
               <span>新建活动</span>
@@ -6513,6 +6860,22 @@ function renderActivityCenter() {
               <b>最大 20MB</b>
             </div>
           </div>
+          <div class="prd-upload-tool resource-entry-tool">
+            <div class="prd-tool-head">
+              <span>新建资源位</span>
+              <i>02</i>
+            </div>
+            <button class="prd-upload-target resource-entry-target" data-open-resource-flow>
+              <span class="prd-upload-target-icon">▦</span>
+              <strong>生成资源位</strong>
+              <em>选择活动级别，一次生成多个资源位</em>
+            </button>
+            <div class="prd-tool-footer">
+              <span>日常级别</span>
+              <span>S级别</span>
+              <b>多人群版本</b>
+            </div>
+          </div>
         </div>
         ${
           state.prdFileModalOpen
@@ -6524,6 +6887,392 @@ function renderActivityCenter() {
       ${state.createModalOpen ? renderCreateModal() : ""}
     </div>
   `;
+}
+
+function getResourceLevelConfig(levelId = state.resourceLevel) {
+  return RESOURCE_LEVEL_CONFIGS[levelId] || RESOURCE_LEVEL_CONFIGS.daily;
+}
+
+function getResourceDraft(levelId = state.resourceLevel) {
+  const normalizedLevelId = levelId === "s" ? "s" : "daily";
+  state.resourceDrafts ||= {};
+  state.resourceDrafts[normalizedLevelId] ||= createDefaultResourceDraft(normalizedLevelId);
+  const draft = state.resourceDrafts[normalizedLevelId];
+  const level = getResourceLevelConfig(normalizedLevelId);
+  draft.modules ||= {};
+  level.slots.forEach((slot) => {
+    draft.modules[slot.id] ||= {
+      versions: [
+        createDefaultResourceVersion(slot, 0),
+      ],
+    };
+  });
+  return draft;
+}
+
+function getResourceGlobalValue(propKey, fallback = "") {
+  const level = getResourceLevelConfig();
+  const draft = getResourceDraft();
+  for (const slot of level.slots) {
+    const field = getResourceSlotFields(slot).find((item) => item.key === propKey);
+    if (!field) continue;
+    const version = draft.modules?.[slot.id]?.versions?.[0];
+    return version?.values?.[propKey] ?? field.default ?? fallback;
+  }
+  return fallback;
+}
+
+function applyResourceGlobalDraftValue(propKey, value) {
+  const level = getResourceLevelConfig();
+  const draft = getResourceDraft();
+  level.slots.forEach((slot) => {
+    const supportsField = getResourceSlotFields(slot).some(
+      (field) => field.key === propKey,
+    );
+    if (!supportsField) return;
+    (draft.modules?.[slot.id]?.versions || []).forEach((version) => {
+      version.values ||= {};
+      version.values[propKey] = value;
+    });
+  });
+}
+
+function getResourceMainVisualField() {
+  return getResourceLevelConfig().slots
+    .flatMap((slot) => slot.fields || [])
+    .find((field) => field.key === "mainVisualImage");
+}
+
+function renderResourceFlowNav(activeStep) {
+  return `
+    <nav class="prd-minimal-nav">
+      <button class="prd-brand" data-back-home aria-label="返回活动中心">
+        <span>+</span>
+        <strong>DOU+ 活动生成器</strong>
+      </button>
+      <div class="prd-progress">
+        <span class="${activeStep === 1 ? "active" : "done"}">01 蓝图</span>
+        <i></i>
+        <span class="${activeStep === 2 ? "active" : ""}">02 预览</span>
+      </div>
+      <div class="prd-nav-actions">
+        <button type="button" class="prd-admin-link" data-save>保存版本</button>
+        <button type="button" class="prd-admin-link" data-open-my-projects>我的</button>
+      </div>
+    </nav>
+  `;
+}
+
+function renderResourceLevelSelect() {
+  const center = $(".activity-center");
+  if (!center) return;
+  center.innerHTML = `
+    <div class="prd-flow-shell is-home resource-flow-shell">
+      ${renderResourceFlowNav(1)}
+      <section class="blueprint-confirm blueprint-overview resource-level-page">
+        <header class="blueprint-minimal-head">
+          <span>RESOURCE SLOT BUILDER</span>
+          <h1>选择资源位级别</h1>
+          <p>级别决定本次需要填写和生成的资源位数量，进入蓝图后仍可切换。</p>
+        </header>
+        <div class="resource-level-options">
+          ${Object.values(RESOURCE_LEVEL_CONFIGS).map((level) => `
+            <button
+              type="button"
+              class="resource-level-card ${state.resourceLevel === level.id ? "active" : ""}"
+              data-resource-level-select="${level.id}"
+            >
+              <span>${level.id === "s" ? "S" : "D"}</span>
+              <strong>${escapeHtml(level.name)}</strong>
+              <em>${escapeHtml(level.description)}</em>
+              <b>${level.slots.length} 个资源位</b>
+            </button>
+          `).join("")}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function renderResourceBlueprint() {
+  const center = $(".activity-center");
+  if (!center) return;
+  const level = getResourceLevelConfig();
+  const draft = getResourceDraft();
+  const globalThemeId = getResourceGlobalValue("__themeId", "pink");
+  const globalMainVisual = getResourceGlobalValue("mainVisualImage", "subject-1");
+  const mainVisualField = getResourceMainVisualField();
+  center.innerHTML = `
+    <div class="prd-flow-shell is-blueprint resource-flow-shell">
+      ${renderResourceFlowNav(1)}
+      <section class="blueprint-confirm blueprint-overview resource-blueprint">
+        <header class="blueprint-minimal-head resource-blueprint-head">
+          <div>
+            <span>资源位蓝图</span>
+            <h1>填写资源位内容</h1>
+            <p>每个资源位模块独立维护人群版本，并与预览画布里的“模块人群”保持联动。</p>
+          </div>
+          <button type="button" class="blueprint-side-generate" data-resource-generate>
+            <span>预览资源位</span>
+            <b>→</b>
+          </button>
+        </header>
+        <div class="resource-level-switch" aria-label="资源位级别">
+          ${Object.values(RESOURCE_LEVEL_CONFIGS).map((item) => `
+            <button
+              type="button"
+              class="${item.id === level.id ? "active" : ""}"
+              data-resource-level-switch="${item.id}"
+            >
+              <strong>${escapeHtml(item.name)}</strong>
+              <span>${item.slots.length} 个资源位</span>
+            </button>
+          `).join("")}
+        </div>
+        <section class="resource-global-controls" aria-label="资源位全局控制">
+          <label>
+            <span>资源位配色</span>
+            ${renderSelectFieldControl(
+              RESOURCE_THEME_FIELD,
+              globalThemeId,
+              'data-resource-global-theme class="resource-global-select"',
+              "全局资源位配色",
+            )}
+          </label>
+          <label>
+            <span>主体替换</span>
+            ${renderSelectFieldControl(
+              mainVisualField,
+              globalMainVisual,
+              'data-resource-global-main-visual class="resource-global-select"',
+              "全局主体替换",
+            )}
+          </label>
+        </section>
+        <section class="prd-variable-table resource-variable-table">
+          <header>
+            <div>
+              <span>资源位变量表</span>
+              <strong>${escapeHtml(level.name)}</strong>
+            </div>
+            <em>${level.slots.length} 个资源位</em>
+          </header>
+          <div class="prd-variable-table-head">
+            <span>资源位模块</span>
+            <span>模块专属填写表单</span>
+          </div>
+          <div class="prd-variable-module-list">
+            ${level.slots.map((slot) => renderResourceBlueprintModule(slot, draft)).join("")}
+          </div>
+        </section>
+      </section>
+    </div>
+  `;
+}
+
+function renderResourceBlueprintModule(slot, draft) {
+  const versions = draft.modules?.[slot.id]?.versions || [];
+  return `
+    <section class="prd-variable-module-row has-versions">
+      <article class="prd-variable-module-name">
+        <div class="prd-variable-module-title-row">
+          <strong>${escapeHtml(slot.name)}</strong>
+        </div>
+        <div class="prd-variable-module-meta">
+          <b>${versions.length} 个人群版本</b>
+          <span>${escapeHtml(slot.schemaId)}</span>
+        </div>
+        ${renderResourceModulePreview(slot, draft)}
+      </article>
+      <div class="prd-variable-section-list">
+        <section
+          class="prd-variable-version-matrix"
+          style="--prd-version-count:${versions.length}"
+        >
+          <div class="prd-variable-matrix-head">
+            <span class="prd-variable-matrix-actions">
+              <button
+                type="button"
+                class="prd-variable-matrix-add-version"
+                data-resource-add-version="${escapeAttr(slot.id)}"
+              >＋ 人群</button>
+            </span>
+            ${versions.map((version) => `
+              <strong class="prd-variable-version-head is-manual">
+                <input
+                  value="${escapeAttr(version.name)}"
+                  data-resource-version-name="${escapeAttr(`${slot.id}|${version.id}`)}"
+                  aria-label="${escapeAttr(`${slot.name}人群名称`)}"
+                />
+                ${versions.length > 1 ? `
+                  <button
+                    type="button"
+                    data-resource-remove-version="${escapeAttr(`${slot.id}|${version.id}`)}"
+                    aria-label="删除人群"
+                  >×</button>
+                ` : ""}
+              </strong>
+            `).join("")}
+          </div>
+          ${getResourceSlotFields(slot).map((field) => `
+            <div class="prd-variable-matrix-row">
+              <span>${escapeHtml(field.label)}</span>
+              ${versions.map((version) => {
+                const value = version.values?.[field.key] ?? field.default;
+                const dataAttr = `data-resource-field="${escapeAttr(`${slot.id}|${version.id}|${field.key}`)}"`;
+                return isSelectPropField(field)
+                  ? renderSelectFieldControl(
+                      field,
+                      value,
+                      `${dataAttr} class="resource-variable-select"`,
+                      `${slot.name}${version.name}${field.label}`,
+                    )
+                  : `
+                    <textarea
+                      rows="2"
+                      ${dataAttr}
+                    >${escapeHtml(value)}</textarea>
+                  `;
+              }).join("")}
+            </div>
+          `).join("")}
+        </section>
+      </div>
+    </section>
+  `;
+}
+
+function getResourcePreviewVersion(slot, draft) {
+  const versions = draft.modules?.[slot.id]?.versions || [];
+  const activeVersionId = state.resourcePreviewVersionIds?.[slot.id];
+  return versions.find((version) => version.id === activeVersionId) || versions[0];
+}
+
+function getResourceVersionThemeId(slot, version) {
+  const requestedThemeId = version?.values?.__themeId || slot.defaultThemeId || RESOURCE_THEME_FIELD.default;
+  return getGuidedThemePreset(requestedThemeId)?.id || RESOURCE_THEME_FIELD.default;
+}
+
+function createResourceVersionNode(slot, version) {
+  const props = { ...(version?.values || {}) };
+  delete props.__themeId;
+  const node = createAtomNode(slot.schemaId, props);
+  applyThemeBoundVariantsToNodes([node], getResourceVersionThemeId(slot, version));
+  return node;
+}
+
+function renderResourceModulePreview(slot, draft) {
+  const version = getResourcePreviewVersion(slot, draft);
+  const node = createResourceVersionNode(slot, version);
+  const dimensions = getNodeEstimatedExportDimensions(node);
+  const previewWidth = Math.max(1, Number(dimensions.width || 300));
+  const previewHeight = Math.max(1, Number(dimensions.height || 300));
+  const previewScale = Math.min(1, 208 / previewWidth, 220 / previewHeight);
+  const scaledWidth = Math.ceil(previewWidth * previewScale);
+  const scaledHeight = Math.ceil(previewHeight * previewScale);
+  const leftOffset = Math.max(0, Math.floor((208 - scaledWidth) / 2));
+  return `
+    <div
+      class="prd-module-preview is-canvas resource-module-preview"
+      data-resource-module-preview="${escapeAttr(slot.id)}"
+      data-resource-preview-version="${escapeAttr(version?.id || "")}"
+      style="--prd-preview-page-width:${previewWidth}px;--prd-preview-page-height:${previewHeight}px;--prd-preview-scale:${previewScale};height:${scaledHeight}px;"
+      aria-label="${escapeAttr(`${slot.name}实时预览`)}"
+    >
+      <div class="prd-module-preview-canvas-stage" style="margin-left:${leftOffset}px;">
+        <section class="guided-page-shell prd-module-preview-shell">
+          <div class="phone guided-phone prd-module-preview-phone">
+            <div class="page guided-theme-page prd-module-preview-page">
+              ${renderBlueprintCanvasNode(node)}
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  `;
+}
+
+function refreshResourceModulePreview(slotId, versionId) {
+  const slot = getResourceLevelConfig().slots.find((item) => item.id === slotId);
+  const draft = getResourceDraft();
+  if (!slot) return;
+  state.resourcePreviewVersionIds ||= {};
+  if (versionId) state.resourcePreviewVersionIds[slotId] = versionId;
+  const preview = document.querySelector(
+    `[data-resource-module-preview="${CSS.escape(slotId)}"]`,
+  );
+  if (!preview) return;
+  const template = document.createElement("template");
+  template.innerHTML = renderResourceModulePreview(slot, draft).trim();
+  const nextPreview = template.content.firstElementChild;
+  if (!nextPreview) return;
+  preview.replaceWith(nextPreview);
+  window.renderReactMaterials?.(nextPreview);
+}
+
+function refreshResourceGlobalControls(propKey, value) {
+  document
+    .querySelectorAll(`[data-resource-field$="|${CSS.escape(propKey)}"]`)
+    .forEach((control) => {
+      control.value = value;
+    });
+  getResourceLevelConfig().slots.forEach((slot) => {
+    refreshResourceModulePreview(slot.id);
+  });
+}
+
+function buildResourceGeneratedActivity() {
+  const level = getResourceLevelConfig();
+  const draft = getResourceDraft();
+  const defaultTheme = getGuidedThemePreset("pink") || guidedPageThemePresets[0];
+  const timestamp = Date.now();
+  const pages = level.slots.map((slot, slotIndex) => {
+    const versions = draft.modules?.[slot.id]?.versions || [
+      createDefaultResourceVersion(slot, 0),
+    ];
+    const pageTheme = getGuidedThemePreset(getResourceVersionThemeId(slot, versions[0])) || defaultTheme;
+    const node = createResourceVersionNode(slot, versions[0]);
+    node.sourceModuleId = slot.id;
+    node.sourceSlot = slot.id;
+    node.sourceInputScope = "context";
+    node.sourceResourceSlotId = slot.id;
+    node.guidedLineageVariants = versions.map((version, versionIndex) => ({
+      id: versionIndex === 0 ? "base" : version.id,
+      title: version.name,
+      node: cloneNodeForLineage(
+        createResourceVersionNode(slot, version),
+      ),
+    }));
+    node.activeLineageVariantId = "base";
+    return {
+      id: `resource_${level.id}_${slotIndex}_${timestamp}`,
+      name: slot.name,
+      dimension: level.name,
+      tags: [level.name, slot.name],
+      resourceLevel: level.id,
+      resourceSlotId: slot.id,
+      canvasBackground: pageTheme.background,
+      colorThemeId: pageTheme.id,
+      navBarEnabled: false,
+      nodes: [node],
+    };
+  });
+  state.activity = {
+    name: draft.activityName || `${level.name}资源位`,
+    note: `${level.name} → ${pages.length} 个资源位`,
+  };
+  state.pages = pages;
+  state.activePageId = pages[0]?.id || "";
+  state.guidedVisiblePageIds = pages.map((page) => page.id);
+  state.guidedVisibleCompanionNodeIds = [];
+  state.guidedCanvasInitialized = false;
+  state.selectedDimension = pages[0]?.dimension || "人群1";
+  state.selectedId = null;
+  state.demoSelectedNodeId = null;
+  state.canvasZoom = 1;
+  state.canvasPanX = 40;
+  state.canvasPanY = 40;
+  state.currentTemplateId = null;
 }
 
 function renderAdminAuthModal() {
@@ -7325,6 +8074,72 @@ function getThemeButtonBackgroundColor(themeId) {
   return buttonColorMap[themeId] || buttonColorMap[getGuidedVariantThemeId(themeId)] || "#FF62B8";
 }
 
+function getThemeButtonGradient(themeId) {
+  if (new Set(["pink", "node-womens-day"]).has(themeId)) {
+    return { start: "#FF1473", end: "#FF229F" };
+  }
+  if (
+    new Set([
+      "apricot",
+      "daily-yellow",
+      "node-new-year",
+      "node-mid-autumn",
+      "node-double-11",
+    ]).has(themeId)
+  ) {
+    return { start: "#FF4501", end: "#FF7C02" };
+  }
+  return { start: "#FF180E", end: "#FF166F" };
+}
+
+function lightenThemeHexColor(color, ratio = 0.35) {
+  const hex = String(color || "").replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(hex)) return color || "#FFFFFF";
+  return `#${[0, 2, 4]
+    .map((offset) => {
+      const value = Number.parseInt(hex.slice(offset, offset + 2), 16);
+      return Math.round(value + (255 - value) * ratio)
+        .toString(16)
+        .padStart(2, "0");
+    })
+    .join("")}`;
+}
+
+function getThemeAdjustedGradientEnd(theme) {
+  const lightenedColor = lightenThemeHexColor(theme?.secondary);
+  const lightenedChannels = [0, 2, 4].map((offset) => {
+    return Number.parseInt(lightenedColor.slice(offset + 1, offset + 3), 16);
+  });
+  const paletteColors = (String(theme?.background || "").match(/#[0-9a-f]{6}/gi) || [])
+    .filter((item, index, list) => index === 0 || item.toLowerCase() !== list[index - 1].toLowerCase());
+  const previousColor = String(paletteColors.at(-2) || theme?.primary || "").replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(previousColor)) return lightenedColor;
+  return `#${lightenedChannels
+    .map((value, index) => {
+      const previousValue = Number.parseInt(previousColor.slice(index * 2, index * 2 + 2), 16);
+      return Math.round(value + (previousValue - value) * 0.2)
+        .toString(16)
+        .padStart(2, "0");
+    })
+    .join("")}`;
+}
+
+function getThemeCheckoutGradient(theme) {
+  const background = String(theme?.background || "");
+  const colors = background.match(/#[0-9a-f]{6}/gi) || [];
+  const selectedColors = colors.length >= 4
+    ? [colors[0], colors[1], colors[3]]
+    : colors
+        .filter(
+          (color, index, list) =>
+            index === 0 || color.toLowerCase() !== list[index - 1].toLowerCase(),
+        )
+        .slice(0, 3);
+  if (selectedColors.length < 3) return background;
+  const angle = background.match(/linear-gradient\(\s*([^,]+)/i)?.[1] || "180deg";
+  return `linear-gradient(${angle}, ${selectedColors[0]} 0%, ${selectedColors[1]} 20%, ${lightenThemeHexColor(selectedColors[2])} 100%)`;
+}
+
 function getThemeRibbonColor(themeId) {
   const ribbonColorMap = {
     pink: "#FF4FAE",
@@ -7369,6 +8184,26 @@ function getThemeHeadlineGradientTop(themeId) {
   return gradientTopMap[themeId] || gradientTopMap[getGuidedVariantThemeId(themeId)] || "#FF5F5F";
 }
 
+function getThemeHeadlineHighlightColor(themeId) {
+  const highlightColorMap = {
+    pink: "#F00073",
+    "daily-cyan": "#008BD4",
+    "daily-purple": "#8D16E8",
+    "daily-yellow": "#F06A00",
+    sky: "#006FE8",
+    "daily-green": "#4D8F00",
+    apricot: "#D44E00",
+    "node-new-year": "#D91F2C",
+    "node-womens-day": "#007FC8",
+    "node-breath": "#D000A9",
+    "node-mid-autumn": "#7C169B",
+    "node-anniversary": "#CF1645",
+    "node-double-festival": "#006BD8",
+    "node-double-11": "#D83900",
+  };
+  return highlightColorMap[themeId] || highlightColorMap[getGuidedVariantThemeId(themeId)] || "#F00073";
+}
+
 function getThemeHeadlineTextColor(themeId) {
   const textColorMap = {
     pink: "#2C0113",
@@ -7391,27 +8226,75 @@ function getThemeHeadlineTextColor(themeId) {
 
 function applyDirectThemePropsToAtomNode(node, themeId) {
   if (!node?.props) return;
-  if (node.schemaId === "头图" && "burstColor" in node.props) {
+  const usesHeaderVisualEffects = new Set(["头图", "下单页弹窗"]).has(node.schemaId);
+  const isTwoColorBanner = new Set(["顶部banner", "个人中心banner"]).has(node.schemaId);
+  const isRetentionPopup = node.schemaId === "挽留页弹窗";
+  const isDetailPopup = node.schemaId === "详情页弹窗";
+  const isTwoColorPopup = isRetentionPopup || isDetailPopup;
+  const theme = guidedPageThemePresets.find((item) => item.id === themeId) || guidedPageThemePresets[0];
+  const adjustedGradientEnd = getThemeAdjustedGradientEnd(theme);
+  if (usesHeaderVisualEffects && "background" in node.props) {
+    node.props.background = theme?.background;
+  }
+  if (isTwoColorBanner && "background" in node.props) {
+    const endStop = node.schemaId === "个人中心banner" ? "73.03%" : "81.44%";
+    const adjustedGradientStart = lightenThemeHexColor(theme?.primary, 0.15);
+    node.props.background = `linear-gradient(90deg, ${adjustedGradientStart} 0%, ${adjustedGradientEnd} ${endStop})`;
+  }
+  if (isTwoColorPopup && "background" in node.props) {
+    node.props.background = getThemeCheckoutGradient(theme);
+  }
+  if (isRetentionPopup && "campaignBackgroundColor" in node.props) {
+    node.props.campaignBackgroundColor = getThemeRibbonColor(themeId);
+  }
+  if (usesHeaderVisualEffects && "burstColor" in node.props) {
     node.props.burstColor = getThemePrimaryColor(themeId);
   }
-  if (node.schemaId === "头图" && "burstOpacity" in node.props) {
+  if (usesHeaderVisualEffects && "burstOpacity" in node.props) {
     node.props.burstOpacity = getThemeBurstOpacity(themeId);
   }
-  if (node.schemaId === "头图" && "buttonBackgroundColor" in node.props) {
+  if (usesHeaderVisualEffects && "buttonBackgroundColor" in node.props) {
     node.props.buttonBackgroundColor = getThemeButtonBackgroundColor(themeId);
   }
-  if (node.schemaId === "头图") {
+  if (new Set(["下单页弹窗", "顶部banner", "个人中心banner", "挽留页弹窗", "详情页弹窗"]).has(node.schemaId)) {
+    const buttonGradient = getThemeButtonGradient(themeId);
+    if ("buttonGradientStart" in node.props) {
+      node.props.buttonGradientStart = buttonGradient.start;
+    }
+    if ("buttonGradientEnd" in node.props) {
+      node.props.buttonGradientEnd = buttonGradient.end;
+    }
+  }
+  if (usesHeaderVisualEffects && "ribbonColor" in node.props) {
     node.props.ribbonColor = getThemeRibbonColor(themeId);
+  }
+  if (usesHeaderVisualEffects && "glowOpacity" in node.props) {
     node.props.glowOpacity = getThemeGlowOpacity(themeId);
   }
-  if (node.schemaId === "头图" && "headlineGradientTop" in node.props) {
+  if (usesHeaderVisualEffects && "headlineGradientTop" in node.props) {
     const headlineTextColor = getThemeHeadlineTextColor(themeId);
-    node.props.headlineGradientTop = headlineTextColor === "#FFFFFF" ? headlineTextColor : getThemeHeadlineGradientTop(themeId);
+    node.props.headlineGradientTop = node.schemaId === "下单页弹窗"
+      ? getThemeHeadlineHighlightColor(themeId)
+      : headlineTextColor === "#FFFFFF"
+        ? headlineTextColor
+        : getThemeHeadlineGradientTop(themeId);
   }
-  if (node.schemaId === "头图" && "textColor" in node.props) {
+  if (usesHeaderVisualEffects && "textColor" in node.props) {
     node.props.textColor = getThemeHeadlineTextColor(themeId);
   }
-  if (node.schemaId === "头图" && "headlineGradientBottom" in node.props) {
+  if (isTwoColorBanner && "textColor" in node.props) {
+    node.props.textColor = getThemeHeadlineTextColor(themeId);
+  }
+  if (isTwoColorBanner && "headlineHighlightColor" in node.props) {
+    node.props.headlineHighlightColor = getThemeHeadlineHighlightColor(themeId);
+  }
+  if (isTwoColorPopup && "headlineTextColor" in node.props) {
+    node.props.headlineTextColor = getThemeHeadlineTextColor(themeId);
+  }
+  if (isTwoColorPopup && "headlineHighlightColor" in node.props) {
+    node.props.headlineHighlightColor = getThemeHeadlineHighlightColor(themeId);
+  }
+  if (usesHeaderVisualEffects && "headlineGradientBottom" in node.props) {
     node.props.headlineGradientBottom = getThemeHeadlineTextColor(themeId);
   }
 }
@@ -8970,14 +9853,14 @@ function ensurePageTemplateVariableRow(field) {
   return state.prdTableRows.length - 1;
 }
 
-function ensureConsumptionReturnStateDetailRow(
+function ensurePageTemplateStateDetailRow(
   field,
   templateId,
   stateId,
 ) {
   if (!field || stateId === "default") return field?.rowIndex;
   const compoundKey = getPageTemplateFieldLocalCompoundKey(field);
-  const rowKey = getConsumptionReturnStateDetailRowKey(
+  const rowKey = getPageTemplateStateDetailRowKey(
     templateId,
     field.moduleIndex,
     stateId,
@@ -8991,9 +9874,51 @@ function ensureConsumptionReturnStateDetailRow(
     value:
       stateId === "unregistered" && compoundKey === "4.buttonText"
         ? "立即报名"
+        : stateId === "postSignup" &&
+            BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(
+              field.sourceModuleSchemaId || field.moduleSchemaId,
+            ) &&
+            compoundKey === "2.buttonText"
+          ? "已报名"
         : baseValue,
   });
   return state.prdTableRows.length - 1;
+}
+
+function hasIndependentPageTemplateStateVariables(group) {
+  return (
+    group?.stateOptions?.length > 1 &&
+    BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(
+      group.sourceModuleSchemaId || group.moduleSchemaId,
+    )
+  );
+}
+
+function getPageTemplateIndependentStateVersion(group, baseVersion) {
+  if (
+    !baseVersion ||
+    group.activeStateId === "default" ||
+    !hasIndependentPageTemplateStateVariables(group)
+  ) {
+    return baseVersion;
+  }
+  return {
+    ...baseVersion,
+    name:
+      group.stateOptions?.find((item) => item.id === group.activeStateId)?.name ||
+      baseVersion.name,
+    sections: (baseVersion.sections || []).map((section) => ({
+      ...section,
+      fields: (section.fields || []).map((field) => ({
+        ...field,
+        rowIndex: ensurePageTemplateStateDetailRow(
+          field,
+          group.templateId,
+          group.activeStateId,
+        ),
+      })),
+    })),
+  };
 }
 
 function getConsumptionReturnSharedDetailVersion(group, sharedVersion) {
@@ -9009,7 +9934,7 @@ function getConsumptionReturnSharedDetailVersion(group, sharedVersion) {
         if (isConsumptionReturnAudienceSpecificKey(compoundKey)) return field;
         return {
           ...field,
-          rowIndex: ensureConsumptionReturnStateDetailRow(
+          rowIndex: ensurePageTemplateStateDetailRow(
             field,
             group.templateId,
             group.activeStateId,
@@ -9596,6 +10521,10 @@ function getPageTemplateVariableGroups(pageTemplate, targetModuleIndex = null) {
     })
       ? getConsumptionReturnSharedDetailVersion(group, baseVersion)
       : baseVersion;
+    const activeStateVersion = getPageTemplateIndependentStateVersion(
+      group,
+      baseVersion,
+    );
     const importedVersions = manualVersions.map((version) => ({
       ...version,
       sections: buildPageTemplateVariableSections(
@@ -9606,12 +10535,18 @@ function getPageTemplateVariableGroups(pageTemplate, targetModuleIndex = null) {
     const versions = hasImportedModuleBlueprintVersions(group.versionModuleKey) && importedVersions.length
       ? importedVersions
       : [
-        baseVersion,
+        activeStateVersion,
         ...importedVersions,
       ];
     const molecule = moleculeSchemas.find((item) => item.id === group.moduleSchemaId);
     if (!molecule) {
-      return { ...group, versions, baseVersion, sharedDetailVersion };
+      return {
+        ...group,
+        versions,
+        baseVersion,
+        activeStateVersion,
+        sharedDetailVersion,
+      };
     }
     const blueprint = {};
     group.fields.forEach((field) => {
@@ -9633,6 +10568,7 @@ function getPageTemplateVariableGroups(pageTemplate, targetModuleIndex = null) {
       ...group,
       versions,
       baseVersion,
+      activeStateVersion,
       sharedDetailVersion,
       childStateControls,
     };
@@ -10101,7 +11037,7 @@ function refreshPageTemplateModulePreviewByRowIndex(rowIndex) {
   const parsed =
     parsePageTemplateVariableRowKey(key) ||
     parsePageTemplateVariableVersionRowKey(key) ||
-    parseConsumptionReturnStateDetailRowKey(key);
+    parsePageTemplateStateDetailRowKey(key);
   if (!parsed) return;
   const blueprint = getPrdTableBlueprint();
   const pageTemplate = blueprint?.pageType
@@ -10121,7 +11057,7 @@ function getPageTemplatePreviewRefreshKey(rowIndex) {
   const parsed =
     parsePageTemplateVariableRowKey(key) ||
     parsePageTemplateVariableVersionRowKey(key) ||
-    parseConsumptionReturnStateDetailRowKey(key);
+    parsePageTemplateStateDetailRowKey(key);
   if (!parsed) return "";
   return String(parsed.moduleIndex);
 }
@@ -15030,7 +15966,19 @@ function applyPageTemplateVariableValuesToNode(node, values) {
 
 function applyPageTemplateVariableRowsToNodes(nodes = [], rows = []) {
   const valuesByModule = new Map();
+  const stateValuesByModule = new Map();
   normalizePrdTableRows(rows).forEach((row) => {
+    const stateParsed = parsePageTemplateStateDetailRowKey(row.key);
+    if (stateParsed) {
+      const stateKey = `${stateParsed.templateId}|${stateParsed.moduleIndex}|${stateParsed.stateId}`;
+      if (!stateValuesByModule.has(stateKey)) {
+        stateValuesByModule.set(stateKey, new Map());
+      }
+      stateValuesByModule
+        .get(stateKey)
+        .set(stateParsed.compoundKey, row.value ?? "");
+      return;
+    }
     const parsed = parsePageTemplateVariableRowKey(row.key);
     const value = String(row.value || "").trim();
     if (!parsed || !value) return;
@@ -15044,6 +15992,19 @@ function applyPageTemplateVariableRowsToNodes(nodes = [], rows = []) {
     (node?.guidedStates || []).forEach((entry) => {
       applyPageTemplateVariableValuesToNode(entry.node, values);
     });
+  });
+
+  stateValuesByModule.forEach((values, stateKey) => {
+    const [templateId, moduleIndexText, stateId] = stateKey.split("|");
+    const node = nodes[Number(moduleIndexText)];
+    if (!node || node.sourcePageTemplateId !== templateId) return;
+    const entry = (node.guidedStates || []).find((item) => item.id === stateId);
+    if (!entry?.node) return;
+    entry.detailValues = Object.fromEntries(values);
+    applyPageTemplateVariableValuesToNode(entry.node, values);
+    if (node.activeGuidedStateId === stateId) {
+      applyPageTemplateVariableValuesToNode(node, values);
+    }
   });
 }
 
@@ -15659,6 +16620,120 @@ function attachBlueprintLineageVariants(node, module, options = {}) {
   return node;
 }
 
+function renderResourcePreview() {
+  const center = $(".activity-center");
+  if (!center) return;
+  const visiblePageIds = new Set(state.guidedVisiblePageIds);
+  const visiblePages = state.pages.filter((page) => visiblePageIds.has(page.id));
+  const selected = state.selectedId
+    ? findNode(state.nodes, state.selectedId)?.node
+    : null;
+  const workspaceMode = state.guidedWorkspaceMode || "split";
+  center.innerHTML = `
+    <div class="guided-preview-shell guided-workspace resource-guided-workspace is-${workspaceMode}">
+      ${renderGuidedBlueprintPane(workspaceMode, visiblePageIds)}
+      <section class="guided-canvas-pane">
+        <button class="guided-theme-entry" data-guided-open-theme>
+          <span aria-hidden="true">◐</span>
+          资源位配色
+        </button>
+        <button class="guided-main-visual-entry" data-guided-open-main-visual>
+          <span aria-hidden="true">◆</span>
+          主体替换
+        </button>
+        <button class="guided-export-entry guided-export-entry-floating" data-guided-open-export>
+          <span>↓</span>
+          导出切图
+        </button>
+        <main class="device-stage guided-device-stage">
+          <div class="pages-row">
+            <div
+              class="canvas-world guided-canvas-world ${state.guidedCanvasInitialized ? "" : "is-initializing"}"
+              style="transform:translate3d(${state.canvasPanX}px, ${state.canvasPanY}px, 0) scale(${state.canvasZoom});--guided-action-scale:${clamp(1 / Math.max(state.canvasZoom, 0.01), 0.75, 1.6)};--guided-title-scale:${getGuidedTitleScale()};"
+            >
+              ${
+                visiblePages.length
+                  ? renderResourceCanvasTree(visiblePages)
+                  : '<div class="guided-canvas-empty">从左侧选择要预览的资源位</div>'
+              }
+            </div>
+          </div>
+        </main>
+      </section>
+      <div class="guided-operation-host" aria-live="polite">
+        ${
+          state.guidedPanelMode &&
+          (selected ||
+            state.guidedPanelMode === "page" ||
+            state.guidedPanelMode === "resource-main-visual")
+            ? renderGuidedFloatingPanel(selected)
+            : ""
+        }
+      </div>
+    </div>
+  `;
+  $(".guided-main-visual-entry")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    state.selectedId = null;
+    state.guidedStateMenuNodeId = null;
+    state.guidedPanelMode = "resource-main-visual";
+    updateGuidedNodeSelection(null);
+    updateGuidedPanel({ enter: true });
+  });
+  const stage = $(".guided-device-stage");
+  bindCanvasStageInteractions(stage);
+  try {
+    window.renderReactMaterials?.(center);
+  } finally {
+    if (!state.guidedCanvasInitialized && workspaceMode !== "blueprint-full") {
+      initializeGuidedCanvasView();
+    } else {
+      requestAnimationFrame(() => {
+        invalidateStageRect();
+        updateCanvasZoom();
+      });
+    }
+  }
+}
+
+function renderResourceCanvasTree(visiblePages) {
+  return `
+    <div
+      class="guided-page-tree resource-canvas-tree"
+      style="--guided-page-count:${visiblePages.length}"
+    >
+      <div class="guided-activity-title-node">
+        <strong>${escapeHtml(state.activity?.name || "资源位活动")}</strong>
+      </div>
+      <div class="guided-page-title-row ${visiblePages.length > 1 ? "has-branches" : ""}">
+        ${visiblePages.map(renderGuidedPageTitleNode).join("")}
+      </div>
+      <div class="guided-page-preview-row resource-canvas-row">
+        ${visiblePages.map(renderResourceCanvasItem).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderResourceCanvasItem(page) {
+  const isActive = page.id === state.activePageId;
+  const node = page.nodes?.[0];
+  const dimensions = getNodeEstimatedExportDimensions(node);
+  const width = Math.max(1, Number(dimensions.width || 300));
+  const height = Math.max(1, Number(dimensions.height || 300));
+  return `
+    <section
+      class="guided-page-shell resource-canvas-shell ${isActive ? "active" : ""}"
+      data-page-id="${escapeAttr(page.id)}"
+      style="--resource-canvas-width:${width}px;--resource-canvas-height:${height}px;"
+    >
+      <div class="page guided-theme-page resource-canvas-surface">
+        ${(page.nodes || []).map(renderGuidedNode).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function renderGuidedPreview() {
   const center = $(".activity-center");
   if (!center) return;
@@ -15690,10 +16765,16 @@ function renderGuidedPreview() {
           <span aria-hidden="true">◐</span>
           页面配色
         </button>
-        <button class="guided-header-level-entry" data-guided-open-header-level>
-          <span aria-hidden="true">S</span>
-          切换等级
-        </button>
+        ${
+          state.workflowType === "resource"
+            ? ""
+            : `
+              <button class="guided-header-level-entry" data-guided-open-header-level>
+                <span aria-hidden="true">S</span>
+                切换等级
+              </button>
+            `
+        }
         <button class="guided-add-entry" data-guided-open-add>
           <span aria-hidden="true">＋</span>
           增加组件
@@ -15711,7 +16792,7 @@ function renderGuidedPreview() {
               ${
                 visiblePages.length
                   ? renderGuidedPageTree(visiblePages)
-                  : `<div class="guided-canvas-empty">从左侧选择要同时预览的页面</div>`
+                  : `<div class="guided-canvas-empty">从左侧选择要同时预览的${state.workflowType === "resource" ? "资源位" : "页面"}</div>`
               }
             </div>
           </div>
@@ -15786,8 +16867,10 @@ function refreshGuidedVisiblePages() {
 
   pane.replaceWith(nextPane);
   canvasWorld.innerHTML = visiblePages.length
-    ? renderGuidedPageTree(visiblePages)
-    : `<div class="guided-canvas-empty">从左侧选择要同时预览的页面</div>`;
+    ? state.workflowType === "resource"
+      ? renderResourceCanvasTree(visiblePages)
+      : renderGuidedPageTree(visiblePages)
+    : `<div class="guided-canvas-empty">从左侧选择要同时预览的${state.workflowType === "resource" ? "资源位" : "页面"}</div>`;
   canvasWorld.classList.toggle(
     "is-initializing",
     !state.guidedCanvasInitialized,
@@ -15884,9 +16967,21 @@ function enterGuidedPreviewWithTransition() {
   button?.removeAttribute("disabled");
 }
 
+function enterResourcePreview() {
+  const button = document.querySelector("[data-resource-generate]");
+  button?.setAttribute("disabled", "true");
+  buildResourceGeneratedActivity();
+  state.view = "guided-preview";
+  state.guidedWorkspaceMode = "split";
+  state.blueprintReturningFromPreview = false;
+  render();
+  requestAnimationFrame(() => window.scrollTo(0, 0));
+  button?.removeAttribute("disabled");
+}
+
 function returnToBlueprintWithTransition() {
-  state.view = "prd-demo";
-  state.prdDemoStep = "analysis";
+  state.view = state.workflowType === "resource" ? "resource-blueprint" : "prd-demo";
+  if (state.workflowType !== "resource") state.prdDemoStep = "analysis";
   state.guidedWorkspaceMode = "split";
   state.blueprintReturningFromPreview = false;
   state.selectedId = null;
@@ -16041,8 +17136,8 @@ function renderGuidedBlueprintPane(mode, visiblePageIds) {
   }
 
   return `
-    <aside class="guided-blueprint-pane guided-compact-nav" aria-label="页面切换">
-      <button class="guided-table-edge-tab" data-demo-back-analysis aria-label="返回蓝图表格">
+    <aside class="guided-blueprint-pane guided-compact-nav" aria-label="${state.workflowType === "resource" ? "资源位切换" : "页面切换"}">
+      <button class="guided-table-edge-tab" data-demo-back-analysis aria-label="返回${state.workflowType === "resource" ? "资源位" : "蓝图"}表格">
         <span class="guided-table-edge-arrow" aria-hidden="true">←</span>
         <span>表格</span>
       </button>
@@ -16524,12 +17619,20 @@ function updateGuidedNodeSelection(nodeId) {
 }
 
 function updateGuidedPanel(options = {}) {
-  const host = $(".guided-operation-host");
+  const host =
+    document.querySelector(".activity-center .guided-operation-host") ||
+    $(".guided-operation-host");
   if (!host) return;
   const selected = state.selectedId ? findNode(state.nodes, state.selectedId)?.node : null;
   const shouldRenderPagePanel = state.guidedPanelMode === "page" && activePage();
   const shouldRenderAddPanel = state.guidedPanelMode === "add";
-  host.innerHTML = state.guidedPanelMode && (selected || shouldRenderPagePanel || shouldRenderAddPanel)
+  const shouldRenderResourceMainVisualPanel =
+    state.guidedPanelMode === "resource-main-visual";
+  host.innerHTML = state.guidedPanelMode &&
+    (selected ||
+      shouldRenderPagePanel ||
+      shouldRenderAddPanel ||
+      shouldRenderResourceMainVisualPanel)
     ? renderGuidedFloatingPanel(selected, options)
     : "";
   window.renderReactMaterials?.(host);
@@ -17660,11 +18763,13 @@ function applyGuidedBusinessState(node, stateId) {
     });
   }
   const nextChildren = clone(stateNode.children || []);
-  applyPrdBoundPropsToStateNode(
-    node,
-    { props: nextProps, children: nextChildren },
-    lockedPropKeys,
-  );
+  if (stateEntry.preserveBoundProps !== false) {
+    applyPrdBoundPropsToStateNode(
+      node,
+      { props: nextProps, children: nextChildren },
+      lockedPropKeys,
+    );
+  }
   node.props = nextProps;
   node.children = nextChildren;
   node.variants = clone(stateNode.variants || []);
@@ -17761,13 +18866,17 @@ function applyGuidedPageTheme(themeId) {
   const page = activePage();
   const theme = guidedPageThemePresets.find((item) => item.id === themeId);
   if (!page || !theme) return;
+  if (state.workflowType === "resource") {
+    applyResourceGlobalDraftValue("__themeId", theme.id);
+  }
   state.pages.forEach((item) => {
     item.colorThemeId = theme.id;
     item.canvasBackground = theme.background;
     applyThemeBoundVariantsToNodes(item.nodes, theme.id);
   });
   if (state.view === "guided-preview") {
-    renderGuidedPreview();
+    if (state.workflowType === "resource") renderResourcePreview();
+    else renderGuidedPreview();
     return;
   }
   const pageEl = document.querySelector(`.guided-device-stage [data-page-id="${page.id}"]`);
@@ -17842,6 +18951,8 @@ function renderGuidedFloatingPanel(node, options = {}) {
             : "模块人群"
           : mode === "page"
             ? "页面设置"
+            : mode === "resource-main-visual"
+              ? "主体替换"
             : mode === "add"
               ? "增加组件"
               : "替换主体";
@@ -17849,6 +18960,26 @@ function renderGuidedFloatingPanel(node, options = {}) {
 
   if (mode === "page") {
     body = renderGuidedPageEditor(activePage());
+  } else if (mode === "resource-main-visual") {
+    const currentMainVisualImage = getActiveResourceMainVisual();
+    body = `
+      <p>选择后，挂件、下单页、挽留页、顶部 Banner 和个人中心 Banner 将同步替换。</p>
+      <div class="guided-header-visual-options">
+        ${getResourceMainVisualOptions()
+          .map((item) => `
+            <button
+              type="button"
+              class="guided-header-visual-card ${currentMainVisualImage === item.id ? "active" : ""}"
+              data-guided-resource-main-visual="${escapeAttr(item.id)}"
+              aria-label="全局替换为${escapeAttr(item.name)}"
+            >
+              <span><img src="${escapeAttr(item.url)}" alt="" loading="lazy" /></span>
+              <strong>${escapeHtml(item.name)}</strong>
+            </button>
+          `)
+          .join("")}
+      </div>
+    `;
   } else if (mode === "global") {
     body = renderGuidedGlobalEditor(node);
   } else if (mode === "add") {
@@ -18072,6 +19203,8 @@ function renderGuidedFloatingPanel(node, options = {}) {
   const headerLabel =
     mode === "page"
       ? activePage().dimension || activePage().name
+      : mode === "resource-main-visual"
+        ? "全部资源位"
       : mode === "add"
         ? activePage()?.name || "当前页面"
         : node?.name || "";
@@ -19392,6 +20525,7 @@ function isHeaderImageExportNode(node) {
 }
 
 function getGuidedCutExportBottomSpace(entry) {
+  if (state.workflowType === "resource") return 0;
   if (entry?.isFallbackContentEntry) {
     return Number(entry.fallbackContentBottomSpace || 0);
   }
@@ -19483,6 +20617,16 @@ function getGuidedExportPageName(page) {
 function getExportEntryDimensions(entry) {
   const bottomSpace = getGuidedCutExportBottomSpace(entry);
   const node = entry?.node || entry?.sourceNode || {};
+  if (
+    state.workflowType === "resource" &&
+    entry?.exportKind !== "page-background"
+  ) {
+    const dimensions = entry?.dimensions || getNodeEstimatedExportDimensions(node);
+    return {
+      width: Number(dimensions.width || 300),
+      height: Number(dimensions.height || 300),
+    };
+  }
   if (entry?.exportKind === "page-background") {
     return {
       width: GUIDED_CUT_EXPORT_WIDTH,
@@ -20154,6 +21298,42 @@ async function exportElementToPngBlob(element, options = {}) {
   return blob;
 }
 
+async function exportElementToCanvas(element, options = {}) {
+  const width = Number(options.width || GUIDED_CUT_EXPORT_WIDTH);
+  if (window.waitForReactMaterialFonts) {
+    await window.waitForReactMaterialFonts(element);
+  }
+  if (document.fonts?.ready) {
+    try {
+      await document.fonts.ready;
+    } catch (error) {
+      console.warn("[guided-export] font readiness skipped", error);
+    }
+  }
+  const height = Number(
+    options.height ||
+      Math.ceil(Math.max(element.scrollHeight, element.offsetHeight)),
+  );
+  if (!width || !height) throw new Error("empty export component");
+  const fontEmbedCSS = await getGuidedExportFontCss(element);
+  return exportNodeToCanvas(element, {
+    width,
+    height,
+    pixelRatio: 1,
+    cacheBust: false,
+    fontEmbedCSS,
+    backgroundColor: "transparent",
+    style: {
+      width: `${width}px`,
+      minHeight: `${height}px`,
+      overflow: "visible",
+      transform: "none",
+      transformOrigin: "top left",
+      "--react-component-scale": "1",
+    },
+  });
+}
+
 function getExportDimensionTitle(graph, graphNode) {
   const dimension = graph?.dimensions?.find((item) => item.id === graphNode?.dimensionId);
   const title = dimension?.title || "默认维度";
@@ -20271,7 +21451,9 @@ function getGuidedCutExportEntries() {
     const nodeEntries = (page.nodes || []).flatMap((node, nodeIndex) =>
       getGuidedNodeCutExportEntries(page, node, nodeIndex),
     );
-    return [pageBackgroundEntry, ...nodeEntries];
+    return state.workflowType === "resource"
+      ? nodeEntries
+      : [pageBackgroundEntry, ...nodeEntries];
   });
   return uniquifyGuidedExportFilenames(entries);
 }
@@ -20438,10 +21620,27 @@ function syncGuidedDynamicExportPreviewHeights() {
     });
 }
 
+const ANIMATED_RESOURCE_EXPORT_SCHEMAS = new Set([
+  "挂件",
+  "下单页弹窗",
+  "挽留页弹窗",
+  "资源弹窗2",
+  "详情页弹窗",
+  "资源弹窗1",
+]);
+
+function isAnimatedResourceExportEntry(entry) {
+  if (state.workflowType !== "resource") return false;
+  const node = entry?.node || entry?.sourceNode;
+  return ANIMATED_RESOURCE_EXPORT_SCHEMAS.has(node?.schemaId) ||
+    ANIMATED_RESOURCE_EXPORT_SCHEMAS.has(node?.name);
+}
+
 function renderGuidedExportCard(entry) {
   const { width } = getExportEntryDimensions(entry);
   const previewScale = width > 720 ? 0.44 : 0.46;
   const cardWidth = Math.ceil(width * previewScale);
+  const supportsGif = isAnimatedResourceExportEntry(entry);
   return `
     <article class="guided-export-card" style="width:${cardWidth}px;">
       <header>
@@ -20449,7 +21648,14 @@ function renderGuidedExportCard(entry) {
           <span>版本</span>
           <strong>${escapeHtml(entry.variantTitle)}</strong>
         </div>
-        <button data-guided-export-single="${escapeAttr(entry.id)}">下载 PNG</button>
+        <div class="guided-export-card-actions">
+          <button data-guided-export-single="${escapeAttr(entry.id)}">下载 PNG</button>
+          ${
+            supportsGif
+              ? `<button data-guided-export-gif="${escapeAttr(entry.id)}">下载 GIF</button>`
+              : ""
+          }
+        </div>
       </header>
       ${renderGuidedExportPreview(entry)}
     </article>
@@ -20569,7 +21775,7 @@ function renderGuidedExportPage() {
           <div class="guided-export-title">
             <span>导出切图</span>
             <strong>${escapeHtml(state.activity?.name || demoPrdBlueprint.activityName || "活动")}</strong>
-            <em>${pageGroups.length} 个页面 · ${entries.length} 张切图</em>
+            <em>${pageGroups.length} 个${state.workflowType === "resource" ? "资源位" : "页面"} · ${entries.length} 张切图</em>
           </div>
           <button class="guided-export-batch" data-guided-export-batch ${entries.length ? "" : "disabled"}>
             批量下载 ZIP
@@ -20622,6 +21828,161 @@ async function captureGuidedExportEntry(entry, options = {}) {
   return exportElementToPngBlob(element, { ...options, ...captureDimensions });
 }
 
+const GUIDED_GIF_DURATION_MS = 1200;
+const GUIDED_GIF_CAPTURE_FRAME_COUNT = 20;
+const GUIDED_GIF_MAX_BYTES = 2 * 1024 * 1024;
+const GUIDED_GIF_PROFILES = [
+  { frameCount: 20, maxColors: 256 },
+  { frameCount: 18, maxColors: 256 },
+  { frameCount: 16, maxColors: 256 },
+  { frameCount: 14, maxColors: 240 },
+  { frameCount: 12, maxColors: 224 },
+  { frameCount: 10, maxColors: 192 },
+  { frameCount: 8, maxColors: 160 },
+];
+
+function createGuidedGifPalette(sourceFrames, maxColors) {
+  const totalPixels = sourceFrames.reduce(
+    (sum, frame) => sum + frame.data.length / 4,
+    0,
+  );
+  const sampleStride = Math.max(1, Math.ceil(totalPixels / 240000));
+  const sampledRgba = new Uint8Array(
+    Math.ceil(totalPixels / sampleStride) * 4,
+  );
+  let sampleOffset = 0;
+  let transparentPixelCount = 0;
+  let pixelCursor = 0;
+  sourceFrames.forEach((frame) => {
+    for (let offset = 0; offset < frame.data.length; offset += 4) {
+      const alpha = frame.data[offset + 3];
+      if (alpha < 128) {
+        transparentPixelCount += 1;
+        pixelCursor += 1;
+        continue;
+      }
+      if (pixelCursor % sampleStride === 0) {
+        sampledRgba[sampleOffset] = frame.data[offset];
+        sampledRgba[sampleOffset + 1] = frame.data[offset + 1];
+        sampledRgba[sampleOffset + 2] = frame.data[offset + 2];
+        sampledRgba[sampleOffset + 3] = 255;
+        sampleOffset += 4;
+      }
+      pixelCursor += 1;
+    }
+  });
+  const sample = sampledRgba.subarray(0, Math.max(4, sampleOffset));
+  const palette = quantize(sample, Math.max(2, maxColors - 1), {
+    format: "rgb565",
+  });
+  palette.push([0, 0, 0]);
+  return {
+    palette,
+    transparentIndex: palette.length - 1,
+    transparentPixelRatio: transparentPixelCount / Math.max(1, totalPixels),
+  };
+}
+
+function encodeGuidedGifFrames(sourceFrames, profile, onProgress) {
+  const gif = GIFEncoder();
+  const frameDelay = GUIDED_GIF_DURATION_MS / profile.frameCount;
+  const {
+    palette,
+    transparentIndex,
+    transparentPixelRatio,
+  } = createGuidedGifPalette(
+    sourceFrames,
+    profile.maxColors,
+  );
+  const useDeltaFrames = transparentPixelRatio < 0.15;
+  let previousFrame = null;
+  for (let index = 0; index < profile.frameCount; index += 1) {
+    const sourceIndex = Math.min(
+      sourceFrames.length - 1,
+      Math.floor(index * sourceFrames.length / profile.frameCount),
+    );
+    const frame = sourceFrames[sourceIndex];
+    const opaquePalette = transparentIndex >= 0
+      ? palette.slice(0, transparentIndex)
+      : palette;
+    const indexedPixels = applyPalette(frame.data, opaquePalette, "rgb565");
+    for (let pixelIndex = 0; pixelIndex < indexedPixels.length; pixelIndex += 1) {
+      const offset = pixelIndex * 4;
+      if (frame.data[offset + 3] < 128) {
+        indexedPixels[pixelIndex] = transparentIndex;
+        continue;
+      }
+      if (useDeltaFrames && previousFrame && (
+        Math.abs(frame.data[offset] - previousFrame.data[offset]) +
+        Math.abs(frame.data[offset + 1] - previousFrame.data[offset + 1]) +
+        Math.abs(frame.data[offset + 2] - previousFrame.data[offset + 2]) <= 3 &&
+        Math.abs(frame.data[offset + 3] - previousFrame.data[offset + 3]) <= 2
+      )) {
+        indexedPixels[pixelIndex] = transparentIndex;
+      }
+    }
+    gif.writeFrame(indexedPixels, frame.width, frame.height, {
+      ...(index === 0 ? { palette } : {}),
+      delay: frameDelay,
+      repeat: 0,
+      transparent: true,
+      transparentIndex,
+      dispose: useDeltaFrames ? 1 : 2,
+    });
+    previousFrame = frame;
+    onProgress?.(index + 1, profile.frameCount, "encode");
+  }
+  gif.finish();
+  return new Blob([gif.bytes()], { type: "image/gif" });
+}
+
+async function captureGuidedExportEntryGif(entry, onProgress) {
+  const element = findGuidedExportElement(entry.id);
+  if (!element) throw new Error("找不到导出组件");
+  const dimensions = getExportEntryDimensions(entry);
+  const captureDimensions = {
+    width: dimensions.width,
+    ...(hasFixedGuidedExportHeight(entry) ? { height: dimensions.height } : {}),
+  };
+  const animations = element.getAnimations({ subtree: true });
+  animations.forEach((animation) => animation.pause());
+  const sourceFrames = [];
+  const frameDelay = GUIDED_GIF_DURATION_MS / GUIDED_GIF_CAPTURE_FRAME_COUNT;
+
+  try {
+    for (let index = 0; index < GUIDED_GIF_CAPTURE_FRAME_COUNT; index += 1) {
+      const frameTime = index * frameDelay;
+      animations.forEach((animation) => {
+        animation.currentTime = frameTime;
+      });
+      await waitForNextFrame();
+      const canvas = await exportElementToCanvas(element, captureDimensions);
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) throw new Error("无法读取 GIF 画布");
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      sourceFrames.push({
+        data: imageData.data,
+        width: canvas.width,
+        height: canvas.height,
+      });
+      onProgress?.(index + 1, GUIDED_GIF_CAPTURE_FRAME_COUNT, "capture");
+    }
+  } finally {
+    animations.forEach((animation) => animation.play());
+  }
+
+  let smallestBlob = null;
+  for (const profile of GUIDED_GIF_PROFILES) {
+    const blob = encodeGuidedGifFrames(sourceFrames, profile, onProgress);
+    smallestBlob = blob;
+    if (blob.size <= GUIDED_GIF_MAX_BYTES) return blob;
+  }
+  if (smallestBlob?.size > GUIDED_GIF_MAX_BYTES) {
+    throw new Error("当前画面无法在保证清晰度的同时压缩到 2MB 以内");
+  }
+  return smallestBlob;
+}
+
 async function downloadGuidedExportEntry(entryId) {
   const entry = getExportEntryById(entryId);
   if (!entry) return;
@@ -20632,6 +21993,35 @@ async function downloadGuidedExportEntry(entryId) {
   } catch (error) {
     console.error("[guided-export] single export failed", entry, error);
     window.alert(`单张导出失败：${error?.message || "未知错误"}`);
+  }
+}
+
+async function downloadGuidedExportEntryGif(entryId, button) {
+  const entry = getExportEntryById(entryId);
+  if (!entry || !isAnimatedResourceExportEntry(entry)) return;
+  await waitForExportPreviewReady();
+  button?.setAttribute("disabled", "true");
+  try {
+    const blob = await captureGuidedExportEntryGif(entry, (current, total, phase) => {
+      if (button) {
+        button.textContent = phase === "encode"
+          ? `压缩 ${current}/${total}`
+          : `渲染 ${current}/${total}`;
+      }
+    });
+    const fileName = String(
+      entry.fileName || `${sanitizeExportFilename(entry.variantTitle)}.png`,
+    ).replace(/\.png$/i, ".gif");
+    if (button) {
+      button.title = `最近导出：${(blob.size / 1024 / 1024).toFixed(2)}MB`;
+    }
+    downloadBlob(fileName, blob);
+  } catch (error) {
+    console.error("[guided-export] gif export failed", entry, error);
+    window.alert(`GIF 导出失败：${error?.message || "未知错误"}`);
+  } finally {
+    button?.removeAttribute("disabled");
+    if (button) button.textContent = "下载 GIF";
   }
 }
 
@@ -20866,11 +22256,29 @@ function render() {
     return;
   }
 
+  if (state.view === "resource-level") {
+    state.resourceLevel = "daily";
+    getResourceDraft("daily");
+    state.view = "resource-blueprint";
+    render();
+    return;
+  }
+
+  if (state.view === "resource-blueprint") {
+    $(".quick-toolbar")?.classList.remove("open");
+    $(".variant-inspector")?.classList.remove("open");
+    $(".richtext-editor")?.classList.remove("open");
+    renderResourceBlueprint();
+    window.renderReactMaterials?.($(".activity-center") || document);
+    return;
+  }
+
   if (state.view === "guided-preview") {
     $(".quick-toolbar")?.classList.remove("open");
     $(".variant-inspector")?.classList.remove("open");
     $(".richtext-editor")?.classList.remove("open");
-    renderGuidedPreview();
+    if (state.workflowType === "resource") renderResourcePreview();
+    else renderGuidedPreview();
     return;
   }
 
@@ -21027,7 +22435,7 @@ function measureGuidedPage(pageShell = $(".guided-page-shell")) {
     pageShell?.offsetWidth || 0,
     pageContent?.scrollWidth || 0,
     pagePhone?.scrollWidth || 0,
-    750,
+    state.workflowType === "resource" ? 0 : 750,
   );
   const height = Math.max(
     pageTree?.scrollHeight || 0,
@@ -21036,7 +22444,7 @@ function measureGuidedPage(pageShell = $(".guided-page-shell")) {
     pageContent?.offsetHeight || 0,
     pagePhone?.scrollHeight || 0,
     contentBottom,
-    1334,
+    state.workflowType === "resource" ? 320 : 1334,
   );
   return { width, height };
 }
@@ -21328,6 +22736,66 @@ function bindEvents() {
   document.addEventListener("click", (event) => {
     if (event.target.closest("[data-placement-case-scrollbar]")) return;
 
+    if (event.target.closest("[data-open-resource-flow]")) {
+      startNewHistorySession();
+      state.workflowType = "resource";
+      state.resourceLevel = "daily";
+      getResourceDraft("daily");
+      state.view = "resource-blueprint";
+      render();
+      return;
+    }
+
+    const resourceLevelSelect = event.target.closest("[data-resource-level-select]");
+    if (resourceLevelSelect) {
+      state.workflowType = "resource";
+      state.resourceLevel = resourceLevelSelect.dataset.resourceLevelSelect === "s" ? "s" : "daily";
+      getResourceDraft();
+      state.view = "resource-blueprint";
+      render();
+      return;
+    }
+
+    const resourceLevelSwitch = event.target.closest("[data-resource-level-switch]");
+    if (resourceLevelSwitch) {
+      state.resourceLevel = resourceLevelSwitch.dataset.resourceLevelSwitch === "s" ? "s" : "daily";
+      getResourceDraft();
+      render();
+      return;
+    }
+
+    const addResourceVersion = event.target.closest("[data-resource-add-version]");
+    if (addResourceVersion) {
+      const draft = getResourceDraft();
+      const slot = getResourceLevelConfig().slots.find(
+        (item) => item.id === addResourceVersion.dataset.resourceAddVersion,
+      );
+      if (!slot) return;
+      const versions = draft.modules[slot.id].versions;
+      versions.push(createDefaultResourceVersion(slot, versions.length));
+      render();
+      return;
+    }
+
+    const removeResourceVersion = event.target.closest("[data-resource-remove-version]");
+    if (removeResourceVersion) {
+      const [slotId, versionId] = removeResourceVersion.dataset.resourceRemoveVersion.split("|");
+      const draft = getResourceDraft();
+      const moduleDraft = draft.modules?.[slotId];
+      if (!moduleDraft || moduleDraft.versions.length <= 1) return;
+      moduleDraft.versions = moduleDraft.versions.filter(
+        (version) => version.id !== versionId,
+      );
+      if (moduleDraft.versions[0]) moduleDraft.versions[0].id = "base";
+      render();
+      return;
+    }
+
+    if (event.target.closest("[data-resource-generate]")) {
+      enterResourcePreview();
+      return;
+    }
+
     if (event.target.closest("[data-open-my-projects]")) {
       openProjectHistory();
       return;
@@ -21385,6 +22853,7 @@ function bindEvents() {
 
     if (event.target.closest("[data-demo-open-file-modal]")) {
       startNewHistorySession();
+      state.workflowType = "venue";
       state.prdBlueprintPasteError = "";
       if (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID) {
         state.selectedDemoPackageId = demoActivityPackage.id;
@@ -22029,6 +23498,15 @@ function bindEvents() {
       return;
     }
 
+    if (event.target.closest("[data-guided-open-main-visual]")) {
+      state.selectedId = null;
+      state.guidedStateMenuNodeId = null;
+      state.guidedPanelMode = "resource-main-visual";
+      updateGuidedNodeSelection(null);
+      updateGuidedPanel({ enter: true });
+      return;
+    }
+
     if (event.target.closest("[data-guided-open-header-level]")) {
       const headerNode = getPageHeaderNode(activePage());
       if (!headerNode) return;
@@ -22049,6 +23527,15 @@ function bindEvents() {
     const guidedExportSingle = event.target.closest("[data-guided-export-single]");
     if (guidedExportSingle) {
       downloadGuidedExportEntry(guidedExportSingle.dataset.guidedExportSingle);
+      return;
+    }
+
+    const guidedExportGif = event.target.closest("[data-guided-export-gif]");
+    if (guidedExportGif) {
+      downloadGuidedExportEntryGif(
+        guidedExportGif.dataset.guidedExportGif,
+        guidedExportGif,
+      );
       return;
     }
 
@@ -22451,7 +23938,20 @@ function bindEvents() {
 
     const guidedPageTheme = event.target.closest("[data-guided-page-theme]");
     if (guidedPageTheme) {
+      if (guidedPageTheme.disabled || DISABLED_GUIDED_THEME_IDS.has(guidedPageTheme.dataset.guidedPageTheme)) {
+        return;
+      }
       applyGuidedPageTheme(guidedPageTheme.dataset.guidedPageTheme);
+      return;
+    }
+
+    const guidedResourceMainVisual = event.target.closest(
+      "[data-guided-resource-main-visual]",
+    );
+    if (guidedResourceMainVisual) {
+      applyResourceMainVisual(
+        guidedResourceMainVisual.dataset.guidedResourceMainVisual || "subject-1",
+      );
       return;
     }
 
@@ -23451,6 +24951,58 @@ function bindEvents() {
   });
 
   document.addEventListener("input", (event) => {
+    const resourceGlobalTheme = event.target.closest("[data-resource-global-theme]");
+    if (resourceGlobalTheme) {
+      applyResourceGlobalDraftValue("__themeId", resourceGlobalTheme.value);
+      refreshResourceGlobalControls("__themeId", resourceGlobalTheme.value);
+      return;
+    }
+
+    const resourceGlobalMainVisual = event.target.closest(
+      "[data-resource-global-main-visual]",
+    );
+    if (resourceGlobalMainVisual) {
+      applyResourceGlobalDraftValue(
+        "mainVisualImage",
+        resourceGlobalMainVisual.value,
+      );
+      refreshResourceGlobalControls(
+        "mainVisualImage",
+        resourceGlobalMainVisual.value,
+      );
+      return;
+    }
+
+    const resourceActivityName = event.target.closest("[data-resource-activity-name]");
+    if (resourceActivityName) {
+      getResourceDraft().activityName = resourceActivityName.value;
+      return;
+    }
+
+    const resourceVersionName = event.target.closest("[data-resource-version-name]");
+    if (resourceVersionName) {
+      const [slotId, versionId] = resourceVersionName.dataset.resourceVersionName.split("|");
+      const version = getResourceDraft().modules?.[slotId]?.versions.find(
+        (item) => item.id === versionId,
+      );
+      if (version) version.name = resourceVersionName.value;
+      return;
+    }
+
+    const resourceField = event.target.closest("[data-resource-field]");
+    if (resourceField) {
+      const [slotId, versionId, propKey] = resourceField.dataset.resourceField.split("|");
+      const version = getResourceDraft().modules?.[slotId]?.versions.find(
+        (item) => item.id === versionId,
+      );
+      if (version) {
+        version.values ||= {};
+        version.values[propKey] = resourceField.value;
+      }
+      refreshResourceModulePreview(slotId, versionId);
+      return;
+    }
+
     const placementCaseScrollbar = event.target.closest("[data-placement-case-scrollbar]");
     if (placementCaseScrollbar) {
       const carousel = placementCaseScrollbar

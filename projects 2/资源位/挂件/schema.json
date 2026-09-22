@@ -1,0 +1,111 @@
+{
+  "id": "挂件",
+  "name": "挂件",
+  "title": "挂件",
+  "type": "atom",
+  "category": "资源位",
+  "description": "挂件原子组件。",
+  "reactComponent": "挂件",
+  "dimensions": {
+    "width": 152,
+    "height": 152
+  },
+  "blueprint": {
+    "autoExposeProps": false,
+    "excludeFromPrd": true,
+    "matchKeywords": [
+      "挂件",
+      "资源位"
+    ],
+    "textProps": [
+      "buttonText"
+    ]
+  },
+  "props": [
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "七夕抽奖",
+      "description": "挂件底部按钮文案，随字数变化保持居中并自动缩放。"
+    },
+    {
+      "key": "buttonColor",
+      "name": "buttonColor",
+      "label": "按钮颜色",
+      "type": "select",
+      "default": "#FF1372",
+      "description": "挂件底部按钮颜色。",
+      "options": [
+        {
+          "label": "粉色",
+          "value": "#FF1372"
+        },
+        {
+          "label": "红色",
+          "value": "#FF180E"
+        },
+        {
+          "label": "橙色",
+          "value": "#FF4501"
+        }
+      ]
+    },
+    {
+      "key": "mainVisualImage",
+      "name": "mainVisualImage",
+      "label": "主体替换",
+      "type": "select",
+      "default": "subject-1",
+      "description": "挂件主体图片，复用头图的主体替换素材。",
+      "options": [
+        {
+          "label": "主体替换-方案1",
+          "value": "subject-1"
+        },
+        {
+          "label": "主体替换-方案2",
+          "value": "subject-2"
+        },
+        {
+          "label": "主体替换-方案3",
+          "value": "subject-3"
+        },
+        {
+          "label": "主体替换-方案4",
+          "value": "subject-4"
+        }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "buttonColor": "#FF1372"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "buttonColor": "#FF180E"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "buttonColor": "#FF4501"
+      }
+    }
+  ]
+}

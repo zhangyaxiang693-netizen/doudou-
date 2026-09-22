@@ -1,0 +1,105 @@
+.page {
+  width: 152px;
+  height: 152px;
+  overflow: hidden;
+  box-sizing: border-box;
+  position: relative;
+}
+.image {
+  width: 152px;
+  height: 120px;
+  position: absolute;
+  top: 14px;
+  left: 0px;
+}
+.wrap {
+  position: absolute;
+  top: 108px;
+  left: 11px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 130px;
+  height: 38px;
+  transform-origin: center;
+  animation: pendantButtonPulse 1.2s ease-in-out infinite;
+}
+.container {
+  width: 130px;
+  height: 38px;
+  overflow: hidden;
+  position: relative;
+  border-radius: 66px;
+  box-sizing: border-box;
+  background: rgba(255, 19, 114, 1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container::after {
+  position: absolute;
+  z-index: 1;
+  top: -25%;
+  left: -38%;
+  width: 24%;
+  height: 150%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.72),
+    transparent
+  );
+  content: "";
+  pointer-events: none;
+  transform: skewX(-20deg);
+  animation: pendantButtonShine 1.2s ease-in-out infinite;
+}
+
+.buttonText {
+  position: relative;
+  z-index: 2;
+  max-width: 114px;
+  color: #ffffff;
+  font-family: "Source Han Sans CN", sans-serif;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+@keyframes pendantButtonPulse {
+  0%,
+  100% {
+    transform: scale(0.96);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes pendantButtonShine {
+  0% {
+    opacity: 0;
+    transform: translateX(0) skewX(-20deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(560%) skewX(-20deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(560%) skewX(-20deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrap,
+  .container::after {
+    animation: none;
+  }
+}

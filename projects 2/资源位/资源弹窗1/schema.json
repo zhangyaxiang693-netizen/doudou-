@@ -1,0 +1,97 @@
+{
+  "id": "详情页弹窗",
+  "name": "详情页弹窗",
+  "title": "详情页弹窗",
+  "type": "atom",
+  "category": "资源位",
+  "description": "详情页弹窗原子组件。",
+  "reactComponent": "详情页弹窗",
+  "dimensions": {
+    "width": 560,
+    "height": 740
+  },
+  "blueprint": {
+    "autoExposeProps": false,
+    "excludeFromPrd": true,
+    "matchKeywords": [
+      "详情页弹窗",
+      "资源弹窗",
+      "弹窗",
+      "资源位"
+    ],
+    "textProps": [
+      "campaignText",
+      "headlineText",
+      "headlineHighlightText",
+      "buttonText"
+    ]
+  },
+  "props": [
+    {
+      "key": "campaignText",
+      "name": "campaignText",
+      "label": "活动标签文案",
+      "type": "string",
+      "default": "DOU+双节狂欢投",
+      "description": "主标题上方的活动标签文案。"
+    },
+    {
+      "key": "headlineText",
+      "name": "headlineText",
+      "label": "主标题文案",
+      "type": "string",
+      "default": "完成任务 抽流量好礼",
+      "description": "弹窗主标题文案，空格或换行分隔固定两行。"
+    },
+    {
+      "key": "headlineHighlightText",
+      "name": "headlineHighlightText",
+      "label": "标题高亮内容",
+      "type": "string",
+      "default": "流量好礼"
+    },
+    {
+      "key": "background",
+      "name": "background",
+      "label": "背景渐变",
+      "type": "string",
+      "default": "linear-gradient(165deg, #FF88C1 0%, #FFC1D5 20%, #FFF1F4 100%)"
+    },
+    {
+      "key": "headlineTextColor",
+      "name": "headlineTextColor",
+      "label": "标题文字颜色",
+      "type": "color",
+      "default": "#2C0113"
+    },
+    {
+      "key": "headlineHighlightColor",
+      "name": "headlineHighlightColor",
+      "label": "标题高亮颜色",
+      "type": "color",
+      "default": "#F00073"
+    },
+    {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮渐变开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮渐变结束",
+      "type": "color",
+      "default": "#FF229F"
+    },
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "立即参与",
+      "description": "底部主按钮文案。"
+    }
+  ]
+}
