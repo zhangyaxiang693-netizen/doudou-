@@ -57,14 +57,19 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           fill={`url(#${mainId})`}
         />
       </g>
-      <foreignObject x="143" y="108" width="464" height="116">
-        <div
-          className={styles.buttonText}
-          data-react-edit-prop="buttonText"
-        >
-          {buttonText}
-        </div>
-      </foreignObject>
+      <text
+        x="375"
+        y="166"
+        fill="#ffffff"
+        fontFamily='"Source Han Sans CN", "Douyin Sans", Arial, sans-serif'
+        fontSize="38"
+        fontWeight="700"
+        textAnchor="middle"
+        dominantBaseline="central"
+        data-react-edit-prop="buttonText"
+      >
+        {buttonText}
+      </text>
       <defs>
         <linearGradient id={fadeId} x1="375" y1="0" x2="375" y2="234" gradientUnits="userSpaceOnUse">
           <stop stopColor={backgroundGradientColor} stopOpacity="0" />

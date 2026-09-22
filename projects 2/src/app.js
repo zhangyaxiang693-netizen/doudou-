@@ -19902,6 +19902,7 @@ function renderReactComponent(schema, props, editOptions) {
   const isAutoHeight = schema.heightMode === "auto";
   const shouldShrinkWrapAutoHeight = [
     "正文-活动规则样式3",
+    "正文-带底框样式1",
     "正文-用户教育",
   ].includes(schema.id);
   const fitSizeStyle = isAutoHeight
