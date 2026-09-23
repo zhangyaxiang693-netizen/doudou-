@@ -25,6 +25,7 @@ import ActivityRuleStyle3 from "../正文-活动规则样式3";
 import FramedBodyStyle1 from "../正文-带底框样式1";
 import FramedBodyStyle2 from "../正文-带底框样式2";
 import FramedBodyStyle3 from "../正文-带底框样式3";
+import ConsumptionLadderBody from "../正文-带消耗阶梯";
 import LotteryGridBeforeSignup from "../抽奖九宫格-报名前";
 import LotteryGridAfterSignup from "../抽奖九宫格-报名后";
 import LotteryStyle2 from "../抽奖样式2";
@@ -169,6 +170,7 @@ const componentMap = {
   "正文-带底框样式1": FramedBodyStyle1,
   "正文-带底框样式2": FramedBodyStyle2,
   "正文-带底框样式3": FramedBodyStyle3,
+  "正文-带消耗阶梯": ConsumptionLadderBody,
   "抽奖九宫格-报名前": LotteryGridBeforeSignup,
   "抽奖九宫格-报名后": LotteryGridAfterSignup,
   "抽奖样式2": LotteryStyle2,

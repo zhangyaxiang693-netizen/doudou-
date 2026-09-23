@@ -219,6 +219,7 @@ const COMPONENT_DISPLAY_NAME_BY_ID = {
   "内容诊断-账号诊断": "内容诊断｜账号问题提示",
   "发券-样式1": "优惠券｜横幅领券",
   横排按钮数据条: "消耗与抽奖数据",
+  "正文-带消耗阶梯": "正文｜消耗阶梯",
   大按钮: "按钮",
   置底按钮: "底部行动按钮",
   账户优惠券提示: "账户优惠券提醒",
@@ -589,13 +590,14 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     id: "投放抽奖",
     name: "投放抽奖",
     type: "molecule",
-    description: "由模块标题、抽奖样式 2、正文带底框样式 1 和大按钮组成。",
+    description: "由模块标题、抽奖样式 2、消耗与抽奖数据、大按钮和消耗阶梯正文组成。",
     className: "placement-lottery-module",
     children: [
       ["模块标题-正常", { iconType: "gift" }],
       ["抽奖样式2", {}],
-      ["正文-带底框样式1", {}],
-      ["大按钮", { buttonText: "去消耗" }],
+      ["横排按钮数据条", {}],
+      ["大按钮", { buttonText: "立即抽奖" }],
+      ["正文-带消耗阶梯", {}],
     ],
   },
   {
@@ -1196,15 +1198,31 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
           ]),
         },
         {
-          title: "参与规则",
+          title: "消耗与抽奖数据",
           fields: [
-            ["2.titleText", "规则标题"],
-            ["2.bodyText", "规则正文"],
+            ["2.consumeAmountText", "消耗金额"],
+            ["2.lotteryCountText", "抽奖次数"],
           ],
         },
         {
           title: "行动按钮",
           fields: [["3.buttonText", "主按钮文案"]],
+        },
+        {
+          title: "消耗阶梯正文",
+          fields: [
+            ["4.titleText", "标题"],
+            ["4.bodyText", "正文"],
+            ["4.rewardText1", "第一档抽奖文案"],
+            ["4.rewardText2", "第二档抽奖文案"],
+            ["4.rewardText3", "第三档抽奖文案"],
+            ["4.rewardText4", "第四档抽奖文案"],
+            ["4.amountText1", "第一档金额"],
+            ["4.amountText2", "第二档金额"],
+            ["4.amountText3", "第三档金额"],
+            ["4.amountText4", "第四档金额"],
+            ["4.footnoteText", "底部说明"],
+          ],
         },
       ],
     },
@@ -19903,6 +19921,7 @@ function renderReactComponent(schema, props, editOptions) {
   const shouldShrinkWrapAutoHeight = [
     "正文-活动规则样式3",
     "正文-带底框样式1",
+    "正文-带消耗阶梯",
     "正文-用户教育",
   ].includes(schema.id);
   const fitSizeStyle = isAutoHeight
@@ -20691,7 +20710,7 @@ function getMoleculeChildExportMargin(node, index, childCount) {
   if (classNames.includes("user-education-guide-module")) return [32, 32][index] ?? 0;
   if (classNames.includes("ai-smart-invest-module")) return [32, 32][index] ?? 0;
   if (classNames.includes("core-benefit-coupon-style2-module")) return [32, 32][index] ?? 0;
-  if (classNames.includes("placement-lottery-module")) return [32, 16, 32][index] ?? 0;
+  if (classNames.includes("placement-lottery-module")) return [32, 16, 32, 32][index] ?? 0;
   return 24;
 }
 
