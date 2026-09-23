@@ -1,0 +1,192 @@
+.page {
+  width: 626px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  color: #2d2d2d;
+}
+
+.title {
+  min-height: 34px;
+  font-family: "Source Han Sans CN";
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.body {
+  width: 626px;
+  margin-top: 26px;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  line-height: 36px;
+  font-weight: 400;
+  text-align: justify;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ladder {
+  width: 626px;
+  height: 111px;
+  margin-top: 14px;
+  padding: 0 40px;
+  border-radius: 20px;
+  box-sizing: border-box;
+  background: #f7f7fa;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.rewardRow {
+  width: 436px;
+  min-height: 36px;
+  margin-top: 21px;
+  margin-left: 101px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rewardTag {
+  position: relative;
+  width: 76px;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 6px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    var(--consumption-ladder-accent-start, #ff1473),
+    var(--consumption-ladder-accent-end, #ff229f)
+  );
+  font-family: "Douyin Sans";
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.rewardTag::after {
+  position: absolute;
+  bottom: -5px;
+  left: calc(50% - 5px);
+  width: 0;
+  height: 0;
+  border-top: 6px solid var(--consumption-ladder-accent-end, #ff229f);
+  border-right: 5px solid transparent;
+  border-left: 5px solid transparent;
+  content: "";
+}
+
+.progressRow {
+  width: 546px;
+  height: 36px;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.consumeLabel {
+  width: 94px;
+  height: 36px;
+  flex: 0 0 94px;
+  font-family: "Source Han Sans CN";
+  font-size: 24px;
+  line-height: 36px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.progress {
+  position: relative;
+  width: 419px;
+  height: 36px;
+  flex: 0 0 419px;
+  margin-left: 21px;
+}
+
+.amounts {
+  position: relative;
+  z-index: 1;
+  width: 419px;
+  height: 36px;
+}
+
+.amount {
+  position: absolute;
+  top: 0;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  line-height: 36px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.amount:nth-child(1) {
+  left: 0;
+}
+
+.amount:nth-child(2) {
+  left: 114px;
+}
+
+.amount:nth-child(3) {
+  left: 229px;
+}
+
+.amount:nth-child(4) {
+  right: 0;
+}
+
+.track {
+  position: absolute;
+  z-index: 0;
+  top: 16px;
+  left: 59px;
+  width: 290px;
+  height: 4px;
+}
+
+.segment {
+  position: absolute;
+  top: 0;
+  width: 50px;
+  height: 4px;
+  border-radius: 4px;
+  background: #ebeded;
+}
+
+.segment:nth-child(1) {
+  left: 0;
+}
+
+.segment:nth-child(2) {
+  left: 114px;
+}
+
+.segment:nth-child(3) {
+  left: 240px;
+}
+
+.footnote {
+  width: 584px;
+  min-height: 36px;
+  margin: 20px 21px 0;
+  box-sizing: border-box;
+  font-family: "Source Han Sans CN Regular";
+  font-size: 24px;
+  line-height: 36px;
+  font-weight: 400;
+  text-align: center;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

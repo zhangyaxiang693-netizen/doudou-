@@ -1,0 +1,215 @@
+{
+  "id": "正文-带消耗阶梯",
+  "name": "正文-带消耗阶梯",
+  "title": "正文-带消耗阶梯",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "展示参与说明、四档抽奖次数与消耗金额阶梯的正文组件。",
+  "reactComponent": "正文-带消耗阶梯",
+  "dimensions": {
+    "width": 626,
+    "height": 314
+  },
+  "heightMode": "auto",
+  "minHeight": 314,
+  "fonts": [
+    {
+      "text": "#如何参与",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "28px",
+      "lineHeight": "34px",
+      "usage": "标题",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    },
+    {
+      "text": "活动期间，使用账户内DOU+流量券投放目标，消耗达标得抽奖次数。",
+      "family": "Source Han Sans CN",
+      "weight": 400,
+      "size": "24px",
+      "lineHeight": "36px",
+      "usage": "正文、金额与说明",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.ttf"
+      }
+    },
+    {
+      "text": "抽奖+1",
+      "family": "Douyin Sans",
+      "weight": 700,
+      "size": "20px",
+      "lineHeight": "24px",
+      "usage": "抽奖标签",
+      "source": {
+        "status": "exact",
+        "file": "DouyinSansBold.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "正文-带消耗阶梯",
+      "正文",
+      "参与方式",
+      "消耗阶梯",
+      "抽奖次数",
+      "消耗金额"
+    ],
+    "textProps": [
+      "titleText",
+      "bodyText",
+      "rewardText1",
+      "rewardText2",
+      "rewardText3",
+      "rewardText4",
+      "amountText1",
+      "amountText2",
+      "amountText3",
+      "amountText4",
+      "footnoteText"
+    ]
+  },
+  "props": [
+    {
+      "key": "titleText",
+      "name": "titleText",
+      "label": "标题",
+      "type": "string",
+      "default": "#如何参与",
+      "description": "组件顶部标题文案。"
+    },
+    {
+      "key": "bodyText",
+      "name": "bodyText",
+      "label": "正文",
+      "type": "text",
+      "control": "textarea",
+      "default": "活动期间，使用账户内DOU+流量券投放「点赞评论量、视频播放量、粉丝量」目标投放，消耗达标得抽奖次数。",
+      "description": "标题下方的参与说明正文。"
+    },
+    {
+      "key": "rewardText1",
+      "name": "rewardText1",
+      "label": "第一档抽奖文案",
+      "type": "string",
+      "default": "抽奖+1",
+      "description": "第一档阶梯上方的抽奖标签。"
+    },
+    {
+      "key": "rewardText2",
+      "name": "rewardText2",
+      "label": "第二档抽奖文案",
+      "type": "string",
+      "default": "抽奖+1",
+      "description": "第二档阶梯上方的抽奖标签。"
+    },
+    {
+      "key": "rewardText3",
+      "name": "rewardText3",
+      "label": "第三档抽奖文案",
+      "type": "string",
+      "default": "抽奖+2",
+      "description": "第三档阶梯上方的抽奖标签。"
+    },
+    {
+      "key": "rewardText4",
+      "name": "rewardText4",
+      "label": "第四档抽奖文案",
+      "type": "string",
+      "default": "抽奖+3",
+      "description": "第四档阶梯上方的抽奖标签。"
+    },
+    {
+      "key": "amountText1",
+      "name": "amountText1",
+      "label": "第一档金额",
+      "type": "string",
+      "default": "30元",
+      "description": "第一档消耗金额文案。"
+    },
+    {
+      "key": "amountText2",
+      "name": "amountText2",
+      "label": "第二档金额",
+      "type": "string",
+      "default": "90元",
+      "description": "第二档消耗金额文案。"
+    },
+    {
+      "key": "amountText3",
+      "name": "amountText3",
+      "label": "第三档金额",
+      "type": "string",
+      "default": "150元",
+      "description": "第三档消耗金额文案。"
+    },
+    {
+      "key": "amountText4",
+      "name": "amountText4",
+      "label": "第四档金额",
+      "type": "string",
+      "default": "200元",
+      "description": "第四档消耗金额文案。"
+    },
+    {
+      "key": "footnoteText",
+      "name": "footnoteText",
+      "label": "底部说明",
+      "type": "text",
+      "control": "textarea",
+      "default": "*活动页面数据有延迟请以消耗达成后第二天为准。",
+      "description": "阶梯下方的补充说明文案。"
+    },
+    {
+      "key": "accentGradientStart",
+      "name": "accentGradientStart",
+      "label": "强调色开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "accentGradientEnd",
+      "name": "accentGradientEnd",
+      "label": "强调色结束",
+      "type": "color",
+      "default": "#FF229F"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "accentGradientStart": "#FF1473",
+        "accentGradientEnd": "#FF229F"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "accentGradientStart": "#FF190E",
+        "accentGradientEnd": "#FF166E"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "accentGradientStart": "#FF4501",
+        "accentGradientEnd": "#FF7C02"
+      }
+    }
+  ]
+}
