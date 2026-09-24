@@ -1,0 +1,28 @@
+{
+  "id": "奖品-流量券",
+  "name": "奖品-流量券",
+  "title": "奖品｜流量券",
+  "type": "atom",
+  "category": "奖品组件",
+  "description": "券面数字可配置的流量券奖品视觉。",
+  "reactComponent": "奖品-流量券",
+  "dimensions": {
+    "width": 303.12,
+    "height": 224
+  },
+  "blueprint": {
+    "autoExposeProps": true,
+    "textProps": [
+      "amount"
+    ]
+  },
+  "props": [
+    {
+      "key": "amount",
+      "name": "amount",
+      "label": "券面数字",
+      "type": "text",
+      "default": "10"
+    }
+  ]
+}

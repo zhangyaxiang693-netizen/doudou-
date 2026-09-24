@@ -1,0 +1,67 @@
+.page {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 303.12 / 224;
+  container-type: inline-size;
+}
+.image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-image: url("./assets/image_1.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+.image3 {
+  position: absolute;
+  top: 8.05%;
+  left: 17.06%;
+  width: 13.49%;
+  height: 66.03%;
+  opacity: 0.5;
+}
+.valueRow {
+  position: absolute;
+  top: 35.3%;
+  left: 24%;
+  width: 60%;
+  height: 37.1%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 3cqw;
+}
+.currency {
+  flex: 0 0 auto;
+  width: 10cqw;
+  height: auto;
+  margin-top: 6.1cqw;
+  transform: translateX(1cqw);
+}
+.valueRowThreeDigits .currency {
+  margin-top: 5.1cqw;
+  transform: translateX(3cqw);
+}
+.amount {
+  flex: 0 0 auto;
+  position: relative;
+  top: 3.5cqw;
+  color: #ff8416;
+  font-family: "Douyin Number ABC ExtraBold", "Source Han Sans CN Heavy", sans-serif;
+  font-size: clamp(20px, 25cqw, 76px);
+  font-weight: 800;
+  line-height: 0.86;
+  text-align: center;
+  white-space: nowrap;
+  transform: rotate(12.5deg);
+  transform-origin: center;
+}
+.amountMedium {
+  top: 5cqw;
+  font-size: clamp(18px, 22cqw, 67px);
+  transform: rotate(12.5deg) scaleX(0.92);
+}
+.amountSmall {
+  font-size: clamp(16px, 18cqw, 55px);
+}

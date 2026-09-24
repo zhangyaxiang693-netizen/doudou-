@@ -62,6 +62,8 @@ import ProfileCenterBanner from "../资源位/个人中心banner";
 import TopBanner from "../资源位/顶部banner";
 import CheckoutPopup from "../资源位/下单页弹窗";
 import Pendant from "../资源位/挂件";
+import TrafficCouponPrize from "../奖品-流量券";
+import RandomPrizeAddress from "../随机奖品填写地址";
 
 const roots = new WeakMap();
 const projectFontFamilies = new Set([
@@ -209,6 +211,8 @@ const componentMap = {
   "顶部banner": TopBanner,
   "下单页弹窗": CheckoutPopup,
   "挂件": Pendant,
+  "奖品-流量券": TrafficCouponPrize,
+  "随机奖品填写地址": RandomPrizeAddress,
 };
 
 function parseProps(element) {

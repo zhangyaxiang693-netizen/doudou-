@@ -8,6 +8,7 @@ import prizeDouziUrl from '../九宫格-奖品库/dou仔周边.png'
 import prizeJianyingVipUrl from '../九宫格-奖品库/剪映vip.png'
 import prizeTrafficCouponUrl from '../九宫格-奖品库/6元流量券.png'
 import prizeTrafficCouponGroupUrl from '../九宫格-奖品库/dou+流量券.png'
+import TrafficCouponPrize from '../奖品-流量券'
 
 const DISPLAY_PRIZE_COUNT = 3
 const MAX_PRIZE_COUNT = 8
@@ -24,12 +25,16 @@ type PrizeValue =
       imageUrl?: string
       url?: string
       src?: string
+      type?: string
+      copyAmount?: string
     }
 
 type VisualPrize = {
   name: string
   image: string
   ribbon: string
+  type?: string
+  amount?: string
 }
 
 export type IGeneratedComponent = {
@@ -77,6 +82,8 @@ function resolvePrize(
     return {
       name: resolvedNameOverride || prize.name || prize.title || prize.label || fallbackName,
       image: prize.image || prize.imageUrl || prize.url || prize.src || fallbackImage,
+      type: prize.type,
+      amount: prize.copyAmount,
     }
   }
 
@@ -114,8 +121,12 @@ function getPrizeCount(props: IGeneratedComponent) {
   )
 }
 
-function isTrafficCouponPrize(prize: { name: string; image: string }) {
-  return prize.name.replace(/\s+/g, '').includes('流量券')
+function getTrafficCouponAmount(name: string) {
+  return name.match(/(\d+(?:\.\d+)?)\s*元\s*流量券/)?.[1] || ''
+}
+
+function isTrafficCouponPrize(prize: { name: string; type?: string }) {
+  return prize.type === 'traffic_coupon' || prize.name.replace(/\s+/g, '').includes('流量券')
 }
 
 function normalizeDisplayPrizeName(name: string) {
@@ -126,27 +137,10 @@ function normalizeDisplayPrizeName(name: string) {
 }
 
 function getDisplayPrizes(prizes: VisualPrize[]) {
-  const result: VisualPrize[] = []
-  let hasTrafficCoupon = false
-  for (const prize of prizes) {
-    if (isTrafficCouponPrize(prize)) {
-      if (!hasTrafficCoupon) {
-        result.push({
-          ...prize,
-          name: TRAFFIC_COUPON_DISPLAY_NAME,
-          image: prizeTrafficCouponGroupUrl,
-        })
-        hasTrafficCoupon = true
-      }
-    } else {
-      result.push({
-        ...prize,
-        name: normalizeDisplayPrizeName(prize.name),
-      })
-    }
-    if (result.length >= DISPLAY_PRIZE_COUNT) break
-  }
-  return result
+  return prizes.slice(0, DISPLAY_PRIZE_COUNT).map((prize) => ({
+    ...prize,
+    name: normalizeDisplayPrizeName(prize.name),
+  }))
 }
 
 function isCompactPrizeTitle(name: string) {
@@ -190,7 +184,14 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             </div>
             <div className={styles.content}>
               <div className={styles.main}>
-                <img src={prize.image} className={styles.image} />
+                {isTrafficCouponPrize(prize) ? (
+                  <TrafficCouponPrize
+                    amount={prize.amount || getTrafficCouponAmount(prize.name) || '10'}
+                    className={styles.trafficCouponPrize}
+                  />
+                ) : (
+                  <img src={prize.image} className={styles.image} />
+                )}
               </div>
             </div>
             <img src={prize.ribbon} className={styles.image1} />

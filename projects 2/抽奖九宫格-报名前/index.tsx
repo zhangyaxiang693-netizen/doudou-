@@ -7,6 +7,7 @@ import prizeTrafficCouponUrl from '../九宫格-奖品库/6元流量券.png'
 import prizeDouziUrl from '../九宫格-奖品库/dou仔周边.png'
 import prizeRecommendUrl from '../九宫格-奖品库/dou+官方推荐机会.png'
 import prizePointsUrl from '../九宫格-奖品库/积分.png'
+import TrafficCouponPrize from '../奖品-流量券'
 
 type PrizeValue =
   | string
@@ -18,6 +19,8 @@ type PrizeValue =
       imageUrl?: string
       url?: string
       src?: string
+      type?: string
+      copyAmount?: string
     }
 
 export type IGeneratedComponent = {
@@ -58,6 +61,8 @@ function resolvePrize(
     return {
       name: resolvedNameOverride || prize.name || prize.title || prize.label || fallbackName,
       image: prize.image || prize.imageUrl || prize.url || prize.src || fallbackImage,
+      type: prize.type,
+      amount: prize.copyAmount,
     }
   }
 
@@ -69,6 +74,16 @@ function resolvePrize(
 
 function prizeImageClass(prize: {name: string; image: string}) {
   return `${styles.prizeImage} ${prize.name.trim() === '内容诊断积分' ? styles.pointsPrizeImage : ''}`
+}
+
+function PrizeImage({prize}: {prize: {name: string; image: string; type?: string; amount?: string}}) {
+  const amount = prize.amount || prize.name.match(/(\d+(?:\.\d+)?)\s*元\s*流量券/)?.[1]
+  const isTrafficCoupon = prize.type === 'traffic_coupon' || Boolean(amount)
+  return isTrafficCoupon ? (
+    <TrafficCouponPrize amount={amount || '10'} className={styles.trafficCouponPrize} />
+  ) : (
+    <img src={prize.image} className={prizeImageClass(prize)} />
+  )
 }
 
 function isSingleLinePrize(prize: {name: string; image: string}) {
@@ -93,7 +108,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             </div>
           </div>
           <div className={styles.content2}>
-            <img src={prize3.image} className={prizeImageClass(prize3)} />
+            <PrizeImage prize={prize3} />
           </div>
         </div>
         <div className={styles.container1}>
@@ -104,14 +119,14 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             </div>
           </div>
           <div className={styles.content5}>
-            <img src={prize2.image} className={prizeImageClass(prize2)} />
+            <PrizeImage prize={prize2} />
           </div>
         </div>
         <div className={styles.container2}>
           <div className={styles.content6}>
             <div className={styles.main}>
               <div className={styles.section}></div>
-              <img src={prize5.image} className={prizeImageClass(prize5)} />
+              <PrizeImage prize={prize5} />
               <div className={`${styles.text2} ${isSingleLinePrize(prize5) ? styles.prizeNameRecommend : ''}`}>{prize5.name}</div>
             </div>
           </div>
@@ -122,7 +137,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             <div className={`${styles.text5} ${isSingleLinePrize(prize4) ? styles.prizeNameRecommend : ''}`}>{prize4.name}</div>
           </div>
           <div className={styles.content10}>
-            <img src={prize4.image} className={prizeImageClass(prize4)} />
+            <PrizeImage prize={prize4} />
           </div>
         </div>
         <div className={styles.container4}>
@@ -131,7 +146,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             <div className={`${styles.text7} ${isSingleLinePrize(prize1) ? styles.prizeNameRecommend : ''}`}>{prize1.name}</div>
           </div>
           <div className={styles.content13}>
-            <img src={prize1.image} className={prizeImageClass(prize1)} />
+            <PrizeImage prize={prize1} />
           </div>
         </div>
         <div className={styles.container5}>

@@ -8,6 +8,7 @@ import prizeTrafficCoupon10Url from '../九宫格-奖品库/10元流量券.png'
 import prizeDouziUrl from '../九宫格-奖品库/dou仔周边.png'
 import prizeRecommendUrl from '../九宫格-奖品库/dou+官方推荐机会.png'
 import prizePointsUrl from '../九宫格-奖品库/积分.png'
+import TrafficCouponPrize from '../奖品-流量券'
 
 type PrizeValue =
   | string
@@ -19,6 +20,8 @@ type PrizeValue =
       imageUrl?: string
       url?: string
       src?: string
+      type?: string
+      copyAmount?: string
     }
 
 export type IGeneratedComponent = {
@@ -77,6 +80,8 @@ function resolvePrize(
     return {
       name: resolvedNameOverride || prize.name || prize.title || prize.label || fallback.name,
       image: prize.image || prize.imageUrl || prize.url || prize.src || fallback.image,
+      type: prize.type,
+      amount: prize.copyAmount,
     }
   }
 
@@ -94,13 +99,19 @@ function isSingleLinePrize(prize: {name: string; image: string}) {
   return ['DOU+官方推荐机会', 'DOU仔帆布包'].includes(prize.name.trim())
 }
 
-function PrizeCard({prize}: {prize: {name: string; image: string}}) {
+function PrizeCard({prize}: {prize: {name: string; image: string; type?: string; amount?: string}}) {
+  const amount = prize.amount || prize.name.match(/(\d+(?:\.\d+)?)\s*元\s*流量券/)?.[1]
+  const isTrafficCoupon = prize.type === 'traffic_coupon' || Boolean(amount)
   return (
     <div className={styles.prizeCard}>
-      <img
-        src={prize.image}
-        className={`${styles.prizeImage} ${isPointsPrize(prize) ? styles.pointsPrizeImage : ''}`}
-      />
+      {isTrafficCoupon ? (
+        <TrafficCouponPrize amount={amount || '10'} className={styles.trafficCouponPrize} />
+      ) : (
+        <img
+          src={prize.image}
+          className={`${styles.prizeImage} ${isPointsPrize(prize) ? styles.pointsPrizeImage : ''}`}
+        />
+      )}
       <div className={`${styles.prizeName} ${isSingleLinePrize(prize) ? styles.prizeNameRecommend : ''}`}>{prize.name}</div>
     </div>
   )

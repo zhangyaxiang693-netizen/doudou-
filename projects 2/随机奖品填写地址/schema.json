@@ -1,0 +1,117 @@
+{
+  "id": "随机奖品填写地址",
+  "name": "随机奖品填写地址",
+  "title": "随机奖品填写地址",
+  "type": "atom",
+  "category": "原子组件",
+  "description": "展示随机奖品说明和填写收货地址入口。",
+  "reactComponent": "随机奖品填写地址",
+  "dimensions": {
+    "width": 525.46,
+    "height": 95.06
+  },
+  "fonts": [
+    {
+      "text": "毛绒公仔/挂件/盲盒/冰箱贴随机发一件",
+      "family": "Source Han Sans CN Regular",
+      "weight": 400,
+      "size": "20px",
+      "lineHeight": "29px",
+      "usage": "奖品说明",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-REGULAR.otf"
+      }
+    },
+    {
+      "text": "填写地址",
+      "family": "Source Han Sans CN",
+      "weight": 700,
+      "size": "26px",
+      "lineHeight": "32px",
+      "usage": "按钮文案",
+      "source": {
+        "status": "exact",
+        "file": "SOURCEHANSANSCN-BOLD.ttf"
+      }
+    }
+  ],
+  "blueprint": {
+    "autoExposeProps": true,
+    "matchKeywords": [
+      "随机奖品填写地址",
+      "随机奖品",
+      "填写地址",
+      "收货地址"
+    ],
+    "textProps": [
+      "descriptionText",
+      "buttonText"
+    ]
+  },
+  "props": [
+    {
+      "key": "descriptionText",
+      "name": "descriptionText",
+      "label": "奖品说明",
+      "type": "text",
+      "control": "textarea",
+      "default": "毛绒公仔/挂件/盲盒/\n冰箱贴随机发一件",
+      "description": "左侧随机奖品说明，支持换行。"
+    },
+    {
+      "key": "buttonText",
+      "name": "buttonText",
+      "label": "按钮文案",
+      "type": "string",
+      "default": "填写地址",
+      "description": "右侧按钮文案。"
+    },
+    {
+      "key": "accentGradientStart",
+      "name": "accentGradientStart",
+      "label": "按钮渐变开始",
+      "type": "color",
+      "default": "#FF1473"
+    },
+    {
+      "key": "accentGradientEnd",
+      "name": "accentGradientEnd",
+      "label": "按钮渐变结束",
+      "type": "color",
+      "default": "#FF229F"
+    }
+  ],
+  "variants": [
+    {
+      "id": "default_pink",
+      "name": "默认粉色套",
+      "props": {
+        "accentGradientStart": "#FF1473",
+        "accentGradientEnd": "#FF229F"
+      }
+    },
+    {
+      "id": "blue_parent",
+      "name": "蓝色父级页面",
+      "themeBinding": {
+        "parentThemeId": "sky"
+      },
+      "props": {
+        "accentGradientStart": "#FF190E",
+        "accentGradientEnd": "#FF166E"
+      }
+    },
+    {
+      "id": "orange_parent",
+      "name": "橘色父级页面",
+      "themeBinding": {
+        "parentThemeId": "apricot"
+      },
+      "props": {
+        "accentGradientStart": "#FF4501",
+        "accentGradientEnd": "#FF7C02"
+      }
+    }
+  ]
+}

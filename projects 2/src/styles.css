@@ -4214,7 +4214,8 @@ button:hover {
 }
 
 .node-prop-item .prize-library-name-input,
-.node-prop-item .prize-library-copy-input {
+.node-prop-item .prize-library-copy-input,
+.node-prop-item .prize-library-amount-input {
   grid-column: 2;
 }
 
@@ -5575,8 +5576,7 @@ button:hover {
 }
 
 .blueprint-variable-row .prize-library-control {
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) minmax(96px, 0.8fr);
+  display: flex;
   align-items: center;
   min-width: 0;
   border-right: 1px solid #f2f4f7;
@@ -5599,6 +5599,31 @@ button:hover {
   object-fit: contain;
 }
 
+.prize-library-traffic-coupon-thumb {
+  position: relative;
+  display: flex;
+  width: 36px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+}
+
+.prize-library-traffic-coupon-thumb img {
+  width: 36px;
+  height: auto;
+}
+
+.prize-library-traffic-coupon-thumb b {
+  position: absolute;
+  top: 10px;
+  left: 17px;
+  width: 13px;
+  color: #ff8416;
+  font: 800 8px/1 "Douyin Number ABC ExtraBold", sans-serif;
+  text-align: center;
+  transform: rotate(10deg);
+}
+
 .prize-library-thumb i {
   width: 24px;
   height: 24px;
@@ -5612,7 +5637,9 @@ button:hover {
 }
 
 .blueprint-variable-row .prize-library-name-input,
-.blueprint-variable-row .prize-library-copy-input {
+.blueprint-variable-row .prize-library-copy-input,
+.blueprint-variable-row .prize-library-amount-input {
+  flex: 1 1 96px;
   width: 100%;
   min-width: 0;
   min-height: 44px;
@@ -5624,6 +5651,10 @@ button:hover {
   outline: none;
 }
 
+.blueprint-variable-row .prize-library-amount-input {
+  flex: 0 0 76px;
+}
+
 .blueprint-variable-row textarea:last-child,
 .blueprint-variable-row .prize-library-control:last-child,
 .blueprint-variable-row > span:last-child {
@@ -5633,14 +5664,16 @@ button:hover {
 .blueprint-variable-row textarea:hover,
 .blueprint-variable-row .prize-library-select:hover,
 .blueprint-variable-row .prize-library-name-input:hover,
-.blueprint-variable-row .prize-library-copy-input:hover {
+.blueprint-variable-row .prize-library-copy-input:hover,
+.blueprint-variable-row .prize-library-amount-input:hover {
   background: #f9fbff;
 }
 
 .blueprint-variable-row textarea:focus,
 .blueprint-variable-row .prize-library-select:focus,
 .blueprint-variable-row .prize-library-name-input:focus,
-.blueprint-variable-row .prize-library-copy-input:focus {
+.blueprint-variable-row .prize-library-copy-input:focus,
+.blueprint-variable-row .prize-library-amount-input:focus {
   position: relative;
   z-index: 1;
   outline: 2px solid #84adff;
@@ -7302,6 +7335,19 @@ button:hover {
 
 .guided-page-companion .guided-node-theme-content,
 .guided-page-companion .react-component-fit {
+  width: 576px;
+}
+
+.guided-popup-preview-stack {
+  display: flex;
+  width: 576px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 32px;
+}
+
+.guided-popup-preview-item,
+.guided-popup-preview-item .react-component-fit {
   width: 576px;
 }
 
@@ -11577,8 +11623,7 @@ button:hover {
 }
 
 .prd-variable-matrix-row .prize-library-control {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
+  display: flex;
   align-items: center;
   min-width: 0;
   min-height: 38px;
@@ -11612,7 +11657,8 @@ button:hover {
 }
 
 .prd-variable-matrix-row .prize-library-select {
-  width: 100%;
+  flex: 1 1 120px;
+  width: auto;
   min-height: 38px;
   padding: 0 10px;
   border: 0;
@@ -11620,6 +11666,32 @@ button:hover {
   color: #101828;
   font: 700 12px/1.35 "Source Han Sans CN", sans-serif;
   outline: 0;
+}
+
+.prd-variable-matrix-row .prize-library-name-input,
+.prd-variable-matrix-row .prize-library-copy-input,
+.prd-variable-matrix-row .prize-library-amount-input {
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-left: 1px solid #eef0f3;
+  background: #ffffff;
+  color: #101828;
+  font: 600 12px/1.35 "Source Han Sans CN", sans-serif;
+  outline: 0;
+}
+
+.prd-variable-matrix-row .prize-library-name-input {
+  flex: 1 1 130px;
+}
+
+.prd-variable-matrix-row .prize-library-copy-input {
+  flex: 1 1 220px;
+}
+
+.prd-variable-matrix-row .prize-library-amount-input {
+  flex: 0 0 72px;
 }
 
 .prd-variable-matrix-row .prize-library-select:disabled {
