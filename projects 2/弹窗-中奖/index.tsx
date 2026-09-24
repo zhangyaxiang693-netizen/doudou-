@@ -6,6 +6,8 @@ import image2 from './assets/image_2.svg'
 import image3 from './assets/image_3.svg'
 import image4 from './assets/铃铛 4.png'
 import familyPackDecoration from '../九宫格-奖品库/装饰条.png'
+import TrafficCouponPrize from '../奖品-流量券'
+import RandomPrizeAddress from '../随机奖品填写地址'
 
 type PrizeValue =
   | string
@@ -16,6 +18,7 @@ type PrizeValue =
       copy?: string
       copyThreshold?: string
       copyAmount?: string
+      type?: string
       text?: string
       description?: string
       image?: string
@@ -105,9 +108,11 @@ function resolvePrize(value: PrizeValue | undefined, fallbackName: string) {
       name,
       image: prize.image || prize.imageUrl || prize.url || prize.src || '',
       copy: prize.copy || prize.text || prize.description || renderTrafficCouponCopy(copyAmount, copyThreshold),
+      type: prize.type,
+      amount: prize.copyAmount || copyAmount,
     }
   }
-  return {name: fallbackName, image: '', copy: ''}
+  return {name: fallbackName, image: '', copy: '', type: '', amount: ''}
 }
 
 function renderPrizeName(name: string) {
@@ -166,9 +171,16 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       : selectedPrize.name
   )
   const displayedPrizeSubText = prizeSubText || selectedPrize.copy || '满30元赠价值5元流量'
-  const isTrafficCouponPrize = /^\d+(?:\.\d+)?元流量券$/.test(selectedPrize.name)
+  const isTrafficCouponPrize =
+    selectedPrize.type === 'traffic_coupon' ||
+    /\d+(?:\.\d+)?元流量券/.test(selectedPrize.name)
+  const trafficCouponAmount =
+    selectedPrize.amount ||
+    getTrafficCouponAmount(selectedPrize.name) ||
+    getTrafficCouponAmount(selectedPrize.copy)
   const isOfficialRecommendationPrize = selectedPrize.name === 'DOU+官方推荐机会'
-  const isDouziFamilyPackPrize = selectedPrize.name === 'DOU仔周边全家福' ||
+  const isDouziFamilyPackPrize = selectedPrize.type === 'douzi_family_pack' ||
+    selectedPrize.name === 'DOU仔周边全家福' ||
     selectedPrize.name === 'DOU仔全家福' ||
     selectedPrize.name === 'DOU仔随机周边' ||
     selectedPrize.name === 'DOU仔全家福随机发'
@@ -190,9 +202,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     selectedPrize.name === '剪映VIP' ||
     selectedPrize.name === '剪映VIP月卡' ||
     selectedPrize.name === '流量扶持'
-  const finalPrizeSubText = isDouziFamilyPackPrize
-    ? '毛绒公仔/毛绒挂件/AI抖仔挂件/盲盒/冰箱贴\n随机发一件'
-    : displayedPrizeSubText
+  const finalPrizeSubText = displayedPrizeSubText
   const prizeImageClassName = [
     styles.image3,
     isTrafficCouponPrize ? styles.trafficCouponImage : '',
@@ -201,6 +211,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     isContentDiagnosisPrize ? styles.contentDiagnosisImage : '',
   ].filter(Boolean).join(' ')
   const backgroundSvg = image1Raw
+    .replace('<svg ', '<svg preserveAspectRatio="none" ')
     .replaceAll('#FFB2C3', cardGradientStart)
     .replaceAll('#FF89A3', cardGradientEnd)
   const buttonStyle =
@@ -212,7 +223,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       : undefined
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${isDouziFamilyPackPrize ? styles.familyPackPage : ''}`}>
       <div className={styles.wrap}>
         <div className={styles.container}>
           <div
@@ -229,13 +240,22 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
               className={styles.image2}
             />
           </div>
-          <img
-            src={selectedPrize.image || image4}
-            className={prizeImageClassName}
-          />
+          {isTrafficCouponPrize ? (
+            <TrafficCouponPrize
+              amount={trafficCouponAmount || '10'}
+              className={styles.trafficCouponComponent}
+            />
+          ) : (
+            <img
+              src={selectedPrize.image || image4}
+              className={prizeImageClassName}
+            />
+          )}
         </div>
       </div>
-        {!isDouziFamilyPackPrize && !isContentDiagnosisPrize ? <div className={styles.text}>{titleText}</div> : null}
+        {!isDouziFamilyPackPrize && !isContentDiagnosisPrize ? (
+          <div className={styles.text} data-react-edit-prop="titleText">{titleText}</div>
+        ) : null}
       <div className={`${styles.wrap1} ${isDouziFamilyPackPrize ? styles.familyPackTitleWrap : ''} ${hasNoSubText && !isContentDiagnosisPrize ? styles.noSubTextTitleWrap : ''} ${isContentDiagnosisPrize ? styles.contentDiagnosisTitleWrap : ''}`}>
         {isContentDiagnosisPrize ? (
           <div className={styles.contentDiagnosisTitle}>
@@ -243,14 +263,17 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           </div>
         ) : isDouziFamilyPackPrize ? (
           <div className={styles.familyPackTitle}>
-            恭喜抽中<span style={{color: amountColor}}>{renderPrizeName('DOU仔周边！')}</span>
+            <span data-react-edit-prop="titleText">{titleText}</span>
+            <span data-react-edit-prop="prizeText" style={{color: amountColor}}>
+              {renderPrizeName(displayedPrizeText)}
+            </span>
           </div>
         ) : (
           <>
             <div className={styles.text2} style={{color: amountColor}}>
-                <span className={styles.text2__seg0}>{amountText}</span>
+                <span className={styles.text2__seg0} data-react-edit-prop="amountText">{amountText}</span>
             </div>
-                <div className={`${styles.text1} ${isThemeColoredPrizeName ? styles.officialRecommendationPrizeName : ''}`} style={isThemeColoredPrizeName ? {color: amountColor} : undefined}>{renderPrizeName(displayedPrizeText)}</div>
+                <div data-react-edit-prop="prizeText" className={`${styles.text1} ${isThemeColoredPrizeName ? styles.officialRecommendationPrizeName : ''}`} style={isThemeColoredPrizeName ? {color: amountColor} : undefined}>{renderPrizeName(displayedPrizeText)}</div>
           </>
         )}
       </div>
@@ -260,20 +283,21 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <span style={{color: amountColor}}>+50</span>
         </div>
       ) : isDouziFamilyPackPrize ? (
-        <div className={`${styles.subText} ${styles.familyPackSubText}`}>
-          <div className={styles.familyPackSubTextLine}>毛绒公仔/毛绒挂件/AI抖仔挂件/盲盒/冰箱贴</div>
-          <div className={styles.familyPackSubTextLineWrap}>
-            <img src={familyPackDecoration} className={styles.familyPackDecoration} />
-            <span className={styles.familyPackSubTextLine}>随机发一件</span>
-          </div>
+        <div className={styles.familyPackAddress}>
+          <RandomPrizeAddress
+            descriptionText={finalPrizeSubText}
+            descriptionEditProp="prizeSubText"
+            accentGradientStart={buttonGradientStart}
+            accentGradientEnd={buttonGradientEnd}
+          />
         </div>
       ) : hasNoSubText ? null : (
-        <div className={`${styles.subText} ${isOfficialRecommendationPrize ? styles.officialRecommendationSubText : ''}`}>{finalPrizeSubText}</div>
+        <div data-react-edit-prop="prizeSubText" className={`${styles.subText} ${isOfficialRecommendationPrize ? styles.officialRecommendationSubText : ''}`}>{finalPrizeSubText}</div>
       )}
-      {!isContentDiagnosisPrize ? (
+      {!isContentDiagnosisPrize && !isDouziFamilyPackPrize ? (
         <div className={styles.buttonPage}>
           <div className={styles.buttonWrap} style={buttonStyle}>
-            <div className={styles.buttonText}>{buttonText}</div>
+            <div className={styles.buttonText} data-react-edit-prop="buttonText">{buttonText}</div>
           </div>
         </div>
       ) : null}

@@ -5,6 +5,16 @@
   box-sizing: border-box;
   position: relative;
 }
+.familyPackPage {
+  height: 554.87px;
+}
+.familyPackPage .wrap,
+.familyPackPage .container {
+  height: 554.87px;
+}
+.familyPackPage .image {
+  height: 436.58px;
+}
 .wrap {
   position: absolute;
   top: 0px;
@@ -64,6 +74,13 @@
 .trafficCouponImage {
   transform: scale(1.36);
   transform-origin: center center;
+}
+.trafficCouponComponent {
+  position: absolute;
+  top: 22px;
+  left: 147px;
+  width: 282px;
+  height: 208px;
 }
 .officialRecommendationImage {
   transform: scale(2);
@@ -233,31 +250,10 @@
   line-height: 32px;
   font-weight: 400;
 }
-.familyPackSubText {
-  top: 364px;
-  font-family: "Source Han Sans CN Regular";
-  font-size: 24px;
-  line-height: 32px;
-  font-weight: 400;
-  white-space: normal;
-}
-.familyPackSubTextLine {
-  position: relative;
-  z-index: 1;
-}
-.familyPackSubTextLineWrap {
-  position: relative;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-}
-.familyPackDecoration {
+.familyPackAddress {
   position: absolute;
-  z-index: 0;
-  top: 24px;
+  top: 379.81px;
   left: 50%;
-  width: 130px;
-  height: auto;
   transform: translateX(-50%);
 }
 .buttonPage {

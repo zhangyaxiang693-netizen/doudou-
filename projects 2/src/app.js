@@ -61,72 +61,17 @@ const headerDefaultMainVisualUrl = new URL("../头图/assets/主视觉.png", imp
 const navigationBarSvgUrl = new URL("../导航栏/顶栏.svg", import.meta.url).href;
 const contentModuleImageUrl = new URL("../内容模块.png", import.meta.url).href;
 const contentModuleImage2Url = new URL("../内容模块2.png", import.meta.url).href;
+const trafficCouponPrizeBaseUrl = new URL("../奖品-流量券/assets/image_1.png", import.meta.url).href;
 const mockPrizeLibrary = [
   {
-    id: "traffic_coupon_5",
-    name: "5元流量券",
-    image: new URL("../九宫格-奖品库/5元流量券.png", import.meta.url).href,
-    copyAmount: "5",
-    copyThreshold: "30",
-    copy: "满30元赠价值5元流量",
-  },
-  {
-    id: "traffic_coupon_6",
-    name: "6元流量券",
-    image: new URL("../九宫格-奖品库/6元流量券.png", import.meta.url).href,
-    copyAmount: "6",
-    copyThreshold: "68",
-    copy: "满68元赠价值6元流量",
-  },
-  {
-    id: "traffic_coupon_9",
-    name: "9元流量券",
-    image: new URL("../九宫格-奖品库/9元流量券.png", import.meta.url).href,
-    copyAmount: "9",
-    copyThreshold: "98",
-    copy: "满98元赠价值9元流量",
-  },
-  {
-    id: "traffic_coupon_10",
+    id: "traffic_coupon",
     name: "10元流量券",
     image: new URL("../九宫格-奖品库/10元流量券.png", import.meta.url).href,
+    type: "traffic_coupon",
     copyAmount: "10",
     copyThreshold: "100",
     copy: "满100元赠价值10元流量",
-  },
-  {
-    id: "traffic_coupon_12",
-    name: "12元流量券",
-    image: new URL("../九宫格-奖品库/12元流量券.png", import.meta.url).href,
-    copyAmount: "12",
-    copyThreshold: "150",
-    copy: "满150元赠价值12元流量",
-  },
-  {
-    id: "traffic_coupon_16_198",
-    name: "16元流量券",
-    optionLabel: "16元流量券（满198元）",
-    image: new URL("../九宫格-奖品库/16元流量券.png", import.meta.url).href,
-    copyAmount: "16",
-    copyThreshold: "198",
-    copy: "满198元赠价值16元流量",
-  },
-  {
-    id: "traffic_coupon_22_visual_16",
-    name: "22元流量券",
-    image: new URL("../九宫格-奖品库/22元流量券.png", import.meta.url).href,
-    copyAmount: "22",
-    copyThreshold: "280",
-    copy: "满280元赠价值22元流量",
-  },
-  {
-    id: "traffic_coupon_16_190",
-    name: "16元流量券",
-    optionLabel: "16元流量券（满190元）",
-    image: new URL("../九宫格-奖品库/16元流量券.png", import.meta.url).href,
-    copyAmount: "16",
-    copyThreshold: "190",
-    copy: "满190元赠价值16元流量",
+    optionLabel: "流量券",
   },
   {
     id: "official_recommendation",
@@ -144,6 +89,7 @@ const mockPrizeLibrary = [
     id: "douzi_family_pack",
     name: "DOU仔随机周边",
     image: new URL("../九宫格-奖品库/dou仔周边全家福.png", import.meta.url).href,
+    type: "douzi_family_pack",
     copy: "毛绒公仔/毛绒挂件/AI抖仔挂件/盲盒/冰箱贴\n随机发一件",
   },
   {
@@ -2364,7 +2310,7 @@ function getPrdBlueprintPrizeNumber(fieldName) {
 }
 
 function isLotteryPrizePropKey(propKey) {
-  return /^prize\d+(Name|Text|Copy)?$/.test(String(propKey || ""));
+  return /^prize\d+(Name|Text|Copy|Amount|Threshold)?$/.test(String(propKey || ""));
 }
 
 function isPrdBlueprintFieldMatch(field, fieldName) {
@@ -2629,7 +2575,7 @@ function deletePageTemplateBlueprintPrize(moduleIndex, childIndex, deleteIndex, 
       const parsed = parsedBase || parsedVersion;
       if (!parsed || Number(parsed.moduleIndex) !== Number(moduleIndex)) return row;
       const prizeMatch = String(parsed.compoundKey || "").match(
-        /^(\d+)\.prize(\d+)(Name|Text|Copy)?$/,
+        /^(\d+)\.prize(\d+)(Name|Text|Copy|Amount|Threshold)?$/,
       );
       if (!prizeMatch || Number(prizeMatch[1]) !== Number(childIndex)) return row;
       const prizeIndex = Number(prizeMatch[2]);
@@ -2669,7 +2615,7 @@ function movePageTemplateBlueprintPrize(
   }
 
   ["", ...versionNames.filter(Boolean)].forEach((versionName) => {
-    ["", "Name", "Text", "Copy"].forEach((suffix) => {
+    ["", "Name", "Text", "Copy", "Amount", "Threshold"].forEach((suffix) => {
       const currentKey = getPageTemplatePrizeRowKey(
         moduleIndex,
         childIndex,
@@ -7377,6 +7323,7 @@ function isTextareaPropField(field) {
 function serializePrizeOption(prize) {
   const normalized = normalizePrizeCopyMeta(prize);
   return JSON.stringify({
+    type: normalized.type,
     name: normalized.name,
     image: normalized.image,
     copy: normalized.copy,
@@ -7425,7 +7372,7 @@ function normalizeLegacyCouponPackText(value) {
 function normalizeLegacyCouponPackProps(schemaId, props = {}) {
   const normalized = { ...props };
   Object.keys(normalized).forEach((key) => {
-    if (/^prize\d+(?:Name|Text)?$/.test(key) && typeof normalized[key] === "string") {
+    if (/^prize\d+(?:Name|Text|Copy|Amount|Threshold)?$/.test(key) && typeof normalized[key] === "string") {
       normalized[key] = normalizeLegacyCouponPackText(normalized[key]);
     }
   });
@@ -7442,24 +7389,39 @@ function normalizeLegacyCouponPackProps(schemaId, props = {}) {
 function normalizePrizeCopyMeta(prize = {}, sourceText = "") {
   const name = prize.name || prize.title || prize.label || "";
   const copy = prize.copy || prize.text || prize.description || "";
+  const image = prize.image || prize.imageUrl || prize.url || prize.src || "";
   const copyParts = getTrafficCouponCopyParts([sourceText, copy, name].filter(Boolean).join(" "));
   const nameAmount = getTrafficCouponAmountFromText(name);
-  const copyAmount =
-    nameAmount ||
-    prize.copyAmount ||
-    copyParts.amount ||
-    getTrafficCouponAmountFromText(sourceText);
-  const copyThreshold =
-    copyParts.threshold ||
-    prize.copyThreshold ||
-    (copyAmount ? getDefaultTrafficCouponThreshold(copyAmount) : "");
-  const renderedCopy = copyAmount
-    ? renderTrafficCouponCopy(copyAmount, copyThreshold)
-    : copy || (isNoPrizeCopyName(name) ? "" : "满30元赠价值5元流量");
+  const sourceAmount = getTrafficCouponAmountFromText(sourceText);
+  const imageLibraryItem = image
+    ? mockPrizeLibrary.find((item) => item.image === image)
+    : null;
+  const declaredType = imageLibraryItem
+    ? imageLibraryItem.type || "standard"
+    : String(prize.type || "").trim();
+  const isTrafficCoupon =
+    declaredType === "traffic_coupon" ||
+    (!declaredType && Boolean(nameAmount || sourceAmount || copyParts.amount));
+  const copyAmount = isTrafficCoupon
+    ? prize.copyAmount || nameAmount || sourceAmount || copyParts.amount
+    : "";
+  const copyThreshold = isTrafficCoupon
+    ? copyParts.threshold ||
+      prize.copyThreshold ||
+      (copyAmount ? getDefaultTrafficCouponThreshold(copyAmount) : "")
+    : "";
+  const type = isTrafficCoupon ? "traffic_coupon" : declaredType || "standard";
+  const explicitCopyParts = getTrafficCouponCopyParts(copy);
+  const renderedCopy = isTrafficCoupon
+    ? copy && !explicitCopyParts.amount
+      ? copy
+      : renderTrafficCouponCopy(copyAmount, copyThreshold)
+    : copy;
   return {
     ...prize,
+    type,
     name,
-    image: prize.image || prize.imageUrl || prize.url || prize.src || "",
+    image,
     copy: renderedCopy,
     copyThreshold,
     copyAmount,
@@ -7470,11 +7432,25 @@ function serializePrizeValueWithName(value, name) {
   const parsed = parsePrizeValue(value);
   const trimmedName = String(name ?? "").trim();
   if (!parsed) return "";
+  const nameAmount = getTrafficCouponAmountFromText(trimmedName);
+  const amountOverrides = parsed.type === "traffic_coupon" && nameAmount
+    ? {
+        type: "traffic_coupon",
+        copyAmount: nameAmount,
+        copyThreshold: getDefaultTrafficCouponThreshold(nameAmount),
+        copy: renderTrafficCouponCopy(
+          nameAmount,
+          getDefaultTrafficCouponThreshold(nameAmount),
+        ),
+      }
+    : {};
   const normalized = normalizePrizeCopyMeta({
     ...parsed,
     name: trimmedName || parsed.name || "",
+    ...amountOverrides,
   });
   return JSON.stringify({
+    type: normalized.type,
     name: normalized.name,
     image: normalized.image,
     copy: normalized.copy,
@@ -7492,12 +7468,45 @@ function serializePrizeValueWithCopy(value, copy) {
     copy: trimmedCopy || parsed.copy || "",
   }, trimmedCopy);
   return JSON.stringify({
+    type: normalized.type,
+    name: normalized.name,
+    image: normalized.image,
+    copy: trimmedCopy || normalized.copy,
+    copyThreshold: normalized.copyThreshold,
+    copyAmount: normalized.copyAmount,
+  });
+}
+
+function serializePrizeValueWithAmount(value, amount) {
+  const parsed = parsePrizeValue(value);
+  if (!parsed) return "";
+  const copyAmount = String(amount ?? "").trim();
+  const copyThreshold = getDefaultTrafficCouponThreshold(copyAmount);
+  const normalized = normalizePrizeCopyMeta({
+    ...parsed,
+    type: "traffic_coupon",
+    copyAmount,
+    copyThreshold,
+    copy: renderTrafficCouponCopy(copyAmount, copyThreshold),
+  });
+  return JSON.stringify({
+    type: normalized.type,
     name: normalized.name,
     image: normalized.image,
     copy: normalized.copy,
     copyThreshold: normalized.copyThreshold,
     copyAmount: normalized.copyAmount,
   });
+}
+
+function syncPrizeCompanionProps(props, prizeKey, value) {
+  const match = String(prizeKey || "").match(/^prize(\d+)$/);
+  const parsed = parsePrizeValue(value);
+  if (!props || !match || !parsed) return;
+  const prefix = `prize${match[1]}`;
+  props[`${prefix}Name`] = parsed.name;
+  props[`${prefix}Text`] = parsed.name;
+  props[`${prefix}Copy`] = parsed.copy;
 }
 
 function parsePrizeValue(value) {
@@ -7507,6 +7516,7 @@ function parsePrizeValue(value) {
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === "object") {
       return normalizePrizeCopyMeta({
+        type: parsed.type || "",
         name: parsed.name || parsed.title || parsed.label || "",
         image: parsed.image || parsed.imageUrl || parsed.url || parsed.src || "",
         copy: parsed.copy || parsed.text || parsed.description || "",
@@ -7518,6 +7528,31 @@ function parsePrizeValue(value) {
     return normalizePrizeCopyMeta({ name: raw, image: "", copy: "" }, raw);
   }
   return normalizePrizeCopyMeta({ name: raw, image: "", copy: "" }, raw);
+}
+
+function isTrafficCouponPrizeValue(prize) {
+  if (prize?.type) return prize.type === "traffic_coupon";
+  return Boolean(
+    prize && (
+      getTrafficCouponAmountFromText(prize.name) ||
+      getTrafficCouponAmountFromText(prize.copy)
+    )
+  );
+}
+
+function renderPrizeLibraryThumbnail(prize) {
+  if (!prize) return "<i></i>";
+  if (isTrafficCouponPrizeValue(prize)) {
+    return `
+      <span class="prize-library-traffic-coupon-thumb">
+        <img src="${escapeAttr(trafficCouponPrizeBaseUrl)}" alt="" />
+        <b>${escapeHtml(prize.copyAmount || getTrafficCouponAmountFromText(prize.name) || "10")}</b>
+      </span>
+    `;
+  }
+  return prize.image
+    ? `<img src="${escapeAttr(prize.image)}" alt="" />`
+    : "<i></i>";
 }
 
 function normalizePrizeLookupText(value) {
@@ -7534,6 +7569,13 @@ function findPrizeLibraryItemByText(value) {
   const parsed = parsePrizeValue(value);
   const normalized = normalizePrizeLookupText(parsed?.name || value);
   if (!normalized) return null;
+  if (parsed?.type === "traffic_coupon") {
+    return mockPrizeLibrary.find((item) => item.id === "traffic_coupon") || null;
+  }
+  const imageMatchedItem = parsed?.image
+    ? mockPrizeLibrary.find((item) => item.image === parsed.image)
+    : null;
+  if (imageMatchedItem) return imageMatchedItem;
   const aliases = {
     券包: "coupon_pack",
     "1000元券包": "coupon_pack",
@@ -7544,8 +7586,9 @@ function findPrizeLibraryItemByText(value) {
     内容诊断积分: "points",
     剪映vip: "jianying_vip",
     剪映vip月卡: "jianying_vip",
-    dou流量券: "traffic_coupon_6",
-    "dou+流量券": "traffic_coupon_6",
+    dou流量券: "traffic_coupon",
+    "dou+流量券": "traffic_coupon",
+    流量券: "traffic_coupon",
     dou官方推荐机会: "official_recommendation",
     "dou+官方推荐机会": "official_recommendation",
     dou仔周边: "douzi_merch",
@@ -7555,12 +7598,14 @@ function findPrizeLibraryItemByText(value) {
     dou仔全家福随机发: "douzi_family_pack",
     dou仔周边全家福: "douzi_family_pack",
     dou仔周边帆布包: "douzi_canvas_bag",
-    "22元流量券": "traffic_coupon_22_visual_16",
   };
   const aliasId = aliases[normalized];
   if (aliasId) return mockPrizeLibrary.find((item) => item.id === aliasId) || null;
   if (/^内容诊断\d*积分$/.test(normalized)) {
     return mockPrizeLibrary.find((item) => item.id === "points") || null;
+  }
+  if (getTrafficCouponAmountFromText(parsed?.name || value)) {
+    return mockPrizeLibrary.find((item) => item.id === "traffic_coupon") || null;
   }
   const exactNameMatchedItem = mockPrizeLibrary.find((item) =>
     normalizePrizeLookupText(item.name) === normalized
@@ -7587,39 +7632,63 @@ function normalizePrizeLibraryValue(value) {
     (item) => serializePrizeOption(item) === rawValue,
   );
   if (exactItem) return rawValue;
+  const parsed = parsePrizeValue(value);
   const item = findPrizeLibraryItemByText(value);
-  return item ? serializePrizeOption(normalizePrizeCopyMeta(item, value)) : "";
+  if (!item) return parsed ? serializePrizeOption(parsed) : "";
+  const normalizedItem = normalizePrizeCopyMeta({
+    ...item,
+    ...(parsed || {}),
+    name: parsed?.name || item.name,
+    image: parsed?.image || item.image,
+    copy: parsed?.copy || item.copy,
+    copyAmount:
+      parsed?.copyAmount ||
+      getTrafficCouponAmountFromText(parsed?.name) ||
+      item.copyAmount ||
+      "",
+    copyThreshold: parsed?.copyThreshold || item.copyThreshold || "",
+  }, value);
+  return serializePrizeOption(normalizedItem);
 }
 
 function isPageTemplatePrizeField(field) {
   return /^(\d+)\.prize\d+$/.test(getPageTemplateFieldLocalCompoundKey(field));
 }
 
-function renderPrizeLibrarySelect(value, dataAttr, ariaLabel, nameDataAttr = "", copyDataAttr = "") {
+function renderPrizeLibrarySelect(
+  value,
+  dataAttr,
+  ariaLabel,
+  nameDataAttr = "",
+  copyDataAttr = "",
+  amountDataAttr = "",
+) {
   const rawValue = String(value ?? "");
   const optionValues = new Set(mockPrizeLibrary.map((item) => serializePrizeOption(item)));
-  const customPrize = rawValue && !optionValues.has(rawValue) ? parsePrizeValue(rawValue) : null;
   const selectedPrize = rawValue ? parsePrizeValue(rawValue) : null;
+  const selectedLibraryItem = selectedPrize ? findPrizeLibraryItemByText(rawValue) : null;
+  const customPrize = rawValue && !optionValues.has(rawValue)
+    ? selectedPrize
+    : null;
   return `
     <div class="prize-library-control">
       <span class="prize-library-thumb">
-        ${selectedPrize?.image
-          ? `<img src="${escapeAttr(selectedPrize.image)}" alt="" />`
-          : "<i></i>"}
+        ${renderPrizeLibraryThumbnail(selectedPrize)}
       </span>
       <select class="prize-library-select" ${dataAttr} aria-label="${escapeAttr(ariaLabel)}">
         <option value="" ${rawValue ? "" : "selected"}>占位奖品</option>
         ${mockPrizeLibrary.map((item) => {
           const optionValue = serializePrizeOption(item);
+          const isSelected = rawValue === optionValue;
           return `
-            <option value="${escapeAttr(optionValue)}" ${rawValue === optionValue ? "selected" : ""}>
+            <option value="${escapeAttr(optionValue)}" ${isSelected ? "selected" : ""}>
               ${escapeHtml(item.optionLabel || item.name)}
             </option>
           `;
         }).join("")}
         ${customPrize ? `
-          <option value="${escapeAttr(rawValue)}" selected>
-            ${escapeHtml(customPrize.name || "已选奖品")}
+          <option value="${escapeAttr(rawValue)}" data-custom-prize-option selected>
+            ${escapeHtml(selectedLibraryItem?.optionLabel || customPrize.name || "已选奖品")}
           </option>
         ` : ""}
       </select>
@@ -7635,9 +7704,19 @@ function renderPrizeLibrarySelect(value, dataAttr, ariaLabel, nameDataAttr = "",
           class="prize-library-copy-input"
           type="text"
           ${copyDataAttr}
-          value="${escapeAttr(selectedPrize.copy || "满30元赠价值5元流量")}"
+          value="${escapeAttr(selectedPrize.copy || "")}"
           aria-label="${escapeAttr(`${ariaLabel}文案`)}"
         />
+        ${isTrafficCouponPrizeValue(selectedPrize) ? `
+          <input
+            class="prize-library-amount-input"
+            type="text"
+            inputmode="decimal"
+            ${amountDataAttr}
+            value="${escapeAttr(selectedPrize.copyAmount || getTrafficCouponAmountFromText(selectedPrize.name) || "")}"
+            aria-label="${escapeAttr(`${ariaLabel}券面数字`)}"
+          />
+        ` : ""}
       ` : ""}
     </div>
   `;
@@ -7671,34 +7750,69 @@ function renderSelectFieldControl(field, value, dataAttr, ariaLabel = "") {
   `;
 }
 
-function renderFixedPrizeLibrarySelect(value, dataAttr, ariaLabel) {
+function renderFixedPrizeLibrarySelect(
+  value,
+  dataAttr,
+  ariaLabel,
+  nameDataAttr = "",
+  copyDataAttr = "",
+  amountDataAttr = "",
+) {
   const selectedValue = normalizePrizeLibraryValue(value);
   const optionValues = new Set(mockPrizeLibrary.map((item) => serializePrizeOption(item)));
-  const customPrize = selectedValue && !optionValues.has(selectedValue) ? parsePrizeValue(selectedValue) : null;
   const selectedPrize = selectedValue ? parsePrizeValue(selectedValue) : null;
+  const selectedLibraryItem = selectedPrize ? findPrizeLibraryItemByText(selectedValue) : null;
+  const customPrize = selectedValue && !optionValues.has(selectedValue)
+    ? selectedPrize
+    : null;
   return `
     <div class="prize-library-control is-fixed">
       <span class="prize-library-thumb">
-        ${selectedPrize?.image
-          ? `<img src="${escapeAttr(selectedPrize.image)}" alt="" />`
-          : "<i></i>"}
+        ${renderPrizeLibraryThumbnail(selectedPrize)}
       </span>
       <select class="prize-library-select" ${dataAttr} aria-label="${escapeAttr(ariaLabel)}">
         <option value="" ${selectedValue ? "" : "selected"}>选择奖品</option>
         ${mockPrizeLibrary.map((item) => {
           const optionValue = serializePrizeOption(item);
+          const isSelected = selectedValue === optionValue;
           return `
-            <option value="${escapeAttr(optionValue)}" ${selectedValue === optionValue ? "selected" : ""}>
+            <option value="${escapeAttr(optionValue)}" ${isSelected ? "selected" : ""}>
               ${escapeHtml(item.optionLabel || item.name)}
             </option>
           `;
         }).join("")}
         ${customPrize ? `
-          <option value="${escapeAttr(selectedValue)}" selected>
-            ${escapeHtml(customPrize.name || "已选奖品")}
+          <option value="${escapeAttr(selectedValue)}" data-custom-prize-option selected>
+            ${escapeHtml(selectedLibraryItem?.optionLabel || customPrize.name || "已选奖品")}
           </option>
         ` : ""}
       </select>
+      ${selectedPrize ? `
+        <input
+          class="prize-library-name-input"
+          type="text"
+          ${nameDataAttr}
+          value="${escapeAttr(selectedPrize.name || "")}"
+          aria-label="${escapeAttr(`${ariaLabel}名称`)}"
+        />
+        <input
+          class="prize-library-copy-input"
+          type="text"
+          ${copyDataAttr}
+          value="${escapeAttr(selectedPrize.copy || "")}"
+          aria-label="${escapeAttr(`${ariaLabel}小字正文`)}"
+        />
+        ${isTrafficCouponPrizeValue(selectedPrize) ? `
+          <input
+            class="prize-library-amount-input"
+            type="text"
+            inputmode="decimal"
+            ${amountDataAttr}
+            value="${escapeAttr(selectedPrize.copyAmount || getTrafficCouponAmountFromText(selectedPrize.name) || "")}"
+            aria-label="${escapeAttr(`${ariaLabel}券面数字`)}"
+          />
+        ` : ""}
+      ` : ""}
     </div>
   `;
 }
@@ -7708,21 +7822,35 @@ function syncPrizeLibraryControl(select) {
   const thumb = control?.querySelector(".prize-library-thumb");
   if (!thumb) return;
   const selectedPrize = parsePrizeValue(select.value);
-  thumb.innerHTML = selectedPrize?.image
-    ? `<img src="${escapeAttr(selectedPrize.image)}" alt="" />`
-    : "<i></i>";
+  thumb.innerHTML = renderPrizeLibraryThumbnail(selectedPrize);
   let input = control.querySelector(".prize-library-name-input");
   let copyInput = control.querySelector(".prize-library-copy-input");
+  let amountInput = control.querySelector(".prize-library-amount-input");
+  const childIndexAttr = select.dataset.nodePropChildIndex !== undefined
+    ? ` data-node-prop-child-index="${escapeAttr(select.dataset.nodePropChildIndex)}"`
+    : "";
+  const amountAttr = select.dataset.adminPrizeProp
+    ? `data-admin-prize-amount-prop="${escapeAttr(select.dataset.adminPrizeProp)}"`
+    : select.dataset.adminMoleculeBlueprintProp
+      ? `data-admin-molecule-prize-amount-prop="${escapeAttr(select.dataset.adminMoleculeBlueprintProp)}"`
+    : select.dataset.adminPageBlueprintProp
+      ? `data-admin-page-prize-amount-prop="${escapeAttr(select.dataset.adminPageBlueprintProp)}"`
+    : select.dataset.prdPrizeTableRow !== undefined
+      ? `data-prd-prize-amount-row="${escapeAttr(select.dataset.prdPrizeTableRow)}"`
+    : select.dataset.blueprintPrizeValue
+      ? `data-blueprint-prize-amount-value="${escapeAttr(select.dataset.blueprintPrizeValue)}"`
+      : select.dataset.nodePropInput
+        ? `data-node-prize-amount-input="${escapeAttr(select.dataset.nodePropInput)}"${childIndexAttr}`
+        : "";
   if (!input && selectedPrize) {
-    const childIndexAttr = select.dataset.nodePropChildIndex !== undefined
-      ? ` data-node-prop-child-index="${escapeAttr(select.dataset.nodePropChildIndex)}"`
-      : "";
     const nameAttr = select.dataset.adminPrizeProp
       ? `data-admin-prize-name-prop="${escapeAttr(select.dataset.adminPrizeProp)}"`
       : select.dataset.adminMoleculeBlueprintProp
         ? `data-admin-molecule-prize-name-prop="${escapeAttr(select.dataset.adminMoleculeBlueprintProp)}"`
       : select.dataset.adminPageBlueprintProp
         ? `data-admin-page-prize-name-prop="${escapeAttr(select.dataset.adminPageBlueprintProp)}"`
+      : select.dataset.prdPrizeTableRow !== undefined
+        ? `data-prd-prize-name-row="${escapeAttr(select.dataset.prdPrizeTableRow)}"`
       : select.dataset.blueprintPrizeValue
         ? `data-blueprint-prize-name-value="${escapeAttr(select.dataset.blueprintPrizeValue)}"`
         : select.dataset.nodePropInput
@@ -7734,6 +7862,8 @@ function syncPrizeLibraryControl(select) {
         ? `data-admin-molecule-prize-copy-prop="${escapeAttr(select.dataset.adminMoleculeBlueprintProp)}"`
       : select.dataset.adminPageBlueprintProp
         ? `data-admin-page-prize-copy-prop="${escapeAttr(select.dataset.adminPageBlueprintProp)}"`
+      : select.dataset.prdPrizeTableRow !== undefined
+        ? `data-prd-prize-copy-row="${escapeAttr(select.dataset.prdPrizeTableRow)}"`
       : select.dataset.blueprintPrizeValue
         ? `data-blueprint-prize-copy-value="${escapeAttr(select.dataset.blueprintPrizeValue)}"`
         : select.dataset.nodePropInput
@@ -7755,10 +7885,61 @@ function syncPrizeLibraryControl(select) {
       copyInput = control.querySelector(".prize-library-copy-input");
     }
   }
+  if (!amountInput && amountAttr && isTrafficCouponPrizeValue(selectedPrize)) {
+    const anchor = copyInput || input || select;
+    anchor.insertAdjacentHTML(
+      "afterend",
+      `<input class="prize-library-amount-input" type="text" inputmode="decimal" ${amountAttr} aria-label="券面数字" />`,
+    );
+    amountInput = control.querySelector(".prize-library-amount-input");
+  }
   if (input && selectedPrize) input.value = selectedPrize.name || "";
   if (input && !selectedPrize) input.remove();
-  if (copyInput && selectedPrize) copyInput.value = selectedPrize.copy || "满30元赠价值5元流量";
+  if (copyInput && selectedPrize) copyInput.value = selectedPrize.copy || "";
   if (copyInput && !selectedPrize) copyInput.remove();
+  if (amountInput && isTrafficCouponPrizeValue(selectedPrize)) {
+    amountInput.value = selectedPrize.copyAmount || getTrafficCouponAmountFromText(selectedPrize.name) || "";
+  }
+  if (amountInput && !isTrafficCouponPrizeValue(selectedPrize)) amountInput.remove();
+}
+
+function syncPrizeLibraryEditableInputs(source, value) {
+  const control = source?.closest(".prize-library-control");
+  const prize = parsePrizeValue(value);
+  if (!control || !prize) return;
+  const select = control.querySelector(".prize-library-select");
+  const nameInput = control.querySelector(".prize-library-name-input");
+  const copyInput = control.querySelector(".prize-library-copy-input");
+  const amountInput = control.querySelector(".prize-library-amount-input");
+  if (select) {
+    const standardOption = [...select.options].find(
+      (option) => option.value === value && !option.dataset.customPrizeOption,
+    );
+    let customOption = select.querySelector("[data-custom-prize-option]");
+    if (standardOption) {
+      customOption?.remove();
+      select.value = value;
+    } else {
+      if (!customOption) {
+        customOption = document.createElement("option");
+        customOption.dataset.customPrizeOption = "";
+        select.append(customOption);
+      }
+      const libraryItem = findPrizeLibraryItemByText(value);
+      customOption.value = value;
+      customOption.textContent =
+        libraryItem?.optionLabel || prize.name || "已选奖品";
+      select.value = value;
+    }
+  }
+  if (nameInput && nameInput !== source) nameInput.value = prize.name || "";
+  if (copyInput && copyInput !== source) copyInput.value = prize.copy || "";
+  if (amountInput && amountInput !== source) {
+    amountInput.value =
+      prize.copyAmount ||
+      getTrafficCouponAmountFromText(prize.name) ||
+      "";
+  }
 }
 
 function getBlueprintRowField(module, row) {
@@ -8843,7 +9024,8 @@ function renderAdminComponentVerifier() {
                           `data-admin-prize-prop="${escapeAttr(key)}"`,
                           `${schema.name} ${field.label || key}`,
                           `data-admin-prize-name-prop="${escapeAttr(key)}"`,
-                            `data-admin-prize-copy-prop="${escapeAttr(key)}"`,
+                          `data-admin-prize-copy-prop="${escapeAttr(key)}"`,
+                          `data-admin-prize-amount-prop="${escapeAttr(key)}"`,
                         )
                       : isTextareaPropField(field)
                         ? `
@@ -8880,6 +9062,7 @@ function renderAdminComponentVerifier() {
                           `${childName} ${field.label || key}`,
                           `data-admin-molecule-prize-name-prop="${escapeAttr(compoundKey)}"`,
                           `data-admin-molecule-prize-copy-prop="${escapeAttr(compoundKey)}"`,
+                          `data-admin-molecule-prize-amount-prop="${escapeAttr(compoundKey)}"`,
                         )
                       : isTextareaPropField(field)
                         ? `
@@ -8928,6 +9111,7 @@ function renderAdminComponentVerifier() {
                           `${label}`,
                           `data-admin-page-prize-name-prop="${escapeAttr(compoundKey)}"`,
                           `data-admin-page-prize-copy-prop="${escapeAttr(compoundKey)}"`,
+                          `data-admin-page-prize-amount-prop="${escapeAttr(compoundKey)}"`,
                         )
                       : isTextareaPropField(field)
                         ? `
@@ -12228,6 +12412,9 @@ function renderModuleBoundBlueprintMatrixCell(field, isContentLocked = false) {
       row.value,
       `${isContentLocked ? "disabled" : ""} data-prd-prize-table-row="${escapeAttr(field.rowIndex)}"`,
       field.label,
+      `${isContentLocked ? "disabled" : ""} data-prd-prize-name-row="${escapeAttr(field.rowIndex)}"`,
+      `${isContentLocked ? "disabled" : ""} data-prd-prize-copy-row="${escapeAttr(field.rowIndex)}"`,
+      `${isContentLocked ? "disabled" : ""} data-prd-prize-amount-row="${escapeAttr(field.rowIndex)}"`,
     );
   }
   if (isSelectPropField(field.field || field)) {
@@ -14080,6 +14267,7 @@ function renderBlueprintModuleTable(context, module, index, contextName = contex
                               ariaLabel,
                               `data-blueprint-prize-name-value="${escapeAttr(controlId)}"`,
                               `data-blueprint-prize-copy-value="${escapeAttr(controlId)}"`,
+                              `data-blueprint-prize-amount-value="${escapeAttr(controlId)}"`,
                             )
                           : isSelectPropField(field)
                             ? renderSelectFieldControl(
@@ -14810,15 +14998,18 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       ? style2Fallbacks[index - 1]
       : null;
     const fallback =
-      mockPrizeLibrary.find((item) => item.name === (style2Fallback?.sourceName || fallbackName)) ||
+      findPrizeLibraryItemByText(style2Fallback?.sourceName || fallbackName) ||
       mockPrizeLibrary[index - 1] ||
       {};
     return {
+      type: parsed?.type || fallback.type || "standard",
       name: normalizeLegacyCouponPackText(
         nameValue || parsed?.name || style2Fallback?.name || fallback.name || `奖品${index}`,
       ),
       image: parsed?.image || fallback.image || "",
       copy: parsed?.copy || props[`prize${index}Copy`] || fallback.copy || "满30元赠价值5元流量",
+      copyAmount: parsed?.copyAmount || fallback.copyAmount || "",
+      copyThreshold: parsed?.copyThreshold || fallback.copyThreshold || "",
     };
   }
 
@@ -14827,7 +15018,7 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     const configuredCount = schema?.blueprint?.prizeProps?.length;
     const propPrizeIndexes = Object.entries(lotteryNode?.props || {})
       .filter(([, value]) => String(value || "").trim())
-      .map(([key]) => key.match(/^prize(\d+)(?:Name|Text|Copy)?$/)?.[1])
+      .map(([key]) => key.match(/^prize(\d+)(?:Name|Text|Copy|Amount|Threshold)?$/)?.[1])
       .filter(Boolean)
       .map(Number);
     const explicitCount = Number(lotteryNode?.props?.prizeCount) || 0;
@@ -15103,6 +15294,28 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       copy: winProps[`prize${selectedPrizeIndex}Copy`] || "",
       fallbackIndex: selectedPrizeIndex,
     };
+    const sourceVariantId =
+      lotteryInfo.parent?.activeLineageVariantId ||
+      lotteryNode.activeLineageVariantId ||
+      "base";
+    syncGuidedInlineEditToSource(
+      lotteryInfo,
+      sourceVariantId,
+      `prize${selectedPrizeIndex}`,
+      state.guidedLotteryPrizeOverrides.value,
+    );
+    syncGuidedInlineEditToSource(
+      lotteryInfo,
+      sourceVariantId,
+      `prize${selectedPrizeIndex}Name`,
+      state.guidedLotteryPrizeOverrides.name,
+    );
+    syncGuidedInlineEditToSource(
+      lotteryInfo,
+      sourceVariantId,
+      `prize${selectedPrizeIndex}Copy`,
+      state.guidedLotteryPrizeOverrides.copy,
+    );
     (state.pages || []).forEach((page) => {
       (page.nodes || []).forEach(applyGuidedLotteryPrizeOverridesToNode);
     });
@@ -15206,7 +15419,7 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       lotteryNode.props.prizeCount = normalizedCount;
       markPrdBoundProp(lotteryNode, "prizeCount");
       Object.keys(lotteryNode.props).forEach((key) => {
-        const match = key.match(/^prize(\d+)(Name|Text|Copy)?$/);
+        const match = key.match(/^prize(\d+)(Name|Text|Copy|Amount|Threshold)?$/);
         if (match && Number(match[1]) > normalizedCount) {
           delete lotteryNode.props[key];
         }
@@ -15237,16 +15450,16 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
         ? values.get(`${keyPrefix}${nameKey}`)
         : values.get(`${keyPrefix}${textKey}`);
       const explicitCopy = values.get(`${keyPrefix}${copyKey}`);
-      const prizeName = String(explicitName || parsedPrize?.name || "").trim();
-      const prizeCopy = String(explicitCopy || parsedPrize?.copy || "").trim();
+      const prizeName = String(parsedPrize?.name || explicitName || "").trim();
+      const prizeCopy = String(parsedPrize?.copy ?? explicitCopy ?? "").trim();
 
-      if (prizeName) {
+      if (parsedPrize || explicitName !== undefined) {
         lotteryNode.props[nameKey] = prizeName;
         lotteryNode.props[textKey] = prizeName;
         markPrdBoundProp(lotteryNode, nameKey);
         markPrdBoundProp(lotteryNode, textKey);
       }
-      if (prizeCopy) {
+      if (parsedPrize || explicitCopy !== undefined) {
         lotteryNode.props[copyKey] = prizeCopy;
         markPrdBoundProp(lotteryNode, copyKey);
       }
@@ -15326,7 +15539,7 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     const parsed =
       parsePageTemplateVariableRowKey(rowKey) ||
       parsePageTemplateVariableVersionRowKey(rowKey);
-    if (!parsed || !/^\d+\.prize(?:Count|\d+(?:Name|Text|Copy)?)$/.test(parsed.compoundKey)) return;
+    if (!parsed || !/^\d+\.prize(?:Count|\d+(?:Name|Text|Copy|Amount|Threshold)?)$/.test(parsed.compoundKey)) return;
     syncGeneratedLotteryBlueprintModule(parsed.moduleIndex);
   }
 
@@ -17385,6 +17598,59 @@ function slideGuidedHorizontalCarousel(nodeId) {
   }
 }
 
+function renderGuidedLotteryPopupStack(node) {
+  const winProps =
+    node.schemaId === "弹窗-中奖"
+      ? node.props || node.lotteryWinProps || {}
+      : node.lotteryWinProps || {};
+  const prizeCount = Math.max(1, Number(winProps.prizeCount) || 1);
+  const winPopups = Array.from({ length: prizeCount }, (_, index) => {
+    const prizeIndex = index + 1;
+    const parsedPrize = parsePrizeValue(winProps[`prize${prizeIndex}`]);
+    const prizeName =
+      winProps[`prize${prizeIndex}Text`] ||
+      parsedPrize?.name ||
+      `奖品${prizeIndex}`;
+    const splitPrize = splitLotteryPrizeText(prizeName);
+    const popupNode = {
+      ...node,
+      id: `${node.id}_prize_${prizeIndex}`,
+      schemaId: "弹窗-中奖",
+      type: "atom",
+      props: {
+        ...winProps,
+        selectedPrizeIndex: prizeIndex,
+        amountText: splitPrize.amountText,
+        prizeText: splitPrize.prizeText,
+        prizeSubText:
+          winProps[`prize${prizeIndex}Copy`] ||
+          parsedPrize?.copy ||
+          "",
+      },
+    };
+    return `
+      <div class="guided-popup-preview-item" data-guided-popup-prize-preview="${prizeIndex}">
+        ${renderComponent(popupNode)}
+      </div>
+    `;
+  });
+  const loseNode = {
+    ...node,
+    id: `${node.id}_lose`,
+    schemaId: "弹窗-未中奖",
+    type: "atom",
+    props: getLotteryPopupLoseProps(node),
+  };
+  return `
+    <div class="guided-popup-preview-stack">
+      ${winPopups.join("")}
+      <div class="guided-popup-preview-item" data-guided-popup-result-preview="lose">
+        ${renderComponent(loseNode)}
+      </div>
+    </div>
+  `;
+}
+
 function renderGuidedNode(node) {
   const selected = state.selectedId === node.id ? "selected" : "";
   const kind = getModuleKind(node.schemaId);
@@ -17396,6 +17662,8 @@ function renderGuidedNode(node) {
   const content =
     node.schemaId === "投放案例"
       ? renderPlacementCaseCarousel(node)
+      : node.isLotteryResultPopup
+        ? renderGuidedLotteryPopupStack(node)
       : renderComponent(node);
   const stateEntries = getGuidedStateEntries(node);
   const childStateGroups = getGuidedChildStateGroups(node);
@@ -17437,9 +17705,11 @@ function renderGuidedNode(node) {
           : ""
       }
       <div class="guided-node-actions">
-        <button data-guided-action="global" data-guided-node="${node.id}" aria-label="${node.isLotteryResultPopup ? "查看变量" : "编辑全局信息"}">
-          <span>◎</span><i>${node.isLotteryResultPopup ? "查看变量" : "模块人群"}</i>
-        </button>
+        ${node.isLotteryResultPopup ? "" : `
+          <button data-guided-action="global" data-guided-node="${node.id}" aria-label="编辑全局信息">
+            <span>◎</span><i>模块人群</i>
+          </button>
+        `}
         ${
           node.sourcePageTemplateId && node.sourcePageTemplateNodeIndex !== undefined
             ? `
@@ -17513,7 +17783,9 @@ function refreshGuidedReactNodeContent(node, propKey = "", caretOffset = null, p
   const content = guidedContent || nestedContent;
   if (!content) return false;
   const renderNode = parent ? getMoleculeChildRenderNode(parent, node) : node;
-  content.innerHTML = renderComponent(renderNode);
+  content.innerHTML = renderNode.isLotteryResultPopup
+    ? renderGuidedLotteryPopupStack(renderNode)
+    : renderComponent(renderNode);
   window.renderReactMaterials?.(content);
   if (propKey) {
     const nextEditable = content.querySelector(
@@ -18692,7 +18964,7 @@ function getPrdBoundPropKeys(node) {
 }
 
 function getLotteryPrizePropMatch(propKey) {
-  return String(propKey || "").match(/^prize(\d+)(Name|Text|Copy)?$/);
+  return String(propKey || "").match(/^prize(\d+)(Name|Text|Copy|Amount|Threshold)?$/);
 }
 
 function syncPrdBoundPrizeProp(sourceNode, targetNode, propKey) {
@@ -19923,6 +20195,7 @@ function renderReactComponent(schema, props, editOptions) {
     "正文-带底框样式1",
     "正文-带消耗阶梯",
     "正文-用户教育",
+    "弹窗-中奖",
   ].includes(schema.id);
   const fitSizeStyle = isAutoHeight
     ? `--component-width:${width}px;--component-height:${height}px;${shouldShrinkWrapAutoHeight ? "min-height:0;" : `min-height:${height}px;`}height:auto;`
@@ -20298,6 +20571,7 @@ function renderNodePropControl(node, field, options = {}) {
       `${node.name} ${field.label || key}`,
       `data-node-prize-name-input="${escapeAttr(key)}"${childIndexAttr}`,
       `data-node-prize-copy-input="${escapeAttr(key)}"${childIndexAttr}`,
+      `data-node-prize-amount-input="${escapeAttr(key)}"${childIndexAttr}`,
     );
   } else {
     control = `<textarea id="${escapeAttr(id)}" data-node-prop-input="${escapeAttr(key)}"${childIndexAttr} rows="${String(value).length > 48 ? 3 : 1}">${escapeHtml(String(value))}</textarea>`;
@@ -21706,10 +21980,19 @@ function renderGuidedExportDimensionGroup(dimensionTitle, entries) {
   `;
 }
 
+function getGuidedExportModuleKey(entry) {
+  if (entry?.nodeId) return `node:${entry.nodeId}`;
+  return `module:${
+    entry?.moduleFolderTitle ||
+    entry?.moduleTitle ||
+    entry?.exportKind ||
+    entry?.id ||
+    "default"
+  }`;
+}
+
 function renderGuidedExportModuleGroup(moduleTitle, entries) {
   const dimensionGroups = new Map();
-  const sourceNode = entries[0]?.sourceNode || entries[0]?.node;
-  const canDownloadModule = isConsumptionReturnMoleculeNode(sourceNode);
   entries.forEach((entry) => {
     if (!dimensionGroups.has(entry.dimensionTitle)) {
       dimensionGroups.set(entry.dimensionTitle, []);
@@ -21725,14 +22008,12 @@ function renderGuidedExportModuleGroup(moduleTitle, entries) {
         </div>
         <div class="guided-export-module-actions">
           <em>${entries.length} 张</em>
-          ${canDownloadModule ? `
-            <button
-              type="button"
-              data-guided-export-module
-              data-guided-export-module-page="${escapeAttr(entries[0]?.pageId || "")}"
-              data-guided-export-module-node="${escapeAttr(entries[0]?.nodeId || "")}"
-            >下载本模块全部切图</button>
-          ` : ""}
+          <button
+            type="button"
+            data-guided-export-module
+            data-guided-export-module-page="${escapeAttr(entries[0]?.pageId || "")}"
+            data-guided-export-module-key="${escapeAttr(getGuidedExportModuleKey(entries[0]))}"
+          >下载本模块全部切图</button>
         </div>
       </header>
       <div class="guided-export-dimension-list">
@@ -21749,10 +22030,11 @@ function renderGuidedExportModuleGroup(moduleTitle, entries) {
 function renderGuidedExportPageGroup(page, entries) {
   const moduleGroups = new Map();
   entries.forEach((entry) => {
-    if (!moduleGroups.has(entry.moduleTitle)) {
-      moduleGroups.set(entry.moduleTitle, []);
+    const moduleKey = getGuidedExportModuleKey(entry);
+    if (!moduleGroups.has(moduleKey)) {
+      moduleGroups.set(moduleKey, []);
     }
-    moduleGroups.get(entry.moduleTitle).push(entry);
+    moduleGroups.get(moduleKey).push(entry);
   });
   return `
     <section class="guided-export-page-group">
@@ -21764,9 +22046,12 @@ function renderGuidedExportPageGroup(page, entries) {
         <em>${entries.length} 张切图</em>
       </header>
       <div class="guided-export-module-list">
-        ${[...moduleGroups.entries()]
-          .map(([moduleTitle, moduleEntries]) =>
-            renderGuidedExportModuleGroup(moduleTitle, moduleEntries),
+        ${[...moduleGroups.values()]
+          .map((moduleEntries) =>
+            renderGuidedExportModuleGroup(
+              moduleEntries[0]?.moduleTitle || "模块",
+              moduleEntries,
+            ),
           )
           .join("")}
       </div>
@@ -22206,9 +22491,11 @@ async function downloadGuidedExportBatch() {
   }
 }
 
-async function downloadGuidedExportModule(pageId, nodeId, button) {
+async function downloadGuidedExportModule(pageId, moduleKey, button) {
   const entries = getGuidedCutExportEntries().filter(
-    (entry) => entry.pageId === pageId && entry.nodeId === nodeId,
+    (entry) =>
+      entry.pageId === pageId &&
+      getGuidedExportModuleKey(entry) === moduleKey,
   );
   if (!entries.length) return;
   await waitForExportPreviewReady();
@@ -23563,7 +23850,7 @@ function bindEvents() {
     if (guidedExportModule) {
       downloadGuidedExportModule(
         guidedExportModule.dataset.guidedExportModulePage,
-        guidedExportModule.dataset.guidedExportModuleNode,
+        guidedExportModule.dataset.guidedExportModuleKey,
         guidedExportModule,
       );
       return;
@@ -25694,6 +25981,16 @@ function bindEvents() {
     if (!found) return;
 
     if (prop) {
+      const popupPrizePreview = prop.closest("[data-guided-popup-prize-preview]");
+      const popupLosePreview = prop.closest('[data-guided-popup-result-preview="lose"]');
+      if (found.node.isLotteryResultPopup && popupPrizePreview) {
+        setPopupSelectedPrize(
+          found.node,
+          Number(popupPrizePreview.dataset.guidedPopupPrizePreview) || 1,
+        );
+      } else if (found.node.isLotteryResultPopup && popupLosePreview) {
+        setLotteryPopupResult(found.node, "lose");
+      }
       const caretOffset = getTextOffsetWithin(prop);
       const value = prop.textContent;
       const propKey = prop.dataset.editProp;
@@ -25712,7 +26009,8 @@ function bindEvents() {
       );
       if (
         state.view === "guided-preview" &&
-        isGuidedLotteryResultPopupNode(found.node)
+        isGuidedLotteryResultPopupNode(found.node) &&
+        !popupLosePreview
       ) {
         syncLotteryPopupCurrentPrizeCopy(found.node);
         syncPopupPrizesToSourceLottery(found.node);
@@ -25758,6 +26056,16 @@ function bindEvents() {
     const found = findNode(state.nodes, editingNodeId || state.selectedId);
     if (!found?.node || !shouldRefreshGuidedReactEditable(found.node, propKey, event)) return;
     const target = prop || variantProp;
+    const popupPrizePreview = target.closest("[data-guided-popup-prize-preview]");
+    const popupLosePreview = target.closest('[data-guided-popup-result-preview="lose"]');
+    if (found.node.isLotteryResultPopup && popupPrizePreview) {
+      setPopupSelectedPrize(
+        found.node,
+        Number(popupPrizePreview.dataset.guidedPopupPrizePreview) || 1,
+      );
+    } else if (found.node.isLotteryResultPopup && popupLosePreview) {
+      setLotteryPopupResult(found.node, "lose");
+    }
     const value = target.textContent;
     if (prop) {
       found.node.props[propKey] = value;
@@ -25800,6 +26108,12 @@ function bindEvents() {
     }
     if (state.view !== "guided-preview") return;
     const editable = event.target.closest("[data-edit-prop], [data-variant-prop]");
+    if (editable?.closest('[data-guided-popup-result-preview="lose"]')) {
+      window.requestAnimationFrame(() => {
+        if (state.view === "guided-preview") renderGuidedPreview();
+      });
+      return;
+    }
     const editingNodeId = editable?.closest("[data-node-id]")?.dataset.nodeId;
     const found = findNode(state.nodes, editingNodeId || state.selectedId);
     if (!isGuidedLotteryResultPopupNode(found?.node)) return;
@@ -25825,8 +26139,13 @@ function bindEvents() {
       if (!targetNode?.props) return;
       const value = serializePrizeValueWithName(targetNode.props[key], nodePrizeNameInput.value);
       targetNode.props[key] = value;
+      syncPrizeCompanionProps(targetNode.props, key, value);
+      syncPrizeLibraryEditableInputs(nodePrizeNameInput, value);
       const activeVariant = targetNode.variants?.find((item) => item.id === targetNode.activeVariantId);
-      if (activeVariant && key in activeVariant.props) activeVariant.props[key] = value;
+      if (activeVariant && key in activeVariant.props) {
+        activeVariant.props[key] = value;
+        syncPrizeCompanionProps(activeVariant.props, key, value);
+      }
       syncGuidedInlineEditToSource(
         childIndex === undefined ? found : { node: targetNode, parent: found.node },
         targetNode.activeLineageVariantId || found.node.activeLineageVariantId || "base",
@@ -25861,6 +26180,25 @@ function bindEvents() {
       return;
     }
 
+    const nodePrizeAmountInput = event.target.closest("[data-node-prize-amount-input]");
+    if (nodePrizeAmountInput) {
+      const found = getSelectedNodeInfo();
+      const key = nodePrizeAmountInput.dataset.nodePrizeAmountInput;
+      if (!found || !key) return;
+      const childIndex = nodePrizeAmountInput.dataset.nodePropChildIndex;
+      const targetNode = childIndex === undefined
+        ? found.node
+        : found.node.children?.[Number(childIndex)];
+      if (!targetNode?.props) return;
+      const value = serializePrizeValueWithAmount(targetNode.props[key], nodePrizeAmountInput.value);
+      targetNode.props[key] = value;
+      syncPrizeLibraryEditableInputs(nodePrizeAmountInput, value);
+      const activeVariant = targetNode.variants?.find((item) => item.id === targetNode.activeVariantId);
+      if (activeVariant && key in activeVariant.props) activeVariant.props[key] = value;
+      refreshAfterGuidedNodePropChange();
+      return;
+    }
+
     const adminPrizeNameInput = event.target.closest("[data-admin-prize-name-prop]");
     if (adminPrizeNameInput) {
       const key = adminPrizeNameInput.dataset.adminPrizeNameProp;
@@ -25868,6 +26206,15 @@ function bindEvents() {
       state.adminComponentVerifier.blueprint[key] = serializePrizeValueWithName(
         state.adminComponentVerifier.blueprint[key],
         adminPrizeNameInput.value,
+      );
+      syncPrizeCompanionProps(
+        state.adminComponentVerifier.blueprint,
+        key,
+        state.adminComponentVerifier.blueprint[key],
+      );
+      syncPrizeLibraryEditableInputs(
+        adminPrizeNameInput,
+        state.adminComponentVerifier.blueprint[key],
       );
       refreshAdminVerifierPreview();
       return;
@@ -25885,6 +26232,22 @@ function bindEvents() {
       return;
     }
 
+    const adminPrizeAmountInput = event.target.closest("[data-admin-prize-amount-prop]");
+    if (adminPrizeAmountInput) {
+      const key = adminPrizeAmountInput.dataset.adminPrizeAmountProp;
+      if (!key) return;
+      state.adminComponentVerifier.blueprint[key] = serializePrizeValueWithAmount(
+        state.adminComponentVerifier.blueprint[key],
+        adminPrizeAmountInput.value,
+      );
+      syncPrizeLibraryEditableInputs(
+        adminPrizeAmountInput,
+        state.adminComponentVerifier.blueprint[key],
+      );
+      refreshAdminVerifierPreview();
+      return;
+    }
+
     const adminMoleculePrizeNameInput = event.target.closest("[data-admin-molecule-prize-name-prop]");
     if (adminMoleculePrizeNameInput) {
       const key = adminMoleculePrizeNameInput.dataset.adminMoleculePrizeNameProp;
@@ -25892,6 +26255,15 @@ function bindEvents() {
       state.adminComponentVerifier.blueprint[key] = serializePrizeValueWithName(
         state.adminComponentVerifier.blueprint[key],
         adminMoleculePrizeNameInput.value,
+      );
+      syncPrizeCompanionProps(
+        state.adminComponentVerifier.blueprint,
+        key,
+        state.adminComponentVerifier.blueprint[key],
+      );
+      syncPrizeLibraryEditableInputs(
+        adminMoleculePrizeNameInput,
+        state.adminComponentVerifier.blueprint[key],
       );
       refreshAdminVerifierPreview();
       return;
@@ -25909,6 +26281,22 @@ function bindEvents() {
       return;
     }
 
+    const adminMoleculePrizeAmountInput = event.target.closest("[data-admin-molecule-prize-amount-prop]");
+    if (adminMoleculePrizeAmountInput) {
+      const key = adminMoleculePrizeAmountInput.dataset.adminMoleculePrizeAmountProp;
+      if (!key) return;
+      state.adminComponentVerifier.blueprint[key] = serializePrizeValueWithAmount(
+        state.adminComponentVerifier.blueprint[key],
+        adminMoleculePrizeAmountInput.value,
+      );
+      syncPrizeLibraryEditableInputs(
+        adminMoleculePrizeAmountInput,
+        state.adminComponentVerifier.blueprint[key],
+      );
+      refreshAdminVerifierPreview();
+      return;
+    }
+
     const adminPagePrizeNameInput = event.target.closest("[data-admin-page-prize-name-prop]");
     if (adminPagePrizeNameInput) {
       const key = adminPagePrizeNameInput.dataset.adminPagePrizeNameProp;
@@ -25916,6 +26304,15 @@ function bindEvents() {
       state.adminComponentVerifier.blueprint[key] = serializePrizeValueWithName(
         state.adminComponentVerifier.blueprint[key],
         adminPagePrizeNameInput.value,
+      );
+      syncPrizeCompanionProps(
+        state.adminComponentVerifier.blueprint,
+        key,
+        state.adminComponentVerifier.blueprint[key],
+      );
+      syncPrizeLibraryEditableInputs(
+        adminPagePrizeNameInput,
+        state.adminComponentVerifier.blueprint[key],
       );
       refreshAdminVerifierPreview();
       return;
@@ -25933,6 +26330,22 @@ function bindEvents() {
       return;
     }
 
+    const adminPagePrizeAmountInput = event.target.closest("[data-admin-page-prize-amount-prop]");
+    if (adminPagePrizeAmountInput) {
+      const key = adminPagePrizeAmountInput.dataset.adminPagePrizeAmountProp;
+      if (!key) return;
+      state.adminComponentVerifier.blueprint[key] = serializePrizeValueWithAmount(
+        state.adminComponentVerifier.blueprint[key],
+        adminPagePrizeAmountInput.value,
+      );
+      syncPrizeLibraryEditableInputs(
+        adminPagePrizeAmountInput,
+        state.adminComponentVerifier.blueprint[key],
+      );
+      refreshAdminVerifierPreview();
+      return;
+    }
+
     const blueprintPrizeNameInput = event.target.closest("[data-blueprint-prize-name-value]");
     if (blueprintPrizeNameInput) {
       const [contextId, moduleId, rowIndex] = blueprintPrizeNameInput.dataset.blueprintPrizeNameValue.split("|");
@@ -25943,6 +26356,7 @@ function bindEvents() {
       if (row) {
         const value = serializePrizeValueWithName(row.value, blueprintPrizeNameInput.value);
         row.value = value;
+        syncPrizeLibraryEditableInputs(blueprintPrizeNameInput, value);
         if (module.inputScope === "activity") {
           contexts.forEach((candidateContext) => {
             const sharedModule = candidateContext.modules.find(
@@ -25985,6 +26399,74 @@ function bindEvents() {
       return;
     }
 
+    const blueprintPrizeAmountInput = event.target.closest("[data-blueprint-prize-amount-value]");
+    if (blueprintPrizeAmountInput) {
+      const [contextId, moduleId, rowIndex] = blueprintPrizeAmountInput.dataset.blueprintPrizeAmountValue.split("|");
+      const contexts = getBlueprintContexts();
+      const context = contexts.find((item) => item.id === contextId);
+      const module = context?.modules.find((item) => item.id === moduleId);
+      const row = module?.rows[Number(rowIndex)];
+      if (row) {
+        row.value = serializePrizeValueWithAmount(row.value, blueprintPrizeAmountInput.value);
+        syncPrizeLibraryEditableInputs(blueprintPrizeAmountInput, row.value);
+      }
+      return;
+    }
+
+    const prdPrizeNameInput = event.target.closest("[data-prd-prize-name-row]");
+    if (prdPrizeNameInput) {
+      const rowIndex = Number(prdPrizeNameInput.dataset.prdPrizeNameRow);
+      if (state.prdTableRows[rowIndex]) {
+        state.prdTableRows[rowIndex].value = serializePrizeValueWithName(
+          state.prdTableRows[rowIndex].value,
+          prdPrizeNameInput.value,
+        );
+        syncPrizeLibraryEditableInputs(
+          prdPrizeNameInput,
+          state.prdTableRows[rowIndex].value,
+        );
+        syncGeneratedLotteryBlueprintRow(state.prdTableRows[rowIndex].key || "");
+        refreshPageTemplateModulePreviewByRowIndex(rowIndex);
+      }
+      return;
+    }
+
+    const prdPrizeAmountInput = event.target.closest("[data-prd-prize-amount-row]");
+    const prdPrizeCopyInput = event.target.closest("[data-prd-prize-copy-row]");
+    if (prdPrizeCopyInput) {
+      const rowIndex = Number(prdPrizeCopyInput.dataset.prdPrizeCopyRow);
+      if (state.prdTableRows[rowIndex]) {
+        state.prdTableRows[rowIndex].value = serializePrizeValueWithCopy(
+          state.prdTableRows[rowIndex].value,
+          prdPrizeCopyInput.value,
+        );
+        syncPrizeLibraryEditableInputs(
+          prdPrizeCopyInput,
+          state.prdTableRows[rowIndex].value,
+        );
+        syncGeneratedLotteryBlueprintRow(state.prdTableRows[rowIndex].key || "");
+        refreshPageTemplateModulePreviewByRowIndex(rowIndex);
+      }
+      return;
+    }
+
+    if (prdPrizeAmountInput) {
+      const rowIndex = Number(prdPrizeAmountInput.dataset.prdPrizeAmountRow);
+      if (state.prdTableRows[rowIndex]) {
+        state.prdTableRows[rowIndex].value = serializePrizeValueWithAmount(
+          state.prdTableRows[rowIndex].value,
+          prdPrizeAmountInput.value,
+        );
+        syncPrizeLibraryEditableInputs(
+          prdPrizeAmountInput,
+          state.prdTableRows[rowIndex].value,
+        );
+        syncGeneratedLotteryBlueprintRow(state.prdTableRows[rowIndex].key || "");
+        refreshPageTemplateModulePreviewByRowIndex(rowIndex);
+      }
+      return;
+    }
+
     const input = event.target.closest("[data-node-prop-input]");
     if (!input) return;
     const found = getSelectedNodeInfo();
@@ -26014,9 +26496,23 @@ function bindEvents() {
     }
 
     targetNode.props[input.dataset.nodePropInput] = value;
+    if (isPrizePropField(field)) {
+      syncPrizeCompanionProps(
+        targetNode.props,
+        input.dataset.nodePropInput,
+        value,
+      );
+    }
     const activeVariant = targetNode.variants?.find((item) => item.id === targetNode.activeVariantId);
     if (activeVariant && input.dataset.nodePropInput in activeVariant.props) {
       activeVariant.props[input.dataset.nodePropInput] = value;
+      if (isPrizePropField(field)) {
+        syncPrizeCompanionProps(
+          activeVariant.props,
+          input.dataset.nodePropInput,
+          value,
+        );
+      }
     }
     syncGuidedInlineEditToSource(
       childIndex === undefined ? found : { node: targetNode, parent: found.node },
@@ -26153,6 +26649,11 @@ function bindEvents() {
     if (adminPagePrizeSelect) {
       const key = adminPagePrizeSelect.dataset.adminPageBlueprintProp;
       state.adminComponentVerifier.blueprint[key] = adminPagePrizeSelect.value;
+      syncPrizeCompanionProps(
+        state.adminComponentVerifier.blueprint,
+        key,
+        adminPagePrizeSelect.value,
+      );
       syncPrizeLibraryControl(adminPagePrizeSelect);
       refreshAdminVerifierPreview();
       return;
@@ -26162,6 +26663,11 @@ function bindEvents() {
     if (adminMoleculePrizeSelect) {
       const key = adminMoleculePrizeSelect.dataset.adminMoleculeBlueprintProp;
       state.adminComponentVerifier.blueprint[key] = adminMoleculePrizeSelect.value;
+      syncPrizeCompanionProps(
+        state.adminComponentVerifier.blueprint,
+        key,
+        adminMoleculePrizeSelect.value,
+      );
       syncPrizeLibraryControl(adminMoleculePrizeSelect);
       refreshAdminVerifierPreview();
       return;
@@ -26171,6 +26677,11 @@ function bindEvents() {
     if (adminPrizeSelect) {
       const key = adminPrizeSelect.dataset.adminPrizeProp;
       state.adminComponentVerifier.blueprint[key] = adminPrizeSelect.value;
+      syncPrizeCompanionProps(
+        state.adminComponentVerifier.blueprint,
+        key,
+        adminPrizeSelect.value,
+      );
       syncPrizeLibraryControl(adminPrizeSelect);
       refreshAdminVerifierPreview();
       return;
