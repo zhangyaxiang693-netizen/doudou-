@@ -86,7 +86,8 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 
 实现"所有登录用户可见后台入口 + 每次进后台输入统一密码 + 个人/公共组项目 + 个人↔组复制 + 后台管理用户/组/历史"。代码在 commit `c834f44`（远端）落地，后端接口已挂载、数据库 migration 已在本库应用（截至本次）。
 
-- **数据库表**（`supabase/migrations/202610090001_create_collaboration.sql`）：`app_users`（登录用户）、`collaboration_groups`（公共组）、`collaboration_records`（协作记录，scope=personal/team）。迁移含对已有 `projects` 数据回填到 personal 记录 + `sync_project_collaboration_record` 触发器（projects 增改时同步协作记录）。**本次迁移已在目标库应用，除开发库回润空库外回填 0 行。**
+- **数据库表**（`supabase/migrations/202610090001_create_collaboration.sql`）：`app_users`（登录用户）、`collaboration_groups`（公共组）、`collaboration_records`（协作记录，scope=personal/team）。迁移含对已有 `projects` 数据回填到 personal 记录 + `sync_project_collaboration_record` 触发器（projects 增改时同步协作记录）。
+- **⚠️ 迁移须在线上库手动应用（关键教训）**：迁移 SQL 建表 + 回填 + 触发器三部分必须**在线上( product )库完整执行**，否则后台"用户/历史记录"面板为空。此前线上库只建了表、**回填未执行且触发器缺失**，导致 8 个活跃项目的历史不在 `collaboration_records` 里、后台看不到数据。已手动补齐：回填 8 条 personal 记录 + `app_users` 增至 2 用户 + 重建 `projects_sync_collaboration_record` 触发器（`tgenabled=79` 启用）。排除差异时注意：**开发库( develop )与线上库( product )是不同 Supabase**，开发库无有效数据不代表线上无数据。
 - **后台密码**：`server/admin-access.cjs`，统一密码（默认 `zhangyaxiang`，可用 `ADMIN_ACCESS_PASSWORD` 覆盖），5 次错误锁定 60s；session 用 `adminUnlocked` 标记，`lock`/`unlock` 控制。前端入口在 `data-open-admin-dashboard`（所有登录用户可见），进入后台弹密码框。
 - **协作接口**：`server/collaboration-routes.cjs` → `GET/PUT /api/collaboration/bootstrap|sync`（需登录态，admin 返回全量、普通用户只返回本人 personal + 全部 team）、`PATCH /api/collaboration/records/:id`（需 `adminUnlocked`，后台覆盖历史记录时**同步创建新 `project_versions` 版本**）。
 - **前端状态**：`src/collaboration/store.js`（`copyRecord` 实现个人↔组复制，生成新 record id）、`src/collaboration/api.js`（调用协作接口）、`src/app.js` 中 `state.collaboration` 管理与后台面板（adminSection=users/teams/history/design）。
