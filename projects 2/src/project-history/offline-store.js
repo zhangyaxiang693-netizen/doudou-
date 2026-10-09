@@ -44,6 +44,8 @@ export async function saveLocalDraft({
   name,
   snapshot,
   synced = false,
+  scope = "personal",
+  teamId = null,
 }) {
   const record = {
     id,
@@ -53,6 +55,8 @@ export async function saveLocalDraft({
     name: String(name || "未命名活动"),
     snapshot,
     synced,
+    scope: scope === "team" ? "team" : "personal",
+    teamId: scope === "team" ? teamId : null,
     updatedAt: new Date().toISOString(),
   };
   await runTransaction("readwrite", (store) => store.put(record));

@@ -25,6 +25,25 @@ import {
   listLocalDrafts,
   saveLocalDraft,
 } from "./project-history/offline-store.js";
+import {
+  addUser,
+  copyRecord,
+  createTeam,
+  listRecordsForUser,
+  loadCollaborationState,
+  normalizeCollaborationState,
+  renameUser,
+  updateRecord,
+  updateTeam,
+  upsertRecord,
+} from "./collaboration/store.js";
+import {
+  getCollaborationState,
+  lockAdminAccess,
+  overrideCollaborationRecord,
+  syncCollaborationState,
+  unlockAdminAccess,
+} from "./collaboration/api.js";
 
 const GUIDED_CUT_EXPORT_WIDTH = 750;
 const GUIDED_CONSUMPTION_RETURN_EXPORT_SIDE_SPACE = 24;
@@ -36,7 +55,6 @@ const GUIDED_FALLBACK_HOT_PAGE_HEIGHT = 1502;
 const GUIDED_FALLBACK_CASE_BOTTOM_SPACE = 154;
 const GUIDED_FALLBACK_CASE_PAGE_HEIGHT = 1759;
 const GUIDED_S_LEVEL_BACKGROUND = "#E2DCFF";
-const ADMIN_ACCESS_PASSWORD = "zhangyaxiang";
 const DEFAULT_TRAFFIC_COUPON_THRESHOLD = "00";
 const DEFAULT_LOTTERY_PRIZE_COUNT = 3;
 const INITIAL_LOTTERY_PRIZE_COUNT = 8;
@@ -3966,6 +3984,26 @@ function createDefaultResourceDraft(levelId) {
   };
 }
 
+function getSessionUser() {
+  const user = window.currentUser || {};
+  const id = String(
+    user.employeeId || user.userId || user.unionId || user.openId || "",
+  ).trim();
+  return id
+    ? {
+        id,
+        employeeId: String(user.employeeId || "").trim(),
+        name: String(user.name || "当前用户").trim(),
+        avatarUrl: String(user.avatar || user.avatarUrl || "").trim(),
+        role: user.role,
+        isAdmin: user.isAdmin,
+      }
+    : null;
+}
+
+const sessionUser = getSessionUser();
+const initialCollaborationState = loadCollaborationState(sessionUser);
+
 const state = {
   view: "home",
   workflowType: "venue",
@@ -4025,8 +4063,19 @@ const state = {
     },
   },
   prdDemoStep: "upload",
+  collaboration: initialCollaborationState,
+  historyScope: "personal",
+  historyGroupId: initialCollaborationState.teams[0]?.id || "",
+  historySaveScope: "personal",
+  historySaveGroupId: "",
+  historyCollaborationRecordId: null,
+  adminSection: "users",
+  adminEditingRecordId: null,
+  adminNotice: "",
+  adminUnlocked: false,
   adminAuthModalOpen: false,
   adminAuthError: "",
+  adminAuthLoading: false,
   prdFileModalOpen: false,
   prdFeishuUrl: "",
   prdTextInput: "",
@@ -4075,7 +4124,7 @@ const state = {
   selectedLineageVariantId: "base",
   prdManualModuleVersions: {},
   libraryReturnView: null,
-  historyUser: null,
+  historyUser: sessionUser,
   historyProjects: [],
   historyLocalDrafts: [],
   historyVersions: {},
@@ -6375,12 +6424,122 @@ const PROJECT_HISTORY_APP_VERSION = "0.1.0";
 let projectHistoryAutosaveTimer = null;
 let lastProjectHistoryAutosaveSignature = "";
 let projectHistorySaveChain = Promise.resolve();
+let pendingManualSaveButton = null;
+
+function getCurrentCollaborationUser() {
+  const userId = sessionUser?.id || state.historyUser?.id || "";
+  return (
+    state.collaboration.users.find((user) => user.id === userId) ||
+    sessionUser ||
+    null
+  );
+}
+
+function getGroupById(groupId) {
+  return (
+    state.collaboration.teams.find(
+      (group) => group.id === String(groupId || ""),
+    ) || null
+  );
+}
+
+function currentUserIsAdmin() {
+  return state.adminUnlocked;
+}
+
+let collaborationSyncTimer = null;
+
+function setCollaborationState(nextState) {
+  state.collaboration = nextState;
+  window.clearTimeout(collaborationSyncTimer);
+  collaborationSyncTimer = window.setTimeout(async () => {
+    try {
+      await syncCollaborationState(state.collaboration);
+    } catch (error) {
+      console.warn("协作数据暂未同步到服务端，已保留本地副本", error);
+    }
+  }, 400);
+  return nextState;
+}
+
+function mergeCollaborationCollections(remoteItems = [], localItems = []) {
+  const merged = new Map();
+  [...remoteItems, ...localItems].forEach((item) => {
+    if (!item?.id) return;
+    const existing = merged.get(String(item.id));
+    if (
+      !existing ||
+      new Date(item.updatedAt || 0).getTime() >=
+        new Date(existing.updatedAt || 0).getTime()
+    ) {
+      merged.set(String(item.id), item);
+    }
+  });
+  return [...merged.values()];
+}
+
+async function refreshCollaborationFromServer({ syncLocal = true } = {}) {
+  try {
+    const remote = await getCollaborationState();
+    const merged = normalizeCollaborationState(
+      {
+        version: 1,
+        users: mergeCollaborationCollections(
+          remote.users,
+          state.collaboration.users,
+        ),
+        teams: mergeCollaborationCollections(
+          remote.teams,
+          state.collaboration.teams,
+        ),
+        records: mergeCollaborationCollections(
+          remote.records,
+          state.collaboration.records,
+        ),
+        updatedAt: remote.updatedAt,
+      },
+      sessionUser,
+    );
+    state.collaboration = merged;
+    if (!state.historyGroupId && merged.teams[0]) {
+      state.historyGroupId = merged.teams[0].id;
+    }
+    if (syncLocal) {
+      window.clearTimeout(collaborationSyncTimer);
+      collaborationSyncTimer = window.setTimeout(() => {
+        syncCollaborationState(state.collaboration).catch((error) => {
+          console.warn("本地协作数据上传失败", error);
+        });
+      }, 100);
+    }
+    render();
+    return true;
+  } catch (error) {
+    console.warn("协作服务不可用，继续使用本地数据", error);
+    return false;
+  }
+}
+
+async function openAdminDashboard() {
+  state.adminUnlocked = false;
+  state.adminAuthError = "";
+  try {
+    await lockAdminAccess();
+  } catch (error) {
+    console.warn("后台解锁状态清理失败", error);
+  }
+  state.adminAuthModalOpen = true;
+  render();
+}
 
 function startNewHistorySession() {
   window.clearTimeout(projectHistoryAutosaveTimer);
   state.historyCurrentProjectId = null;
   state.historyCurrentVersionId = null;
   state.historyLocalDraftId = resetActiveHistoryLocalDraftId();
+  state.historySaveScope = "personal";
+  state.historySaveGroupId = "";
+  state.historyCollaborationRecordId = null;
   lastProjectHistoryAutosaveSignature = "";
 }
 
@@ -6429,16 +6588,25 @@ function createCurrentProjectSnapshot() {
   });
 }
 
-async function persistCurrentLocalDraft(snapshot, synced = false) {
+async function persistCurrentLocalDraft(
+  snapshot,
+  synced = false,
+  scope = state.historySaveScope,
+  groupId = state.historySaveGroupId,
+) {
+  const currentUser = getCurrentCollaborationUser();
+  const group = scope === "team" ? getGroupById(groupId) : null;
   try {
     const draft = await saveLocalDraft({
       id: state.historyLocalDraftId,
-      ownerId: state.historyUser?.id || "anonymous",
+      ownerId: state.historyUser?.id || currentUser?.id || "anonymous",
       projectId: state.historyCurrentProjectId,
       baseVersionId: state.historyCurrentVersionId,
       name: state.activity?.name || "未命名活动",
       snapshot,
       synced,
+      scope: group ? "team" : "personal",
+      teamId: group?.id || null,
     });
     const draftIndex = state.historyLocalDrafts.findIndex(
       (item) => item.id === draft.id,
@@ -6463,14 +6631,31 @@ function upsertHistoryProject(project) {
 async function performProjectSnapshotSave({
   saveType = "manual",
   silent = false,
+  targetScope = state.historySaveScope,
+  targetGroupId = state.historySaveGroupId,
 } = {}) {
+  const group =
+    targetScope === "team" ? getGroupById(targetGroupId) : null;
+  const normalizedScope = group ? "team" : "personal";
+  state.historySaveScope = normalizedScope;
+  state.historySaveGroupId = group?.id || "";
   const snapshot = createCurrentProjectSnapshot();
-  const localDraft = await persistCurrentLocalDraft(snapshot, false);
+  const localDraft = await persistCurrentLocalDraft(
+    snapshot,
+    false,
+    normalizedScope,
+    group?.id,
+  );
 
   try {
     if (!state.historyUser) {
       state.historyUser = await getCurrentUser();
-      await persistCurrentLocalDraft(snapshot, false);
+      await persistCurrentLocalDraft(
+        snapshot,
+        false,
+        normalizedScope,
+        group?.id,
+      );
     }
     if (!state.historyCurrentProjectId) {
       if (saveType === "autosave") {
@@ -6485,6 +6670,8 @@ async function performProjectSnapshotSave({
         prdUrl: state.prdFeishuUrl || "",
         templateId: state.currentTemplateId || "",
         snapshot,
+        scope: normalizedScope,
+        teamId: group?.id || null,
       });
       state.historyCurrentProjectId = result.project.id;
       state.historyCurrentVersionId = result.version.id;
@@ -6513,7 +6700,35 @@ async function performProjectSnapshotSave({
     }
 
     state.historyError = "";
-    await persistCurrentLocalDraft(snapshot, true);
+    await persistCurrentLocalDraft(
+      snapshot,
+      true,
+      normalizedScope,
+      group?.id,
+    );
+    const owner = getCurrentCollaborationUser();
+    if (owner) {
+      const sourceRecord = state.collaboration.records.find(
+        (record) => record.id === state.historyCollaborationRecordId,
+      );
+      const keepsSource =
+        sourceRecord &&
+        sourceRecord.scope === normalizedScope &&
+        (normalizedScope !== "team" || sourceRecord.teamId === group?.id);
+      setCollaborationState(
+        upsertRecord(state.collaboration, {
+          id: keepsSource
+            ? sourceRecord.id
+            : state.historyCurrentProjectId || state.historyLocalDraftId,
+          projectId: state.historyCurrentProjectId,
+          ownerId: owner.id,
+          name: state.activity?.name || "未命名活动",
+          scope: normalizedScope,
+          teamId: group?.id || null,
+          snapshot,
+        }),
+      );
+    }
     return { cloudSaved: true, localSaved: Boolean(localDraft), snapshot };
   } catch (error) {
     const cloudError =
@@ -6523,6 +6738,29 @@ async function performProjectSnapshotSave({
     state.historyError = localDraft
       ? `${cloudError}，本次修改已保存在本地`
       : `${cloudError}，且本地草稿保存失败`;
+    const owner = getCurrentCollaborationUser();
+    if (localDraft && owner) {
+      const sourceRecord = state.collaboration.records.find(
+        (record) => record.id === state.historyCollaborationRecordId,
+      );
+      const keepsSource =
+        sourceRecord &&
+        sourceRecord.scope === normalizedScope &&
+        (normalizedScope !== "team" || sourceRecord.teamId === group?.id);
+      setCollaborationState(
+        upsertRecord(state.collaboration, {
+          id: keepsSource
+            ? sourceRecord.id
+            : state.historyCurrentProjectId || state.historyLocalDraftId,
+          projectId: state.historyCurrentProjectId,
+          ownerId: owner.id,
+          name: state.activity?.name || "未命名活动",
+          scope: normalizedScope,
+          teamId: group?.id || null,
+          snapshot,
+        }),
+      );
+    }
     if (!silent) window.alert(state.historyError);
     return {
       cloudSaved: false,
@@ -6538,6 +6776,39 @@ function saveCurrentProjectSnapshot(options = {}) {
     .then(() => performProjectSnapshotSave(options));
   projectHistorySaveChain = saveOperation;
   return saveOperation;
+}
+
+function runManualProjectSave(
+  button,
+  targetScope = "personal",
+  targetGroupId = "",
+) {
+  if (!button) return;
+  const originalText = button.dataset.saveOriginalText || button.textContent;
+  button.dataset.saveOriginalText = originalText;
+  button.disabled = true;
+  button.textContent = "保存中";
+  saveCurrentProjectSnapshot({ targetScope, targetGroupId })
+    .then((result) => {
+      button.textContent = result.cloudSaved
+        ? "已保存"
+        : result.localSaved
+          ? "已存本地"
+          : "保存失败";
+      button.classList.toggle("saved", result.cloudSaved);
+    })
+    .catch((error) => {
+      console.error("保存项目失败", error);
+      button.textContent = "保存失败";
+    })
+    .finally(() => {
+      window.setTimeout(() => {
+        button.disabled = false;
+        button.textContent = originalText;
+        button.classList.remove("saved");
+        delete button.dataset.saveOriginalText;
+      }, 1500);
+    });
 }
 
 function scheduleProjectHistoryAutosave() {
@@ -6586,11 +6857,11 @@ async function loadProjectHistory() {
     state.historyLocalDrafts = drafts;
     state.historyStatus = "ready";
   } catch (error) {
-    state.historyUser = null;
+    state.historyUser = sessionUser;
     state.historyProjects = [];
-    state.historyLocalDrafts = await listLocalDrafts("anonymous").catch(
-      () => [],
-    );
+    state.historyLocalDrafts = await listLocalDrafts(
+      sessionUser?.id || "anonymous",
+    ).catch(() => []);
     state.historyError =
       error instanceof ProjectHistoryApiError
         ? error.message
@@ -6687,10 +6958,39 @@ async function restoreCloudProject(projectId, versionId) {
   }
 }
 
+async function copyCloudProjectToGroup(projectId, groupId) {
+  const project = state.historyProjects.find((item) => item.id === projectId);
+  const group = getGroupById(groupId);
+  const owner = getCurrentCollaborationUser();
+  if (!project?.latestVersionId || !group || !owner) return;
+  try {
+    const version = await getVersion(projectId, project.latestVersionId);
+    setCollaborationState(
+      upsertRecord(state.collaboration, {
+        ownerId: owner.id,
+        name: `${project.name} - 副本`,
+        scope: "team",
+        teamId: group.id,
+        snapshot: version.snapshot,
+      }),
+    );
+    state.historyGroupId = group.id;
+    state.historyScope = "team";
+    state.historyError = "";
+  } catch (error) {
+    state.historyError = error.message || "复制项目失败";
+  }
+  render();
+}
+
 async function restoreOfflineProject(draftId) {
   try {
     const draft = await getLocalDraft(draftId);
     if (!draft?.snapshot) throw new Error("本地草稿不存在");
+    state.historySaveScope = draft.scope === "team" ? "team" : "personal";
+    state.historySaveGroupId =
+      draft.scope === "team" ? draft.teamId || "" : "";
+    state.historyCollaborationRecordId = null;
     const project = state.historyProjects.find(
       (item) => item.id === draft.projectId,
     );
@@ -6739,9 +7039,50 @@ function formatHistoryTime(value) {
 function renderProjectHistory() {
   const center = $(".activity-center");
   if (!center) return;
+  const currentUser = getCurrentCollaborationUser();
+  const activeScope = state.historyScope === "team" ? "team" : "personal";
+  const activeGroup =
+    getGroupById(state.historyGroupId) || state.collaboration.teams[0] || null;
+  if (activeGroup && state.historyGroupId !== activeGroup.id) {
+    state.historyGroupId = activeGroup.id;
+  }
   const unsyncedDrafts = state.historyLocalDrafts.filter(
-    (draft) => !draft.synced,
+    (draft) =>
+      !draft.synced &&
+      (draft.scope === "team" ? "team" : "personal") === activeScope &&
+      (activeScope !== "team" || draft.teamId === activeGroup?.id),
   );
+  const collaborationRecords = listRecordsForUser(
+    state.collaboration,
+    currentUser?.id,
+    activeScope,
+    activeGroup?.id,
+  );
+  const cloudProjectIds = new Set(
+    state.historyProjects.map((project) => String(project.id)),
+  );
+  const localDraftIds = new Set(
+    state.historyLocalDrafts.map((draft) => String(draft.id)),
+  );
+  const standaloneRecords = collaborationRecords.filter(
+    (record) =>
+      !cloudProjectIds.has(String(record.projectId || record.id)) &&
+      !localDraftIds.has(String(record.id)),
+  );
+  const teamProjectIds = new Set(
+    state.collaboration.records
+      .filter((record) => record.scope === "team" && record.projectId)
+      .map((record) => String(record.projectId)),
+  );
+  const personalCloudProjects = state.historyProjects.filter(
+    (project) => !teamProjectIds.has(String(project.id)),
+  );
+  const hasRecords =
+    activeScope === "personal"
+      ? personalCloudProjects.length ||
+        unsyncedDrafts.length ||
+        standaloneRecords.length
+      : collaborationRecords.length;
   center.innerHTML = `
     <div class="project-history-shell">
       <nav class="prd-minimal-nav">
@@ -6755,10 +7096,46 @@ function renderProjectHistory() {
         <div>
           <span>MY PROJECTS</span>
           <h1>我的项目</h1>
-          <p>${state.historyUser ? `已绑定 ${escapeHtml(state.historyUser.name || "当前飞书用户")}` : "云端登录态未接入时，仅展示本地草稿"}</p>
+          <p>${currentUser ? `已绑定 ${escapeHtml(currentUser.name || "当前飞书用户")}` : "云端登录态未接入时，仅展示本地草稿"}</p>
         </div>
         <button type="button" data-history-refresh>刷新</button>
       </header>
+      <div class="project-history-tabs" role="tablist" aria-label="历史记录范围">
+        <button
+          type="button"
+          class="${activeScope === "personal" ? "active" : ""}"
+          data-history-scope="personal"
+          role="tab"
+          aria-selected="${activeScope === "personal"}"
+        >个人</button>
+        <button
+          type="button"
+          class="${activeScope === "team" ? "active" : ""}"
+          data-history-scope="team"
+          role="tab"
+          aria-selected="${activeScope === "team"}"
+        >组</button>
+      </div>
+      ${
+        activeScope === "team"
+          ? `
+            <div class="project-history-group-filter">
+              <label for="history-group-select">当前组</label>
+              <select id="history-group-select" data-history-group-select ${activeGroup ? "" : "disabled"}>
+                ${
+                  state.collaboration.teams
+                    .map(
+                      (group) =>
+                        `<option value="${escapeAttr(group.id)}" ${group.id === activeGroup?.id ? "selected" : ""}>${escapeHtml(group.name)}</option>`,
+                    )
+                    .join("") || '<option value="">暂无组</option>'
+                }
+              </select>
+              <span>所有用户都可以查看和编辑组内记录</span>
+            </div>
+          `
+          : ""
+      }
       ${
         state.historyError
           ? `<div class="project-history-notice">${escapeHtml(state.historyError)}</div>`
@@ -6771,9 +7148,8 @@ function renderProjectHistory() {
       }
       ${
         state.historyStatus !== "loading" &&
-        !state.historyProjects.length &&
-        !unsyncedDrafts.length
-          ? `<div class="project-history-empty"><strong>还没有保存的项目</strong><span>完成 PRD 编辑后使用保存按钮创建第一个版本。</span></div>`
+        !hasRecords
+          ? `<div class="project-history-empty"><strong>${activeScope === "team" ? activeGroup ? "这个组还没有项目" : "还没有创建组" : "还没有保存的项目"}</strong><span>完成编辑后使用保存按钮创建第一个版本。</span></div>`
           : ""
       }
       ${
@@ -6804,12 +7180,12 @@ function renderProjectHistory() {
           : ""
       }
       ${
-        state.historyProjects.length
+        activeScope === "personal" && personalCloudProjects.length
           ? `
             <section class="project-history-section">
-              <header><strong>云端项目</strong><span>${state.historyProjects.length} 个项目</span></header>
+              <header><strong>云端项目</strong><span>${personalCloudProjects.length} 个项目</span></header>
               <div class="project-history-list">
-                ${state.historyProjects
+                ${personalCloudProjects
                   .map((project) => {
                     const versions = state.historyVersions[project.id];
                     const expanded =
@@ -6822,6 +7198,21 @@ function renderProjectHistory() {
                         </div>
                         <div class="project-history-actions">
                           <button type="button" data-restore-project="${project.id}">打开</button>
+                          ${
+                            state.collaboration.teams.length
+                              ? `
+                                <select data-copy-project-group="${escapeAttr(project.id)}" aria-label="复制目标组">
+                                  ${state.collaboration.teams
+                                    .map(
+                                      (group) =>
+                                        `<option value="${escapeAttr(group.id)}">${escapeHtml(group.name)}</option>`,
+                                    )
+                                    .join("")}
+                                </select>
+                                <button type="button" data-copy-project-to-group="${escapeAttr(project.id)}">复制到组</button>
+                              `
+                              : ""
+                          }
                           <button type="button" data-toggle-versions="${project.id}">${expanded ? "收起版本" : "查看版本"}</button>
                           <button type="button" data-delete-project="${project.id}" aria-label="删除项目">删除</button>
                         </div>
@@ -6844,6 +7235,59 @@ function renderProjectHistory() {
                             }</div>`
                           : ""
                       }
+                    `;
+                  })
+                  .join("")}
+              </div>
+            </section>
+          `
+          : ""
+      }
+      ${
+        (activeScope === "team" ? collaborationRecords : standaloneRecords)
+          .length
+          ? `
+            <section class="project-history-section">
+              <header>
+                <strong>${activeScope === "team" ? escapeHtml(activeGroup?.name || "组项目") : "本地历史"}</strong>
+                <span>${(activeScope === "team" ? collaborationRecords : standaloneRecords).length} 个项目</span>
+              </header>
+              <div class="project-history-list">
+                ${(activeScope === "team"
+                  ? collaborationRecords
+                  : standaloneRecords
+                )
+                  .map((record) => {
+                    const owner = state.collaboration.users.find(
+                      (user) => user.id === record.ownerId,
+                    );
+                    return `
+                      <article class="project-history-item">
+                        <div>
+                          <strong>${escapeHtml(record.name)}</strong>
+                          <span>${formatHistoryTime(record.updatedAt)}${activeScope === "team" ? ` · ${escapeHtml(owner?.name || "创建者")}` : ""}</span>
+                        </div>
+                        <div class="project-history-actions">
+                          <button type="button" data-restore-collab-record="${escapeAttr(record.id)}">打开编辑</button>
+                          ${
+                            activeScope === "team"
+                              ? `<button type="button" data-copy-record-personal="${escapeAttr(record.id)}">复制到个人</button>`
+                              : state.collaboration.teams.length
+                                ? `
+                                  <select data-copy-record-group="${escapeAttr(record.id)}" aria-label="复制目标组">
+                                    ${state.collaboration.teams
+                                      .map(
+                                        (group) =>
+                                          `<option value="${escapeAttr(group.id)}">${escapeHtml(group.name)}</option>`,
+                                      )
+                                      .join("")}
+                                  </select>
+                                  <button type="button" data-copy-record-team="${escapeAttr(record.id)}">复制到组</button>
+                                `
+                                : ""
+                          }
+                        </div>
+                      </article>
                     `;
                   })
                   .join("")}
@@ -6925,9 +7369,9 @@ function renderActivityCenter() {
             ? renderPrdFileModal()
             : ""
         }
-        ${state.adminAuthModalOpen ? renderAdminAuthModal() : ""}
       </section>
       ${state.createModalOpen ? renderCreateModal() : ""}
+      ${state.adminAuthModalOpen ? renderAdminAuthModal() : ""}
     </div>
   `;
 }
@@ -7033,6 +7477,44 @@ function renderResourceLevelSelect() {
           `).join("")}
         </div>
       </section>
+    </div>
+  `;
+}
+
+function renderAdminAuthModal() {
+  return `
+    <div class="admin-auth-modal" data-admin-auth-modal>
+      <form class="admin-auth-dialog" data-admin-auth-form>
+        <header>
+          <div>
+            <span>ADMIN ACCESS</span>
+            <h2>进入后台管理</h2>
+          </div>
+          <button type="button" data-close-admin-auth aria-label="关闭">×</button>
+        </header>
+        <label>
+          <span>后台密码</span>
+          <input
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="请输入后台密码"
+            required
+            autofocus
+          />
+        </label>
+        ${
+          state.adminAuthError
+            ? `<p class="admin-auth-error">${escapeHtml(state.adminAuthError)}</p>`
+            : ""
+        }
+        <footer>
+          <button type="button" data-close-admin-auth>取消</button>
+          <button type="submit" class="primary" ${state.adminAuthLoading ? "disabled" : ""}>
+            ${state.adminAuthLoading ? "验证中..." : "进入后台"}
+          </button>
+        </footer>
+      </form>
     </div>
   `;
 }
@@ -7318,31 +7800,179 @@ function buildResourceGeneratedActivity() {
   state.currentTemplateId = null;
 }
 
-function renderAdminAuthModal() {
+function renderSaveScopeModal() {
   return `
-    <div class="admin-auth-modal" data-admin-auth-modal>
-      <form class="admin-auth-dialog" data-admin-auth-form>
+    <div class="admin-auth-modal" data-save-scope-modal>
+      <section class="admin-auth-dialog save-scope-dialog" role="dialog" aria-modal="true" aria-labelledby="save-scope-title">
         <header>
           <div>
-            <span>ADMIN ACCESS</span>
-            <h2>进入后台管理</h2>
+            <span>SAVE PROJECT</span>
+            <h2 id="save-scope-title">保存到哪里？</h2>
           </div>
-          <button type="button" data-close-admin-auth aria-label="关闭">×</button>
+          <button type="button" data-close-save-scope aria-label="关闭">×</button>
+        </header>
+        <div class="save-scope-options">
+          <button type="button" data-save-scope="personal">
+            <strong>保存到个人</strong>
+            <span>仅自己可以在“我的”中查看和继续编辑</span>
+          </button>
+          <div class="save-scope-group">
+            <label for="save-group-select">保存到已有组</label>
+            <div>
+              <select id="save-group-select" data-save-group-select ${state.collaboration.teams.length ? "" : "disabled"}>
+                ${
+                  state.collaboration.teams
+                    .map(
+                      (group) =>
+                        `<option value="${escapeAttr(group.id)}">${escapeHtml(group.name)}</option>`,
+                    )
+                    .join("") || '<option value="">暂无组</option>'
+                }
+              </select>
+              <button type="button" data-save-scope="team" ${state.collaboration.teams.length ? "" : "disabled"}>保存到组</button>
+            </div>
+            <span>所有用户都可以查看、编辑和复制组内记录</span>
+          </div>
+          <div class="save-scope-create-group">
+            <label for="save-new-group">或新建组</label>
+            <div>
+              <input id="save-new-group" data-save-new-group placeholder="输入组名称" />
+              <button type="button" data-save-create-group>新建并保存</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function renderAdminUserManagement() {
+  return `
+    <section class="collab-admin-panel">
+      <header>
+        <div>
+          <strong>用户管理</strong>
+          <span>${state.collaboration.users.length} 位用户</span>
+        </div>
+      </header>
+      <div class="collab-user-list">
+        ${state.collaboration.users
+          .map(
+            (user) => `
+              <article>
+                <div>
+                  <input value="${escapeAttr(user.name)}" data-admin-user-name="${escapeAttr(user.id)}" aria-label="用户名称" />
+                  <span>${escapeHtml(user.id)} · 用户</span>
+                </div>
+                <button type="button" data-admin-rename-user="${escapeAttr(user.id)}">保存名称</button>
+              </article>
+            `,
+          )
+          .join("")}
+      </div>
+      <form class="collab-inline-form" data-admin-add-user-form>
+        <input name="userId" placeholder="用户 ID" required />
+        <input name="userName" placeholder="用户名称" required />
+        <button type="submit">新增用户</button>
+      </form>
+    </section>
+  `;
+}
+
+function renderAdminTeamManagement() {
+  return `
+    <section class="collab-admin-panel">
+      <header>
+        <div>
+          <strong>组管理</strong>
+          <span>${state.collaboration.teams.length} 个组</span>
+        </div>
+      </header>
+      <div class="collab-team-grid">
+        ${state.collaboration.teams
+          .map(
+            (team) => `
+              <article class="collab-team-card">
+                <input value="${escapeAttr(team.name)}" data-admin-team-name="${escapeAttr(team.id)}" aria-label="组名称" />
+                <span>${state.collaboration.records.filter((record) => record.scope === "team" && record.teamId === team.id).length} 条共享记录</span>
+                <button type="button" data-admin-update-team="${escapeAttr(team.id)}">保存组名称</button>
+              </article>
+            `,
+          )
+          .join("") || '<p class="collab-empty-copy">还没有组</p>'}
+      </div>
+      <form class="collab-create-team" data-admin-create-team-form>
+        <input name="teamName" placeholder="新组名称" required />
+        <span>新建后立即对所有用户可见</span>
+        <button type="submit">创建组</button>
+      </form>
+    </section>
+  `;
+}
+
+function renderAdminHistoryManagement() {
+  return `
+    <section class="collab-admin-panel">
+      <header>
+        <div>
+          <strong>历史记录管理</strong>
+          <span>${state.collaboration.records.length} 条记录</span>
+        </div>
+      </header>
+      <div class="collab-admin-history">
+        ${
+          state.collaboration.records
+            .map((record) => {
+              const owner = state.collaboration.users.find(
+                (user) => user.id === record.ownerId,
+              );
+              const team = state.collaboration.teams.find(
+                (item) => item.id === record.teamId,
+              );
+              return `
+                <article>
+                  <div>
+                    <strong>${escapeHtml(record.name)}</strong>
+                    <span>${escapeHtml(owner?.name || record.ownerId)} · ${record.scope === "team" ? escapeHtml(team?.name || "组") : "个人"} · ${formatHistoryTime(record.updatedAt)}</span>
+                  </div>
+                  <button type="button" data-admin-edit-record="${escapeAttr(record.id)}">查看并覆盖</button>
+                </article>
+              `;
+            })
+            .join("") ||
+          '<p class="collab-empty-copy">还没有可管理的历史记录</p>'
+        }
+      </div>
+    </section>
+  `;
+}
+
+function renderAdminRecordEditor() {
+  const record = state.collaboration.records.find(
+    (item) => item.id === state.adminEditingRecordId,
+  );
+  if (!record) return "";
+  return `
+    <div class="admin-auth-modal" data-admin-record-modal>
+      <form class="admin-record-dialog" data-admin-record-form data-record-id="${escapeAttr(record.id)}">
+        <header>
+          <div>
+            <span>HISTORY OVERRIDE</span>
+            <h2>查看并覆盖历史记录</h2>
+          </div>
+          <button type="button" data-close-admin-record aria-label="关闭">×</button>
         </header>
         <label>
-          <span>密码</span>
-          <input
-            type="password"
-            autocomplete="current-password"
-            data-admin-auth-password
-            aria-invalid="${state.adminAuthError ? "true" : "false"}"
-            autofocus
-          />
+          <span>记录名称</span>
+          <input name="recordName" value="${escapeAttr(record.name)}" required />
         </label>
-        <p class="admin-auth-error" role="alert">${escapeHtml(state.adminAuthError || "")}</p>
+        <label>
+          <span>项目快照 JSON</span>
+          <textarea name="recordSnapshot" spellcheck="false" required>${escapeHtml(JSON.stringify(record.snapshot, null, 2))}</textarea>
+        </label>
         <footer>
-          <button type="button" data-close-admin-auth>取消</button>
-          <button type="submit" class="primary">进入后台</button>
+          <button type="button" data-close-admin-record>取消</button>
+          <button type="submit" class="primary">覆盖保存</button>
         </footer>
       </form>
     </div>
@@ -7352,33 +7982,56 @@ function renderAdminAuthModal() {
 function renderAdminDashboard() {
   const center = $(".activity-center");
   if (!center) return;
+  if (!currentUserIsAdmin()) {
+    state.view = "home";
+    state.adminAuthModalOpen = true;
+    renderActivityCenter();
+    return;
+  }
 
   center.innerHTML = `
     <section class="admin-shell">
       <nav class="admin-nav">
         <button class="admin-back" data-back-home>← 返回主流程</button>
-        <span>设计师后台</span>
+        <span>管理员后台</span>
       </nav>
 
       <header class="admin-hero">
-        <span>DESIGN OPS</span>
-        <h1>组件模板管理</h1>
-        <p>进入画布组合原子/分子，搭建活动页面。</p>
+        <span>ADMIN CONSOLE</span>
+        <h1>用户与项目管理</h1>
+        <p>维护所有用户、公共组和可覆盖的历史记录。</p>
       </header>
 
-      <section class="admin-action-grid">
-        <button class="admin-action-card primary" data-open-create-modal>
-          <span>01</span>
-          <strong>进入后台画布</strong>
-          <em>进入画布组合原子/分子，搭建活动页面</em>
-        </button>
-        <button class="admin-action-card" data-open-admin-component-verifier>
-          <span>02</span>
-          <strong>组件验收面板</strong>
-          <em>快速验证蓝图同步、文字变量、父级色系联动和导出切图</em>
-        </button>
-      </section>
+      <div class="collab-admin-tabs" role="tablist">
+        <button type="button" class="${state.adminSection === "users" ? "active" : ""}" data-admin-section="users">用户</button>
+        <button type="button" class="${state.adminSection === "teams" ? "active" : ""}" data-admin-section="teams">组</button>
+        <button type="button" class="${state.adminSection === "history" ? "active" : ""}" data-admin-section="history">历史记录</button>
+        <button type="button" class="${state.adminSection === "design" ? "active" : ""}" data-admin-section="design">设计工具</button>
+      </div>
+      ${state.adminNotice ? `<div class="collab-admin-notice">${escapeHtml(state.adminNotice)}</div>` : ""}
+      ${state.adminSection === "users" ? renderAdminUserManagement() : ""}
+      ${state.adminSection === "teams" ? renderAdminTeamManagement() : ""}
+      ${state.adminSection === "history" ? renderAdminHistoryManagement() : ""}
+      ${
+        state.adminSection === "design"
+          ? `
+            <section class="admin-action-grid">
+              <button class="admin-action-card primary" data-open-create-modal>
+                <span>01</span>
+                <strong>进入后台画布</strong>
+                <em>进入画布组合原子/分子，搭建活动页面</em>
+              </button>
+              <button class="admin-action-card" data-open-admin-component-verifier>
+                <span>02</span>
+                <strong>组件验收面板</strong>
+                <em>验证蓝图同步、变量、父级色系和导出切图</em>
+              </button>
+            </section>
+          `
+          : ""
+      }
       ${state.createModalOpen ? renderCreateModal() : ""}
+      ${renderAdminRecordEditor()}
     </section>
   `;
 }
@@ -23334,29 +23987,102 @@ function bindEvents() {
     true,
   );
 
-  document.addEventListener("submit", (event) => {
+  document.addEventListener("submit", async (event) => {
     const adminAuthForm = event.target.closest("[data-admin-auth-form]");
-    if (!adminAuthForm) return;
-    event.preventDefault();
-    const password = adminAuthForm.querySelector("[data-admin-auth-password]")?.value || "";
-    if (password !== ADMIN_ACCESS_PASSWORD) {
-      state.adminAuthError = "密码错误，请重新输入";
+    if (adminAuthForm) {
+      event.preventDefault();
+      if (state.adminAuthLoading) return;
+      const data = new FormData(adminAuthForm);
+      state.adminAuthLoading = true;
+      state.adminAuthError = "";
       render();
-      requestAnimationFrame(() => {
-        const input = document.querySelector("[data-admin-auth-password]");
-        input?.focus();
-        input?.select();
-      });
+      try {
+        state.adminUnlocked = await unlockAdminAccess(data.get("password"));
+        await refreshCollaborationFromServer({ syncLocal: false });
+        state.adminAuthModalOpen = false;
+        state.view = "admin";
+        state.adminSection = "users";
+        state.adminNotice = "";
+      } catch (error) {
+        state.adminUnlocked = false;
+        state.adminAuthError = error.message || "后台密码验证失败";
+      } finally {
+        state.adminAuthLoading = false;
+        render();
+      }
       return;
     }
-    state.adminAuthModalOpen = false;
-    state.adminAuthError = "";
-    state.view = "admin";
-    state.createModalOpen = false;
-    state.draftTemplateModalOpen = false;
-    state.draftTemplateModalTarget = null;
-    state.libraryReturnView = null;
-    render();
+
+    const addUserForm = event.target.closest("[data-admin-add-user-form]");
+    if (addUserForm) {
+      event.preventDefault();
+      const data = new FormData(addUserForm);
+      try {
+        setCollaborationState(
+          addUser(state.collaboration, {
+            id: data.get("userId"),
+            name: data.get("userName"),
+          }),
+        );
+        state.adminNotice = "用户已新增";
+      } catch (error) {
+        state.adminNotice = error.message;
+      }
+      render();
+      return;
+    }
+
+    const createTeamForm = event.target.closest(
+      "[data-admin-create-team-form]",
+    );
+    if (createTeamForm) {
+      event.preventDefault();
+      const data = new FormData(createTeamForm);
+      try {
+        setCollaborationState(
+          createTeam(state.collaboration, {
+            name: data.get("teamName"),
+          }),
+        );
+        state.adminNotice = "组已创建";
+      } catch (error) {
+        state.adminNotice = error.message;
+      }
+      render();
+      return;
+    }
+
+    const recordForm = event.target.closest("[data-admin-record-form]");
+    if (recordForm) {
+      event.preventDefault();
+      const data = new FormData(recordForm);
+      try {
+        const snapshot = JSON.parse(String(data.get("recordSnapshot") || ""));
+        if (!snapshot || typeof snapshot !== "object") {
+          throw new Error("项目快照必须是 JSON 对象");
+        }
+        const changes = {
+          name: String(data.get("recordName") || "").trim(),
+          snapshot,
+        };
+        setCollaborationState(
+          updateRecord(
+            state.collaboration,
+            recordForm.dataset.recordId,
+            changes,
+          ),
+        );
+        await overrideCollaborationRecord(
+          recordForm.dataset.recordId,
+          changes,
+        );
+        state.adminEditingRecordId = null;
+        state.adminNotice = "历史记录已覆盖";
+      } catch (error) {
+        state.adminNotice = `保存失败：${error.message}`;
+      }
+      render();
+    }
   });
 
   document.addEventListener("click", (event) => {
@@ -23429,6 +24155,89 @@ function bindEvents() {
 
     if (event.target.closest("[data-history-refresh]")) {
       loadProjectHistory();
+      return;
+    }
+
+    const historyScope = event.target.closest("[data-history-scope]");
+    if (historyScope && !historyScope.disabled) {
+      state.historyScope =
+        historyScope.dataset.historyScope === "team" ? "team" : "personal";
+      render();
+      return;
+    }
+
+    const copyRecordToPersonal = event.target.closest(
+      "[data-copy-record-personal]",
+    );
+    if (copyRecordToPersonal) {
+      const owner = getCurrentCollaborationUser();
+      if (!owner) return;
+      setCollaborationState(
+        copyRecord(
+          state.collaboration,
+          copyRecordToPersonal.dataset.copyRecordPersonal,
+          { ownerId: owner.id, scope: "personal" },
+        ),
+      );
+      state.historyScope = "personal";
+      render();
+      return;
+    }
+
+    const copyRecordToGroup = event.target.closest(
+      "[data-copy-record-team]",
+    );
+    if (copyRecordToGroup) {
+      const owner = getCurrentCollaborationUser();
+      const recordId = copyRecordToGroup.dataset.copyRecordTeam;
+      const groupId = document.querySelector(
+        `[data-copy-record-group="${CSS.escape(recordId)}"]`,
+      )?.value;
+      if (!owner || !getGroupById(groupId)) return;
+      setCollaborationState(
+        copyRecord(state.collaboration, recordId, {
+          ownerId: owner.id,
+          scope: "team",
+          teamId: groupId,
+        }),
+      );
+      state.historyGroupId = groupId;
+      state.historyScope = "team";
+      render();
+      return;
+    }
+
+    const copyProjectToGroup = event.target.closest(
+      "[data-copy-project-to-group]",
+    );
+    if (copyProjectToGroup) {
+      const projectId = copyProjectToGroup.dataset.copyProjectToGroup;
+      const groupId = document.querySelector(
+        `[data-copy-project-group="${CSS.escape(projectId)}"]`,
+      )?.value;
+      copyCloudProjectToGroup(projectId, groupId);
+      return;
+    }
+
+    const restoreCollaborationRecord = event.target.closest(
+      "[data-restore-collab-record]",
+    );
+    if (restoreCollaborationRecord) {
+      const record = state.collaboration.records.find(
+        (item) =>
+          item.id === restoreCollaborationRecord.dataset.restoreCollabRecord,
+      );
+      if (record?.snapshot) {
+        state.historySaveScope = record.scope;
+        state.historySaveGroupId =
+          record.scope === "team" ? record.teamId || "" : "";
+        state.historyCollaborationRecordId = record.id;
+        applyRestoredProject(
+          record.snapshot,
+          record.projectId,
+          null,
+        );
+      }
       return;
     }
 
@@ -24757,12 +25566,7 @@ function bindEvents() {
     }
 
     if (event.target.closest("[data-open-admin-dashboard]")) {
-      state.adminAuthModalOpen = true;
-      state.adminAuthError = "";
-      render();
-      requestAnimationFrame(() => {
-        document.querySelector("[data-admin-auth-password]")?.focus();
-      });
+      openAdminDashboard();
       return;
     }
 
@@ -24772,6 +25576,66 @@ function bindEvents() {
     ) {
       state.adminAuthModalOpen = false;
       state.adminAuthError = "";
+      render();
+      return;
+    }
+
+    const adminSection = event.target.closest("[data-admin-section]");
+    if (adminSection) {
+      state.adminSection = adminSection.dataset.adminSection;
+      state.adminNotice = "";
+      render();
+      return;
+    }
+
+    const renameAdminUser = event.target.closest("[data-admin-rename-user]");
+    if (renameAdminUser) {
+      const userId = renameAdminUser.dataset.adminRenameUser;
+      const input = document.querySelector(
+        `[data-admin-user-name="${CSS.escape(userId)}"]`,
+      );
+      try {
+        setCollaborationState(
+          renameUser(state.collaboration, userId, input?.value),
+        );
+        state.adminNotice = "用户名称已更新";
+      } catch (error) {
+        state.adminNotice = error.message;
+      }
+      render();
+      return;
+    }
+
+    const updateAdminTeam = event.target.closest("[data-admin-update-team]");
+    if (updateAdminTeam) {
+      const teamId = updateAdminTeam.dataset.adminUpdateTeam;
+      const name = document.querySelector(
+        `[data-admin-team-name="${CSS.escape(teamId)}"]`,
+      )?.value;
+      try {
+        setCollaborationState(
+          updateTeam(state.collaboration, teamId, { name }),
+        );
+        state.adminNotice = "组名称已更新";
+      } catch (error) {
+        state.adminNotice = error.message;
+      }
+      render();
+      return;
+    }
+
+    const editAdminRecord = event.target.closest("[data-admin-edit-record]");
+    if (editAdminRecord) {
+      state.adminEditingRecordId = editAdminRecord.dataset.adminEditRecord;
+      render();
+      return;
+    }
+
+    if (
+      event.target.closest("[data-close-admin-record]") ||
+      event.target.matches("[data-admin-record-modal]")
+    ) {
+      state.adminEditingRecordId = null;
       render();
       return;
     }
@@ -24882,10 +25746,17 @@ function bindEvents() {
     const backHome = event.target.closest("[data-back-home]");
     if (backHome) {
       if (prdParseTimer) clearTimeout(prdParseTimer);
-      state.view =
+      const nextView =
         state.view === "animation-preview-library" && state.libraryReturnView === "admin"
           ? "admin"
           : "home";
+      state.view = nextView;
+      if (nextView === "home") {
+        state.adminUnlocked = false;
+        lockAdminAccess().catch((error) => {
+          console.warn("后台解锁状态清理失败", error);
+        });
+      }
       state.libraryReturnView = null;
       state.selectedId = null;
       render();
@@ -25041,29 +25912,56 @@ function bindEvents() {
 
     if (event.target.closest("[data-save]")) {
       const btn = event.target.closest("[data-save]");
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = "保存中";
-      saveCurrentProjectSnapshot()
-        .then((result) => {
-          btn.textContent = result.cloudSaved
-            ? "已保存"
-            : result.localSaved
-              ? "已存本地"
-              : "保存失败";
-          btn.classList.toggle("saved", result.cloudSaved);
-        })
-        .catch((error) => {
-          console.error("保存项目失败", error);
-          btn.textContent = "保存失败";
-        })
-        .finally(() => {
-          window.setTimeout(() => {
-            btn.disabled = false;
-            btn.textContent = originalText;
-            btn.classList.remove("saved");
-          }, 1500);
+      pendingManualSaveButton = btn;
+      document
+        .querySelector("[data-save-scope-modal]")
+        ?.remove();
+      document.body.insertAdjacentHTML("beforeend", renderSaveScopeModal());
+      return;
+    }
+
+    if (event.target.closest("[data-save-create-group]")) {
+      const input = document.querySelector("[data-save-new-group]");
+      try {
+        const nextState = createTeam(state.collaboration, {
+          name: input?.value,
         });
+        const group = nextState.teams[nextState.teams.length - 1];
+        setCollaborationState(nextState);
+        document.querySelector("[data-save-scope-modal]")?.remove();
+        const button = pendingManualSaveButton;
+        pendingManualSaveButton = null;
+        runManualProjectSave(button, "team", group.id);
+      } catch (error) {
+        input?.setCustomValidity(error.message);
+        input?.reportValidity();
+        input?.setCustomValidity("");
+      }
+      return;
+    }
+
+    const saveScope = event.target.closest("[data-save-scope]");
+    if (saveScope) {
+      const targetScope =
+        saveScope.dataset.saveScope === "team" ? "team" : "personal";
+      const targetGroupId =
+        targetScope === "team"
+          ? document.querySelector("[data-save-group-select]")?.value || ""
+          : "";
+      if (targetScope === "team" && !getGroupById(targetGroupId)) return;
+      document.querySelector("[data-save-scope-modal]")?.remove();
+      const button = pendingManualSaveButton;
+      pendingManualSaveButton = null;
+      runManualProjectSave(button, targetScope, targetGroupId);
+      return;
+    }
+
+    if (
+      event.target.closest("[data-close-save-scope]") ||
+      event.target.matches("[data-save-scope-modal]")
+    ) {
+      document.querySelector("[data-save-scope-modal]")?.remove();
+      pendingManualSaveButton = null;
       return;
     }
 
@@ -26889,6 +27787,15 @@ function bindEvents() {
   });
 
   document.addEventListener("change", (event) => {
+    const historyGroupSelect = event.target.closest(
+      "[data-history-group-select]",
+    );
+    if (historyGroupSelect) {
+      state.historyGroupId = historyGroupSelect.value;
+      render();
+      return;
+    }
+
     const blueprintTemplateSelect = event.target.closest(
       "[data-prd-blueprint-template-select]",
     );
@@ -27486,7 +28393,12 @@ function mount() {
   document.addEventListener("click", () => {
     window.setTimeout(scheduleProjectHistoryAutosave, 0);
   });
+  state.adminUnlocked = false;
+  lockAdminAccess().catch((error) => {
+    console.warn("后台解锁状态清理失败", error);
+  });
   render();
+  refreshCollaborationFromServer();
 }
 
 mount();

@@ -5,6 +5,8 @@ const { execFile } = require("child_process");
 const { promisify } = require("util");
 const session = require("express-session");
 const { createHistoryRouter } = require("./history-routes.cjs");
+const { createCollaborationRouter } = require("./collaboration-routes.cjs");
+const { createAdminAccessRouter } = require("./admin-access.cjs");
 
 try {
   process.loadEnvFile?.(path.join(__dirname, "..", ".env.local"));
@@ -171,11 +173,39 @@ apiRouter.get("/auth/me", (req, res) => {
   res.json({ success: true, data: req.session.user });
 });
 
+apiRouter.post("/auth/dev-login", (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    return res.status(404).json({ success: false, error: "Not found" });
+  }
+  req.session.user = {
+    employeeId: "6729972",
+    userId: "local-user",
+    unionId: "local-user",
+    openId: "local-user",
+    name: "本地用户",
+    email: "",
+    avatar: "",
+  };
+  res.json({ success: true, data: req.session.user });
+});
+
 // 登出
 apiRouter.post("/auth/logout", (req, res) => {
   req.session.destroy();
   res.json({ success: true });
 });
+
+function resolveSessionUser(req) {
+  const user = req.session?.user;
+  if (!user) return null;
+  return {
+    id: String(
+      user.employeeId || user.userId || user.unionId || user.openId || "",
+    ).trim(),
+    name: user.name || "",
+    avatarUrl: user.avatar || user.avatarUrl || "",
+  };
+}
 
 const ignoredComponentDirs = new Set([
   ".git",
@@ -871,7 +901,12 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
 });
 
 app.use("/api", apiRouter);
-app.use("/api", createHistoryRouter());
+app.use("/api/admin", createAdminAccessRouter());
+app.use(
+  "/api/collaboration",
+  createCollaborationRouter({ resolveUser: resolveSessionUser }),
+);
+app.use("/api", createHistoryRouter({ resolveUser: resolveSessionUser }));
 
 // Serve static files from dist/
 app.use(express.static(distDir, {

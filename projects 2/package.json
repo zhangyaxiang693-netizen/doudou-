@@ -8,7 +8,7 @@
     "dev:server": "node --env-file=.env.local server/index.cjs",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --test server/__tests__/*.test.cjs src/project-history/*.test.js"
+    "test": "node --test server/__tests__/*.test.cjs src/project-history/*.test.js src/collaboration/*.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",

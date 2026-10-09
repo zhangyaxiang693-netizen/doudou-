@@ -18166,3 +18166,425 @@ button:hover {
   }
 
 }
+
+.project-history-tabs,
+.collab-admin-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 20px 0 0;
+  border-bottom: 1px solid #dfe3e8;
+}
+
+.project-history-tabs button,
+.collab-admin-tabs button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.project-history-tabs button.active,
+.collab-admin-tabs button.active {
+  border-bottom-color: #182230;
+  color: #182230;
+}
+
+.project-history-tabs button:disabled {
+  color: #b0b7c3;
+  cursor: not-allowed;
+}
+
+.save-scope-dialog {
+  width: min(480px, calc(100vw - 32px));
+}
+
+.save-scope-options {
+  display: grid;
+  gap: 10px;
+  padding: 20px 24px 24px;
+}
+
+.save-scope-options > button {
+  display: grid;
+  min-height: 76px;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #182230;
+  text-align: left;
+}
+
+.save-scope-options > button:hover {
+  border-color: #182230;
+  background: #f8fafb;
+}
+
+.save-scope-options strong {
+  font-size: 14px;
+}
+
+.save-scope-options span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.save-scope-group,
+.save-scope-create-group {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+}
+
+.save-scope-group > label,
+.save-scope-create-group > label {
+  color: #182230;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.save-scope-group > div,
+.save-scope-create-group > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.save-scope-group select,
+.save-scope-create-group input,
+.project-history-group-filter select,
+.project-history-actions select {
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #344054;
+  font: inherit;
+  font-size: 12px;
+}
+
+.save-scope-group button,
+.save-scope-create-group button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #182230;
+  border-radius: 6px;
+  background: #182230;
+  color: #ffffff;
+}
+
+.save-scope-group button:disabled {
+  border-color: #d0d5dd;
+  background: #e4e7ec;
+  color: #98a2b3;
+}
+
+.project-history-group-filter {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 280px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #dfe3e8;
+  color: #667085;
+  font-size: 12px;
+}
+
+.project-history-group-filter label {
+  color: #344054;
+  font-weight: 600;
+}
+
+.project-history-actions select {
+  max-width: 140px;
+}
+
+.collab-admin-tabs {
+  margin-bottom: 24px;
+  padding-top: 0;
+}
+
+.collab-admin-notice {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-left: 3px solid #087e5b;
+  background: #effaf6;
+  color: #12664f;
+  font-size: 13px;
+}
+
+.collab-admin-panel {
+  padding-bottom: 56px;
+}
+
+.collab-admin-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #dfe3e8;
+}
+
+.collab-admin-panel > header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.collab-admin-panel > header strong {
+  color: #182230;
+  font-size: 16px;
+}
+
+.collab-admin-panel > header span,
+.collab-empty-copy {
+  color: #667085;
+  font-size: 12px;
+}
+
+.collab-user-list article,
+.collab-admin-history article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 72px;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid #e4e7ec;
+}
+
+.collab-user-list article > div,
+.collab-admin-history article > div {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.collab-user-list input,
+.collab-team-card > input,
+.collab-inline-form input,
+.collab-create-team > input,
+.admin-record-dialog input,
+.admin-record-dialog textarea {
+  width: 100%;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #182230;
+  font: inherit;
+}
+
+.collab-user-list input,
+.collab-team-card > input,
+.collab-inline-form input,
+.collab-create-team > input,
+.admin-record-dialog input {
+  min-height: 38px;
+  padding: 0 11px;
+}
+
+.collab-user-list article > div > input {
+  max-width: 360px;
+}
+
+.collab-user-list span,
+.collab-admin-history span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.collab-user-list button,
+.collab-admin-history button,
+.collab-inline-form button,
+.collab-create-team button,
+.collab-team-card > button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid #cbd2da;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #344054;
+}
+
+.collab-inline-form {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.6fr) minmax(220px, 1fr) auto;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.collab-team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 16px;
+}
+
+.collab-team-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #dfe3e8;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.collab-team-card > span,
+.collab-create-team > span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.collab-member-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.collab-member-options label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  color: #344054;
+  font-size: 12px;
+}
+
+.collab-member-options label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collab-member-options input:disabled + span {
+  color: #b0b7c3;
+}
+
+.collab-create-team {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(280px, 1.5fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #dfe3e8;
+}
+
+.admin-record-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: min(82vh, 760px);
+  overflow: auto;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 64px rgb(16 24 40 / 24%);
+}
+
+.admin-record-dialog > header,
+.admin-record-dialog > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.admin-record-dialog > header span {
+  color: #087e5b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.admin-record-dialog > header h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+.admin-record-dialog > header > button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  font-size: 22px;
+}
+
+.admin-record-dialog > label {
+  display: grid;
+  gap: 7px;
+  padding: 18px 22px 0;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-record-dialog textarea {
+  min-height: 320px;
+  padding: 12px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.admin-record-dialog > footer {
+  justify-content: flex-end;
+  margin-top: 20px;
+  border-top: 1px solid #eaecf0;
+  border-bottom: 0;
+}
+
+.admin-record-dialog > footer button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.admin-record-dialog > footer button.primary {
+  border-color: #182230;
+  background: #182230;
+  color: #ffffff;
+}
+
+@media (max-width: 720px) {
+  .project-history-tabs,
+  .collab-admin-tabs {
+    overflow-x: auto;
+  }
+
+  .collab-team-grid,
+  .collab-inline-form,
+  .collab-create-team {
+    grid-template-columns: 1fr;
+  }
+
+  .project-history-group-filter,
+  .save-scope-group > div,
+  .save-scope-create-group > div {
+    grid-template-columns: 1fr;
+  }
+
+  .collab-user-list article,
+  .collab-admin-history article {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px 0;
+  }
+
+  .collab-user-list button,
+  .collab-admin-history button {
+    justify-self: start;
+  }
+}

@@ -46,10 +46,24 @@ export async function listProjects() {
   return data.projects || [];
 }
 
-export function createProject({ name, prdUrl, templateId, snapshot }) {
+export function createProject({
+  name,
+  prdUrl,
+  templateId,
+  snapshot,
+  scope = "personal",
+  teamId = null,
+}) {
   return request("/projects", {
     method: "POST",
-    body: JSON.stringify({ name, prdUrl, templateId, snapshot }),
+    body: JSON.stringify({
+      name,
+      prdUrl,
+      templateId,
+      snapshot,
+      scope,
+      teamId,
+    }),
   });
 }
 
