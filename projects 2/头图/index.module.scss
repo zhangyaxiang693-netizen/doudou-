@@ -80,23 +80,24 @@
   position: absolute;
   top: 199.36px;
   left: 1.54px;
-  width: 248px;
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  min-width: 248px;
   height: 50px;
+  padding: 0 15px;
+  box-sizing: border-box;
 }
 .content {
-  width: 248px;
+  width: auto;
   border-radius: 32px;
   box-sizing: border-box;
   background: rgba(255, 98, 184, 1);
-  min-height: 50px;
   position: absolute;
-  top: 0px;
-  left: 0px;
+  inset: 0;
 }
 .text1 {
-  position: absolute;
-  top: 4px;
-  left: 15px;
+  position: relative;
   transform: rotate(1.129999680560335e-7deg);
   font-family: "Source Han Sans CN";
   font-size: 28px;

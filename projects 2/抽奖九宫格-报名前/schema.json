@@ -52,7 +52,12 @@
       "prize2",
       "prize3",
       "prize4",
-      "prize5"
+      "prize5",
+      "prize1ButtonText",
+      "prize2ButtonText",
+      "prize3ButtonText",
+      "prize4ButtonText",
+      "prize5ButtonText"
     ],
     "prizeProps": [
       {
@@ -112,6 +117,46 @@
       "type": "prize",
       "default": "",
       "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize1ButtonText",
+      "name": "prize1ButtonText",
+      "label": "奖品1 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下",
+      "description": "抽中奖品1时，中奖弹窗底部按钮显示的文案。"
+    },
+    {
+      "key": "prize2ButtonText",
+      "name": "prize2ButtonText",
+      "label": "奖品2 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下",
+      "description": "抽中奖品2时，中奖弹窗底部按钮显示的文案。"
+    },
+    {
+      "key": "prize3ButtonText",
+      "name": "prize3ButtonText",
+      "label": "奖品3 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下",
+      "description": "抽中奖品3时，中奖弹窗底部按钮显示的文案。"
+    },
+    {
+      "key": "prize4ButtonText",
+      "name": "prize4ButtonText",
+      "label": "奖品4 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下",
+      "description": "抽中奖品4时，中奖弹窗底部按钮显示的文案。"
+    },
+    {
+      "key": "prize5ButtonText",
+      "name": "prize5ButtonText",
+      "label": "奖品5 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下",
+      "description": "抽中奖品5时，中奖弹窗底部按钮显示的文案。"
     }
   ]
 }

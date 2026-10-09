@@ -10888,6 +10888,18 @@ button:hover {
   min-width: calc(220px + var(--prd-version-count) * 460px);
 }
 
+.prd-variable-version-matrix.has-prize-popup-fields .prd-variable-matrix-dimensions,
+.prd-variable-version-matrix.has-prize-popup-fields .prd-variable-matrix-head,
+.prd-variable-version-matrix.has-prize-popup-fields .prd-variable-matrix-row {
+  grid-template-columns: 220px repeat(var(--prd-version-count), minmax(820px, 1fr));
+  min-width: calc(220px + var(--prd-version-count) * 820px);
+}
+
+.prd-variable-version-matrix.has-prize-popup-fields
+  .prd-variable-matrix-section-head {
+  justify-content: flex-start;
+}
+
 .prd-variable-matrix-dimensions {
   border-bottom: 1px solid #e4e7ec;
   background: #eef4ff;
@@ -11634,6 +11646,36 @@ button:hover {
 .prd-variable-matrix-row .prize-library-control:last-child,
 .prd-variable-matrix-row textarea:last-child {
   border-right: 0;
+}
+
+.prd-prize-popup-button-field {
+  display: grid;
+  flex: 0 0 220px;
+  min-width: 0;
+  align-self: stretch;
+  align-content: center;
+  border-left: 1px solid #eef0f3;
+  background: #ffffff;
+}
+
+.prd-prize-popup-button-field > span {
+  padding: 4px 11px 0;
+  color: #98a2b3;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.prd-prize-popup-button-field > textarea {
+  min-height: 30px;
+  padding-top: 4px;
+  border-right: 0;
+}
+
+.prd-variable-version-matrix.has-prize-popup-fields
+  .prd-variable-matrix-row
+  .prize-library-control {
+  min-width: 820px;
 }
 
 .prd-variable-matrix-empty-cell {

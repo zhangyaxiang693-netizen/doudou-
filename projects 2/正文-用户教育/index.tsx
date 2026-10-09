@@ -170,7 +170,14 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             <div className={styles.container7}>
               <div className={styles.text7}>
                 <ul className={styles.text7__listwrap}>
-                  {fourthBodyText}
+                  {fourthBodyText.split('\n').map((line, index, list) => (
+                    <li
+                      className={index < list.length - 1 ? styles.text7__linebreak : undefined}
+                      key={`fourth-${index}`}
+                    >
+                      {line}
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>

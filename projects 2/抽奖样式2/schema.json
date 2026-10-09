@@ -27,7 +27,15 @@
       "prize5",
       "prize6",
       "prize7",
-      "prize8"
+      "prize8",
+      "prize1ButtonText",
+      "prize2ButtonText",
+      "prize3ButtonText",
+      "prize4ButtonText",
+      "prize5ButtonText",
+      "prize6ButtonText",
+      "prize7ButtonText",
+      "prize8ButtonText"
     ],
     "prizeProps": [
       {
@@ -115,6 +123,62 @@
       "type": "prize",
       "default": "",
       "description": "奖品库下拉选择字段。选择奖品后写入该奖品绑定的名称和图片；为空时使用当前占位奖品。"
+    },
+    {
+      "key": "prize1ButtonText",
+      "name": "prize1ButtonText",
+      "label": "奖品1 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下"
+    },
+    {
+      "key": "prize2ButtonText",
+      "name": "prize2ButtonText",
+      "label": "奖品2 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下"
+    },
+    {
+      "key": "prize3ButtonText",
+      "name": "prize3ButtonText",
+      "label": "奖品3 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下"
+    },
+    {
+      "key": "prize4ButtonText",
+      "name": "prize4ButtonText",
+      "label": "奖品4 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下"
+    },
+    {
+      "key": "prize5ButtonText",
+      "name": "prize5ButtonText",
+      "label": "奖品5 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下"
+    },
+    {
+      "key": "prize6ButtonText",
+      "name": "prize6ButtonText",
+      "label": "奖品6 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下"
+    },
+    {
+      "key": "prize7ButtonText",
+      "name": "prize7ButtonText",
+      "label": "奖品7 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下"
+    },
+    {
+      "key": "prize8ButtonText",
+      "name": "prize8ButtonText",
+      "label": "奖品8 · 弹窗按钮文案",
+      "type": "string",
+      "default": "开心收下"
     }
   ]
 }

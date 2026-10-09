@@ -34,7 +34,7 @@ function splitTitleLines(value: string) {
   const lines: string[] = []
   let current = ''
   let width = 0
-  const maxWidth = 4.2
+  const maxWidth = 4
   Array.from(value).forEach((char) => {
     const charWidth = getTextUnit(char)
     if (current && width + charWidth > maxWidth) {
@@ -74,7 +74,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
         ? props.text || ''
         : '抽666元流量大奖'
   const titleLines = splitTitleLines(text)
-  const dateText = props.dateText || '6月10日-6月21日'
+  const dateText = props.dateText ?? '6月10日-6月21日'
   const mainTextColor = props.textColor || '#2C0113'
   const burstOpacity = Number(props.burstOpacity ?? 0.5)
   const glowOpacity = Number(props.glowOpacity ?? 0.6)

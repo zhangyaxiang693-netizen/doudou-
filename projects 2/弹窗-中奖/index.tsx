@@ -174,18 +174,34 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const isTrafficCouponPrize =
     selectedPrize.type === 'traffic_coupon' ||
     /\d+(?:\.\d+)?元流量券/.test(selectedPrize.name)
+  const popupEditProp = (prop: string) => isTrafficCouponPrize ? undefined : prop
   const trafficCouponAmount =
     selectedPrize.amount ||
     getTrafficCouponAmount(selectedPrize.name) ||
     getTrafficCouponAmount(selectedPrize.copy)
-  const isOfficialRecommendationPrize = selectedPrize.name === 'DOU+官方推荐机会'
+  const isOfficialRecommendationPrize =
+    selectedPrize.type === 'official_recommendation' ||
+    selectedPrize.name === 'DOU+官方推荐机会'
   const isDouziFamilyPackPrize = selectedPrize.type === 'douzi_family_pack' ||
     selectedPrize.name === 'DOU仔周边全家福' ||
     selectedPrize.name === 'DOU仔全家福' ||
     selectedPrize.name === 'DOU仔随机周边' ||
     selectedPrize.name === 'DOU仔全家福随机发'
-  const isContentDiagnosisPrize = selectedPrize.name === '内容诊断积分'
-  const hasNoSubText = selectedPrize.name === '1000元心动券包' ||
+  const isContentDiagnosisPrize =
+    selectedPrize.type === 'content_diagnosis' ||
+    selectedPrize.name === '内容诊断积分'
+  const hasNoSubText =
+    [
+      'coupon_pack',
+      'jianying_vip',
+      'traffic_support',
+      'douzi_merch',
+      'douzi_doll',
+      'douzi_keychain',
+      'douzi_canvas_bag',
+      'content_diagnosis',
+    ].includes(String(selectedPrize.type || '')) ||
+    selectedPrize.name === '1000元心动券包' ||
     selectedPrize.name === '剪映VIP' ||
     selectedPrize.name === '剪映VIP月卡' ||
     selectedPrize.name === '流量扶持' ||
@@ -194,7 +210,16 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     selectedPrize.name === 'DOU仔挂件' ||
     selectedPrize.name === 'DOU仔帆布包' ||
     isContentDiagnosisPrize
-  const isThemeColoredPrizeName = isOfficialRecommendationPrize ||
+  const isThemeColoredPrizeName =
+    [
+      'douzi_merch',
+      'douzi_canvas_bag',
+      'douzi_keychain',
+      'douzi_doll',
+      'jianying_vip',
+      'traffic_support',
+    ].includes(String(selectedPrize.type || '')) ||
+    isOfficialRecommendationPrize ||
     selectedPrize.name === 'DOU仔周边' ||
     selectedPrize.name === 'DOU仔帆布包' ||
     selectedPrize.name === 'DOU仔挂件' ||
@@ -223,7 +248,10 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       : undefined
 
   return (
-    <div className={`${styles.page} ${isDouziFamilyPackPrize ? styles.familyPackPage : ''}`}>
+    <div
+      className={`${styles.page} ${isDouziFamilyPackPrize ? styles.familyPackPage : ''} ${isTrafficCouponPrize ? styles.trafficCouponLocked : ''}`}
+      data-edit-hint={isTrafficCouponPrize ? '请前往表格界面编辑奖品信息' : undefined}
+    >
       <div className={styles.wrap}>
         <div className={styles.container}>
           <div
@@ -254,7 +282,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
         </div>
       </div>
         {!isDouziFamilyPackPrize && !isContentDiagnosisPrize ? (
-          <div className={styles.text} data-react-edit-prop="titleText">{titleText}</div>
+          <div className={styles.text} data-react-edit-prop={popupEditProp('titleText')}>{titleText}</div>
         ) : null}
       <div className={`${styles.wrap1} ${isDouziFamilyPackPrize ? styles.familyPackTitleWrap : ''} ${hasNoSubText && !isContentDiagnosisPrize ? styles.noSubTextTitleWrap : ''} ${isContentDiagnosisPrize ? styles.contentDiagnosisTitleWrap : ''}`}>
         {isContentDiagnosisPrize ? (
@@ -263,17 +291,17 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           </div>
         ) : isDouziFamilyPackPrize ? (
           <div className={styles.familyPackTitle}>
-            <span data-react-edit-prop="titleText">{titleText}</span>
-            <span data-react-edit-prop="prizeText" style={{color: amountColor}}>
+            <span data-react-edit-prop={popupEditProp('titleText')}>{titleText}</span>
+            <span data-react-edit-prop={popupEditProp('prizeText')} style={{color: amountColor}}>
               {renderPrizeName(displayedPrizeText)}
             </span>
           </div>
         ) : (
           <>
             <div className={styles.text2} style={{color: amountColor}}>
-                <span className={styles.text2__seg0} data-react-edit-prop="amountText">{amountText}</span>
+                <span className={styles.text2__seg0} data-react-edit-prop={popupEditProp('amountText')}>{amountText}</span>
             </div>
-                <div data-react-edit-prop="prizeText" className={`${styles.text1} ${isThemeColoredPrizeName ? styles.officialRecommendationPrizeName : ''}`} style={isThemeColoredPrizeName ? {color: amountColor} : undefined}>{renderPrizeName(displayedPrizeText)}</div>
+                <div data-react-edit-prop={popupEditProp('prizeText')} className={`${styles.text1} ${isThemeColoredPrizeName ? styles.officialRecommendationPrizeName : ''}`} style={isThemeColoredPrizeName ? {color: amountColor} : undefined}>{renderPrizeName(displayedPrizeText)}</div>
           </>
         )}
       </div>
@@ -292,12 +320,12 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           />
         </div>
       ) : hasNoSubText ? null : (
-        <div data-react-edit-prop="prizeSubText" className={`${styles.subText} ${isOfficialRecommendationPrize ? styles.officialRecommendationSubText : ''}`}>{finalPrizeSubText}</div>
+        <div data-react-edit-prop={popupEditProp('prizeSubText')} className={`${styles.subText} ${isOfficialRecommendationPrize ? styles.officialRecommendationSubText : ''}`}>{finalPrizeSubText}</div>
       )}
       {!isContentDiagnosisPrize && !isDouziFamilyPackPrize ? (
         <div className={styles.buttonPage}>
           <div className={styles.buttonWrap} style={buttonStyle}>
-            <div className={styles.buttonText} data-react-edit-prop="buttonText">{buttonText}</div>
+            <div className={styles.buttonText} data-react-edit-prop={popupEditProp('buttonText')}>{buttonText}</div>
           </div>
         </div>
       ) : null}

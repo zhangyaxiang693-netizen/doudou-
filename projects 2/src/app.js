@@ -77,12 +77,14 @@ const mockPrizeLibrary = [
     id: "official_recommendation",
     name: "DOU+官方推荐机会",
     image: new URL("../九宫格-奖品库/dou+官方推荐机会.png", import.meta.url).href,
+    type: "official_recommendation",
     copy: "「DOU+小助手」官方账号给你的视频点赞并推荐",
   },
   {
     id: "douzi_merch",
     name: "DOU仔周边",
     image: new URL("../九宫格-奖品库/dou仔周边.png", import.meta.url).href,
+    type: "douzi_merch",
     copy: "",
   },
   {
@@ -96,18 +98,21 @@ const mockPrizeLibrary = [
     id: "douzi_canvas_bag",
     name: "DOU仔帆布包",
     image: new URL("../九宫格-奖品库/dou仔周边帆布包.png", import.meta.url).href,
+    type: "douzi_canvas_bag",
     copy: "",
   },
   {
     id: "douzi_keychain",
     name: "DOU仔挂件",
     image: new URL("../九宫格-奖品库/dou仔挂件.png", import.meta.url).href,
+    type: "douzi_keychain",
     copy: "",
   },
   {
     id: "douzi_doll",
     name: "DOU仔玩偶",
     image: new URL("../九宫格-奖品库/dou仔玩偶.png", import.meta.url).href,
+    type: "douzi_doll",
     copy: "",
   },
   {
@@ -120,18 +125,21 @@ const mockPrizeLibrary = [
     id: "jianying_vip",
     name: "剪映VIP",
     image: new URL("../九宫格-奖品库/剪映vip.png", import.meta.url).href,
+    type: "jianying_vip",
     copy: "",
   },
   {
     id: "traffic_support",
     name: "流量扶持",
     image: new URL("../九宫格-奖品库/流量扶持.png", import.meta.url).href,
+    type: "traffic_support",
     copy: "",
   },
   {
     id: "points",
     name: "内容诊断积分",
     image: new URL("../九宫格-奖品库/积分.png", import.meta.url).href,
+    type: "content_diagnosis",
     copy: "",
   },
 ];
@@ -141,10 +149,10 @@ const COMPONENT_DISPLAY_NAME_BY_ID = {
   "核心权益模块-bigday发券-样式1-已报名": "核心权益｜big-day发券（已报名）",
   "核心权益模块-bigday发券-样式2": "核心权益｜预约抢券",
   "核心权益模块-发券-样式2": "核心权益｜发券",
-  "核心玩法模块-抽奖消返-3列": "核心玩法｜消耗返（三档）",
-  "核心玩法模块-抽奖消返-4列": "核心玩法｜抽奖消耗返（四档）",
-  "核心玩法模块-抽奖-未报名": "核心玩法｜抽奖-九宫格（报名前）",
-  "核心玩法模块-抽奖-已报名": "核心玩法｜抽奖-九宫格（已报名）",
+  "核心玩法模块-抽奖消返-3列": "核心玩法｜抽奖消耗返",
+  "核心玩法模块-抽奖消返-4列": "核心玩法｜抽奖消耗返",
+  "核心玩法模块-抽奖-未报名": "核心玩法｜抽奖-九宫格",
+  "核心玩法模块-抽奖-已报名": "核心玩法｜抽奖-九宫格",
   投放抽奖: "核心玩法｜投放抽奖",
   任务列表: "核心玩法｜任务",
   投稿赢流量: "内容增长｜投稿赢流量",
@@ -706,7 +714,7 @@ const PAGE_TEMPLATE_BUSINESS_STATES = {
     ],
   },
   "核心玩法模块-抽奖消返-3列": {
-    label: "核心玩法｜抽奖消耗返（三档）",
+    label: "核心玩法｜抽奖消耗返",
     states: [
       {
         id: "default",
@@ -728,7 +736,7 @@ const PAGE_TEMPLATE_BUSINESS_STATES = {
     ],
   },
   "核心玩法模块-抽奖消返-4列": {
-    label: "核心玩法｜抽奖消耗返（四档）",
+    label: "核心玩法｜抽奖消耗返",
     states: [
       {
         id: "default",
@@ -1139,9 +1147,9 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
         {
           title: "奖品配置",
           fields: Array.from({ length: INITIAL_LOTTERY_PRIZE_COUNT }, (_, index) => [
-            `1.prize${index + 1}`,
-            `奖品${index + 1}`,
-          ]),
+            [`1.prize${index + 1}`, `奖品${index + 1}`],
+            [`1.prize${index + 1}ButtonText`, `奖品${index + 1} · 弹窗按钮文案`],
+          ]).flat(),
         },
         {
           title: "消耗与抽奖数据",
@@ -1215,7 +1223,7 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
     },
     {
       schemaIds: ["核心玩法模块-抽奖消返-3列"],
-      moduleName: "核心玩法｜消耗返（三档）",
+      moduleName: "核心玩法｜抽奖消耗返",
       sections: [
         {
           title: "",
@@ -1250,7 +1258,7 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
     },
     {
       schemaIds: ["核心玩法模块-抽奖消返-4列"],
-      moduleName: "核心玩法｜抽奖消耗返（四档）",
+      moduleName: "核心玩法｜抽奖消耗返",
       sections: [
         {
           title: "",
@@ -1301,9 +1309,9 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
         {
           title: "奖品配置",
           fields: Array.from({ length: 8 }, (_, index) => [
-            `2.prize${index + 1}`,
-            `奖品${index + 1}`,
-          ]),
+            [`2.prize${index + 1}`, `奖品${index + 1}`],
+            [`2.prize${index + 1}ButtonText`, `奖品${index + 1} · 弹窗按钮文案`],
+          ]).flat(),
         },
       ],
     },
@@ -1390,6 +1398,35 @@ function getPrdPageTemplateModuleSpec(pageTemplate, schemaId) {
   const specs = getPrdPageTemplateInputSpecs(pageTemplate);
   if (!specs) return null;
   return specs.find((spec) => spec.schemaIds.includes(schemaId)) || null;
+}
+
+function getCanonicalPrdPageTemplateFieldSpec(field) {
+  const schemaIds = new Set(
+    [
+      field?.moduleSchemaId,
+      field?.sourceModuleSchemaId,
+    ].filter(Boolean),
+  );
+  if (!schemaIds.size) return null;
+  const localKey = getPageTemplateFieldLocalCompoundKey(field);
+  for (const specs of Object.values(PRD_PAGE_TEMPLATE_INPUT_SPECS)) {
+    for (const moduleSpec of specs) {
+      if (!moduleSpec.schemaIds.some((schemaId) => schemaIds.has(schemaId))) continue;
+      for (const section of moduleSpec.sections || []) {
+        const matchedField = (section.fields || []).find(
+          ([key]) => key === localKey,
+        );
+        if (matchedField) {
+          return {
+            moduleName: moduleSpec.moduleName,
+            sectionTitle: section.title,
+            label: matchedField[1],
+          };
+        }
+      }
+    }
+  }
+  return null;
 }
 
 const ACTIVITY_STORAGE_KEY = "builder_activity_data_empty_v1_";
@@ -1761,7 +1798,7 @@ function parsePrdDocumentReturnStrategyTable(rows) {
     );
   }
   return {
-    module: tierCount === 4 ? "核心玩法｜抽奖消耗返（四档）" : "核心玩法｜消耗返（三档）",
+    module: "核心玩法｜抽奖消耗返",
     tierCount,
     versions: records.map((record) => record.name),
     fields: fieldValues.map(([field, values]) => ({ field, values })),
@@ -2310,7 +2347,7 @@ function getPrdBlueprintPrizeNumber(fieldName) {
 }
 
 function isLotteryPrizePropKey(propKey) {
-  return /^prize\d+(Name|Text|Copy|Amount|Threshold)?$/.test(String(propKey || ""));
+  return /^prize\d+(Name|Text|Copy|Amount|Threshold|ButtonText)?$/.test(String(propKey || ""));
 }
 
 function isPrdBlueprintFieldMatch(field, fieldName) {
@@ -2575,7 +2612,7 @@ function deletePageTemplateBlueprintPrize(moduleIndex, childIndex, deleteIndex, 
       const parsed = parsedBase || parsedVersion;
       if (!parsed || Number(parsed.moduleIndex) !== Number(moduleIndex)) return row;
       const prizeMatch = String(parsed.compoundKey || "").match(
-        /^(\d+)\.prize(\d+)(Name|Text|Copy|Amount|Threshold)?$/,
+        /^(\d+)\.prize(\d+)(Name|Text|Copy|Amount|Threshold|ButtonText)?$/,
       );
       if (!prizeMatch || Number(prizeMatch[1]) !== Number(childIndex)) return row;
       const prizeIndex = Number(prizeMatch[2]);
@@ -2615,7 +2652,7 @@ function movePageTemplateBlueprintPrize(
   }
 
   ["", ...versionNames.filter(Boolean)].forEach((versionName) => {
-    ["", "Name", "Text", "Copy", "Amount", "Threshold"].forEach((suffix) => {
+    ["", "Name", "Text", "Copy", "Amount", "Threshold", "ButtonText"].forEach((suffix) => {
       const currentKey = getPageTemplatePrizeRowKey(
         moduleIndex,
         childIndex,
@@ -4975,6 +5012,33 @@ function replaceMoleculeInPrdPageTemplate(templateId, moduleIndex, moleculeId) {
   return true;
 }
 
+function resetPrdPageTemplateModuleState(templateId, moduleIndex) {
+  const boundedIndex = Number(moduleIndex);
+  state.prdTableRows = normalizePrdTableRows(state.prdTableRows).filter((row) => {
+    const parsed =
+      parsePageTemplateVariableRowKey(row.key) ||
+      parsePageTemplateVariableVersionRowKey(row.key);
+    if (parsed?.moduleIndex === boundedIndex) return false;
+    const stateDetail = parsePageTemplateStateDetailRowKey(row.key);
+    return !(
+      stateDetail?.templateId === templateId &&
+      stateDetail.moduleIndex === boundedIndex
+    );
+  });
+  const moduleKey = getPageTemplateVersionModuleKey(templateId, boundedIndex);
+  delete state.prdManualModuleVersions?.[moduleKey];
+  delete state.pageTemplateBlueprintStates?.[
+    getPageTemplateBusinessStateKey(templateId, boundedIndex)
+  ];
+  Object.keys(state.pageTemplateChildStates || {}).forEach((key) => {
+    if (key.startsWith(`${templateId}|${boundedIndex}|`)) {
+      delete state.pageTemplateChildStates[key];
+    }
+  });
+  state.prdTableBlueprint = null;
+  state.prdTableBlueprintSignature = "";
+}
+
 function getPageTemplateRawNodeSchemaId(entry) {
   return Array.isArray(entry) ? entry[0] : entry?.schemaId;
 }
@@ -5458,6 +5522,21 @@ function setPageTemplateEntryCardState(templateId, moduleIndex, stateId) {
     if (!entryState || !schema) return;
     entryState.component = stateOption.schemaId;
     entryState.node = createStateNodeFromSchema(schema, {}, stateOption);
+    const detailValues = new Map();
+    state.prdTableRows.forEach((row) => {
+      const parsed = parsePageTemplateStateDetailRowKey(row.key);
+      if (
+        parsed?.templateId === templateId &&
+        parsed.moduleIndex === moduleIndex &&
+        parsed.stateId === `entry:${stateId}`
+      ) {
+        detailValues.set(parsed.compoundKey, row.value ?? "");
+      }
+    });
+    if (detailValues.size) {
+      entryState.detailValues = Object.fromEntries(detailValues);
+      applyPageTemplateVariableValuesToNode(entryState.node, detailValues);
+    }
     if (node.activeGuidedStateId === "entry") {
       applyGuidedBusinessState(node, "entry");
     }
@@ -7757,6 +7836,7 @@ function renderFixedPrizeLibrarySelect(
   nameDataAttr = "",
   copyDataAttr = "",
   amountDataAttr = "",
+  trailingMarkup = "",
 ) {
   const selectedValue = normalizePrizeLibraryValue(value);
   const optionValues = new Set(mockPrizeLibrary.map((item) => serializePrizeOption(item)));
@@ -7813,6 +7893,7 @@ function renderFixedPrizeLibrarySelect(
           />
         ` : ""}
       ` : ""}
+      ${trailingMarkup}
     </div>
   `;
 }
@@ -10059,6 +10140,7 @@ function ensurePageTemplateStateDetailRow(
   field,
   templateId,
   stateId,
+  initialValue,
 ) {
   if (!field || stateId === "default") return field?.rowIndex;
   const compoundKey = getPageTemplateFieldLocalCompoundKey(field);
@@ -10070,7 +10152,10 @@ function ensurePageTemplateStateDetailRow(
   );
   const existingIndex = findPrdTableRowIndexByKey(rowKey);
   if (existingIndex >= 0) return existingIndex;
-  const baseValue = state.prdTableRows[field.rowIndex]?.value ?? field.value ?? "";
+  const baseValue =
+    initialValue !== undefined
+      ? initialValue
+      : state.prdTableRows[field.rowIndex]?.value ?? field.value ?? "";
   state.prdTableRows.push({
     key: rowKey,
     value:
@@ -10090,16 +10175,41 @@ function ensurePageTemplateStateDetailRow(
 function hasIndependentPageTemplateStateVariables(group) {
   return (
     group?.stateOptions?.length > 1 &&
-    BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(
-      group.sourceModuleSchemaId || group.moduleSchemaId,
+    (
+      BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(
+        group.sourceModuleSchemaId || group.moduleSchemaId,
+      ) ||
+      isNoIncentiveEntryModule(group.templateId, group.moduleIndex)
     )
   );
 }
 
+function getPageTemplateIndependentStateStorageId(group) {
+  if (!isNoIncentiveEntryModule(group?.templateId, group?.moduleIndex)) {
+    return group?.activeStateId || "default";
+  }
+  if (group.activeStateId !== "entry") return group.activeStateId;
+  return `entry:${getPageTemplateEntryCardStateId(
+    group.templateId,
+    group.moduleIndex,
+  )}`;
+}
+
+function getPageTemplateStateSchemaDefaultValue(group, field) {
+  const schema = findComponentSchema(group?.moduleSchemaId);
+  if (!schema) return "";
+  const node = createStateNodeFromSchema(schema);
+  return getNodeValueByPath(
+    node,
+    getPageTemplateFieldLocalCompoundKey(field),
+  );
+}
+
 function getPageTemplateIndependentStateVersion(group, baseVersion) {
+  const stateStorageId = getPageTemplateIndependentStateStorageId(group);
   if (
     !baseVersion ||
-    group.activeStateId === "default" ||
+    stateStorageId === "default" ||
     !hasIndependentPageTemplateStateVariables(group)
   ) {
     return baseVersion;
@@ -10116,7 +10226,10 @@ function getPageTemplateIndependentStateVersion(group, baseVersion) {
         rowIndex: ensurePageTemplateStateDetailRow(
           field,
           group.templateId,
-          group.activeStateId,
+          stateStorageId,
+          stateStorageId === "entry:default"
+            ? undefined
+            : getPageTemplateStateSchemaDefaultValue(group, field),
         ),
       })),
     })),
@@ -10551,10 +10664,11 @@ function getPageTemplateVariableFields(pageTemplate, targetModuleIndex = null) {
   ];
   return orderedFields.map((field) => {
     const prdField = prdFieldByKey.get(field.compoundKey);
+    const canonicalField = prdField || getCanonicalPrdPageTemplateFieldSpec(field);
     const normalizedField = { ...field };
-    normalizedField.moduleName = prdField?.moduleName || field.moduleName;
-    normalizedField.sectionTitle = prdField
-      ? prdField.sectionTitle
+    normalizedField.moduleName = canonicalField?.moduleName || field.moduleName;
+    normalizedField.sectionTitle = canonicalField
+      ? canonicalField.sectionTitle
       : field.childName && field.childName !== field.moduleName
         ? field.childName
         : "模块内容";
@@ -10566,8 +10680,8 @@ function getPageTemplateVariableFields(pageTemplate, targetModuleIndex = null) {
       normalizedField.sectionTitle = `任务${field.childIndex}`;
     }
     normalizedField.label =
-      prdField?.label || getPageTemplateVariableLabel(field);
-    normalizedField.isPrdKey = Boolean(prdField);
+      canonicalField?.label || getPageTemplateVariableLabel(field);
+    normalizedField.isPrdKey = Boolean(canonicalField);
     normalizedField.rowKey = getPageTemplateVariableRowKey(normalizedField);
     normalizedField.value = getPageTemplateVariableRowValue(normalizedField);
     return normalizedField;
@@ -10912,6 +11026,7 @@ function refreshPrdTemplateMoleculeAddModalElement() {
   const modal = template.content.firstElementChild;
   if (!modal) return false;
   overview.append(modal);
+  window.renderReactMaterials?.(modal);
   return true;
 }
 
@@ -11689,6 +11804,9 @@ function renderModuleBoundBlueprintVersionMatrix(group) {
   const hasLongCopy = group.fields.some(
     (field) => String(field.value || "").trim().length >= 36,
   );
+  const hasPrizePopupFields = group.fields.some((field) =>
+    /prize\d+ButtonText$/.test(getPageTemplateFieldLocalCompoundKey(field)),
+  );
   const renderStandardMatrix = (
     sections,
     showAddVersion = true,
@@ -11696,7 +11814,7 @@ function renderModuleBoundBlueprintVersionMatrix(group) {
     configurationControl = "",
   ) => `
     <section
-      class="prd-variable-version-matrix${hasLongCopy ? " has-long-copy" : ""}"
+      class="prd-variable-version-matrix${hasLongCopy ? " has-long-copy" : ""}${hasPrizePopupFields ? " has-prize-popup-fields" : ""}"
       style="--prd-version-count:${matrixVersions.length}"
     >
       ${dimensionGroups.length > 1 ? `
@@ -11856,7 +11974,7 @@ function renderConsumptionReturnBlueprintMatrix(
       ),
     ),
   ).sort((left, right) => left - right);
-  const tiers = tierIndexes.length ? tierIndexes : [1, 2, 3, 4];
+  const availableTiers = tierIndexes.length ? tierIndexes : [1, 2, 3, 4];
   const renderField = (field, label) => {
     if (!field) return "";
     const row = state.prdTableRows[field.rowIndex] || { value: "" };
@@ -11904,6 +12022,13 @@ function renderConsumptionReturnBlueprintMatrix(
     });
     return hasFourthTier ? 4 : 3;
   };
+  const visibleTierCount = Math.max(
+    3,
+    ...versions.map((version) => getVersionTierCount(version)),
+  );
+  const tiers = availableTiers.filter(
+    (tierIndex) => tierIndex <= visibleTierCount,
+  );
   const renderTierHeader = (tierIndex) => {
     const typeFields = versions
       .map((version) => getField(version, `rewardType${tierIndex}`))
@@ -11924,6 +12049,9 @@ function renderConsumptionReturnBlueprintMatrix(
     `;
   };
   const renderTierCell = (version, tierIndex) => {
+    if (tierIndex > getVersionTierCount(version)) {
+      return `<div class="prd-consumption-return-cell is-hidden-tier" aria-hidden="true"></div>`;
+    }
     const typeField = getField(version, `rewardType${tierIndex}`);
     const thresholdField = getField(version, `consumeAmountText${tierIndex}`);
     const amountField = getField(version, `amountText${tierIndex}`);
@@ -12291,6 +12419,16 @@ function renderModuleBoundBlueprintMatrixSection(
         ${(section.fields || []).map((field, fieldIndex) => {
           if (field.key === "paragraphCount" || field.key === "taskCount") return "";
           if (/\.showNewTag$/.test(getPageTemplateFieldLocalCompoundKey(field))) return "";
+          const localFieldKey = getPageTemplateFieldLocalCompoundKey(field);
+          if (/^(\d+)\.prize\d+ButtonText$/.test(localFieldKey)) return "";
+          const prizeFieldMatch = localFieldKey.match(/^(\d+)\.prize(\d+)$/);
+          const pairedFieldIndex = prizeFieldMatch
+            ? (section.fields || []).findIndex(
+                (candidate) =>
+                  getPageTemplateFieldLocalCompoundKey(candidate) ===
+                  `${prizeFieldMatch[1]}.prize${prizeFieldMatch[2]}ButtonText`,
+              )
+            : -1;
           const paragraphPrefix = Object.keys(paragraphOrderByPrefix).find((prefix) =>
             String(field.key || "").startsWith(prefix),
           );
@@ -12302,6 +12440,7 @@ function renderModuleBoundBlueprintMatrixSection(
             isContentLocked,
             prizeCount: prizeFields.length,
             prizeVersionNames,
+            pairedFieldIndex,
             paragraphCounts,
             paragraphOrder: paragraphPrefix
               ? paragraphOrderByPrefix[paragraphPrefix]
@@ -12324,6 +12463,7 @@ function renderModuleBoundBlueprintMatrixRow(
     isContentLocked = false,
     prizeCount = 0,
     prizeVersionNames = [],
+    pairedFieldIndex = -1,
     paragraphCounts = [],
     paragraphOrder = 0,
     taskCounts = [],
@@ -12394,13 +12534,25 @@ function renderModuleBoundBlueprintMatrixRow(
         ) {
           return `<div class="prd-variable-matrix-empty-cell" aria-hidden="true"></div>`;
         }
-        return renderModuleBoundBlueprintMatrixCell(field, isContentLocked);
+        const pairedField =
+          pairedFieldIndex >= 0
+            ? version.sections?.[sectionIndex]?.fields?.[pairedFieldIndex]
+            : null;
+        return renderModuleBoundBlueprintMatrixCell(
+          field,
+          isContentLocked,
+          pairedField,
+        );
       }).join("")}
     </div>
   `;
 }
 
-function renderModuleBoundBlueprintMatrixCell(field, isContentLocked = false) {
+function renderModuleBoundBlueprintMatrixCell(
+  field,
+  isContentLocked = false,
+  trailingField = null,
+) {
   const row = state.prdTableRows[field.rowIndex] || { value: "" };
   if (isPageTemplatePrizeField(field)) {
     const normalizedValue = normalizePrizeLibraryValue(row.value);
@@ -12408,6 +12560,22 @@ function renderModuleBoundBlueprintMatrixCell(field, isContentLocked = false) {
       state.prdTableRows[field.rowIndex].value = normalizedValue;
       row.value = normalizedValue;
     }
+    const trailingRow = trailingField
+      ? state.prdTableRows[trailingField.rowIndex] || { value: "" }
+      : null;
+    const trailingMarkup = trailingField
+      ? `
+        <label class="prd-prize-popup-button-field">
+          <span>弹窗按钮文案</span>
+          <textarea
+            rows="1"
+            aria-label="${escapeAttr(trailingField.label)}"
+            ${isContentLocked ? "readonly" : ""}
+            data-prd-table-row="${trailingField.rowIndex}"
+          >${escapeHtml(trailingRow?.value || "")}</textarea>
+        </label>
+      `
+      : "";
     return renderFixedPrizeLibrarySelect(
       row.value,
       `${isContentLocked ? "disabled" : ""} data-prd-prize-table-row="${escapeAttr(field.rowIndex)}"`,
@@ -12415,6 +12583,7 @@ function renderModuleBoundBlueprintMatrixCell(field, isContentLocked = false) {
       `${isContentLocked ? "disabled" : ""} data-prd-prize-name-row="${escapeAttr(field.rowIndex)}"`,
       `${isContentLocked ? "disabled" : ""} data-prd-prize-copy-row="${escapeAttr(field.rowIndex)}"`,
       `${isContentLocked ? "disabled" : ""} data-prd-prize-amount-row="${escapeAttr(field.rowIndex)}"`,
+      trailingMarkup,
     );
   }
   if (isSelectPropField(field.field || field)) {
@@ -14692,6 +14861,41 @@ function syncGuidedSHeaderTableRow(rowKey, value) {
   return true;
 }
 
+function syncGuidedSHeaderInputValue(input, value) {
+  if (state.guidedHeaderLevelId !== "s") return false;
+  const moduleRow = input?.closest("[data-prd-template-module-row]");
+  if (!moduleRow?.querySelector("[data-prd-header-level]")) return false;
+  const keyByLabel = {
+    主标题: "mainTitle",
+    高亮文案: "highlightText",
+    副标题: "subtitle",
+    日期文案: "dateText",
+  };
+  const key = keyByLabel[input.getAttribute("aria-label") || ""];
+  if (!key) return false;
+  setGuidedSHeaderDraftValue(key, value);
+
+  const [templateId, moduleIndexText] = String(
+    moduleRow.dataset.prdTemplateModuleRow || "",
+  ).split("|");
+  const moduleIndex = Number(moduleIndexText);
+  const pageTemplate = [...pageTemplates, ...customPageTemplates].find(
+    (item) => item.id === templateId,
+  );
+  const targetProp = key === "mainTitle" ? "text" : key;
+  const targetField = pageTemplate && Number.isInteger(moduleIndex)
+    ? getPageTemplateVariableFields(pageTemplate, moduleIndex).find(
+        (field) =>
+          Number(field.moduleIndex) === moduleIndex &&
+          getPageTemplateFieldLocalCompoundKey(field) === targetProp,
+      )
+    : null;
+  if (targetField && ["text", "dateText"].includes(targetProp)) {
+    upsertPrdTableRow(getPageTemplateVariableRowKey(targetField), value);
+  }
+  return true;
+}
+
 function forEachGeneratedSHeaderForVersionModule(moduleKey, callback) {
   const parsed = parsePageTemplateVersionModuleKey(moduleKey);
   if (!parsed) return;
@@ -14753,6 +14957,35 @@ function captureGuidedDefaultPageSnapshots() {
       colorThemeId: page.colorThemeId,
       header: headerNode ? cloneNodeForLineage(headerNode) : null,
     };
+  });
+}
+
+function syncGuidedDefaultHeaderSnapshotsFromSHeaders() {
+  const snapshots = state.guidedHeaderDefaultPageSnapshots || [];
+  snapshots.forEach((snapshot) => {
+    const page = state.pages.find((item) => item.id === snapshot.pageId);
+    const sourceHeader = getPageHeaderNode(page);
+    const targetHeader = snapshot.header;
+    if (sourceHeader?.schemaId !== "S级-中秋头图" || !targetHeader) return;
+
+    const syncTextProps = (sourceNode, targetNode) => {
+      if (!sourceNode || !targetNode) return;
+      targetNode.props = { ...(targetNode.props || {}) };
+      if (sourceNode.props?.mainTitle !== undefined) {
+        targetNode.props.text = String(sourceNode.props.mainTitle || "");
+      }
+      if (sourceNode.props?.dateText !== undefined) {
+        targetNode.props.dateText = String(sourceNode.props.dateText || "");
+      }
+      (targetNode.guidedLineageVariants || []).forEach((targetVariant) => {
+        const sourceVariant = (sourceNode.guidedLineageVariants || []).find(
+          (item) => item.id === targetVariant.id,
+        );
+        if (sourceVariant?.node) syncTextProps(sourceVariant.node, targetVariant.node);
+      });
+    };
+
+    syncTextProps(sourceHeader, targetHeader);
   });
 }
 
@@ -14901,6 +15134,9 @@ function applyGuidedHeaderLevel(levelId) {
   const normalizedLevelId = levelId === "s" ? "s" : "default";
   const currentLevelId = getGuidedHeaderLevelId(sourceHeader);
   syncGuidedHeaderLevelDraftFromNode(sourceHeader);
+  if (normalizedLevelId === "default" && currentLevelId === "s") {
+    syncGuidedDefaultHeaderSnapshotsFromSHeaders();
+  }
   if (normalizedLevelId === "s" && currentLevelId !== "s") {
     captureGuidedDefaultPageSnapshots();
   }
@@ -15018,7 +15254,7 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     const configuredCount = schema?.blueprint?.prizeProps?.length;
     const propPrizeIndexes = Object.entries(lotteryNode?.props || {})
       .filter(([, value]) => String(value || "").trim())
-      .map(([key]) => key.match(/^prize(\d+)(?:Name|Text|Copy|Amount|Threshold)?$/)?.[1])
+      .map(([key]) => key.match(/^prize(\d+)(?:Name|Text|Copy|Amount|Threshold|ButtonText)?$/)?.[1])
       .filter(Boolean)
       .map(Number);
     const explicitCount = Number(lotteryNode?.props?.prizeCount) || 0;
@@ -15052,12 +15288,17 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       prizeProps[`prize${index}`] = serializePrizeOption(prize);
       prizeProps[`prize${index}Text`] = prize.name;
       prizeProps[`prize${index}Copy`] = prize.copy;
+      prizeProps[`prize${index}ButtonText`] =
+        lotteryNode?.props?.[`prize${index}ButtonText`] ??
+        lotteryNode?.props?.popupButtonText ??
+        "开心收下";
     }
     const selectedPrizeText = prizeProps[`prize${selectedPrizeIndex}Text`] || "元心动券包";
     const splitPrize = splitLotteryPrizeText(selectedPrizeText);
     const selectedPrizeCopy = prizeProps[`prize${selectedPrizeIndex}Copy`] || "满30元赠价值5元流量";
     return {
       titleText: "恭喜抽中",
+      buttonText: prizeProps[`prize${selectedPrizeIndex}ButtonText`] ?? "开心收下",
       amountText: lotteryNode?.props?.resultAmountText || splitPrize.amountText,
       selectedPrizeIndex,
       prizeCount,
@@ -15134,6 +15375,9 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       winProps.amountText = selectedPrize.amountText;
       winProps.prizeText = selectedPrize.prizeText;
       winProps.prizeSubText = winProps[`prize${winProps.selectedPrizeIndex}Copy`] || "满30元赠价值5元流量";
+      winProps.buttonText =
+        winProps[`prize${winProps.selectedPrizeIndex}ButtonText`] ??
+        "开心收下";
     }
     const currentWinProps = popupNode.schemaId === "弹窗-中奖"
       ? popupNode.props
@@ -15197,6 +15441,9 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       winProps[`prize${selectedPrizeIndex}Copy`] ||
       parsedPrize?.copy ||
       "满30元赠价值5元流量";
+    winProps.buttonText =
+      winProps[`prize${selectedPrizeIndex}ButtonText`] ??
+      "开心收下";
     popupNode.lotteryWinProps = winProps;
     setLotteryPopupResult(popupNode, "win");
     ensureLotteryPopupResultStates(popupNode);
@@ -15316,9 +15563,71 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       `prize${selectedPrizeIndex}Copy`,
       state.guidedLotteryPrizeOverrides.copy,
     );
+    syncGuidedInlineEditToSource(
+      lotteryInfo,
+      sourceVariantId,
+      `prize${selectedPrizeIndex}ButtonText`,
+      winProps.buttonText ?? "",
+    );
+    const templateSourceNode = [
+      lotteryInfo.root,
+      lotteryInfo.parent,
+      lotteryNode,
+    ].find(
+      (node) =>
+        node?.sourcePageTemplateId &&
+        node.sourcePageTemplateNodeIndex !== undefined,
+    );
+    if (templateSourceNode) {
+      const prizeKey = `prize${selectedPrizeIndex}`;
+      const lotteryChildIndex =
+        templateSourceNode === lotteryNode
+          ? -1
+          : (templateSourceNode.children || []).findIndex(
+              (child) => child === lotteryNode || isLotteryGridNode(child),
+            );
+      const sourcePath =
+        lotteryChildIndex >= 0
+          ? `${lotteryChildIndex}.${prizeKey}`
+          : prizeKey;
+      syncPageTemplateInlineEditToRows(
+        templateSourceNode,
+        sourceVariantId,
+        sourcePath,
+        state.guidedLotteryPrizeOverrides.value,
+      );
+    }
     (state.pages || []).forEach((page) => {
       (page.nodes || []).forEach(applyGuidedLotteryPrizeOverridesToNode);
     });
+  }
+
+  function syncLotteryPopupPrizeControlToSource(popupNode, prizeKey) {
+    if (!isGuidedLotteryResultPopupNode(popupNode)) return false;
+    const prizeMatch = String(prizeKey || "").match(/^prize(\d+)$/);
+    const parsedPrize = parsePrizeValue(popupNode.props?.[prizeKey]);
+    if (!prizeMatch || !parsedPrize) return false;
+    const prizeIndex = Number(prizeMatch[1]);
+    const nameKey = `prize${prizeIndex}Text`;
+    const copyKey = `prize${prizeIndex}Copy`;
+    const nextWinProps = {
+      ...(popupNode.lotteryWinProps || {}),
+      ...(popupNode.props || {}),
+      [prizeKey]: popupNode.props[prizeKey],
+      [nameKey]: parsedPrize.name,
+      [copyKey]: parsedPrize.copy,
+    };
+    if (Number(nextWinProps.selectedPrizeIndex || 1) === prizeIndex) {
+      const selectedPrizeText = splitLotteryPrizeText(parsedPrize.name);
+      nextWinProps.amountText = selectedPrizeText.amountText;
+      nextWinProps.prizeText = selectedPrizeText.prizeText;
+      nextWinProps.prizeSubText = parsedPrize.copy;
+    }
+    popupNode.lotteryWinProps = nextWinProps;
+    popupNode.props = { ...(popupNode.props || {}), ...nextWinProps };
+    syncLotteryPopupCurrentPrizeCopy(popupNode);
+    syncPopupPrizesToSourceLottery(popupNode);
+    return true;
   }
 
   function findLotteryPrizeIndexByReference(node, override, fallbackIndex = 1) {
@@ -15419,7 +15728,7 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
       lotteryNode.props.prizeCount = normalizedCount;
       markPrdBoundProp(lotteryNode, "prizeCount");
       Object.keys(lotteryNode.props).forEach((key) => {
-        const match = key.match(/^prize(\d+)(Name|Text|Copy|Amount|Threshold)?$/);
+        const match = key.match(/^prize(\d+)(Name|Text|Copy|Amount|Threshold|ButtonText)?$/);
         if (match && Number(match[1]) > normalizedCount) {
           delete lotteryNode.props[key];
         }
@@ -15539,7 +15848,7 @@ function replaceGuidedLotteryNodesWithInteractive(nodes = [], insideMolecule = f
     const parsed =
       parsePageTemplateVariableRowKey(rowKey) ||
       parsePageTemplateVariableVersionRowKey(rowKey);
-    if (!parsed || !/^\d+\.prize(?:Count|\d+(?:Name|Text|Copy|Amount|Threshold)?)$/.test(parsed.compoundKey)) return;
+    if (!parsed || !/^\d+\.prize(?:Count|\d+(?:Name|Text|Copy|Amount|Threshold|ButtonText)?)$/.test(parsed.compoundKey)) return;
     syncGeneratedLotteryBlueprintModule(parsed.moduleIndex);
   }
 
@@ -16211,8 +16520,8 @@ function applyPageTemplateVariableRowsToNodes(nodes = [], rows = []) {
       return;
     }
     const parsed = parsePageTemplateVariableRowKey(row.key);
-    const value = String(row.value || "").trim();
-    if (!parsed || !value) return;
+    if (!parsed) return;
+    const value = String(row.value ?? "");
     if (!valuesByModule.has(parsed.moduleIndex)) valuesByModule.set(parsed.moduleIndex, new Map());
     valuesByModule.get(parsed.moduleIndex).set(parsed.compoundKey, value);
   });
@@ -16229,11 +16538,26 @@ function applyPageTemplateVariableRowsToNodes(nodes = [], rows = []) {
     const [templateId, moduleIndexText, stateId] = stateKey.split("|");
     const node = nodes[Number(moduleIndexText)];
     if (!node || node.sourcePageTemplateId !== templateId) return;
-    const entry = (node.guidedStates || []).find((item) => item.id === stateId);
+    const [businessStateId, entryCardStateId] = stateId.split(":");
+    if (
+      entryCardStateId &&
+      (
+        businessStateId !== "entry" ||
+        getPageTemplateEntryCardStateId(
+          templateId,
+          Number(moduleIndexText),
+        ) !== entryCardStateId
+      )
+    ) {
+      return;
+    }
+    const entry = (node.guidedStates || []).find(
+      (item) => item.id === businessStateId,
+    );
     if (!entry?.node) return;
     entry.detailValues = Object.fromEntries(values);
     applyPageTemplateVariableValuesToNode(entry.node, values);
-    if (node.activeGuidedStateId === stateId) {
+    if (node.activeGuidedStateId === businessStateId) {
       applyPageTemplateVariableValuesToNode(node, values);
     }
   });
@@ -18834,7 +19158,13 @@ function renderGuidedLineageCard(node, variant, base, graphNode) {
 }
 
 function getGuidedMoleculeOptions() {
-  const saved = moleculeSchemas.filter((item) => item.id !== "MoleculeContainer");
+  const hiddenOptionIds = new Set([
+    "MoleculeContainer",
+    "核心权益模块-bigday发券-样式1-已报名",
+    "核心玩法模块-抽奖消返-3列",
+    "核心玩法模块-抽奖-已报名",
+  ]);
+  const saved = moleculeSchemas.filter((item) => !hiddenOptionIds.has(item.id));
   return saved.map((item) => ({ id: item.id, name: item.name, schema: item }));
 }
 
@@ -18855,6 +19185,9 @@ function createGuidedModuleReplacement(optionId, found) {
     sourceModuleId: found.node.sourceModuleId,
     sourceSlot: found.node.sourceSlot,
     sourceInputScope: found.node.sourceInputScope,
+    sourcePageTemplateId: found.node.sourcePageTemplateId,
+    sourcePageTemplateNodeIndex: found.node.sourcePageTemplateNodeIndex,
+    canvasPlacement: found.node.canvasPlacement,
   };
   if (optionId.startsWith("content:")) {
     const imageUrl = optionId === "content:2"
@@ -18964,7 +19297,7 @@ function getPrdBoundPropKeys(node) {
 }
 
 function getLotteryPrizePropMatch(propKey) {
-  return String(propKey || "").match(/^prize(\d+)(Name|Text|Copy|Amount|Threshold)?$/);
+  return String(propKey || "").match(/^prize(\d+)(Name|Text|Copy|Amount|Threshold|ButtonText)?$/);
 }
 
 function syncPrdBoundPrizeProp(sourceNode, targetNode, propKey) {
@@ -20079,7 +20412,7 @@ function renderMoleculeChildNode(child, index, parentId, options = {}) {
   const canvasAlignment = child.schemaId === "SectionTitle" ? "section-title-canvas-left" : "";
   return `
     <div class="node-wrap nested molecule-child ${canvasAlignment} ${selected}"
-         data-select="${child.id}" 
+        data-select="${child.id}"
          data-node-id="${child.id}"
          data-parent-id="${parentId}"
          data-child-index="${index}">
@@ -20743,31 +21076,11 @@ const guidedCutExportRules = {
       hideExportMetaNumbers: true,
     },
   },
-  "抽奖+消耗返3-3个券": {
-    exportPropOverrides: {
-      hideProgressGraphic: true,
-    },
-  },
-  "消耗返样式4个券": {
-    exportPropOverrides: {
-      hideProgressGraphic: true,
-    },
-  },
-  "横排按钮数据条": {
-    exportPropOverrides: {
-      hideNumbers: true,
-    },
-  },
   "提示": {
     exportPropOverrides: {
       contentText: "",
       text: "",
       description: "",
-    },
-  },
-  "标题+抽奖次数": {
-    exportPropOverrides: {
-      drawCountText: "",
     },
   },
 };
@@ -21431,6 +21744,10 @@ function getLotteryPopupGuidedCutExportEntries(page, node, nodeIndex) {
         winProps[`prize${prizeIndex}Copy`] ||
         parsedPrize?.copy ||
         "满30元赠价值5元流量",
+      buttonText:
+        winProps[`prize${prizeIndex}ButtonText`] ??
+        winProps.buttonText ??
+        "开心收下",
     });
     exportNode.isLotteryResultPopup = true;
     exportNode.activeLotteryPopupResult = "win";
@@ -21543,8 +21860,10 @@ function getGuidedExportFontCss(element) {
   if (!guidedExportFontCssPromises.has(cacheKey)) {
     const promise = getFontEmbedCSS(element).catch((error) => {
       guidedExportFontCssPromises.delete(cacheKey);
-      console.warn("[guided-export] font embedding skipped", error);
-      return "";
+      console.error("[guided-export] font embedding failed", error);
+      throw new Error(
+        `字体嵌入失败，请重试：${error?.message || "未知错误"}`,
+      );
     });
     guidedExportFontCssPromises.set(cacheKey, promise);
   }
@@ -23552,6 +23871,20 @@ function bindEvents() {
       const moduleRow = addModuleVersion.closest("[data-prd-template-module-row]");
       const moduleKey = addModuleVersion.dataset.prdAddModuleVersion;
       const version = addManualModuleBlueprintVersion(moduleKey);
+      const pageModule = parsePageTemplateVersionModuleKey(moduleKey);
+      if (version && pageModule) {
+        const pageTemplate = [...pageTemplates, ...customPageTemplates].find(
+          (item) => item.id === pageModule.templateId,
+        );
+        getPageTemplateVariableFields(pageTemplate, pageModule.moduleIndex)
+          .forEach((field) =>
+            ensurePageTemplateVariableVersionRow(field, version.name),
+          );
+        upsertPrdTableRow(
+          getConsumptionReturnDetailModeRowKey(pageModule.moduleIndex),
+          CONSUMPTION_RETURN_DETAIL_MODE_AUDIENCE,
+        );
+      }
       syncGuidedSHeaderVersionAdded(moduleKey, version);
       if (!refreshPageTemplateVariableGroupRow(moduleRow)) render();
       return;
@@ -24214,6 +24547,16 @@ function bindEvents() {
       const insertIndex = Math.min(...indexes);
       const replacementNodes = createGuidedModuleReplacement(optionId, found);
       if (!replacementNodes.length) return;
+      const templateId = found.node.sourcePageTemplateId;
+      const templateModuleIndex = Number(found.node.sourcePageTemplateNodeIndex);
+      if (templateId && Number.isInteger(templateModuleIndex)) {
+        resetPrdPageTemplateModuleState(templateId, templateModuleIndex);
+        replaceMoleculeInPrdPageTemplate(
+          templateId,
+          templateModuleIndex,
+          optionId,
+        );
+      }
       replacementNodes[0].id = found.node.id;
       [...indexes].sort((a, b) => b - a).forEach((index) => state.nodes.splice(index, 1));
       state.nodes.splice(insertIndex, 0, ...replacementNodes);
@@ -25666,26 +26009,6 @@ function bindEvents() {
         String(tierCount),
       );
 
-      if (tierCount === 3) {
-        state.prdTableRows.forEach((row) => {
-          const parsed = versionName
-            ? parsePageTemplateVariableVersionRowKey(row.key)
-            : parsePageTemplateVariableRowKey(row.key);
-          if (
-            parsed &&
-            parsed.moduleIndex === moduleIndex &&
-            (!versionName || parsed.versionName === versionName) &&
-            [
-              "1.rewardType4",
-              "1.amountText4",
-              "1.consumeAmountText4",
-            ].includes(parsed.compoundKey)
-          ) {
-            row.value = "";
-          }
-        });
-      }
-
       if (tierCount === 4) {
         const pageTemplate = [...pageTemplates, ...customPageTemplates].find(
           (item) => item.id === templateId,
@@ -25739,6 +26062,10 @@ function bindEvents() {
         }
         syncGuidedSHeaderTableRow(
           rowKey,
+          state.prdTableRows[rowIndex].value,
+        );
+        syncGuidedSHeaderInputValue(
+          prdTableRowInput,
           state.prdTableRows[rowIndex].value,
         );
         syncGeneratedLotteryBlueprintRow(rowKey);
@@ -26152,6 +26479,10 @@ function bindEvents() {
         key,
         value,
       );
+      if (syncLotteryPopupPrizeControlToSource(found.node, key)) {
+        refreshAfterGuidedNodePropChange();
+        return;
+      }
       refreshAfterGuidedNodePropChange();
       return;
     }
@@ -26168,14 +26499,22 @@ function bindEvents() {
       if (!targetNode?.props) return;
       const value = serializePrizeValueWithCopy(targetNode.props[key], nodePrizeCopyInput.value);
       targetNode.props[key] = value;
+      syncPrizeCompanionProps(targetNode.props, key, value);
       const activeVariant = targetNode.variants?.find((item) => item.id === targetNode.activeVariantId);
-      if (activeVariant && key in activeVariant.props) activeVariant.props[key] = value;
+      if (activeVariant && key in activeVariant.props) {
+        activeVariant.props[key] = value;
+        syncPrizeCompanionProps(activeVariant.props, key, value);
+      }
       syncGuidedInlineEditToSource(
         childIndex === undefined ? found : { node: targetNode, parent: found.node },
         targetNode.activeLineageVariantId || found.node.activeLineageVariantId || "base",
         key,
         value,
       );
+      if (syncLotteryPopupPrizeControlToSource(found.node, key)) {
+        refreshAfterGuidedNodePropChange();
+        return;
+      }
       refreshAfterGuidedNodePropChange();
       return;
     }
@@ -26192,9 +26531,23 @@ function bindEvents() {
       if (!targetNode?.props) return;
       const value = serializePrizeValueWithAmount(targetNode.props[key], nodePrizeAmountInput.value);
       targetNode.props[key] = value;
+      syncPrizeCompanionProps(targetNode.props, key, value);
       syncPrizeLibraryEditableInputs(nodePrizeAmountInput, value);
       const activeVariant = targetNode.variants?.find((item) => item.id === targetNode.activeVariantId);
-      if (activeVariant && key in activeVariant.props) activeVariant.props[key] = value;
+      if (activeVariant && key in activeVariant.props) {
+        activeVariant.props[key] = value;
+        syncPrizeCompanionProps(activeVariant.props, key, value);
+      }
+      syncGuidedInlineEditToSource(
+        childIndex === undefined ? found : { node: targetNode, parent: found.node },
+        targetNode.activeLineageVariantId || found.node.activeLineageVariantId || "base",
+        key,
+        value,
+      );
+      if (syncLotteryPopupPrizeControlToSource(found.node, key)) {
+        refreshAfterGuidedNodePropChange();
+        return;
+      }
       refreshAfterGuidedNodePropChange();
       return;
     }

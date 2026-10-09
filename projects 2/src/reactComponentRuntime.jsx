@@ -384,6 +384,15 @@ function markEditableFields(host, props) {
       findExactTextTarget(host, targetText, usedTargets) ||
       findPartialTextTarget(host, value, usedTargets);
     if (!target) return;
+    if (
+      !explicitTarget &&
+      (
+        host.dataset.reactComponent === "弹窗-中奖" ||
+        target.querySelector?.("[data-react-edit-prop]")
+      )
+    ) {
+      return;
+    }
     usedTargets.add(target);
     const exactMatch = normalizeText(target.textContent) === targetText;
 

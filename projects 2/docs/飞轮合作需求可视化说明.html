@@ -1,0 +1,671 @@
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f4f5f7;
+    --surface: #ffffff;
+    --surface-muted: #f6f6f8;
+    --text: #1b1d22;
+    --muted: #686d78;
+    --border: #dfe1e6;
+    --brand: #5748d8;
+    --brand-soft: #efedff;
+    --teal: #087f74;
+    --teal-soft: #e8f7f4;
+    --orange: #b45309;
+    --orange-soft: #fff4df;
+    --red: #bd3b33;
+    --radius: 8px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --font: "SF Pro Text", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    color: var(--text);
+    background: var(--page);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.65;
+    letter-spacing: 0;
+  }
+
+  .document {
+    width: min(1120px, calc(100% - 40px));
+    margin: 32px auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .masthead {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--space-8);
+    align-items: end;
+    padding: 40px 48px 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .eyebrow {
+    margin: 0 0 var(--space-2);
+    color: var(--brand);
+    font-size: 13px;
+    font-weight: 650;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 34px;
+    line-height: 1.25;
+    font-weight: 700;
+  }
+
+  .subtitle {
+    max-width: 700px;
+    margin: var(--space-3) 0 0;
+    color: var(--muted);
+    font-size: 16px;
+  }
+
+  .doc-meta {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 150px;
+    color: var(--muted);
+    font-size: 13px;
+    text-align: right;
+  }
+
+  .summary {
+    padding: var(--space-6) 48px;
+    color: var(--brand);
+    background: var(--brand-soft);
+    border-bottom: 1px solid var(--border);
+    font-size: 18px;
+    font-weight: 650;
+    text-align: center;
+  }
+
+  section {
+    padding: 36px 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section:last-child {
+    border-bottom: 0;
+  }
+
+  .section-head {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: var(--space-4);
+    align-items: baseline;
+    margin-bottom: var(--space-6);
+  }
+
+  .section-no {
+    color: var(--brand);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.35;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  .lead {
+    max-width: 880px;
+    color: var(--muted);
+  }
+
+  .old-flow,
+  .new-flow {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-3);
+    align-items: stretch;
+    margin-top: var(--space-6);
+  }
+
+  .flow-step {
+    position: relative;
+    min-width: 0;
+    padding: var(--space-4);
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .flow-step:not(:last-child)::after {
+    content: "→";
+    position: absolute;
+    top: 50%;
+    right: -18px;
+    z-index: 2;
+    width: 24px;
+    color: var(--muted);
+    background: var(--surface);
+    transform: translateY(-50%);
+  }
+
+  .flow-step.problem {
+    border-color: color-mix(in srgb, var(--red) 42%, var(--border));
+  }
+
+  .pain-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  .pain {
+    padding: var(--space-1) var(--space-3);
+    color: var(--red);
+    border: 1px solid color-mix(in srgb, var(--red) 36%, var(--border));
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .io-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr;
+    gap: var(--space-4);
+    align-items: stretch;
+  }
+
+  .io-block {
+    padding: var(--space-5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .io-block.primary {
+    border-color: var(--brand);
+  }
+
+  .block-label {
+    margin-bottom: var(--space-2);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .io-block.primary .block-label {
+    color: var(--brand);
+  }
+
+  .io-list {
+    margin: var(--space-3) 0 0;
+    padding-left: var(--space-5);
+    color: var(--muted);
+  }
+
+  .goal-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .goal {
+    padding: var(--space-5);
+  }
+
+  .goal + .goal {
+    border-left: 1px solid var(--border);
+  }
+
+  .goal strong {
+    display: block;
+    margin-bottom: var(--space-2);
+    color: var(--brand);
+    font-size: 18px;
+  }
+
+  .goal span {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .partnership {
+    display: grid;
+    grid-template-columns: 1fr 160px 1fr;
+    gap: var(--space-5);
+    align-items: stretch;
+  }
+
+  .party {
+    padding: var(--space-6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .party.ours {
+    border-top: 4px solid var(--brand);
+  }
+
+  .party.feilun {
+    border-top: 4px solid var(--teal);
+  }
+
+  .party ul {
+    margin: var(--space-3) 0 0;
+    padding-left: var(--space-5);
+    color: var(--muted);
+  }
+
+  .handoff {
+    display: grid;
+    place-content: center;
+    gap: var(--space-2);
+    color: var(--muted);
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .handoff strong {
+    color: var(--brand);
+    font-size: 24px;
+  }
+
+  .shared {
+    margin-top: var(--space-5);
+    padding: var(--space-4);
+    color: var(--muted);
+    background: var(--surface-muted);
+    border-left: 4px solid var(--brand);
+  }
+
+  .requirement-group + .requirement-group {
+    margin-top: var(--space-8);
+  }
+
+  .group-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  .group-mark {
+    width: 8px;
+    height: 24px;
+    background: var(--brand);
+    border-radius: 999px;
+  }
+
+  .group-mark.teal {
+    background: var(--teal);
+  }
+
+  .group-mark.orange {
+    background: var(--orange);
+  }
+
+  .req-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .req-table th,
+  .req-table td {
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    vertical-align: top;
+    text-align: left;
+  }
+
+  .req-table th {
+    color: var(--muted);
+    background: var(--surface-muted);
+    font-size: 13px;
+  }
+
+  .req-table th:first-child,
+  .req-table td:first-child {
+    width: 18%;
+    font-weight: 650;
+  }
+
+  .req-table th:nth-child(2),
+  .req-table td:nth-child(2) {
+    width: 31%;
+  }
+
+  .req-table td:last-child {
+    color: var(--muted);
+  }
+
+  .questions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+    counter-reset: question;
+  }
+
+  .question {
+    position: relative;
+    min-height: 68px;
+    padding: var(--space-4) var(--space-4) var(--space-4) 52px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    counter-increment: question;
+  }
+
+  .question::before {
+    content: counter(question, decimal-leading-zero);
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    color: var(--brand);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  @media (max-width: 800px) {
+    .document {
+      width: 100%;
+      margin: 0;
+      border: 0;
+    }
+
+    .masthead,
+    section {
+      padding: var(--space-6);
+    }
+
+    .masthead {
+      grid-template-columns: 1fr;
+    }
+
+    .doc-meta {
+      text-align: left;
+    }
+
+    .summary {
+      padding: var(--space-5) var(--space-6);
+    }
+
+    .section-head {
+      grid-template-columns: 48px 1fr;
+    }
+
+    .old-flow,
+    .new-flow,
+    .io-grid,
+    .goal-grid,
+    .partnership,
+    .questions {
+      grid-template-columns: 1fr;
+    }
+
+    .flow-step:not(:last-child)::after {
+      content: "↓";
+      top: auto;
+      right: 50%;
+      bottom: -21px;
+      transform: translateX(50%);
+    }
+
+    .goal + .goal {
+      border-left: 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .handoff {
+      min-height: 88px;
+    }
+
+    .req-table,
+    .req-table tbody,
+    .req-table tr,
+    .req-table th,
+    .req-table td {
+      display: block;
+      width: 100% !important;
+    }
+
+    .req-table thead {
+      display: none;
+    }
+
+    .req-table tr + tr {
+      margin-top: var(--space-3);
+    }
+
+    .req-table td {
+      border-bottom: 0;
+    }
+
+    .req-table td:last-child {
+      border-bottom: 1px solid var(--border);
+    }
+  }
+
+  @media print {
+    body {
+      background: var(--surface);
+    }
+
+    .document {
+      width: 100%;
+      margin: 0;
+      border: 0;
+    }
+
+    section {
+      break-inside: avoid;
+    }
+  }
+</style>
+
+<main class="document">
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">合作需求说明</p>
+      <h1>活动生产平台 × 飞轮</h1>
+      <p class="subtitle">打通活动页面生产与活动配置上线，让页面、素材、配置和交互能力能够顺畅交付。</p>
+    </div>
+    <div class="doc-meta">
+      <span>讨论版本</span>
+      <span>2026.09</span>
+    </div>
+  </header>
+
+  <div class="summary">我们负责把活动生产出来，飞轮负责让活动稳定运行并上线。</div>
+
+  <section>
+    <div class="section-head">
+      <span class="section-no">01</span>
+      <h2>背景</h2>
+    </div>
+    <p class="lead">传统活动链路中，页面制作和飞轮配置相互割裂。素材、文案、规则需要重复处理，状态、人群和动效越复杂，沟通成本越高。</p>
+    <div class="old-flow" aria-label="传统活动流程">
+      <div class="flow-step">业务提需求</div>
+      <div class="flow-step">设计出图</div>
+      <div class="flow-step problem">人工切图</div>
+      <div class="flow-step problem">飞轮配置</div>
+      <div class="flow-step">测试上线</div>
+    </div>
+    <div class="pain-line">
+      <span class="pain">重复录入</span>
+      <span class="pain">素材易错配</span>
+      <span class="pain">状态难维护</span>
+      <span class="pain">动效难还原</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="section-no">02</span>
+      <h2>我们是什么</h2>
+    </div>
+    <p class="lead">我们是面向 H5 营销活动的智能生产与可视化编排平台，位于业务需求和飞轮运行平台之间。</p>
+    <div class="io-grid">
+      <div class="io-block">
+        <p class="block-label">输入</p>
+        <h3>业务需求</h3>
+        <ul class="io-list">
+          <li>PRD 与活动规则</li>
+          <li>人群和业务目标</li>
+          <li>文案与奖品信息</li>
+        </ul>
+      </div>
+      <div class="io-block primary">
+        <p class="block-label">我们的平台</p>
+        <h3>生产与编排</h3>
+        <ul class="io-list">
+          <li>头图、任务、权益、抽奖、弹窗</li>
+          <li>视觉编辑与组件配置</li>
+          <li>状态、人群和主题管理</li>
+        </ul>
+      </div>
+      <div class="io-block">
+        <p class="block-label">输出</p>
+        <h3>活动交付物</h3>
+        <ul class="io-list">
+          <li>页面与预览效果</li>
+          <li>切图和动效素材</li>
+          <li>组件及活动配置</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="section-no">03</span>
+      <h2>共同目标</h2>
+    </div>
+    <div class="goal-grid">
+      <div class="goal"><strong>少切图</strong><span>减少重复素材生产</span></div>
+      <div class="goal"><strong>少录入</strong><span>配置直接进入飞轮</span></div>
+      <div class="goal"><strong>能复用</strong><span>沉淀统一组件标准</span></div>
+      <div class="goal"><strong>更多样</strong><span>支持状态、人群、动效</span></div>
+      <div class="goal"><strong>可上线</strong><span>保留审核和运行保障</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="section-no">04</span>
+      <h2>希望的合作关系</h2>
+    </div>
+    <div class="partnership">
+      <div class="party ours">
+        <p class="block-label">我们</p>
+        <h3>活动生产方</h3>
+        <ul>
+          <li>理解业务需求</li>
+          <li>设计和编排页面</li>
+          <li>生成素材与配置</li>
+          <li>保证交付效果</li>
+        </ul>
+      </div>
+      <div class="handoff">
+        <span>统一标准</span>
+        <strong>⇄</strong>
+        <span>活动包 / 接口</span>
+      </div>
+      <div class="party feilun">
+        <p class="block-label">飞轮</p>
+        <h3>活动运行方</h3>
+        <ul>
+          <li>承接页面和配置</li>
+          <li>提供业务能力</li>
+          <li>负责审核与发布</li>
+          <li>保障线上稳定</li>
+        </ul>
+      </div>
+    </div>
+    <div class="shared"><strong>双方共同：</strong>定义并维护素材、组件、配置和代码的对接标准，新增能力时同步更新。</div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="section-no">05</span>
+      <h2>需要共同讨论的需求</h2>
+    </div>
+
+    <div class="requirement-group">
+      <div class="group-title"><span class="group-mark"></span><h3>交付方式</h3></div>
+      <table class="req-table">
+        <thead><tr><th>需求</th><th>希望解决</th><th>合作方式</th></tr></thead>
+        <tbody>
+          <tr><td>自动交付切图</td><td>减少逐张上传和选择坑位</td><td>我们输出素材和对应关系，飞轮负责批量上传及自动绑定</td></tr>
+          <tr><td>自动写入配置</td><td>减少时间、规则、奖品、任务和跳转的重复录入</td><td>我们输出结构化配置，飞轮生成可编辑活动草稿</td></tr>
+          <tr><td>页面组件交付</td><td>减少纯切图带来的重复开发和效果损失</td><td>双方统一组件 Schema，飞轮完成组件适配和渲染</td></tr>
+          <tr><td>代码交付</td><td>满足标准组件无法覆盖的特殊页面</td><td>飞轮提供受控环境，我们按规范提供组件或页面代码</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="requirement-group">
+      <div class="group-title"><span class="group-mark teal"></span><h3>页面体验</h3></div>
+      <table class="req-table">
+        <thead><tr><th>需求</th><th>希望解决</th><th>合作方式</th></tr></thead>
+        <tbody>
+          <tr><td>动效支持</td><td>支持头图、弹窗、抽奖和按钮反馈</td><td>我们提供资源和播放规则，飞轮支持格式、触发及降级</td></tr>
+          <tr><td>状态切换</td><td>支持未参与、已参与、已完成、已领取等状态</td><td>我们提供状态设计，飞轮根据真实业务数据驱动切换</td></tr>
+          <tr><td>人群差异</td><td>不同人群展示不同素材、文案、权益或主题</td><td>我们提供差异内容，飞轮负责识别、优先级和默认兜底</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="requirement-group">
+      <div class="group-title"><span class="group-mark orange"></span><h3>上线保障</h3></div>
+      <table class="req-table">
+        <thead><tr><th>需求</th><th>希望解决</th><th>合作方式</th></tr></thead>
+        <tbody>
+          <tr><td>预览与校验</td><td>确保导入后的页面和配置正确</td><td>飞轮返回预览和错误信息，我们根据结果调整</td></tr>
+          <tr><td>审核与发布</td><td>避免自动配置直接影响线上</td><td>飞轮保留审核、发布和权限控制</td></tr>
+          <tr><td>版本与回滚</td><td>出现问题时可以快速恢复</td><td>双方记录活动版本，飞轮提供回滚能力</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <span class="section-no">06</span>
+      <h2>希望沟通确认</h2>
+    </div>
+    <div class="questions">
+      <div class="question">飞轮目前可以提供哪些接口或标准接入能力？</div>
+      <div class="question">素材、配置和页面组件分别可以怎样导入？</div>
+      <div class="question">是否支持自定义组件或整页代码接入？</div>
+      <div class="question">飞轮支持哪些动效格式和触发方式？</div>
+      <div class="question">是否已有状态切换和人群差异配置能力？</div>
+      <div class="question">是否可以选择一个真实活动验证完整链路？</div>
+    </div>
+  </section>
+</main>
