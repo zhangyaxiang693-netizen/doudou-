@@ -82,6 +82,16 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 - 恢复方式：确保 `server/deployment-auth.cjs` 存在，且 `.env.local` 含 `PROJECT_HISTORY_AUTH_ADAPTER=server/deployment-auth.cjs` 与 `DEPLOY_BASE_URL`（OAuth 回调域名）。
 - 未携带登录态访问历史接口时返回 401「请先登录」（这是正常的，区别于 503）。
 
+## 协作共享与后台管理（关键）
+
+实现"所有登录用户可见后台入口 + 每次进后台输入统一密码 + 个人/公共组项目 + 个人↔组复制 + 后台管理用户/组/历史"。代码在 commit `c834f44`（远端）落地，后端接口已挂载、数据库 migration 已在本库应用（截至本次）。
+
+- **数据库表**（`supabase/migrations/202610090001_create_collaboration.sql`）：`app_users`（登录用户）、`collaboration_groups`（公共组）、`collaboration_records`（协作记录，scope=personal/team）。迁移含对已有 `projects` 数据回填到 personal 记录 + `sync_project_collaboration_record` 触发器（projects 增改时同步协作记录）。**本次迁移已在目标库应用，除开发库回润空库外回填 0 行。**
+- **后台密码**：`server/admin-access.cjs`，统一密码（默认 `zhangyaxiang`，可用 `ADMIN_ACCESS_PASSWORD` 覆盖），5 次错误锁定 60s；session 用 `adminUnlocked` 标记，`lock`/`unlock` 控制。前端入口在 `data-open-admin-dashboard`（所有登录用户可见），进入后台弹密码框。
+- **协作接口**：`server/collaboration-routes.cjs` → `GET/PUT /api/collaboration/bootstrap|sync`（需登录态，admin 返回全量、普通用户只返回本人 personal + 全部 team）、`PATCH /api/collaboration/records/:id`（需 `adminUnlocked`，后台覆盖历史记录时**同步创建新 `project_versions` 版本**）。
+- **前端状态**：`src/collaboration/store.js`（`copyRecord` 实现个人↔组复制，生成新 record id）、`src/collaboration/api.js`（调用协作接口）、`src/app.js` 中 `state.collaboration` 管理与后台面板（adminSection=users/teams/history/design）。
+- **权限边界**：个人记录归 `owner_id`；公共组记录 `scope=team` 所有登录用户可查看/编辑/复制；仅 admin（输密码解锁后）可管理全部用户/组/历史。
+
 ## 常见问题和预防
 
 ## 组件开发
