@@ -7,15 +7,27 @@ export class CollaborationApiError extends Error {
   }
 }
 
+let adminToken = null;
+
+export function setAdminToken(token) {
+  adminToken = token || null;
+}
+
+export function getAdminToken() {
+  return adminToken;
+}
+
 async function request(path, options = {}) {
   let response;
   try {
+    const headers = { ...options.headers };
+    if (adminToken) headers["x-admin-token"] = adminToken;
     response = await fetch(`/api${path}`, {
       credentials: "same-origin",
       ...options,
       headers: {
         ...(options.body ? { "Content-Type": "application/json" } : {}),
-        ...options.headers,
+        ...headers,
       },
     });
   } catch {
@@ -69,9 +81,11 @@ export async function unlockAdminAccess(password) {
     method: "POST",
     body: JSON.stringify({ password }),
   });
+  if (data.token) setAdminToken(data.token);
   return Boolean(data.unlocked);
 }
 
 export function lockAdminAccess() {
+  setAdminToken(null);
   return request("/admin/lock", { method: "POST" });
 }

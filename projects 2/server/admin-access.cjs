@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const express = require("express");
+const { createAdminToken } = require("./admin-token.cjs");
 
 const DEFAULT_ADMIN_PASSWORD = "zhangyaxiang";
 const MAX_FAILED_ATTEMPTS = 5;
@@ -57,7 +58,10 @@ function createAdminAccessRouter(options = {}) {
 
     req.session.adminUnlocked = true;
     req.session.adminUnlockAttempts = { count: 0, lockedUntil: 0 };
-    return res.json({ success: true, data: { unlocked: true } });
+    return res.json({
+      success: true,
+      data: { unlocked: true, token: createAdminToken() },
+    });
   });
 
   router.post("/lock", (req, res) => {

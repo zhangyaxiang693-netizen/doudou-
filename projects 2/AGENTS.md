@@ -92,6 +92,7 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 - **协作接口**：`server/collaboration-routes.cjs` → `GET/PUT /api/collaboration/bootstrap|sync`（需登录态，admin 返回全量、普通用户只返回本人 personal + 全部 team）、`PATCH /api/collaboration/records/:id`（需 `adminUnlocked`，后台覆盖历史记录时**同步创建新 `project_versions` 版本**）。
 - **前端状态**：`src/collaboration/store.js`（`copyRecord` 实现个人↔组复制，生成新 record id）、`src/collaboration/api.js`（调用协作接口）、`src/app.js` 中 `state.collaboration` 管理与后台面板（adminSection=users/teams/history/design）。
 - **权限边界**：个人记录归 `owner_id`；公共组记录 `scope=team` 所有登录用户可查看/编辑/复制；仅 admin（输密码解锁后）可管理全部用户/组/历史。
+- **⚠️ FaaS 部署下不可依赖 MemoryStore 会话做 admin 判定（关键教训）**：`express-session` 默认 MemoryStore 把 `adminUnlocked` 存在单进程内存。线上 FaaS 无状态/多实例部署时，`unlock`（写 session）与后续 `bootstrap/sync`（读 session）可能落在不同实例，导致 admin 判定失效、后台永远以普通用户视角返回（只显示当前登录者），症状即"后台只看到自己、看不到所有用户"。**修复方案**：`server/admin-token.cjs` 用共享密钥（`SESSION_SECRET`+`:admin` 加盐）签发带过期时间的 HMAC 签名令牌（TTL 2h）；`unlock` 成功后返回 `{ unlocked, token }`，前端存 `adminToken`，`request()` 对所有 `x-admin-token` 携带；后端 `bootstrap/sync/override` 改用 `extractAdminFromRequest(req)`（`session.adminUnlocked || 校验 x-admin-token`）。改动同时兼顾本地单实例（session 可用）与线上多实例（token 兜底）。
 
 ## 常见问题和预防
 

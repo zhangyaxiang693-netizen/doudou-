@@ -5,6 +5,7 @@ const {
   createCollaborationRepository,
 } = require("./collaboration-repository.cjs");
 const { getSupabaseServiceClient } = require("./supabase-client.cjs");
+const { extractAdminFromRequest } = require("./admin-token.cjs");
 
 function sendError(res, error) {
   const code =
@@ -43,7 +44,7 @@ function createCollaborationRouter(options = {}) {
     try {
       const state = await getRepository().bootstrap(
         req.historyUser,
-        Boolean(req.session?.adminUnlocked),
+        extractAdminFromRequest(req),
       );
       res.json({ success: true, data: { state } });
     } catch (error) {
@@ -70,7 +71,7 @@ function createCollaborationRouter(options = {}) {
       const state = await getRepository().sync(
         req.historyUser,
         collaborationState,
-        Boolean(req.session?.adminUnlocked),
+        extractAdminFromRequest(req),
       );
       res.json({ success: true, data: { state } });
     } catch (error) {
@@ -79,7 +80,7 @@ function createCollaborationRouter(options = {}) {
   });
 
   router.patch("/records/:recordId", async (req, res) => {
-    if (!req.session?.adminUnlocked) {
+    if (!extractAdminFromRequest(req)) {
       return res.status(403).json({
         success: false,
         code: "ADMIN_LOCKED",
