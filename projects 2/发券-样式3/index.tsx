@@ -11,6 +11,7 @@ export type IGeneratedComponent = {
   conditionText?: string
   giftConditionText?: string
   specialText?: string
+  showSpecialTag?: boolean | string
   subtractGradientStart?: string
   subtractGradientEnd?: string
   rectangleColor?: string
@@ -46,6 +47,10 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     : undefined
   const subtractSvg = themedSubtractSvg(props.subtractGradientStart, props.subtractGradientEnd)
   const iconSvg = themedIconSvg(props.iconGradientStart, props.iconGradientEnd)
+  const showSpecialTag =
+    props.showSpecialTag !== false &&
+    props.showSpecialTag !== 'false' &&
+    props.showSpecialTag !== ''
 
   return (
     <div className={styles.page}>
@@ -56,10 +61,12 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <div className={styles.image1} dangerouslySetInnerHTML={{__html: subtractSvg}} />
           <div className={styles.image2} dangerouslySetInnerHTML={{__html: iconSvg}} />
         </div>
-        <div className={styles.container1}>
-          <img src={image4Url} className={styles.image3} />
-          <div className={styles.image4}>{props.specialText || '七夕专项'}</div>
-        </div>
+        {showSpecialTag ? (
+          <div className={styles.container1}>
+            <img src={image4Url} className={styles.image3} />
+            <div className={styles.image4}>{props.specialText || '七夕专项'}</div>
+          </div>
+        ) : null}
         <div className={styles.container2}>
           <div className={styles.content1}>
             <div className={styles.text}>

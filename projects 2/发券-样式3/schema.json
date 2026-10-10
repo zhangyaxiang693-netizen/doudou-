@@ -150,6 +150,14 @@
       "description": "右上角专项标签文案。"
     },
     {
+      "key": "showSpecialTag",
+      "name": "showSpecialTag",
+      "label": "显示用户标签",
+      "type": "boolean",
+      "default": true,
+      "description": "控制右上角黄色专项标签是否显示。"
+    },
+    {
       "key": "subtractGradientStart",
       "name": "subtractGradientStart",
       "label": "Subtract 渐变开始",
