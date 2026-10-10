@@ -3443,6 +3443,10 @@ button:hover {
   margin-bottom: 32px;
 }
 
+.component.molecule.molecule-container.placement-lottery-legacy-module .molecule-child:nth-child(4) {
+  margin-bottom: 0;
+}
+
 .component.molecule.molecule-container.node-guide-module {
   background: transparent;
   border-radius: 0;

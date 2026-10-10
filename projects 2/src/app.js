@@ -172,6 +172,7 @@ const COMPONENT_DISPLAY_NAME_BY_ID = {
   "核心玩法模块-抽奖-未报名": "核心玩法｜抽奖-九宫格",
   "核心玩法模块-抽奖-已报名": "核心玩法｜抽奖-九宫格",
   投放抽奖: "核心玩法｜投放抽奖",
+  "投放抽奖-旧版": "核心玩法｜投放抽奖（旧版）",
   任务列表: "核心玩法｜任务",
   投稿赢流量: "内容增长｜投稿赢流量",
   "投稿赢流量-样式3": "内容增长｜流量扶持券",
@@ -300,8 +301,19 @@ const ATOM_MODULE_BADGE_IDS = new Set([
   "账户优惠券提示",
 ]);
 
+const EXCLUDED_MODULE_LEVEL_INSERT_IDS = new Set([
+  "任务条-样式1-点击后",
+]);
+
 function isModuleLevelAtom(schema) {
   return ATOM_MODULE_BADGE_IDS.has(schema?.id);
+}
+
+function isInsertableModuleLevelAtom(schema) {
+  return (
+    isModuleLevelAtom(schema) &&
+    !EXCLUDED_MODULE_LEVEL_INSERT_IDS.has(schema?.id)
+  );
 }
 
 function getAdminVerifierComponentOptionMarkup(verifierType, componentOptions, selectedSchemaId) {
@@ -573,6 +585,19 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     ],
   },
   {
+    id: "投放抽奖-旧版",
+    name: "投放抽奖-旧版",
+    type: "molecule",
+    description: "由模块标题、抽奖样式 2、带底框正文样式 1 和大按钮组成。",
+    className: "placement-lottery-module placement-lottery-legacy-module",
+    children: [
+      ["模块标题-正常", { iconType: "gift" }],
+      ["抽奖样式2", {}],
+      ["正文-带底框样式1", {}],
+      ["大按钮", {}],
+    ],
+  },
+  {
     id: "节点指南",
     name: "节点指南",
     type: "molecule",
@@ -705,6 +730,9 @@ const BIGDAY_COUPON_BUSINESS_STATE_CONFIG = {
 const BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS = new Set([
   "核心权益模块-bigday发券-样式1",
   "核心权益模块-bigday发券-样式1-已报名",
+]);
+const BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS = new Set([
+  "1.showSpecialTag",
 ]);
 const PAGE_TEMPLATE_BUSINESS_STATES = {
   "核心权益模块-bigday发券-样式1": BIGDAY_COUPON_BUSINESS_STATE_CONFIG,
@@ -1050,7 +1078,7 @@ const pageTemplates = [
       ["头图", {}],
       ["账户优惠券提示", {}],
       ["核心权益模块-发券-样式2", {}],
-      ["投放抽奖", {}],
+      ["投放抽奖-旧版", {}],
       ["内容诊断-样式1-点击前", {}],
       ["用户教育-攻略", {}],
       ["用户教育案例-样式1", {}],
@@ -1155,8 +1183,8 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
       ],
     },
     {
-      schemaIds: ["投放抽奖"],
-      moduleName: "核心玩法｜投放抽奖",
+      schemaIds: ["投放抽奖-旧版"],
+      moduleName: "核心玩法｜投放抽奖（旧版）",
       sections: [
         {
           title: "",
@@ -1170,31 +1198,15 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
           ]).flat(),
         },
         {
-          title: "消耗与抽奖数据",
+          title: "活动规则",
           fields: [
-            ["2.consumeAmountText", "消耗金额"],
-            ["2.lotteryCountText", "抽奖次数"],
+            ["2.titleText", "标题"],
+            ["2.bodyText", "正文"],
           ],
         },
         {
           title: "行动按钮",
           fields: [["3.buttonText", "主按钮文案"]],
-        },
-        {
-          title: "消耗阶梯正文",
-          fields: [
-            ["4.titleText", "标题"],
-            ["4.bodyText", "正文"],
-            ["4.rewardText1", "第一档抽奖文案"],
-            ["4.rewardText2", "第二档抽奖文案"],
-            ["4.rewardText3", "第三档抽奖文案"],
-            ["4.rewardText4", "第四档抽奖文案"],
-            ["4.amountText1", "第一档金额"],
-            ["4.amountText2", "第二档金额"],
-            ["4.amountText3", "第三档金额"],
-            ["4.amountText4", "第四档金额"],
-            ["4.footnoteText", "底部说明"],
-          ],
         },
       ],
     },
@@ -1219,6 +1231,7 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
             ["1.conditionText", "券使用条件"],
             ["1.giftConditionText", "券门槛/赠送条件"],
             ["1.specialText", "用户标签"],
+            ["1.showSpecialTag", "显示用户标签"],
           ],
         },
         {
@@ -4744,11 +4757,15 @@ function createMoleculeNode(moleculeId) {
   return node;
 }
 
-function createPageTemplateMoleculeEntry(template, moleculeId) {
-  const schema = moleculeSchemas.find((item) => item.id === moleculeId);
+function createPageTemplateComponentEntry(template, schemaId, componentType) {
+  const schema = componentType === "atom"
+    ? findAtomSchema(schemaId)
+    : moleculeSchemas.find((item) => item.id === schemaId);
   if (!schema) return null;
   if (template?.isCustom) {
-    const node = createMoleculeNode(moleculeId);
+    const node = componentType === "atom"
+      ? createAtomNode(schemaId)
+      : createMoleculeNode(schemaId);
     if (node) {
       delete node.id;
       node.name = schema.name;
@@ -4756,9 +4773,13 @@ function createPageTemplateMoleculeEntry(template, moleculeId) {
     }
     return node;
   }
-  const entry = [moleculeId, {}];
+  const entry = [schemaId, {}];
   entry.isBlueprintInserted = true;
   return entry;
+}
+
+function createPageTemplateMoleculeEntry(template, moleculeId) {
+  return createPageTemplateComponentEntry(template, moleculeId, "molecule");
 }
 
 function getActivePrdPageTemplate() {
@@ -4940,12 +4961,21 @@ function swapPageTemplateIndexedStateMap(stateKey, firstIndex, secondIndex) {
   state[stateKey] = next;
 }
 
-function syncInsertedMoleculeToPageTemplate(page, insertIndex, moleculeId) {
+function syncInsertedComponentToPageTemplate(
+  page,
+  insertIndex,
+  schemaId,
+  componentType,
+) {
   const template = page?.sourcePageTemplateId
     ? [...pageTemplates, ...customPageTemplates].find((item) => item.id === page.sourcePageTemplateId)
     : getActivePrdPageTemplate();
   if (!template?.nodes) return false;
-  const entry = createPageTemplateMoleculeEntry(template, moleculeId);
+  const entry = createPageTemplateComponentEntry(
+    template,
+    schemaId,
+    componentType,
+  );
   if (!entry) return false;
   const boundedIndex = Math.max(0, Math.min(insertIndex, template.nodes.length));
   remapPrdTemplateRowsForInsertedModule(boundedIndex);
@@ -4954,16 +4984,29 @@ function syncInsertedMoleculeToPageTemplate(page, insertIndex, moleculeId) {
   return true;
 }
 
-function insertGuidedMoleculeAt(pageId, insertIndex, moleculeId, options = {}) {
+function insertGuidedComponentAt(
+  pageId,
+  insertIndex,
+  schemaId,
+  componentType,
+  options = {},
+) {
   const page = state.pages.find((item) => item.id === pageId) || activePage();
   if (!page || page.isSystemFallback) return null;
-  const node = createMoleculeNode(moleculeId);
+  const node = componentType === "atom"
+    ? createAtomNode(schemaId)
+    : createMoleculeNode(schemaId);
   if (!node) return null;
   const sortableNodes = (page.nodes || []).filter((item) => item.canvasPlacement !== "page-side");
   const sideNodes = (page.nodes || []).filter((item) => item.canvasPlacement === "page-side");
   const boundedIndex = Math.max(0, Math.min(insertIndex, sortableNodes.length));
   if (options.syncTemplate !== false) {
-    syncInsertedMoleculeToPageTemplate(page, boundedIndex, moleculeId);
+    syncInsertedComponentToPageTemplate(
+      page,
+      boundedIndex,
+      schemaId,
+      componentType,
+    );
   }
   node.sourcePageTemplateId = page.sourcePageTemplateId || getActivePrdPageTemplate()?.id || "";
   node.sourcePageTemplateNodeIndex = boundedIndex;
@@ -4981,6 +5024,16 @@ function insertGuidedMoleculeAt(pageId, insertIndex, moleculeId, options = {}) {
   return node;
 }
 
+function insertGuidedMoleculeAt(pageId, insertIndex, moleculeId, options = {}) {
+  return insertGuidedComponentAt(
+    pageId,
+    insertIndex,
+    moleculeId,
+    "molecule",
+    options,
+  );
+}
+
 function getGuidedEditablePageFallback() {
   const visibleIds = new Set(state.guidedVisiblePageIds || []);
   return (
@@ -4991,11 +5044,21 @@ function getGuidedEditablePageFallback() {
   );
 }
 
-function insertMoleculeIntoPrdPageTemplate(templateId, insertIndex, moleculeId) {
+function insertComponentIntoPrdPageTemplate(
+  templateId,
+  insertIndex,
+  schemaId,
+  componentType,
+) {
   const template = [...pageTemplates, ...customPageTemplates].find((item) => item.id === templateId);
   if (!template?.nodes) return false;
   const page = { sourcePageTemplateId: template.id };
-  const success = syncInsertedMoleculeToPageTemplate(page, insertIndex, moleculeId);
+  const success = syncInsertedComponentToPageTemplate(
+    page,
+    insertIndex,
+    schemaId,
+    componentType,
+  );
   if (!success) return false;
   state.prdTemplateAddAfterIndex = null;
   state.prdTemplateAddModal = null;
@@ -8842,6 +8905,7 @@ function getMoleculeVerifierFields(molecule, verifier) {
         const value = overrides[key] ?? field.default;
         return blueprintTextProps.has(key) ||
           isPrizePropField(field) ||
+          field.type === "boolean" ||
           isCopyPropField(key, field, value);
       })
       .map(([key, field]) => ({
@@ -8931,6 +8995,7 @@ function getPageTemplateVerifierFields(
         const value = node.props?.[key] ?? field.default;
         return blueprintTextProps.has(key) ||
           isPrizePropField(field) ||
+          field.type === "boolean" ||
           isCopyPropField(key, field, value);
       })
       .map(([key, field]) => {
@@ -10837,6 +10902,44 @@ function hasIndependentPageTemplateStateVariables(group) {
   );
 }
 
+function syncBigdayCouponSharedStateField(rowKey, value) {
+  const stateParsed = parsePageTemplateStateDetailRowKey(rowKey);
+  const variableParsed = parsePageTemplateVariableRowKey(rowKey);
+  const parsed = stateParsed || variableParsed;
+  if (!parsed || !BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS.has(parsed.compoundKey)) {
+    return false;
+  }
+  const templateId =
+    stateParsed?.templateId ||
+    getActivePrdPageTemplate()?.id ||
+    "";
+  const template = [...pageTemplates, ...customPageTemplates].find(
+    (item) => item.id === templateId,
+  );
+  const schemaId = getPageTemplateRawNodeSchemaId(
+    template?.nodes?.[parsed.moduleIndex],
+  );
+  if (!BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(schemaId)) return false;
+
+  setPrdTableRowValueByKey(
+    getPageTemplateVariableRowKey({
+      moduleIndex: parsed.moduleIndex,
+      compoundKey: parsed.compoundKey,
+    }),
+    value,
+  );
+  setPrdTableRowValueByKey(
+    getPageTemplateStateDetailRowKey(
+      templateId,
+      parsed.moduleIndex,
+      "postSignup",
+      parsed.compoundKey,
+    ),
+    value,
+  );
+  return true;
+}
+
 function getPageTemplateIndependentStateStorageId(group) {
   if (!isNoIncentiveEntryModule(group?.templateId, group?.moduleIndex)) {
     return group?.activeStateId || "default";
@@ -11709,13 +11812,13 @@ function renderPageTemplateSHeaderFields(group) {
 function renderPrdTemplateMoleculeAddModal() {
   const target = state.prdTemplateAddModal;
   if (!target) return "";
-  const options = getGuidedMoleculeOptions();
+  const options = getGuidedComponentOptions();
   return `
     <div class="prd-template-add-modal" data-prd-add-modal>
-      <section class="prd-template-add-dialog" role="dialog" aria-modal="true" aria-label="选择分子组件">
+      <section class="prd-template-add-dialog" role="dialog" aria-modal="true" aria-label="选择模块组件">
         <header>
           <div>
-            <span>选择分子模块</span>
+            <span>选择模块</span>
             <strong>${target.direction === "before" ? "添加到当前模块上方" : "添加到当前模块下方"}</strong>
           </div>
           <button type="button" data-prd-close-add-component aria-label="关闭">×</button>
@@ -11728,6 +11831,7 @@ function renderPrdTemplateMoleculeAddModal() {
               data-prd-template-insert-molecule="${escapeAttr(item.id)}"
               data-prd-template-id="${escapeAttr(target.templateId)}"
               data-prd-template-insert-index="${escapeAttr(target.insertIndex)}"
+              data-component-type="${escapeAttr(item.type)}"
             >
               <div class="prd-template-add-preview ${item.imageUrl ? "is-content" : ""}">
                 <div class="prd-template-add-preview-inner ${item.imageUrl ? "is-content" : ""}">
@@ -11735,7 +11839,7 @@ function renderPrdTemplateMoleculeAddModal() {
                 </div>
               </div>
               <div class="prd-template-add-card-meta">
-                <span>预存分子</span>
+                <span>${item.type === "atom" ? "模块级原子" : "预存分子"}</span>
                 <strong>${escapeHtml(item.name)}</strong>
               </div>
             </button>
@@ -13247,7 +13351,7 @@ function renderModuleBoundBlueprintMatrixCell(
       field.label,
     );
   }
-  if (field.type === "boolean") {
+  if ((field.type || field.field?.type) === "boolean") {
     const checked = /^(?:true|1|yes|是|开启|开|new)$/i.test(String(row.value || "").trim());
     return `
       <label class="prd-variable-checkbox">
@@ -13315,7 +13419,7 @@ function renderModuleBoundBlueprintField(field) {
       </label>
     `;
   }
-  if (field.type === "boolean") {
+  if ((field.type || field.field?.type) === "boolean") {
     const checked = /^(?:true|1|yes|是|开启|开|new)$/i.test(String(row.value || "").trim());
     return `
       <label class="prd-variable-field${sizeClass}">
@@ -19818,7 +19922,25 @@ function getGuidedMoleculeOptions() {
     "核心玩法模块-抽奖-已报名",
   ]);
   const saved = moleculeSchemas.filter((item) => !hiddenOptionIds.has(item.id));
-  return saved.map((item) => ({ id: item.id, name: item.name, schema: item }));
+  return saved.map((item) => ({
+    id: item.id,
+    name: item.name,
+    type: "molecule",
+    schema: item,
+  }));
+}
+
+function getGuidedComponentOptions() {
+  const moleculeOptions = getGuidedMoleculeOptions();
+  const atomOptions = atomSchemas
+    .filter(isInsertableModuleLevelAtom)
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      type: "atom",
+      schema: item,
+    }));
+  return [...moleculeOptions, ...atomOptions];
 }
 
 function getGuidedContentOptions() {
@@ -20073,7 +20195,9 @@ function renderGuidedMoleculePreview(item) {
   if (item.imageUrl) {
     return `<img class="guided-content-option-image" src="${escapeAttr(item.imageUrl)}" alt="${escapeAttr(item.name)}" />`;
   }
-  const node = createMoleculeNode(item.id);
+  const node = item.type === "atom"
+    ? createAtomNode(item.id)
+    : createMoleculeNode(item.id);
   if (node) {
     node.id = `prd_add_preview_${item.id}`;
     return renderComponent(node, { editable: false });
@@ -20259,9 +20383,9 @@ function renderGuidedFloatingPanel(node, options = {}) {
   } else if (mode === "global") {
     body = renderGuidedGlobalEditor(node);
   } else if (mode === "add") {
-    const options = getGuidedMoleculeOptions();
+    const options = getGuidedComponentOptions();
     body = `
-      <p>拖拽分子组件到页面模块之间；直接点击会追加到当前页面末尾。</p>
+      <p>拖拽组件到页面模块之间；直接点击会追加到当前页面末尾。</p>
       <div class="guided-molecule-options">
         ${options
           .map(
@@ -20271,6 +20395,7 @@ function renderGuidedFloatingPanel(node, options = {}) {
                 role="button"
                 tabindex="0"
                 data-guided-add-molecule="${escapeAttr(item.id)}"
+                data-component-type="${escapeAttr(item.type)}"
                 aria-label="增加${escapeAttr(item.name)}"
               >
                 <div class="guided-molecule-preview ${item.imageUrl ? "is-content" : ""}">
@@ -20279,7 +20404,7 @@ function renderGuidedFloatingPanel(node, options = {}) {
                   </div>
                 </div>
                 <div class="guided-molecule-card-meta">
-                  <span>预存分子</span>
+                  <span>${item.type === "atom" ? "模块级原子" : "预存分子"}</span>
                   <strong>${escapeHtml(item.name)}</strong>
                 </div>
               </div>
@@ -24867,8 +24992,17 @@ function bindEvents() {
     if (prdTemplateInsertMolecule) {
       const templateId = prdTemplateInsertMolecule.dataset.prdTemplateId;
       const insertIndex = Number(prdTemplateInsertMolecule.dataset.prdTemplateInsertIndex);
-      const moleculeId = prdTemplateInsertMolecule.dataset.prdTemplateInsertMolecule;
-      if (insertMoleculeIntoPrdPageTemplate(templateId, insertIndex, moleculeId)) {
+      const schemaId = prdTemplateInsertMolecule.dataset.prdTemplateInsertMolecule;
+      const componentType =
+        prdTemplateInsertMolecule.dataset.componentType || "molecule";
+      if (
+        insertComponentIntoPrdPageTemplate(
+          templateId,
+          insertIndex,
+          schemaId,
+          componentType,
+        )
+      ) {
         state.prdTemplateAddModal = null;
         state.prdTemplateAddAfterIndex = null;
         if (!refreshPageTemplateVariableModuleList()) render();
@@ -25383,10 +25517,11 @@ function bindEvents() {
       const pageNodes = (page?.nodes || []).filter(
         (node) => node.canvasPlacement !== "page-side",
       );
-      const inserted = insertGuidedMoleculeAt(
+      const inserted = insertGuidedComponentAt(
         page?.id,
         pageNodes.length,
         guidedAddMolecule.dataset.guidedAddMolecule,
+        guidedAddMolecule.dataset.componentType || "molecule",
       );
       if (inserted) {
         state.guidedPanelMode = null;
@@ -26946,6 +27081,10 @@ function bindEvents() {
         state.prdTableRows[rowIndex].value = prdTableRowInput.type === "checkbox"
           ? (prdTableRowInput.checked ? "true" : "")
           : prdTableRowInput.value;
+        syncBigdayCouponSharedStateField(
+          rowKey,
+          state.prdTableRows[rowIndex].value,
+        );
         refreshConsumptionReturnTierControlForInput(prdTableRowInput);
         const parsedPrdTableRow = parsePageTemplateVariableRowKey(rowKey);
         if (
@@ -28171,12 +28310,14 @@ function startPointerDrag(event) {
   const nodeLabel = targetNode?.querySelector(".node-label")?.textContent;
   const guidedMoleculeName =
     guidedAddMolecule?.querySelector("strong")?.textContent ||
-    moleculeSchemas.find((item) => item.id === guidedAddMolecule?.dataset.guidedAddMolecule)?.name;
+    findComponentSchema(guidedAddMolecule?.dataset.guidedAddMolecule)?.name;
 
   state.pointerDrag = {
     kind: guidedAddMolecule ? "guided-molecule" : material ? "material" : "node",
     schemaId: guidedAddMolecule?.dataset.guidedAddMolecule || material?.dataset.materialId,
-    type: guidedAddMolecule ? "molecule" : material?.dataset.type,
+    type: guidedAddMolecule
+      ? guidedAddMolecule.dataset.componentType || "molecule"
+      : material?.dataset.type,
     nodeId: nodeId,
     sourcePageId: sourcePage?.dataset.pageId,
     label: guidedAddMolecule ? guidedMoleculeName : material ? material.querySelector("strong")?.textContent : nodeLabel || "组件",
@@ -28285,10 +28426,11 @@ function endPointerDrag(event) {
       }
     } else if (state.dropIndex !== null) {
       if (drag.kind === "guided-molecule") {
-        const inserted = insertGuidedMoleculeAt(
+        const inserted = insertGuidedComponentAt(
           state.dropPageId || state.activePageId,
           state.dropIndex,
           drag.schemaId,
+          drag.type,
         );
         if (inserted) {
           state.guidedPanelMode = null;
