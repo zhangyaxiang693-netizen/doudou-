@@ -32,21 +32,23 @@ function getTextUnit(char: string) {
 
 function splitTitleLines(value: string) {
   const lines: string[] = []
-  let current = ''
-  let width = 0
-  const maxWidth = 4
-  Array.from(value).forEach((char) => {
-    const charWidth = getTextUnit(char)
-    if (current && width + charWidth > maxWidth) {
-      lines.push(current)
-      current = char
-      width = charWidth
-      return
-    }
-    current += char
-    width += charWidth
+  const maxWidth = 5
+  value.replace(/\r\n?/g, '\n').split('\n').forEach((manualLine) => {
+    let current = ''
+    let width = 0
+    Array.from(manualLine).forEach((char) => {
+      const charWidth = getTextUnit(char)
+      if (current && width + charWidth > maxWidth) {
+        lines.push(current)
+        current = char
+        width = charWidth
+        return
+      }
+      current += char
+      width += charWidth
+    })
+    lines.push(current)
   })
-  if (current) lines.push(current)
   return lines
 }
 

@@ -6697,6 +6697,18 @@ async function performProjectSnapshotSave({
   targetScope = state.historySaveScope,
   targetGroupId = state.historySaveGroupId,
 } = {}) {
+  const projectName = String(state.activity?.name || "").trim();
+  if (
+    saveType === "manual" &&
+    (!projectName || projectName === "未命名活动")
+  ) {
+    state.historyError = "请输入项目名称后再保存";
+    return {
+      cloudSaved: false,
+      localSaved: false,
+      validationError: state.historyError,
+    };
+  }
   const group =
     targetScope === "team" ? getGroupById(targetGroupId) : null;
   const normalizedScope = group ? "team" : "personal";
@@ -6729,7 +6741,7 @@ async function performProjectSnapshotSave({
         };
       }
       const result = await createProject({
-        name: state.activity?.name || "未命名活动",
+        name: projectName,
         prdUrl: state.prdFeishuUrl || "",
         templateId: state.currentTemplateId || "",
         snapshot,
@@ -7864,6 +7876,9 @@ function buildResourceGeneratedActivity() {
 }
 
 function renderSaveScopeModal() {
+  const currentProjectName = String(state.activity?.name || "").trim();
+  const projectName =
+    currentProjectName === "未命名活动" ? "" : currentProjectName;
   return `
     <div class="admin-auth-modal" data-save-scope-modal>
       <section class="admin-auth-dialog save-scope-dialog" role="dialog" aria-modal="true" aria-labelledby="save-scope-title">
@@ -7874,6 +7889,19 @@ function renderSaveScopeModal() {
           </div>
           <button type="button" data-close-save-scope aria-label="关闭">×</button>
         </header>
+        <label class="save-project-name" for="save-project-name">
+          <span>项目名称</span>
+          <input
+            id="save-project-name"
+            data-save-project-name
+            value="${escapeAttr(projectName)}"
+            placeholder="请输入项目名称"
+            maxlength="120"
+            required
+            autofocus
+          />
+          <em data-save-project-name-error hidden>请输入项目名称后再保存</em>
+        </label>
         <div class="save-scope-options">
           <button type="button" data-save-scope="personal">
             <strong>保存到个人</strong>
@@ -7907,6 +7935,22 @@ function renderSaveScopeModal() {
       </section>
     </div>
   `;
+}
+
+function applyRequiredSaveProjectName() {
+  const input = document.querySelector("[data-save-project-name]");
+  const error = document.querySelector("[data-save-project-name-error]");
+  const projectName = String(input?.value || "").trim();
+  const isValid = Boolean(projectName && projectName !== "未命名活动");
+  input?.classList.toggle("is-invalid", !isValid);
+  if (error) error.hidden = isValid;
+  if (!isValid) {
+    input?.focus();
+    return false;
+  }
+  state.activity ||= {};
+  state.activity.name = projectName;
+  return true;
 }
 
 function renderAdminUserManagement() {
@@ -26057,6 +26101,7 @@ function bindEvents() {
 
     if (event.target.closest("[data-save-create-group]")) {
       const input = document.querySelector("[data-save-new-group]");
+      if (!applyRequiredSaveProjectName()) return;
       try {
         const nextState = createTeam(state.collaboration, {
           name: input?.value,
@@ -26077,6 +26122,7 @@ function bindEvents() {
 
     const saveScope = event.target.closest("[data-save-scope]");
     if (saveScope) {
+      if (!applyRequiredSaveProjectName()) return;
       const targetScope =
         saveScope.dataset.saveScope === "team" ? "team" : "personal";
       const targetGroupId =
@@ -26634,6 +26680,16 @@ function bindEvents() {
   });
 
   document.addEventListener("input", (event) => {
+    const saveProjectName = event.target.closest("[data-save-project-name]");
+    if (saveProjectName) {
+      const projectName = saveProjectName.value.trim();
+      const hasName = Boolean(projectName && projectName !== "未命名活动");
+      saveProjectName.classList.toggle("is-invalid", !hasName);
+      const error = document.querySelector("[data-save-project-name-error]");
+      if (error) error.hidden = hasName;
+      return;
+    }
+
     const resourceGlobalTheme = event.target.closest("[data-resource-global-theme]");
     if (resourceGlobalTheme) {
       applyResourceGlobalDraftValue("__themeId", resourceGlobalTheme.value);
