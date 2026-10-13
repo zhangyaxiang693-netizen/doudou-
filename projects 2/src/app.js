@@ -3,7 +3,7 @@ import {
   toBlob as exportNodeToBlob,
   toCanvas as exportNodeToCanvas,
 } from "html-to-image";
-import { GIFEncoder, applyPalette, quantize } from "gifenc";
+import { GIFEncoder, quantize } from "gifenc";
 import {
   applyProjectSnapshot,
   createProjectSnapshot,
@@ -23104,11 +23104,22 @@ function renderGuidedExportDimensionGroup(dimensionTitle, entries) {
     if (!stateGroups.has(key)) stateGroups.set(key, []);
     stateGroups.get(key).push(entry);
   });
+  const resourceSizeLabels = state.workflowType === "resource"
+    ? [...new Set(entries.map((entry) => {
+        const { width, height } = getExportEntryDimensions(entry);
+        return `${Math.round(width)} × ${Math.round(height)} px`;
+      }))]
+    : [];
   return `
     <section class="guided-export-dimension">
       <header>
         <strong>${escapeHtml(dimensionTitle)}</strong>
         <span>${entries.length} 个版本</span>
+        ${
+          resourceSizeLabels.length
+            ? `<em class="guided-export-dimension-size">${escapeHtml(resourceSizeLabels.join(" / "))}</em>`
+            : ""
+        }
       </header>
       <div class="guided-export-card-grid">
         ${[...stateGroups.values()].map((groupEntries) => `
@@ -23277,14 +23288,16 @@ async function captureGuidedExportEntry(entry, options = {}) {
 const GUIDED_GIF_DURATION_MS = 1200;
 const GUIDED_GIF_CAPTURE_FRAME_COUNT = 20;
 const GUIDED_GIF_MAX_BYTES = 2 * 1024 * 1024;
+const GUIDED_GIF_PALETTE_SAMPLE_PIXELS = 1000000;
+const GUIDED_GIF_DITHER_STRENGTH = 8;
 const GUIDED_GIF_PROFILES = [
   { frameCount: 20, maxColors: 256 },
   { frameCount: 18, maxColors: 256 },
   { frameCount: 16, maxColors: 256 },
-  { frameCount: 14, maxColors: 240 },
-  { frameCount: 12, maxColors: 224 },
-  { frameCount: 10, maxColors: 192 },
-  { frameCount: 8, maxColors: 160 },
+  { frameCount: 14, maxColors: 256 },
+  { frameCount: 12, maxColors: 256 },
+  { frameCount: 10, maxColors: 256 },
+  { frameCount: 8, maxColors: 256 },
 ];
 
 function createGuidedGifPalette(sourceFrames, maxColors) {
@@ -23292,18 +23305,19 @@ function createGuidedGifPalette(sourceFrames, maxColors) {
     (sum, frame) => sum + frame.data.length / 4,
     0,
   );
-  const sampleStride = Math.max(1, Math.ceil(totalPixels / 240000));
+  const sampleStride = Math.max(
+    1,
+    Math.ceil(totalPixels / GUIDED_GIF_PALETTE_SAMPLE_PIXELS),
+  );
   const sampledRgba = new Uint8Array(
     Math.ceil(totalPixels / sampleStride) * 4,
   );
   let sampleOffset = 0;
-  let transparentPixelCount = 0;
   let pixelCursor = 0;
   sourceFrames.forEach((frame) => {
     for (let offset = 0; offset < frame.data.length; offset += 4) {
       const alpha = frame.data[offset + 3];
-      if (alpha < 128) {
-        transparentPixelCount += 1;
+      if (alpha < 16) {
         pixelCursor += 1;
         continue;
       }
@@ -23325,8 +23339,140 @@ function createGuidedGifPalette(sourceFrames, maxColors) {
   return {
     palette,
     transparentIndex: palette.length - 1,
-    transparentPixelRatio: transparentPixelCount / Math.max(1, totalPixels),
   };
+}
+
+const GUIDED_GIF_BAYER_4X4 = [
+  0, 8, 2, 10,
+  12, 4, 14, 6,
+  3, 11, 1, 9,
+  15, 7, 13, 5,
+];
+
+function applyGuidedGifOrderedDither(frame) {
+  const dithered = new Uint8ClampedArray(frame.data);
+  for (let y = 0; y < frame.height; y += 1) {
+    for (let x = 0; x < frame.width; x += 1) {
+      const offset = (y * frame.width + x) * 4;
+      if (dithered[offset + 3] === 0) continue;
+      const matrixValue = GUIDED_GIF_BAYER_4X4[(y % 4) * 4 + (x % 4)];
+      const adjustment = (
+        (matrixValue + 0.5) / GUIDED_GIF_BAYER_4X4.length - 0.5
+      ) * GUIDED_GIF_DITHER_STRENGTH;
+      dithered[offset] += adjustment;
+      dithered[offset + 1] += adjustment;
+      dithered[offset + 2] += adjustment;
+    }
+  }
+  return dithered;
+}
+
+function flattenGuidedGifPartialAlpha(frame) {
+  for (let offset = 0; offset < frame.data.length; offset += 4) {
+    const alpha = frame.data[offset + 3];
+    if (alpha < 8) {
+      frame.data[offset + 3] = 0;
+      continue;
+    }
+    if (alpha === 255) continue;
+    const inverseAlpha = 255 - alpha;
+    frame.data[offset] = Math.round(
+      (frame.data[offset] * alpha + 255 * inverseAlpha) / 255,
+    );
+    frame.data[offset + 1] = Math.round(
+      (frame.data[offset + 1] * alpha + 255 * inverseAlpha) / 255,
+    );
+    frame.data[offset + 2] = Math.round(
+      (frame.data[offset + 2] * alpha + 255 * inverseAlpha) / 255,
+    );
+    frame.data[offset + 3] = 255;
+  }
+}
+
+function applyGuidedGifPalette(rgba, palette, colorCache) {
+  const indexedPixels = new Uint8Array(rgba.length / 4);
+  for (let offset = 0, pixelIndex = 0; offset < rgba.length; offset += 4, pixelIndex += 1) {
+    const red = rgba[offset];
+    const green = rgba[offset + 1];
+    const blue = rgba[offset + 2];
+    const colorKey = ((red << 8) & 0xf800) |
+      ((green << 2) & 0x03e0) |
+      (blue >> 3);
+    let paletteIndex = colorCache[colorKey];
+    if (paletteIndex === 0xffff) {
+      let nearestDistance = Number.POSITIVE_INFINITY;
+      paletteIndex = 0;
+      for (let index = 0; index < palette.length; index += 1) {
+        const paletteColor = palette[index];
+        const redDifference = red - paletteColor[0];
+        const greenDifference = green - paletteColor[1];
+        const blueDifference = blue - paletteColor[2];
+        const distance = redDifference * redDifference +
+          greenDifference * greenDifference +
+          blueDifference * blueDifference;
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          paletteIndex = index;
+        }
+      }
+      colorCache[colorKey] = paletteIndex;
+    }
+    indexedPixels[pixelIndex] = paletteIndex;
+  }
+  return indexedPixels;
+}
+
+function getGuidedGifAnimationTarget(animation) {
+  const target = animation?.effect?.target;
+  if (target instanceof Element) return target;
+  if (target?.hostElement instanceof Element) return target.hostElement;
+  return null;
+}
+
+function getGuidedGifAnimatedRegions(element, animations) {
+  const rootRect = element.getBoundingClientRect();
+  if (!rootRect.width || !rootRect.height) return [];
+  return animations
+    .map((animation) => getGuidedGifAnimationTarget(animation))
+    .filter((target) => target && element.contains(target))
+    .map((target) => {
+      const rect = target.getBoundingClientRect();
+      return {
+        left: (rect.left - rootRect.left) / rootRect.width,
+        top: (rect.top - rootRect.top) / rootRect.height,
+        right: (rect.right - rootRect.left) / rootRect.width,
+        bottom: (rect.bottom - rootRect.top) / rootRect.height,
+      };
+    });
+}
+
+function freezeGuidedGifStaticPixels(sourceFrames, animatedRegions) {
+  const referenceFrame = sourceFrames[0];
+  if (!referenceFrame || sourceFrames.length < 2) return;
+  const { width, height } = referenceFrame;
+  const animatedMask = new Uint8Array(width * height);
+  const padding = 3;
+
+  animatedRegions.forEach((region) => {
+    const left = Math.max(0, Math.floor(region.left * width) - padding);
+    const top = Math.max(0, Math.floor(region.top * height) - padding);
+    const right = Math.min(width, Math.ceil(region.right * width) + padding);
+    const bottom = Math.min(height, Math.ceil(region.bottom * height) + padding);
+    for (let y = top; y < bottom; y += 1) {
+      animatedMask.fill(1, y * width + left, y * width + right);
+    }
+  });
+  for (let frameIndex = 1; frameIndex < sourceFrames.length; frameIndex += 1) {
+    const frameData = sourceFrames[frameIndex].data;
+    for (let pixelIndex = 0; pixelIndex < animatedMask.length; pixelIndex += 1) {
+      if (animatedMask[pixelIndex]) continue;
+      const offset = pixelIndex * 4;
+      frameData[offset] = referenceFrame.data[offset];
+      frameData[offset + 1] = referenceFrame.data[offset + 1];
+      frameData[offset + 2] = referenceFrame.data[offset + 2];
+      frameData[offset + 3] = referenceFrame.data[offset + 3];
+    }
+  }
 }
 
 function encodeGuidedGifFrames(sourceFrames, profile, onProgress) {
@@ -23335,13 +23481,12 @@ function encodeGuidedGifFrames(sourceFrames, profile, onProgress) {
   const {
     palette,
     transparentIndex,
-    transparentPixelRatio,
   } = createGuidedGifPalette(
     sourceFrames,
     profile.maxColors,
   );
-  const useDeltaFrames = transparentPixelRatio < 0.15;
-  let previousFrame = null;
+  const colorCache = new Uint16Array(65536);
+  colorCache.fill(0xffff);
   for (let index = 0; index < profile.frameCount; index += 1) {
     const sourceIndex = Math.min(
       sourceFrames.length - 1,
@@ -23351,19 +23496,15 @@ function encodeGuidedGifFrames(sourceFrames, profile, onProgress) {
     const opaquePalette = transparentIndex >= 0
       ? palette.slice(0, transparentIndex)
       : palette;
-    const indexedPixels = applyPalette(frame.data, opaquePalette, "rgb565");
+    const ditheredRgba = applyGuidedGifOrderedDither(frame);
+    const indexedPixels = applyGuidedGifPalette(
+      ditheredRgba,
+      opaquePalette,
+      colorCache,
+    );
     for (let pixelIndex = 0; pixelIndex < indexedPixels.length; pixelIndex += 1) {
       const offset = pixelIndex * 4;
-      if (frame.data[offset + 3] < 128) {
-        indexedPixels[pixelIndex] = transparentIndex;
-        continue;
-      }
-      if (useDeltaFrames && previousFrame && (
-        Math.abs(frame.data[offset] - previousFrame.data[offset]) +
-        Math.abs(frame.data[offset + 1] - previousFrame.data[offset + 1]) +
-        Math.abs(frame.data[offset + 2] - previousFrame.data[offset + 2]) <= 3 &&
-        Math.abs(frame.data[offset + 3] - previousFrame.data[offset + 3]) <= 2
-      )) {
+      if (frame.data[offset + 3] === 0) {
         indexedPixels[pixelIndex] = transparentIndex;
       }
     }
@@ -23373,9 +23514,8 @@ function encodeGuidedGifFrames(sourceFrames, profile, onProgress) {
       repeat: 0,
       transparent: true,
       transparentIndex,
-      dispose: useDeltaFrames ? 1 : 2,
+      dispose: 2,
     });
-    previousFrame = frame;
     onProgress?.(index + 1, profile.frameCount, "encode");
   }
   gif.finish();
@@ -23393,6 +23533,7 @@ async function captureGuidedExportEntryGif(entry, onProgress) {
   const animations = element.getAnimations({ subtree: true });
   animations.forEach((animation) => animation.pause());
   const sourceFrames = [];
+  const animatedRegions = [];
   const frameDelay = GUIDED_GIF_DURATION_MS / GUIDED_GIF_CAPTURE_FRAME_COUNT;
 
   try {
@@ -23402,6 +23543,7 @@ async function captureGuidedExportEntryGif(entry, onProgress) {
         animation.currentTime = frameTime;
       });
       await waitForNextFrame();
+      animatedRegions.push(...getGuidedGifAnimatedRegions(element, animations));
       const canvas = await exportElementToCanvas(element, captureDimensions);
       const context = canvas.getContext("2d", { willReadFrequently: true });
       if (!context) throw new Error("无法读取 GIF 画布");
@@ -23416,6 +23558,9 @@ async function captureGuidedExportEntryGif(entry, onProgress) {
   } finally {
     animations.forEach((animation) => animation.play());
   }
+
+  sourceFrames.forEach(flattenGuidedGifPartialAlpha);
+  freezeGuidedGifStaticPixels(sourceFrames, animatedRegions);
 
   let smallestBlob = null;
   for (const profile of GUIDED_GIF_PROFILES) {
