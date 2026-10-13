@@ -6010,6 +6010,19 @@ button:hover {
   font-weight: 650;
 }
 
+.guided-export-dimension-size {
+  padding: 3px 7px;
+  border: 1px solid #d0d5dd;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #475467;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
 .guided-export-card-grid {
   display: flex;
   flex-wrap: wrap;
