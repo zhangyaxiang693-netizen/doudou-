@@ -50,6 +50,8 @@ const GUIDED_FALLBACK_CASE_PAGE_HEIGHT = 1759;
 const GUIDED_S_LEVEL_BACKGROUND = "#E2DCFF";
 const GUIDED_S_LEVEL_ENABLED = false;
 const GUIDED_S_LEVEL_DISABLED_REASON = "只有在大促期间才能使用";
+const RESOURCE_S_LEVEL_ENABLED = false;
+const RESOURCE_S_LEVEL_DISABLED_REASON = "大促期间才会开启";
 const DEFAULT_TRAFFIC_COUPON_THRESHOLD = "00";
 const DEFAULT_LOTTERY_PRIZE_COUNT = 3;
 const INITIAL_LOTTERY_PRIZE_COUNT = 8;
@@ -7251,18 +7253,25 @@ function renderResourceLevelSelect() {
           <p>级别决定本次需要填写和生成的资源位数量，进入蓝图后仍可切换。</p>
         </header>
         <div class="resource-level-options">
-          ${Object.values(RESOURCE_LEVEL_CONFIGS).map((level) => `
+          ${Object.values(RESOURCE_LEVEL_CONFIGS).map((level) => {
+            const unavailable =
+              level.id === "s" && !RESOURCE_S_LEVEL_ENABLED;
+            return `
             <button
               type="button"
-              class="resource-level-card ${state.resourceLevel === level.id ? "active" : ""}"
+              class="resource-level-card ${state.resourceLevel === level.id ? "active" : ""} ${unavailable ? "is-unavailable" : ""}"
               data-resource-level-select="${level.id}"
+              aria-disabled="${unavailable}"
+              ${unavailable ? `data-disabled-reason="${escapeAttr(RESOURCE_S_LEVEL_DISABLED_REASON)}"` : ""}
+              title="${unavailable ? escapeAttr(RESOURCE_S_LEVEL_DISABLED_REASON) : ""}"
             >
               <span>${level.id === "s" ? "S" : "D"}</span>
               <strong>${escapeHtml(level.name)}</strong>
               <em>${escapeHtml(level.description)}</em>
               <b>${level.slots.length} 个资源位</b>
             </button>
-          `).join("")}
+          `;
+          }).join("")}
         </div>
       </section>
     </div>
@@ -7331,16 +7340,23 @@ function renderResourceBlueprint() {
           </button>
         </header>
         <div class="resource-level-switch" aria-label="资源位级别">
-          ${Object.values(RESOURCE_LEVEL_CONFIGS).map((item) => `
+          ${Object.values(RESOURCE_LEVEL_CONFIGS).map((item) => {
+            const unavailable =
+              item.id === "s" && !RESOURCE_S_LEVEL_ENABLED;
+            return `
             <button
               type="button"
-              class="${item.id === level.id ? "active" : ""}"
+              class="${item.id === level.id ? "active" : ""} ${unavailable ? "is-unavailable" : ""}"
               data-resource-level-switch="${item.id}"
+              aria-disabled="${unavailable}"
+              ${unavailable ? `data-disabled-reason="${escapeAttr(RESOURCE_S_LEVEL_DISABLED_REASON)}"` : ""}
+              title="${unavailable ? escapeAttr(RESOURCE_S_LEVEL_DISABLED_REASON) : ""}"
             >
               <strong>${escapeHtml(item.name)}</strong>
               <span>${item.slots.length} 个资源位</span>
             </button>
-          `).join("")}
+          `;
+          }).join("")}
         </div>
         <section class="resource-global-controls" aria-label="资源位全局控制">
           <label>
@@ -24187,6 +24203,12 @@ function bindEvents() {
 
     const resourceLevelSelect = event.target.closest("[data-resource-level-select]");
     if (resourceLevelSelect) {
+      if (
+        resourceLevelSelect.dataset.resourceLevelSelect === "s" &&
+        !RESOURCE_S_LEVEL_ENABLED
+      ) {
+        return;
+      }
       state.workflowType = "resource";
       state.resourceLevel = resourceLevelSelect.dataset.resourceLevelSelect === "s" ? "s" : "daily";
       getResourceDraft();
@@ -24197,6 +24219,12 @@ function bindEvents() {
 
     const resourceLevelSwitch = event.target.closest("[data-resource-level-switch]");
     if (resourceLevelSwitch) {
+      if (
+        resourceLevelSwitch.dataset.resourceLevelSwitch === "s" &&
+        !RESOURCE_S_LEVEL_ENABLED
+      ) {
+        return;
+      }
       state.resourceLevel = resourceLevelSwitch.dataset.resourceLevelSwitch === "s" ? "s" : "daily";
       getResourceDraft();
       render();
