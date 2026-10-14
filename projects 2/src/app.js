@@ -48,6 +48,8 @@ const GUIDED_FALLBACK_HOT_PAGE_HEIGHT = 1502;
 const GUIDED_FALLBACK_CASE_BOTTOM_SPACE = 154;
 const GUIDED_FALLBACK_CASE_PAGE_HEIGHT = 1759;
 const GUIDED_S_LEVEL_BACKGROUND = "#E2DCFF";
+const GUIDED_S_LEVEL_ENABLED = false;
+const GUIDED_S_LEVEL_DISABLED_REASON = "只有在大促期间才能使用";
 const DEFAULT_TRAFFIC_COUPON_THRESHOLD = "00";
 const DEFAULT_LOTTERY_PRIZE_COUNT = 3;
 const INITIAL_LOTTERY_PRIZE_COUNT = 8;
@@ -11579,8 +11581,11 @@ function renderPageTemplateHeaderLevelSwitch(group) {
       >普通</button>
       <button
         type="button"
-        class="${activeLevelId === "s" ? "active" : ""}"
+        class="${activeLevelId === "s" ? "active" : ""} ${GUIDED_S_LEVEL_ENABLED ? "" : "is-s-level-unavailable"}"
         data-prd-header-level="s"
+        aria-disabled="${!GUIDED_S_LEVEL_ENABLED}"
+        data-disabled-reason="${escapeAttr(GUIDED_S_LEVEL_DISABLED_REASON)}"
+        title="${escapeAttr(GUIDED_S_LEVEL_DISABLED_REASON)}"
       >S级</button>
     </div>
   `;
@@ -17877,7 +17882,13 @@ function renderGuidedPreview() {
           state.workflowType === "resource"
             ? ""
             : `
-              <button class="guided-header-level-entry" data-guided-open-header-level>
+              <button
+                class="guided-header-level-entry ${!GUIDED_S_LEVEL_ENABLED && !isSLevelHeaderActive ? "is-s-level-unavailable" : ""}"
+                data-guided-open-header-level
+                aria-disabled="${!GUIDED_S_LEVEL_ENABLED && !isSLevelHeaderActive}"
+                data-disabled-reason="${escapeAttr(GUIDED_S_LEVEL_DISABLED_REASON)}"
+                title="${escapeAttr(GUIDED_S_LEVEL_DISABLED_REASON)}"
+              >
                 <span aria-hidden="true">S</span>
                 切换等级
               </button>
@@ -20245,25 +20256,35 @@ function renderGuidedFloatingPanel(node, options = {}) {
       <p>选择头图等级，S级头图会同步页面背景和系统兜底页。</p>
       <div class="guided-business-states guided-header-level-options">
         ${getGuidedHeaderLevelOptions(node)
-          .map((entry) => `
-            <button
-              type="button"
-              class="guided-business-state-card ${activeLevelId === entry.id ? "active" : ""}"
-              data-guided-header-level="${escapeAttr(entry.id)}"
-              aria-label="切换为${escapeAttr(entry.name)}头图"
-            >
-              <header>
-                <span>${escapeHtml(entry.name)}</span>
-                <code>${escapeHtml(entry.node.schemaId)}</code>
-              </header>
-              <div class="guided-business-state-preview">
-                <div class="guided-business-state-preview-inner">
-                  ${renderComponent(entry.node, { editable: false })}
-                </div>
+          .map((entry) => {
+            const unavailable = entry.id === "s" && !GUIDED_S_LEVEL_ENABLED;
+            return `
+              <div
+                class="guided-header-level-option ${unavailable ? "is-s-level-unavailable" : ""}"
+                ${unavailable ? `data-disabled-reason="${escapeAttr(GUIDED_S_LEVEL_DISABLED_REASON)}"` : ""}
+              >
+                <button
+                  type="button"
+                  class="guided-business-state-card ${activeLevelId === entry.id ? "active" : ""}"
+                  data-guided-header-level="${escapeAttr(entry.id)}"
+                  aria-label="切换为${escapeAttr(entry.name)}头图"
+                  aria-disabled="${unavailable}"
+                  title="${unavailable ? escapeAttr(GUIDED_S_LEVEL_DISABLED_REASON) : ""}"
+                >
+                  <header>
+                    <span>${escapeHtml(entry.name)}</span>
+                    <code>${escapeHtml(entry.node.schemaId)}</code>
+                  </header>
+                  <div class="guided-business-state-preview">
+                    <div class="guided-business-state-preview-inner">
+                      ${renderComponent(entry.node, { editable: false })}
+                    </div>
+                  </div>
+                  <p>${escapeHtml(entry.description)}</p>
+                </button>
               </div>
-              <p>${escapeHtml(entry.description)}</p>
-            </button>
-          `)
+            `;
+          })
           .join("")}
       </div>
     `;
@@ -24939,6 +24960,7 @@ function bindEvents() {
     const prdHeaderLevel = event.target.closest("[data-prd-header-level]");
     if (prdHeaderLevel) {
       const levelId = prdHeaderLevel.dataset.prdHeaderLevel === "s" ? "s" : "default";
+      if (levelId === "s" && !GUIDED_S_LEVEL_ENABLED) return;
       if (levelId === "s" && state.guidedHeaderLevelId !== "s") {
         syncGuidedSHeaderRowsFromDefaultHeader();
       }
@@ -25004,6 +25026,12 @@ function bindEvents() {
     if (event.target.closest("[data-guided-open-header-level]")) {
       const headerNode = getPageHeaderNode(activePage());
       if (!headerNode) return;
+      if (
+        !GUIDED_S_LEVEL_ENABLED &&
+        getGuidedHeaderLevelId(headerNode) !== "s"
+      ) {
+        return;
+      }
       state.selectedId = headerNode.id;
       state.guidedStateMenuNodeId = null;
       state.guidedPanelMode = "hero-level";
@@ -25540,6 +25568,7 @@ function bindEvents() {
     const guidedHeaderLevel = event.target.closest("[data-guided-header-level]");
     if (guidedHeaderLevel) {
       const levelId = guidedHeaderLevel.dataset.guidedHeaderLevel === "s" ? "s" : "default";
+      if (levelId === "s" && !GUIDED_S_LEVEL_ENABLED) return;
       state.guidedHeaderLevelId = levelId;
       if (applyGuidedHeaderLevel(levelId)) {
         render();
