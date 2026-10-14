@@ -18,10 +18,9 @@
 ### 本地 Agent
 
 - 实现项目快照创建、校验、迁移和恢复。
-- 实现手动保存、自动草稿和失败重试。
+- 实现用户主动触发的手动保存和失败重试。
 - 实现“我的”项目与版本列表。
 - 接入本文件定义的 API。
-- 使用 IndexedDB 保存离线草稿，但不将其作为正式数据源。
 
 ## 身份约束
 
@@ -85,17 +84,17 @@ PROJECT_HISTORY_AUTH_ADAPTER=server/deployment-auth.cjs
 | id | uuid | 版本 ID |
 | project_id | uuid | 所属项目 |
 | version_no | integer | 项目内递增版本号 |
-| save_type | text | `manual` 或 `autosave` |
+| save_type | text | 新版本固定为 `manual`；旧 `autosave` 数据不再展示 |
 | schema_version | integer | 快照结构版本 |
 | app_version | text | 保存时应用版本 |
 | snapshot_json | jsonb | 完整项目快照 |
-| snapshot_saved_at | timestamptz | 客户端生成快照的时间，用于拒绝乱序自动保存 |
+| snapshot_saved_at | timestamptz | 客户端生成快照的时间 |
 | created_at | timestamptz | 保存时间 |
 
 约束：`(project_id, version_no)` 唯一。
 
-每个项目只保留一条可覆盖的 `autosave`；手动版本不可覆盖。
-同一客户端必须串行提交保存请求；服务端仅允许较新的 `snapshot_saved_at` 覆盖自动草稿。
+每次用户手动保存都创建一个不可覆盖的正式版本。
+同一客户端必须串行提交保存请求，避免生成乱序版本。
 
 ## 快照格式
 
@@ -170,17 +169,6 @@ PROJECT_HISTORY_AUTH_ADAPTER=server/deployment-auth.cjs
 
 创建项目并生成第一个手动版本。
 
-### 更新项目自动草稿
-
-`PUT /api/projects/:projectId/autosave`
-
-```json
-{
-  "baseVersionId": "uuid",
-  "snapshot": {}
-}
-```
-
 ### 创建正式版本
 
 `POST /api/projects/:projectId/versions`
@@ -231,4 +219,4 @@ PROJECT_HISTORY_AUTH_ADAPTER=server/deployment-auth.cjs
 2. 不同用户不能读取、修改或删除彼此项目。
 3. 恢复后 PRD、蓝图、人群、状态、页面及组件内容一致。
 4. 平台升级后旧 `schemaVersion` 快照可以迁移打开。
-5. 云端保存失败时保留本地草稿，网络恢复后可重试。
+5. 云端保存失败时明确提示用户，网络恢复后可再次手动保存。

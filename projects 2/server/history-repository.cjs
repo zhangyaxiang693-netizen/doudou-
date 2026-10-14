@@ -113,14 +113,14 @@ function createHistoryRepository(supabase) {
     };
   }
 
-  async function saveVersion(ownerId, projectId, input, saveType) {
+  async function saveVersion(ownerId, projectId, input) {
     await getOwnedProject(ownerId, projectId);
     const { data, error } = await supabase.rpc(
       "save_history_project_version",
       {
         p_owner_id: ownerId,
         p_project_id: projectId,
-        p_save_type: saveType,
+        p_save_type: "manual",
         p_base_version_id: input.baseVersionId || null,
         p_schema_version: input.snapshot.schemaVersion,
         p_app_version: input.snapshot.appVersion || "",
@@ -154,6 +154,7 @@ function createHistoryRepository(supabase) {
         "id,project_id,version_no,save_type,schema_version,app_version,created_at",
       )
       .eq("project_id", projectId)
+      .eq("save_type", "manual")
       .order("created_at", { ascending: false })
       .limit(100);
 

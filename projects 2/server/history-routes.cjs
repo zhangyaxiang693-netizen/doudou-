@@ -114,7 +114,7 @@ function createHistoryRouter(options = {}) {
     }
   });
 
-  async function saveVersion(req, res, saveType) {
+  async function saveVersion(req, res) {
     if (
       !validateProjectId(req.params.projectId) ||
       !validateSnapshot(req.body?.snapshot)
@@ -144,7 +144,6 @@ function createHistoryRouter(options = {}) {
         req.historyUser.id,
         req.params.projectId,
         { baseVersionId, snapshot: req.body.snapshot },
-        saveType,
       );
       res.json({ success: true, data: { version } });
     } catch (error) {
@@ -152,11 +151,8 @@ function createHistoryRouter(options = {}) {
     }
   }
 
-  router.put("/projects/:projectId/autosave", (req, res) =>
-    saveVersion(req, res, "autosave"),
-  );
   router.post("/projects/:projectId/versions", (req, res) =>
-    saveVersion(req, res, "manual"),
+    saveVersion(req, res),
   );
 
   router.get("/projects/:projectId/versions", async (req, res) => {

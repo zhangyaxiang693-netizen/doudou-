@@ -8,7 +8,7 @@
   --detail-popup-text-color: #2c0113;
   --detail-popup-highlight-color: #f00073;
   width: 560px;
-  height: 740px;
+  height: 694px;
   overflow: hidden;
   box-sizing: border-box;
   position: relative;
@@ -16,7 +16,7 @@
 .wrap {
   position: absolute;
   z-index: 1;
-  top: 198px;
+  top: 176px;
   left: 0px;
   display: flex;
   justify-content: center;
@@ -187,7 +187,7 @@
   height: 317px;
   position: absolute;
   z-index: 3;
-  top: 37px;
+  top: 15px;
   left: 67px;
   overflow: visible;
   pointer-events: none;

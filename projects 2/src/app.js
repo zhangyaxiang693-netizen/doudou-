@@ -17,14 +17,7 @@ import {
   getVersion,
   listProjects,
   listVersions,
-  saveAutosave,
 } from "./project-history/api.js";
-import {
-  deleteLocalDraft,
-  getLocalDraft,
-  listLocalDrafts,
-  saveLocalDraft,
-} from "./project-history/offline-store.js";
 import {
   addUser,
   copyRecord,
@@ -3733,36 +3726,6 @@ function loadActivityFromStorage(templateId) {
   }
 }
 
-function createHistoryLocalDraftId() {
-  return `local_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-}
-
-function getActiveHistoryLocalDraftId() {
-  try {
-    const stored = sessionStorage.getItem("builder_active_history_draft_id");
-    if (stored) return stored;
-    const id = createHistoryLocalDraftId();
-    sessionStorage.setItem("builder_active_history_draft_id", id);
-    return id;
-  } catch {
-    return createHistoryLocalDraftId();
-  }
-}
-
-function resetActiveHistoryLocalDraftId() {
-  const id = createHistoryLocalDraftId();
-  return setActiveHistoryLocalDraftId(id);
-}
-
-function setActiveHistoryLocalDraftId(id) {
-  try {
-    sessionStorage.setItem("builder_active_history_draft_id", id);
-  } catch {
-    // Session storage may be unavailable in privacy-restricted browsers.
-  }
-  return id;
-}
-
 const RESOURCE_THEME_FIELD = {
   key: "__themeId",
   label: "颜色",
@@ -4139,14 +4102,12 @@ const state = {
   libraryReturnView: null,
   historyUser: sessionUser,
   historyProjects: [],
-  historyLocalDrafts: [],
   historyVersions: {},
   historyStatus: "idle",
   historyError: "",
   historyExpandedProjectId: null,
   historyCurrentProjectId: null,
   historyCurrentVersionId: null,
-  historyLocalDraftId: getActiveHistoryLocalDraftId(),
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -4997,6 +4958,7 @@ function insertGuidedComponentAt(
     ? createAtomNode(schemaId)
     : createMoleculeNode(schemaId);
   if (!node) return null;
+  applyThemeBoundVariantsToNodes([node], getGuidedPageTheme(page).id);
   const sortableNodes = (page.nodes || []).filter((item) => item.canvasPlacement !== "page-side");
   const sideNodes = (page.nodes || []).filter((item) => item.canvasPlacement === "page-side");
   const boundedIndex = Math.max(0, Math.min(insertIndex, sortableNodes.length));
@@ -5277,52 +5239,6 @@ function getConsumptionReturnVariantValues(
     }
   });
   return values;
-}
-
-function syncConsumptionReturnSharedDetailRows(moduleIndex) {
-  if (!Number.isInteger(Number(moduleIndex))) return false;
-  const boundedModuleIndex = Number(moduleIndex);
-  const modeRow = state.prdTableRows.find(
-    (row) =>
-      row.key === getConsumptionReturnDetailModeRowKey(boundedModuleIndex),
-  );
-  if (
-    modeRow?.value !== CONSUMPTION_RETURN_DETAIL_MODE_SHARED
-  ) {
-    return false;
-  }
-
-  const sharedRows = state.prdTableRows
-    .map((row) => ({
-      row,
-      parsed: parsePageTemplateVariableRowKey(row.key),
-    }))
-    .filter(
-      ({ parsed }) =>
-        parsed?.moduleIndex === boundedModuleIndex &&
-        parsed.compoundKey !== CONSUMPTION_RETURN_DETAIL_MODE_KEY &&
-        !isConsumptionReturnAudienceSpecificKey(parsed.compoundKey),
-    );
-
-  const sharedValues = new Map(
-    sharedRows.map(({ row, parsed }) => [
-      parsed.compoundKey,
-      row.value ?? "",
-    ]),
-  );
-  let synced = false;
-  state.prdTableRows.forEach((row) => {
-    const parsed = parsePageTemplateVariableVersionRowKey(row.key);
-    if (
-      parsed?.moduleIndex !== boundedModuleIndex ||
-      !sharedValues.has(parsed.compoundKey)
-    ) {
-      return;
-    }
-    row.value = String(sharedValues.get(parsed.compoundKey) ?? "");
-    synced = true;
-  });
-  return synced;
 }
 
 function getConsumptionReturnTierCountFromValues(values = new Map()) {
@@ -6484,8 +6400,6 @@ function renderTemplatePreviewNode(entry) {
 }
 
 const PROJECT_HISTORY_APP_VERSION = "0.1.0";
-let projectHistoryAutosaveTimer = null;
-let lastProjectHistoryAutosaveSignature = "";
 let projectHistorySaveChain = Promise.resolve();
 let pendingManualSaveButton = null;
 
@@ -6596,14 +6510,11 @@ async function openAdminDashboard() {
 }
 
 function startNewHistorySession() {
-  window.clearTimeout(projectHistoryAutosaveTimer);
   state.historyCurrentProjectId = null;
   state.historyCurrentVersionId = null;
-  state.historyLocalDraftId = resetActiveHistoryLocalDraftId();
   state.historySaveScope = "personal";
   state.historySaveGroupId = "";
   state.historyCollaborationRecordId = null;
-  lastProjectHistoryAutosaveSignature = "";
 }
 
 function collectReferencedSchemaIds(nodes, result = new Set()) {
@@ -6651,38 +6562,6 @@ function createCurrentProjectSnapshot() {
   });
 }
 
-async function persistCurrentLocalDraft(
-  snapshot,
-  synced = false,
-  scope = state.historySaveScope,
-  groupId = state.historySaveGroupId,
-) {
-  const currentUser = getCurrentCollaborationUser();
-  const group = scope === "team" ? getGroupById(groupId) : null;
-  try {
-    const draft = await saveLocalDraft({
-      id: state.historyLocalDraftId,
-      ownerId: state.historyUser?.id || currentUser?.id || "anonymous",
-      projectId: state.historyCurrentProjectId,
-      baseVersionId: state.historyCurrentVersionId,
-      name: state.activity?.name || "未命名活动",
-      snapshot,
-      synced,
-      scope: group ? "team" : "personal",
-      teamId: group?.id || null,
-    });
-    const draftIndex = state.historyLocalDrafts.findIndex(
-      (item) => item.id === draft.id,
-    );
-    if (draftIndex >= 0) state.historyLocalDrafts[draftIndex] = draft;
-    else state.historyLocalDrafts.unshift(draft);
-    return draft;
-  } catch (error) {
-    console.warn("保存本地项目草稿失败", error);
-    return null;
-  }
-}
-
 function upsertHistoryProject(project) {
   const index = state.historyProjects.findIndex(
     (item) => item.id === project.id,
@@ -6692,20 +6571,14 @@ function upsertHistoryProject(project) {
 }
 
 async function performProjectSnapshotSave({
-  saveType = "manual",
-  silent = false,
   targetScope = state.historySaveScope,
   targetGroupId = state.historySaveGroupId,
 } = {}) {
   const projectName = String(state.activity?.name || "").trim();
-  if (
-    saveType === "manual" &&
-    (!projectName || projectName === "未命名活动")
-  ) {
+  if (!projectName || projectName === "未命名活动") {
     state.historyError = "请输入项目名称后再保存";
     return {
       cloudSaved: false,
-      localSaved: false,
       validationError: state.historyError,
     };
   }
@@ -6715,31 +6588,12 @@ async function performProjectSnapshotSave({
   state.historySaveScope = normalizedScope;
   state.historySaveGroupId = group?.id || "";
   const snapshot = createCurrentProjectSnapshot();
-  const localDraft = await persistCurrentLocalDraft(
-    snapshot,
-    false,
-    normalizedScope,
-    group?.id,
-  );
 
   try {
     if (!state.historyUser) {
       state.historyUser = await getCurrentUser();
-      await persistCurrentLocalDraft(
-        snapshot,
-        false,
-        normalizedScope,
-        group?.id,
-      );
     }
     if (!state.historyCurrentProjectId) {
-      if (saveType === "autosave") {
-        return {
-          cloudSaved: false,
-          localSaved: Boolean(localDraft),
-          snapshot,
-        };
-      }
       const result = await createProject({
         name: projectName,
         prdUrl: state.prdFeishuUrl || "",
@@ -6751,11 +6605,6 @@ async function performProjectSnapshotSave({
       state.historyCurrentProjectId = result.project.id;
       state.historyCurrentVersionId = result.version.id;
       upsertHistoryProject(result.project);
-    } else if (saveType === "autosave") {
-      await saveAutosave(state.historyCurrentProjectId, {
-        baseVersionId: state.historyCurrentVersionId,
-        snapshot,
-      });
     } else {
       const result = await createVersion(state.historyCurrentProjectId, {
         baseVersionId: state.historyCurrentVersionId,
@@ -6775,12 +6624,6 @@ async function performProjectSnapshotSave({
     }
 
     state.historyError = "";
-    await persistCurrentLocalDraft(
-      snapshot,
-      true,
-      normalizedScope,
-      group?.id,
-    );
     const owner = getCurrentCollaborationUser();
     if (owner) {
       const sourceRecord = state.collaboration.records.find(
@@ -6794,7 +6637,7 @@ async function performProjectSnapshotSave({
         upsertRecord(state.collaboration, {
           id: keepsSource
             ? sourceRecord.id
-            : state.historyCurrentProjectId || state.historyLocalDraftId,
+            : state.historyCurrentProjectId,
           projectId: state.historyCurrentProjectId,
           ownerId: owner.id,
           name: state.activity?.name || "未命名活动",
@@ -6804,42 +6647,16 @@ async function performProjectSnapshotSave({
         }),
       );
     }
-    return { cloudSaved: true, localSaved: Boolean(localDraft), snapshot };
+    return { cloudSaved: true, snapshot };
   } catch (error) {
     const cloudError =
       error instanceof ProjectHistoryApiError
         ? error.message
         : "云端保存失败";
-    state.historyError = localDraft
-      ? `${cloudError}，本次修改已保存在本地`
-      : `${cloudError}，且本地草稿保存失败`;
-    const owner = getCurrentCollaborationUser();
-    if (localDraft && owner) {
-      const sourceRecord = state.collaboration.records.find(
-        (record) => record.id === state.historyCollaborationRecordId,
-      );
-      const keepsSource =
-        sourceRecord &&
-        sourceRecord.scope === normalizedScope &&
-        (normalizedScope !== "team" || sourceRecord.teamId === group?.id);
-      setCollaborationState(
-        upsertRecord(state.collaboration, {
-          id: keepsSource
-            ? sourceRecord.id
-            : state.historyCurrentProjectId || state.historyLocalDraftId,
-          projectId: state.historyCurrentProjectId,
-          ownerId: owner.id,
-          name: state.activity?.name || "未命名活动",
-          scope: normalizedScope,
-          teamId: group?.id || null,
-          snapshot,
-        }),
-      );
-    }
-    if (!silent) window.alert(state.historyError);
+    state.historyError = cloudError;
+    window.alert(state.historyError);
     return {
       cloudSaved: false,
-      localSaved: Boolean(localDraft),
       snapshot,
     };
   }
@@ -6865,11 +6682,7 @@ function runManualProjectSave(
   button.textContent = "保存中";
   saveCurrentProjectSnapshot({ targetScope, targetGroupId })
     .then((result) => {
-      button.textContent = result.cloudSaved
-        ? "已保存"
-        : result.localSaved
-          ? "已存本地"
-          : "保存失败";
+      button.textContent = result.cloudSaved ? "已保存" : "保存失败";
       button.classList.toggle("saved", result.cloudSaved);
     })
     .catch((error) => {
@@ -6886,28 +6699,6 @@ function runManualProjectSave(
     });
 }
 
-function scheduleProjectHistoryAutosave() {
-  if (
-    !["workbench", "prd-demo", "guided-preview"].includes(state.view)
-  ) {
-    return;
-  }
-  window.clearTimeout(projectHistoryAutosaveTimer);
-  projectHistoryAutosaveTimer = window.setTimeout(async () => {
-    const snapshot = createCurrentProjectSnapshot();
-    const signature = JSON.stringify(snapshot.editor);
-    if (signature === lastProjectHistoryAutosaveSignature) return;
-    lastProjectHistoryAutosaveSignature = signature;
-    await persistCurrentLocalDraft(snapshot, false);
-    if (state.historyCurrentProjectId) {
-      await saveCurrentProjectSnapshot({
-        saveType: "autosave",
-        silent: true,
-      });
-    }
-  }, 1500);
-}
-
 async function loadProjectHistory() {
   state.historyStatus = "loading";
   state.historyError = "";
@@ -6915,28 +6706,11 @@ async function loadProjectHistory() {
   try {
     const user = await getCurrentUser();
     state.historyUser = user;
-    const activeDraft = await getLocalDraft(
-      state.historyLocalDraftId,
-    ).catch(() => null);
-    if (activeDraft?.ownerId === "anonymous") {
-      await saveLocalDraft({
-        ...activeDraft,
-        ownerId: user.id,
-      }).catch(() => null);
-    }
-    const [projects, drafts] = await Promise.all([
-      listProjects(),
-      listLocalDrafts(user.id),
-    ]);
-    state.historyProjects = projects;
-    state.historyLocalDrafts = drafts;
+    state.historyProjects = await listProjects();
     state.historyStatus = "ready";
   } catch (error) {
     state.historyUser = sessionUser;
     state.historyProjects = [];
-    state.historyLocalDrafts = await listLocalDrafts(
-      sessionUser?.id || "anonymous",
-    ).catch(() => []);
     state.historyError =
       error instanceof ProjectHistoryApiError
         ? error.message
@@ -7003,14 +6777,12 @@ function applyRestoredProject(snapshot, projectId, versionId) {
   restoreSnapshotTemplates(migrated);
   state.historyCurrentProjectId = projectId || null;
   state.historyCurrentVersionId = versionId || null;
-  state.historyLocalDraftId = resetActiveHistoryLocalDraftId();
   state.prdDemoStep = "analysis";
   state.view = migrated.resume?.stage === "preview"
     ? "guided-preview"
     : state.workflowType === "resource"
       ? "resource-blueprint"
       : "prd-demo";
-  lastProjectHistoryAutosaveSignature = JSON.stringify(migrated.editor);
   render();
 }
 
@@ -7058,29 +6830,6 @@ async function copyCloudProjectToGroup(projectId, groupId) {
   render();
 }
 
-async function restoreOfflineProject(draftId) {
-  try {
-    const draft = await getLocalDraft(draftId);
-    if (!draft?.snapshot) throw new Error("本地草稿不存在");
-    state.historySaveScope = draft.scope === "team" ? "team" : "personal";
-    state.historySaveGroupId =
-      draft.scope === "team" ? draft.teamId || "" : "";
-    state.historyCollaborationRecordId = null;
-    const project = state.historyProjects.find(
-      (item) => item.id === draft.projectId,
-    );
-    applyRestoredProject(
-      draft.snapshot,
-      draft.projectId,
-      draft.baseVersionId || project?.latestVersionId || null,
-    );
-    state.historyLocalDraftId = setActiveHistoryLocalDraftId(draft.id);
-  } catch (error) {
-    state.historyError = error.message || "本地草稿恢复失败";
-    render();
-  }
-}
-
 async function removeHistoryProject(projectId) {
   if (!window.confirm("删除后将无法在“我的”中恢复该项目，确定继续吗？")) {
     return;
@@ -7121,12 +6870,6 @@ function renderProjectHistory() {
   if (activeGroup && state.historyGroupId !== activeGroup.id) {
     state.historyGroupId = activeGroup.id;
   }
-  const unsyncedDrafts = state.historyLocalDrafts.filter(
-    (draft) =>
-      !draft.synced &&
-      (draft.scope === "team" ? "team" : "personal") === activeScope &&
-      (activeScope !== "team" || draft.teamId === activeGroup?.id),
-  );
   const collaborationRecords = listRecordsForUser(
     state.collaboration,
     currentUser?.id,
@@ -7136,13 +6879,9 @@ function renderProjectHistory() {
   const cloudProjectIds = new Set(
     state.historyProjects.map((project) => String(project.id)),
   );
-  const localDraftIds = new Set(
-    state.historyLocalDrafts.map((draft) => String(draft.id)),
-  );
   const standaloneRecords = collaborationRecords.filter(
     (record) =>
-      !cloudProjectIds.has(String(record.projectId || record.id)) &&
-      !localDraftIds.has(String(record.id)),
+      !cloudProjectIds.has(String(record.projectId || record.id)),
   );
   const teamProjectIds = new Set(
     state.collaboration.records
@@ -7155,7 +6894,6 @@ function renderProjectHistory() {
   const hasRecords =
     activeScope === "personal"
       ? personalCloudProjects.length ||
-        unsyncedDrafts.length ||
         standaloneRecords.length
       : collaborationRecords.length;
   center.innerHTML = `
@@ -7171,7 +6909,7 @@ function renderProjectHistory() {
         <div>
           <span>MY PROJECTS</span>
           <h1>我的项目</h1>
-          <p>${currentUser ? `已绑定 ${escapeHtml(currentUser.name || "当前飞书用户")}` : "云端登录态未接入时，仅展示本地草稿"}</p>
+          <p>${currentUser ? `已绑定 ${escapeHtml(currentUser.name || "当前飞书用户")}` : "云端登录态未接入"}</p>
         </div>
         <button type="button" data-history-refresh>刷新</button>
       </header>
@@ -7228,33 +6966,6 @@ function renderProjectHistory() {
           : ""
       }
       ${
-        unsyncedDrafts.length
-          ? `
-            <section class="project-history-section">
-              <header><strong>本地草稿</strong><span>云端不可用时自动保留</span></header>
-              <div class="project-history-list">
-                ${unsyncedDrafts
-                  .map(
-                    (draft) => `
-                      <article class="project-history-item is-local">
-                        <div>
-                          <strong>${escapeHtml(draft.name)}</strong>
-                          <span>${formatHistoryTime(draft.updatedAt)} · 待同步</span>
-                        </div>
-                        <div class="project-history-actions">
-                          <button type="button" data-restore-local="${draft.id}">继续编辑</button>
-                          <button type="button" data-delete-local="${draft.id}" aria-label="删除本地草稿">删除</button>
-                        </div>
-                      </article>
-                    `,
-                  )
-                  .join("")}
-              </div>
-            </section>
-          `
-          : ""
-      }
-      ${
         activeScope === "personal" && personalCloudProjects.length
           ? `
             <section class="project-history-section">
@@ -7300,7 +7011,7 @@ function renderProjectHistory() {
                                     .map(
                                       (version) => `
                                         <button type="button" data-restore-project="${project.id}" data-version-id="${version.id}">
-                                          <span>V${version.versionNo} · ${version.saveType === "autosave" ? "自动草稿" : "正式版本"}</span>
+                                          <span>V${version.versionNo} · 正式版本</span>
                                           <time>${formatHistoryTime(version.createdAt)}</time>
                                         </button>
                                       `,
@@ -11060,6 +10771,40 @@ function getConsumptionReturnSharedDetailVersion(group, sharedVersion) {
   };
 }
 
+function getConsumptionReturnAudienceStateVersion(group, audienceVersion) {
+  if (
+    !audienceVersion ||
+    group.activeStateId === "default" ||
+    !isConsumptionReturnMoleculeNode({ schemaId: group.moduleSchemaId })
+  ) {
+    return audienceVersion;
+  }
+  const activeState = group.stateOptions?.find(
+    (item) => item.id === group.activeStateId,
+  );
+  const lockedPropKeys = new Set(activeState?.lockedPropKeys || []);
+  if (!lockedPropKeys.size) return audienceVersion;
+  return {
+    ...audienceVersion,
+    sections: (audienceVersion.sections || []).map((section) => ({
+      ...section,
+      fields: (section.fields || []).map((field) => {
+        const compoundKey = getPageTemplateFieldLocalCompoundKey(field);
+        const propKey = String(compoundKey).split(".").pop();
+        if (!lockedPropKeys.has(propKey)) return field;
+        return {
+          ...field,
+          rowIndex: ensurePageTemplateStateDetailRow(
+            field,
+            group.templateId,
+            group.activeStateId,
+          ),
+        };
+      }),
+    })),
+  };
+}
+
 function setPrdTableRowValueByKey(rowKey, value) {
   const rowIndex = findPrdTableRowIndexByKey(rowKey);
   if (rowIndex >= 0) {
@@ -11195,16 +10940,6 @@ function syncPageTemplateInlineEditToRows(sourceNode, variantId, path, value) {
   const versionName = getLineageVersionNameForVariant(sourceNode, variantId);
   if (sharedConsumptionReturnDetail) {
     setPrdTableRowValueByKey(getPageTemplateVariableRowKey(field), value);
-    const versionModuleKey = getPageTemplateVersionModuleKey(
-      sourceNode.sourcePageTemplateId,
-      sourceNode.sourcePageTemplateNodeIndex,
-    );
-    getManualModuleBlueprintVersions(versionModuleKey).forEach((version) => {
-      setPrdTableRowValueByKey(
-        getPageTemplateVariableVersionRowKey(field, version.name),
-        value,
-      );
-    });
   } else {
     const rowKey = versionName
       ? getPageTemplateVariableVersionRowKey(field, versionName)
@@ -11637,17 +11372,19 @@ function getPageTemplateVariableGroups(pageTemplate, targetModuleIndex = null) {
     })
       ? getConsumptionReturnSharedDetailVersion(group, baseVersion)
       : baseVersion;
-    const activeStateVersion = getPageTemplateIndependentStateVersion(
+    const activeStateVersion = getConsumptionReturnAudienceStateVersion(
       group,
-      baseVersion,
+      getPageTemplateIndependentStateVersion(group, baseVersion),
     );
-    const importedVersions = manualVersions.map((version) => ({
-      ...version,
-      sections: buildPageTemplateVariableSections(
-        group.fields,
-        (field) => ensurePageTemplateVariableVersionRow(field, version.name),
-      ),
-    }));
+    const importedVersions = manualVersions.map((version) =>
+      getConsumptionReturnAudienceStateVersion(group, {
+        ...version,
+        sections: buildPageTemplateVariableSections(
+          group.fields,
+          (field) => ensurePageTemplateVariableVersionRow(field, version.name),
+        ),
+      }),
+    );
     const versions = hasImportedModuleBlueprintVersions(group.versionModuleKey) && importedVersions.length
       ? importedVersions
       : [
@@ -17636,7 +17373,9 @@ function bindPrdModuleVariantsToTemplateNodes(
     [node, ...(node.guidedLineageVariants || []).map((variant) => variant.node)]
       .filter(isConsumptionReturnMoleculeNode)
       .forEach((consumptionNode) => {
-        ensureConsumptionReturnBusinessStates(consumptionNode);
+        if (!consumptionNode.guidedStates?.length) {
+          ensureConsumptionReturnBusinessStates(consumptionNode);
+        }
         applyGuidedBusinessState(
           consumptionNode,
           consumptionNode.activeGuidedStateId || "default",
@@ -18062,7 +17801,7 @@ function renderResourceCanvasTree(visiblePages) {
         <strong>${escapeHtml(state.activity?.name || "资源位活动")}</strong>
       </div>
       <div class="guided-page-title-row ${visiblePages.length > 1 ? "has-branches" : ""}">
-        ${visiblePages.map(renderGuidedPageTitleNode).join("")}
+        ${visiblePages.map(renderResourcePageTitleNode).join("")}
       </div>
       <div class="guided-page-preview-row resource-canvas-row">
         ${visiblePages.map(renderResourceCanvasItem).join("")}
@@ -18087,6 +17826,19 @@ function renderResourceCanvasItem(page) {
         ${(page.nodes || []).map(renderGuidedNode).join("")}
       </div>
     </section>
+  `;
+}
+
+function renderResourcePageTitleNode(pageData) {
+  const isActive = pageData.id === state.activePageId;
+  const pageSelected = isActive && state.guidedPanelMode === "page" && !state.selectedId;
+  return `
+    <header
+      class="guided-page-title-node ${isActive ? "active" : ""} ${pageSelected ? "has-selected-page" : ""}"
+      data-guided-page-title="${pageData.id}"
+    >
+      <strong>${escapeHtml(pageData.name || "资源位组件")}</strong>
+    </header>
   `;
 }
 
@@ -24570,33 +24322,11 @@ function bindEvents() {
       return;
     }
 
-    const restoreLocal = event.target.closest("[data-restore-local]");
-    if (restoreLocal) {
-      restoreOfflineProject(restoreLocal.dataset.restoreLocal);
-      return;
-    }
-
     const deleteHistoryProject = event.target.closest(
       "[data-delete-project]",
     );
     if (deleteHistoryProject) {
       removeHistoryProject(deleteHistoryProject.dataset.deleteProject);
-      return;
-    }
-
-    const deleteHistoryLocal = event.target.closest("[data-delete-local]");
-    if (deleteHistoryLocal) {
-      deleteLocalDraft(deleteHistoryLocal.dataset.deleteLocal)
-        .then(() => {
-          state.historyLocalDrafts = state.historyLocalDrafts.filter(
-            (draft) => draft.id !== deleteHistoryLocal.dataset.deleteLocal,
-          );
-          render();
-        })
-        .catch((error) => {
-          state.historyError = error.message || "本地草稿删除失败";
-          render();
-        });
       return;
     }
 
@@ -24852,14 +24582,6 @@ function bindEvents() {
           state.prdTableRows[rowIndex].value = String(nextCount);
         }
       });
-      const parsedParagraphCountRow = parsePageTemplateVariableRowKey(
-        currentRow?.key,
-      );
-      if (parsedParagraphCountRow) {
-        syncConsumptionReturnSharedDetailRows(
-          parsedParagraphCountRow.moduleIndex,
-        );
-      }
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
       if (
@@ -25495,8 +25217,7 @@ function bindEvents() {
       updateGuidedNodeSelection(guidedAction.dataset.guidedNode);
       if (guidedAction.dataset.guidedAction === "delete") {
         if (deleteGuidedPageNode(pageId, guidedAction.dataset.guidedNode)) {
-          state.guidedCanvasInitialized = false;
-          render();
+          if (!refreshGuidedVisiblePages()) render();
         }
         return;
       }
@@ -27203,9 +26924,6 @@ function bindEvents() {
           getConsumptionReturnDetailModeRowKey(moduleIndex),
           mode,
         );
-        if (mode === CONSUMPTION_RETURN_DETAIL_MODE_SHARED) {
-          syncConsumptionReturnSharedDetailRows(moduleIndex);
-        }
       }
       state.prdTableBlueprint = null;
       state.prdTableBlueprintSignature = "";
@@ -27287,17 +27005,6 @@ function bindEvents() {
           state.prdTableRows[rowIndex].value,
         );
         refreshConsumptionReturnTierControlForInput(prdTableRowInput);
-        const parsedPrdTableRow = parsePageTemplateVariableRowKey(rowKey);
-        if (
-          parsedPrdTableRow &&
-          !isConsumptionReturnAudienceSpecificKey(
-            parsedPrdTableRow.compoundKey,
-          )
-        ) {
-          syncConsumptionReturnSharedDetailRows(
-            parsedPrdTableRow.moduleIndex,
-          );
-        }
         syncGuidedSHeaderTableRow(
           rowKey,
           state.prdTableRows[rowIndex].value,
@@ -28731,11 +28438,6 @@ function mount() {
     </main>
   `;
   bindEvents();
-  document.addEventListener("input", scheduleProjectHistoryAutosave);
-  document.addEventListener("change", scheduleProjectHistoryAutosave);
-  document.addEventListener("click", () => {
-    window.setTimeout(scheduleProjectHistoryAutosave, 0);
-  });
   state.adminUnlocked = false;
   lockAdminAccess().catch((error) => {
     console.warn("后台解锁状态清理失败", error);
