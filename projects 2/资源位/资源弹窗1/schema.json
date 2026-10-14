@@ -8,7 +8,7 @@
   "reactComponent": "详情页弹窗",
   "dimensions": {
     "width": 560,
-    "height": 740
+    "height": 694
   },
   "blueprint": {
     "autoExposeProps": false,

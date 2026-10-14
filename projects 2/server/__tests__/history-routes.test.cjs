@@ -148,3 +148,28 @@ test("requires a base version when updating an existing project", async () => {
   assert.equal(response.status, 400);
   assert.equal(body.code, "INVALID_SNAPSHOT");
 });
+
+test("does not expose an autosave endpoint", async () => {
+  const repository = {
+    async saveVersion() {
+      assert.fail("autosave must not reach the repository");
+    },
+  };
+  const baseUrl = await startServer({
+    resolveUser: async () => ({ id: "trusted-user" }),
+    repository,
+  });
+  const response = await fetch(
+    `${baseUrl}/api/projects/${projectId}/autosave`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        baseVersionId: "22222222-2222-4222-8222-222222222222",
+        snapshot,
+      }),
+    },
+  );
+
+  assert.equal(response.status, 404);
+});

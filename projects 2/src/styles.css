@@ -17806,12 +17806,6 @@ button:hover {
   border-bottom: 1px solid #dfe3e8;
 }
 
-.project-history-item.is-local {
-  border-left: 3px solid #d97706;
-  padding-left: 14px;
-  background: #fffdf8;
-}
-
 .project-history-item > div:first-child {
   display: grid;
   min-width: 0;

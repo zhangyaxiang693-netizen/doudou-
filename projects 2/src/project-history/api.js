@@ -19,7 +19,7 @@ async function request(path, options = {}) {
       },
     });
   } catch (error) {
-    throw new ProjectHistoryApiError("网络连接失败，本次修改已保存在本地", {
+    throw new ProjectHistoryApiError("网络连接失败，请稍后重试", {
       code: "NETWORK_ERROR",
     });
   }
@@ -64,13 +64,6 @@ export function createProject({
       scope,
       teamId,
     }),
-  });
-}
-
-export function saveAutosave(projectId, { baseVersionId, snapshot }) {
-  return request(`/projects/${encodeURIComponent(projectId)}/autosave`, {
-    method: "PUT",
-    body: JSON.stringify({ baseVersionId, snapshot }),
   });
 }
 
