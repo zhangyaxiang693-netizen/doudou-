@@ -22889,7 +22889,7 @@ async function exportElementToPngBlob(element, options = {}) {
   if (!width || !height) throw new Error("empty export component");
 
   const fontEmbedCSS = await getGuidedExportFontCss(element);
-  const blob = await exportNodeToBlob(element, {
+  const exportOptions = {
     width,
     height,
     pixelRatio: options.pixelRatio || 1,
@@ -22904,7 +22904,13 @@ async function exportElementToPngBlob(element, options = {}) {
       transformOrigin: "top left",
       "--react-component-scale": "1",
     },
+  };
+  await exportNodeToCanvas(element, {
+    ...exportOptions,
+    pixelRatio: 1,
   });
+  await waitForNextFrame();
+  const blob = await exportNodeToBlob(element, exportOptions);
   if (!blob) throw new Error("failed to create png blob");
   return blob;
 }
@@ -23696,23 +23702,39 @@ function freezeGuidedGifStaticPixels(sourceFrames, animatedRegions) {
 }
 
 function getGuidedGifButtonTextOverlays(element) {
-  const rootRect = element.getBoundingClientRect();
   return [...element.querySelectorAll('[data-react-edit-prop="buttonText"]')]
     .map((textElement) => {
-      const rect = textElement.getBoundingClientRect();
-      if (!rect.width || !rect.height) return null;
       const style = getComputedStyle(textElement);
       return {
         element: textElement,
         text: textElement.textContent?.trim() || "",
+        color: style.color,
+        fontStyle: style.fontStyle,
+        fontWeight: style.fontWeight,
+        fontSize: Number.parseFloat(style.fontSize) || 16,
+        fontFamily: style.fontFamily,
+        letterSpacing: Number.parseFloat(style.letterSpacing) || 0,
+        visibility: textElement.style.visibility,
+      };
+    })
+    .filter(Boolean);
+}
+
+function measureGuidedGifButtonTextOverlays(overlays, rootRect) {
+  return overlays
+    .map((overlay) => {
+      const rect = overlay.element.getBoundingClientRect();
+      if (!rect.width || !rect.height) return null;
+      const scale = overlay.element.offsetWidth
+        ? rect.width / overlay.element.offsetWidth
+        : 1;
+      return {
+        ...overlay,
         left: rect.left - rootRect.left,
         top: rect.top - rootRect.top,
         width: rect.width,
         height: rect.height,
-        color: style.color,
-        font: `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
-        letterSpacing: Number.parseFloat(style.letterSpacing) || 0,
-        visibility: textElement.style.visibility,
+        scale,
       };
     })
     .filter(Boolean);
@@ -23728,7 +23750,7 @@ function drawGuidedGifButtonTextOverlays(canvas, overlays, rootWidth, rootHeight
     if (!characters.length) return;
     context.save();
     context.scale(scaleX, scaleY);
-    context.font = overlay.font;
+    context.font = `${overlay.fontStyle} ${overlay.fontWeight} ${overlay.fontSize * overlay.scale}px ${overlay.fontFamily}`;
     context.fillStyle = overlay.color;
     context.textAlign = "left";
     context.textBaseline = "middle";
@@ -23736,12 +23758,12 @@ function drawGuidedGifButtonTextOverlays(canvas, overlays, rootWidth, rootHeight
       (character) => context.measureText(character).width,
     );
     const textWidth = characterWidths.reduce((sum, width) => sum + width, 0) +
-      overlay.letterSpacing * Math.max(0, characters.length - 1);
+      overlay.letterSpacing * overlay.scale * Math.max(0, characters.length - 1);
     let x = overlay.left + (overlay.width - textWidth) / 2;
     const y = overlay.top + overlay.height / 2;
     characters.forEach((character, index) => {
       context.fillText(character, x, y);
-      x += characterWidths[index] + overlay.letterSpacing;
+      x += characterWidths[index] + overlay.letterSpacing * overlay.scale;
     });
     context.restore();
   });
@@ -23804,7 +23826,6 @@ async function captureGuidedExportEntryGif(entry, onProgress) {
   };
   const animations = element.getAnimations({ subtree: true });
   animations.forEach((animation) => animation.pause());
-  const rootRect = element.getBoundingClientRect();
   const buttonTextOverlays = getGuidedGifButtonTextOverlays(element);
   buttonTextOverlays.forEach((overlay) => {
     overlay.element.style.visibility = "hidden";
@@ -23820,15 +23841,20 @@ async function captureGuidedExportEntryGif(entry, onProgress) {
         animation.currentTime = frameTime;
       });
       await waitForNextFrame();
+      const frameRootRect = element.getBoundingClientRect();
+      const frameButtonTextOverlays = measureGuidedGifButtonTextOverlays(
+        buttonTextOverlays,
+        frameRootRect,
+      );
       animatedRegions.push(...getGuidedGifAnimatedRegions(element, animations));
       const canvas = await exportElementToCanvas(element, captureDimensions);
       const context = canvas.getContext("2d", { willReadFrequently: true });
       if (!context) throw new Error("无法读取 GIF 画布");
       drawGuidedGifButtonTextOverlays(
         canvas,
-        buttonTextOverlays,
-        rootRect.width,
-        rootRect.height,
+        frameButtonTextOverlays,
+        frameRootRect.width,
+        frameRootRect.height,
       );
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       sourceFrames.push({

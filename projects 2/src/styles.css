@@ -6171,17 +6171,6 @@ button:hover {
   pointer-events: none;
 }
 
-.guided-export-gif-source [data-png-button-shine]::after {
-  animation: none !important;
-  content: none !important;
-  display: none !important;
-}
-
-.guided-export-gif-source [data-gif-button-pulse] {
-  animation: none !important;
-  transform: none !important;
-}
-
 .app-shell[data-view="guided-export"] .guided-node {
   cursor: default;
 }
