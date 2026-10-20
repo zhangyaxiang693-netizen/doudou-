@@ -22155,10 +22155,6 @@ function getGuidedCutExportBottomSpace(entry) {
     : GUIDED_CUT_EXPORT_BOTTOM_SPACE;
 }
 
-function getGuidedCutExportTopSpace(entry) {
-  return entry?.exportKind === "task-list-title" ? 14 : 0;
-}
-
 function sanitizeExportFilename(value) {
   return String(value || "module")
     .replace(/[\\/:*?"<>|]/g, "_")
@@ -22221,7 +22217,6 @@ function getGuidedExportPageName(page) {
 }
 
 function getExportEntryDimensions(entry) {
-  const topSpace = getGuidedCutExportTopSpace(entry);
   const bottomSpace = getGuidedCutExportBottomSpace(entry);
   const node = entry?.node || entry?.sourceNode || {};
   if (
@@ -22250,7 +22245,7 @@ function getExportEntryDimensions(entry) {
   if (entry?.dimensions) {
     return {
       width: Number(entry.dimensions.width || GUIDED_CUT_EXPORT_WIDTH),
-      height: Number(entry.dimensions.height || 300) + topSpace + bottomSpace,
+      height: Number(entry.dimensions.height || 300) + bottomSpace,
     };
   }
   const dimensions = getNodeEstimatedExportDimensions(node);
@@ -22258,7 +22253,7 @@ function getExportEntryDimensions(entry) {
   return {
     ...dimensions,
     width: Number(rule.exportWidth || GUIDED_CUT_EXPORT_WIDTH),
-    height: Number(dimensions.height || 300) + topSpace + bottomSpace,
+    height: Number(dimensions.height || 300) + bottomSpace,
   };
 }
 
@@ -23187,7 +23182,6 @@ function renderPageBackgroundExportContent(entry) {
 
 function renderGuidedExportPreview(entry) {
   const { width, height } = getExportEntryDimensions(entry);
-  const topSpace = getGuidedCutExportTopSpace(entry);
   const bottomSpace = getGuidedCutExportBottomSpace(entry);
   const exportRule = getGuidedCutExportRule(entry?.node || entry?.sourceNode);
   const exportSideSpace = Math.max(0, Number(exportRule.exportSideSpace || 0));
@@ -23224,7 +23218,7 @@ function renderGuidedExportPreview(entry) {
         data-export-cut-id="${escapeAttr(entry.id)}"
         ${state.workflowType === "resource" ? 'data-resource-static-export="true"' : ""}
         ${dynamicExportHeight ? 'data-dynamic-export-height="true"' : ""}
-        style="width:${width}px;${dynamicExportHeight ? "height:auto;" : `height:${height}px;`}padding:${topSpace}px ${exportSideSpace}px ${bottomSpace}px;box-sizing:border-box;--export-preview-scale:${previewScale};"
+        style="width:${width}px;${dynamicExportHeight ? "height:auto;" : `height:${height}px;`}padding:0 ${exportSideSpace}px ${bottomSpace}px;box-sizing:border-box;--export-preview-scale:${previewScale};"
       >
         ${content}
       </div>
@@ -23235,7 +23229,7 @@ function renderGuidedExportPreview(entry) {
           <div
             class="guided-export-gif-source"
             data-export-gif-id="${escapeAttr(entry.id)}"
-            style="width:${width}px;${dynamicExportHeight ? "height:auto;" : `height:${height}px;`}padding:${topSpace}px ${exportSideSpace}px ${bottomSpace}px;box-sizing:border-box;"
+            style="width:${width}px;${dynamicExportHeight ? "height:auto;" : `height:${height}px;`}padding:0 ${exportSideSpace}px ${bottomSpace}px;box-sizing:border-box;"
           >
             ${content}
           </div>
