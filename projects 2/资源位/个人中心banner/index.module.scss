@@ -13,7 +13,7 @@
 }
 
 .copy {
-  width: 303.18px;
+  width: 326px;
   height: 71px;
   position: absolute;
   z-index: 2;
@@ -22,13 +22,13 @@
 }
 
 .campaignText {
-  width: 196.99px;
-  height: 23.53px;
-  overflow: hidden;
+  width: 300px;
+  height: 29px;
+  overflow: visible;
   position: absolute;
   top: 0;
   left: 0.43px;
-  font-family: "Source Han Sans CN Bold", "Source Han Sans CN", sans-serif;
+  font-family: "Douyin Latin Banner", "Source Han Sans CN Bold", "Source Han Sans CN", sans-serif;
   font-size: 26px;
   font-weight: 700;
   line-height: 23.53px;
@@ -39,14 +39,14 @@
 }
 
 .headline {
-  width: 303.18px;
-  height: 32.23px;
-  overflow: hidden;
+  width: 326px;
+  height: 38px;
+  overflow: visible;
   position: absolute;
   top: 38.76px;
   left: 0;
-  font-family: MFBenHeiNoncommercial, "Source Han Sans CN Heavy", sans-serif;
-  font-size: 36px;
+  font-family: "Douyin Latin Banner", MFBenHeiNoncommercial, "Source Han Sans CN Heavy", sans-serif;
+  font-size: 34px;
   font-weight: 900;
   line-height: 32.23px;
   letter-spacing: 0;
@@ -65,7 +65,7 @@
   position: absolute;
   z-index: 1;
   top: 0;
-  left: 338px;
+  left: 348px;
   object-fit: fill;
   transform-origin: center;
 }
@@ -94,7 +94,9 @@
   width: 118px;
   height: 34px;
   overflow: hidden;
-  font-family: "Source Han Sans CN Bold", "Source Han Sans CN", sans-serif;
+  position: relative;
+  top: 1px;
+  font-family: "Douyin Latin Banner", "Source Han Sans CN Bold", "Source Han Sans CN", sans-serif;
   font-size: 24px;
   font-weight: 700;
   line-height: 34px;

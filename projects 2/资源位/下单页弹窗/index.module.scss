@@ -27,19 +27,25 @@
   border-radius: 0 0 60px 60px;
   background: var(--checkout-ribbon-color);
 }
+.campaignTagHidden {
+  visibility: hidden;
+}
 .campaignText {
   width: 227.29px;
-  height: 27.15px;
-  margin-top: 16px;
+  height: 32px;
+  margin-top: 14px;
   margin-right: 36.01px;
   overflow: hidden;
   color: #ffffff;
-  font-family: "Douyin Sans", sans-serif;
-  font-size: 26px;
+  font-family: "Douyin Latin", "Douyin Sans", sans-serif;
+  font-size: 30px;
   font-weight: 700;
-  line-height: 27.15px;
+  line-height: 32px;
   text-align: center;
   white-space: nowrap;
+}
+.campaignLatin {
+  font-size: 0.9333em;
 }
 .content {
   width: 560px;
@@ -58,7 +64,7 @@
   height: 173.37px;
   overflow: hidden;
   flex-direction: column;
-  font-family: "MFBenHeiNoncommercial", sans-serif;
+  font-family: "Douyin Latin", "MFBenHeiNoncommercial", sans-serif;
   font-size: 66px;
   font-weight: 400;
   line-height: 1.08;
@@ -66,12 +72,48 @@
   white-space: nowrap;
   color: var(--checkout-text-color);
 }
+.mainWithoutCampaignTag {
+  top: -18px;
+}
+.mainWithSubtitle {
+  transform: translateY(-18px);
+}
 .headlineLine {
   display: block;
   width: 100%;
 }
 .headlineHighlight {
   color: var(--checkout-highlight-color);
+}
+.subtitle {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  width: max-content;
+  max-width: 390px;
+  height: 44px;
+  padding: 0 28px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--checkout-subtitle-color);
+  color: var(--checkout-text-color);
+  font-family: "Source Han Sans CN Medium", "Source Han Sans CN", sans-serif;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 44px;
+  text-align: center;
+  white-space: nowrap;
+  transform: translate(-50%, -18px);
+}
+.subtitleAfterSingleLine {
+  top: 131px;
+}
+.subtitleAfterTwoLines {
+  top: 168px;
+}
+.subtitleWithoutCampaignTag {
+  margin-top: -18px;
 }
 .image3 {
   position: absolute;
@@ -147,7 +189,7 @@
   width: 280px;
   height: 60px;
   overflow: hidden;
-  font-family: "Source Han Sans CN Bold", "Source Han Sans CN", sans-serif;
+  font-family: "Douyin Latin", "Source Han Sans CN Bold", "Source Han Sans CN", sans-serif;
   font-size: 40px;
   font-weight: 700;
   line-height: 60px;

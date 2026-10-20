@@ -5,6 +5,10 @@ import burstUrl from './assets/爆炸 1.png'
 import glowUrl from './assets/Group 2147240474.png'
 import mainVisualUrl from './assets/主视觉.png'
 import ribbonUrl from './assets/彩带 1.png'
+import {
+  isDailyHeaderTitleLargeLine,
+  splitDailyHeaderTitleLines,
+} from '../src/daily-header-title-layout.js'
 
 export type IGeneratedComponent = {
   text?: string
@@ -21,35 +25,6 @@ export type IGeneratedComponent = {
   buttonBackgroundColor?: string
   headlineGradientTop?: string
   headlineGradientBottom?: string
-}
-
-function getTextUnit(char: string) {
-  if (/[\u4e00-\u9fff]/.test(char)) return 1
-  if (/[0-9]/.test(char)) return 0.56
-  if (/[a-zA-Z]/.test(char)) return 0.62
-  return 0.5
-}
-
-function splitTitleLines(value: string) {
-  const lines: string[] = []
-  const maxWidth = 5
-  value.replace(/\r\n?/g, '\n').split('\n').forEach((manualLine) => {
-    let current = ''
-    let width = 0
-    Array.from(manualLine).forEach((char) => {
-      const charWidth = getTextUnit(char)
-      if (current && width + charWidth > maxWidth) {
-        lines.push(current)
-        current = char
-        width = charWidth
-        return
-      }
-      current += char
-      width += charWidth
-    })
-    lines.push(current)
-  })
-  return lines
 }
 
 function renderTitleTextWithNumberFont(value: string) {
@@ -75,7 +50,8 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       : hasText
         ? props.text || ''
         : '抽666元流量大奖'
-  const titleLines = splitTitleLines(text)
+  const titleLines = splitDailyHeaderTitleLines(text).slice(0, 2)
+  const isSingleLineTitle = titleLines.length === 1
   const dateText = props.dateText ?? '6月10日-6月21日'
   const mainTextColor = props.textColor || '#2C0113'
   const burstOpacity = Number(props.burstOpacity ?? 0.5)
@@ -109,9 +85,13 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   }
   const mainVisualOffsetY = Number(props.mainVisualOffsetY ?? 0)
   const mainVisualScale = Number(props.mainVisualScale ?? 1)
+  const hasWideTitleLine = titleLines.some(
+    (line) => line && !isDailyHeaderTitleLargeLine(line),
+  )
+  const mainVisualOffsetX = hasWideTitleLine ? 0 : -20
   const mainVisualStyle: React.CSSProperties = Number.isFinite(mainVisualOffsetY) || Number.isFinite(mainVisualScale)
     ? {
-        transform: `translateY(${Number.isFinite(mainVisualOffsetY) ? mainVisualOffsetY : 0}px) scale(${Number.isFinite(mainVisualScale) ? mainVisualScale : 1})`,
+        transform: `translate(${mainVisualOffsetX}px, ${Number.isFinite(mainVisualOffsetY) ? mainVisualOffsetY : 0}px) scale(${Number.isFinite(mainVisualScale) ? mainVisualScale : 1})`,
       }
     : undefined
   const titleStyle = {
@@ -128,18 +108,22 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       <img src={props.mainVisualImage || mainVisualUrl} className={styles.image2} style={mainVisualStyle} />
       <div className={styles.image3} style={ribbonStyle} />
       <div className={styles.wrap}>
-        <div className={styles.text} style={titleStyle} data-react-edit-prop="text">
+        <div
+          className={`${styles.text} ${isSingleLineTitle ? styles.textSingleLine : ''}`}
+          style={titleStyle}
+          data-react-edit-prop="text"
+        >
           {titleLines.map((line, index) => (
             <span
               key={`${line}-${index}`}
-              className={`${styles.textLine} ${index === 0 ? styles.textLineGradient : styles.textLineSolid}`}
+              className={`${styles.textLine} ${isDailyHeaderTitleLargeLine(line) ? styles.textLineLarge : styles.textLineCompact} ${index === 0 ? styles.textLineGradient : styles.textLineSolid}`}
               style={index === 0 ? firstLineStyle : undefined}
             >
               {renderTitleTextWithNumberFont(line)}
             </span>
           ))}
         </div>
-        <div className={styles.container}>
+        <div className={`${styles.container} ${isSingleLineTitle ? styles.containerSingleLine : ''}`}>
           <div className={styles.content} style={buttonStyle}></div>
           <div className={styles.text1} data-react-edit-prop="dateText">{dateText}</div>
         </div>

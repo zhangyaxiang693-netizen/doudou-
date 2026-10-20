@@ -207,6 +207,25 @@
   font-display: block;
 }
 
+@font-face {
+  font-family: "Douyin Latin";
+  src: local('NoSuchFont__DLEB_v1'),
+       url("../fonts/DouyinNumberABC-ExtraBold.otf") format("opentype");
+  font-weight: 600;
+  font-display: block;
+  size-adjust: 116%;
+  unicode-range: U+0020-007E, U+00A0-024F;
+}
+
+@font-face {
+  font-family: "Douyin Latin Banner";
+  src: local('NoSuchFont__DLB_v1'),
+       url("../fonts/DouyinNumberABC-ExtraBold.otf") format("opentype");
+  font-weight: 600;
+  font-display: block;
+  unicode-range: U+0020-007E, U+00A0-024F;
+}
+
 /* Douyin Number ABC 用独立 family 名（按宽度+字重区分，防止 weight 回落）*/
 @font-face {
   font-family: "Douyin Number ABC Medium";
@@ -6119,13 +6138,48 @@ button:hover {
   background: transparent;
 }
 
-.guided-export-cut-preview {
+.guided-export-cut-preview,
+.guided-export-gif-source {
   position: absolute;
   top: 0;
   left: 0;
   overflow: visible;
+}
+
+.guided-export-cut-preview {
   transform: scale(var(--export-preview-scale, 0.46));
   transform-origin: top left;
+}
+
+[data-resource-static-export="true"] *,
+[data-resource-static-export="true"] *::before,
+[data-resource-static-export="true"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+[data-resource-static-export="true"] [data-png-button-shine]::after {
+  display: none !important;
+  content: none !important;
+}
+
+.guided-export-gif-source {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.guided-export-gif-source [data-png-button-shine]::after {
+  animation: none !important;
+  content: none !important;
+  display: none !important;
+}
+
+.guided-export-gif-source [data-gif-button-pulse] {
+  animation: none !important;
+  transform: none !important;
 }
 
 .app-shell[data-view="guided-export"] .guided-node {
@@ -9459,6 +9513,15 @@ button:hover {
   object-fit: contain;
 }
 
+.guided-header-visual-card span.is-layered-preview {
+  position: relative;
+}
+
+.guided-header-visual-card span.is-layered-preview img {
+  position: absolute;
+  object-fit: contain;
+}
+
 .guided-header-visual-card strong {
   overflow: hidden;
   color: #101828;
@@ -11685,6 +11748,25 @@ button:hover {
 
 .prd-variable-matrix-row .resource-variable-select:focus {
   box-shadow: inset 0 0 0 2px rgba(21, 94, 239, 0.18);
+}
+
+.prd-variable-matrix-row .resource-variable-checkbox {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  border-right: 1px solid #eef0f3;
+  background: #ffffff;
+  color: #344054;
+  font: 600 12px/1.35 "Source Han Sans CN", sans-serif;
+}
+
+.prd-variable-matrix-row .resource-variable-checkbox input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #155eef;
 }
 
 .prd-variable-matrix-row .prize-library-control {
@@ -18745,6 +18827,38 @@ button:hover {
   border-color: #182230;
   background: #182230;
   color: #ffffff;
+}
+
+.title-width-limit-notice {
+  position: fixed;
+  z-index: 10020;
+  width: max-content;
+  max-width: 196px;
+  padding: 3px 7px;
+  border: 1px solid #fda29b;
+  border-radius: 4px;
+  background: #fff6f5;
+  box-shadow: 0 2px 6px rgba(240, 68, 56, 0.12);
+  color: #d92d20;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  letter-spacing: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition: opacity 160ms ease-in-out, transform 160ms ease-in-out;
+}
+
+.title-width-limit-notice.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+textarea.is-title-width-limited,
+[contenteditable="true"].is-title-width-limited {
+  outline: 2px solid #f04438;
+  outline-offset: 1px;
 }
 
 @media (max-width: 720px) {

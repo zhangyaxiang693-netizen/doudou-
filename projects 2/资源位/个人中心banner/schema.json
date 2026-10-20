@@ -73,6 +73,10 @@
         {
           "label": "主体替换-方案4",
           "value": "subject-4"
+        },
+        {
+          "label": "主体替换-方案5",
+          "value": "subject-5"
         }
       ]
     },

@@ -28,6 +28,14 @@
   },
   "props": [
     {
+      "key": "showCampaignTag",
+      "name": "showCampaignTag",
+      "label": "显示活动标签",
+      "type": "boolean",
+      "default": true,
+      "description": "关闭后隐藏顶部活动标签，并自动上移主标题。"
+    },
+    {
       "key": "campaignText",
       "name": "campaignText",
       "label": "活动标签文案",
@@ -39,7 +47,8 @@
       "name": "headlineText",
       "label": "主标题文案",
       "type": "string",
-      "default": "投一单DOU+ 抽千元流量"
+      "default": "投一单DOU+ 抽千元流量",
+      "description": "默认先显示一行，超过 8 个字符后自动进入第二行；用户手动换行时优先使用手动换行位置，最多两行并保持居中。"
     },
     {
       "key": "headlineHighlightText",
@@ -71,6 +80,10 @@
         {
           "label": "主体替换-方案4",
           "value": "subject-4"
+        },
+        {
+          "label": "主体替换-方案5",
+          "value": "subject-5"
         }
       ]
     },

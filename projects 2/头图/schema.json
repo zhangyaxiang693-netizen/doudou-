@@ -57,7 +57,7 @@
       "label": "文案",
       "type": "string",
       "default": "抽666元流量大奖",
-      "description": "头图主文案，超出宽度后自动折行。"
+      "description": "头图主文案按实际字体宽度自动折行，最多展示两行。"
     },
     {
       "key": "dateText",

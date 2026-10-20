@@ -28,6 +28,11 @@
   user-select: none;
 }
 
+.viewport.static .canvas,
+.viewport.static .layer img {
+  animation: none;
+}
+
 [data-main-visual-scheme="subject-1"] .canvas {
   transform-origin: 58% 82%;
   animation-name: giftPresent;
@@ -46,6 +51,11 @@
 [data-main-visual-scheme="subject-4"] .canvas {
   transform-origin: 50% 90%;
   animation-name: giftLift;
+}
+
+[data-main-visual-scheme="subject-5"] .canvas {
+  transform-origin: 50% 88%;
+  animation-name: shoppingBounce;
 }
 
 .floatSlow,
@@ -149,6 +159,18 @@
   }
   100% {
     transform: translate(-2px, 3px) rotate(-0.6deg) scale(0.995);
+  }
+}
+
+@keyframes shoppingBounce {
+  0% {
+    transform: translate(-2px, 3px) rotate(-0.5deg) scale(0.995);
+  }
+  50% {
+    transform: translate(4px, -7px) rotate(0.7deg) scale(1.018);
+  }
+  100% {
+    transform: translate(-2px, 3px) rotate(-0.5deg) scale(0.995);
   }
 }
 
