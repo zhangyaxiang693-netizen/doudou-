@@ -2,11 +2,11 @@
 import React, {useLayoutEffect, useRef} from 'react'
 import styles from './index.module.scss'
 import image6 from './assets/image_6.png'
-import BigButton from '../../大按钮'
 import LayeredMainVisual from '../分层主视觉'
 
 export type IGeneratedComponent = {
   campaignText?: string
+  showCampaignTag?: boolean
   headlineText?: string
   headlineHighlightText?: string
   mainVisualImage?: string
@@ -72,43 +72,58 @@ function useFitHeadlineLines(value: string) {
   return ref
 }
 
-function getHeadlineParts(value: string, highlightText: string) {
-  const normalizedHighlight = highlightText.trim()
-  if (!normalizedHighlight) return [{text: value, highlighted: false}]
-  const start = value.indexOf(normalizedHighlight)
-  if (start < 0) return [{text: value, highlighted: false}]
+function getHeadlineLines(value: string) {
+  const normalized = value.replace(/\r\n?/g, '\n').trim()
+  if (!normalized) return ['']
+
+  const manualLines = normalized.split('\n')
+  if (manualLines.length > 1) {
+    return [
+      manualLines[0].trim(),
+      manualLines.slice(1).join(' ').replace(/\s+/g, ' ').trim(),
+    ]
+  }
+
+  const singleLine = normalized.replace(/\s+/g, ' ')
+  const characters = Array.from(singleLine)
+  if (characters.length <= 8) return [singleLine]
+
   return [
-    {text: value.slice(0, start), highlighted: false},
-    {text: normalizedHighlight, highlighted: true},
-    {text: value.slice(start + normalizedHighlight.length), highlighted: false},
-  ].filter((part) => part.text)
+    characters.slice(0, 8).join('').trimEnd(),
+    characters.slice(8).join('').trimStart(),
+  ]
 }
 
-function getHeadlineLines(value: string) {
-  const explicitLines = value
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-  if (explicitLines.length > 1) {
-    return [explicitLines[0], explicitLines.slice(1).join('')]
-  }
+function getHeadlineLineParts(lines: string[], highlightText: string) {
+  const normalizedHighlight = Array.from(highlightText.replace(/\s+/g, '')).join('')
+  const fullText = lines.join('')
+  const highlightStart = normalizedHighlight ? fullText.indexOf(normalizedHighlight) : -1
+  const highlightEnd = highlightStart + normalizedHighlight.length
+  let offset = 0
 
-  const wordGroups = value.trim().split(/\s+/).filter(Boolean)
-  if (wordGroups.length > 1) {
-    return [wordGroups[0], wordGroups.slice(1).join('')]
-  }
+  return lines.map((line) => {
+    const lineStart = offset
+    const lineEnd = lineStart + line.length
+    offset = lineEnd
 
-  const characters = Array.from(value.trim())
-  const splitIndex = Math.ceil(characters.length / 2)
-  return [
-    characters.slice(0, splitIndex).join(''),
-    characters.slice(splitIndex).join(''),
-  ]
+    if (highlightStart < 0 || highlightStart >= lineEnd || highlightEnd <= lineStart) {
+      return [{text: line, highlighted: false}]
+    }
+
+    const localStart = Math.max(0, highlightStart - lineStart)
+    const localEnd = Math.min(line.length, highlightEnd - lineStart)
+    return [
+      {text: line.slice(0, localStart), highlighted: false},
+      {text: line.slice(localStart, localEnd), highlighted: true},
+      {text: line.slice(localEnd), highlighted: false},
+    ].filter((part) => part.text)
+  })
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
   const {
     campaignText = 'DOU+双节狂欢投',
+    showCampaignTag = true,
     headlineText = '投一单DOU+ 抽千元流量',
     headlineHighlightText = 'DOU+',
     mainVisualImage = 'subject-1',
@@ -120,40 +135,54 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     buttonGradientEnd = '#FF166F',
     buttonText = '立即参与',
   } = props
-  const campaignRef = useFitText(campaignText, 26, 14)
+  const campaignRef = useFitText(campaignText, 30, 14)
   const headlineRef = useFitHeadlineLines(headlineText)
+  const buttonTextRef = useFitText(buttonText, 40, 20)
   const headlineLines = getHeadlineLines(headlineText)
+  const headlineLineParts = getHeadlineLineParts(headlineLines, headlineHighlightText)
   const themeStyle = {
     '--retention-popup-background': background,
     '--retention-popup-campaign-color': campaignBackgroundColor,
     '--retention-popup-text-color': headlineTextColor,
     '--retention-popup-highlight-color': headlineHighlightColor,
+    '--retention-popup-button-background': `linear-gradient(90deg, ${buttonGradientStart} 0%, ${buttonGradientEnd} 100%)`,
   } as React.CSSProperties
 
   return (
     <div className={styles.page} style={themeStyle}>
-      <LayeredMainVisual scheme={mainVisualImage} className={styles.mainVisual} />
+      <LayeredMainVisual
+        scheme={mainVisualImage}
+        className={styles.mainVisual}
+        style={mainVisualImage === 'subject-5' ? {transform: 'translateY(6px)'} : undefined}
+      />
       <div className={styles.container}>
-        <div className={styles.campaignBadge}>
+        <div className={[styles.campaignBadge, !showCampaignTag && styles.campaignBadgeHidden].filter(Boolean).join(' ')}>
           <div
             ref={campaignRef}
             className={styles.campaignText}
             data-react-edit-prop="campaignText"
           >
-            {campaignText}
+            {Array.from(campaignText).map((character, index) => (
+              <span
+                className={/[A-Za-z0-9+]/.test(character) ? styles.campaignLatin : undefined}
+                key={`${character}-${index}`}
+              >
+                {character}
+              </span>
+            ))}
           </div>
         </div>
         <div
           ref={headlineRef}
-          className={styles.headline}
+          className={[styles.headline, !showCampaignTag && styles.headlineWithoutCampaignTag].filter(Boolean).join(' ')}
           data-react-edit-prop="headlineText"
         >
-          {headlineLines.map((line, lineIndex) => (
-            <span className={styles.headlineLine} key={`${line}-${lineIndex}`}>
-              {getHeadlineParts(line, headlineHighlightText).map((part, partIndex) => (
+          {headlineLineParts.map((parts, lineIndex) => (
+            <span className={styles.headlineLine} key={`line-${lineIndex}`}>
+              {parts.map((part, partIndex) => (
                 <span
                   className={part.highlighted ? styles.headlineHighlight : undefined}
-                  key={`${part.text}-${partIndex}`}
+                  key={`${lineIndex}-${partIndex}`}
                 >
                   {part.text}
                 </span>
@@ -161,12 +190,14 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             </span>
           ))}
         </div>
-        <div className={styles.button}>
-          <BigButton
-            buttonText={buttonText}
-            buttonGradientStart={buttonGradientStart}
-            buttonGradientEnd={buttonGradientEnd}
-          />
+        <div className={styles.button} data-png-button-shine data-gif-button-pulse>
+          <div
+            ref={buttonTextRef}
+            className={styles.buttonText}
+            data-react-edit-prop="buttonText"
+          >
+            {buttonText}
+          </div>
         </div>
         <img
           src={image6}

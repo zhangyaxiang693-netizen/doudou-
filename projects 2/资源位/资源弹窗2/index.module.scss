@@ -50,19 +50,26 @@
   justify-content: center;
 }
 
+.campaignBadgeHidden {
+  visibility: hidden;
+}
+
 .campaignText {
   width: 250px;
-  height: 28px;
+  height: 32px;
   overflow: hidden;
-  margin-top: 15px;
-  font-family: "Douyin Sans", "Source Han Sans CN Bold", sans-serif;
-  font-size: 26px;
+  margin-top: 14px;
+  font-family: "Douyin Latin", "Douyin Sans", "Source Han Sans CN Bold", sans-serif;
+  font-size: 30px;
   font-weight: 700;
-  line-height: 28px;
+  line-height: 32px;
   letter-spacing: 0;
   white-space: nowrap;
   text-align: center;
   color: #ffffff;
+}
+.campaignLatin {
+  font-size: 0.9333em;
 }
 
 .headline {
@@ -72,7 +79,10 @@
   position: absolute;
   top: 116px;
   left: 70.8px;
-  font-family: MFBenHeiNoncommercial, "Source Han Sans CN Heavy", sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-family: "Douyin Latin", MFBenHeiNoncommercial, "Source Han Sans CN Heavy", sans-serif;
   font-size: 66px;
   font-weight: 900;
   line-height: 96px;
@@ -80,6 +90,10 @@
   white-space: normal;
   text-align: center;
   color: var(--retention-popup-text-color);
+}
+
+.headlineWithoutCampaignTag {
+  transform: translateY(-18px);
 }
 
 .headlineLine {
@@ -103,10 +117,29 @@
   position: absolute;
   top: 345px;
   left: 105px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   overflow: hidden;
   border-radius: 999px;
+  box-sizing: border-box;
+  background: var(--retention-popup-button-background);
   transform-origin: center;
   animation: popupButtonPulse 1.2s ease-in-out infinite;
+}
+
+.buttonText {
+  position: relative;
+  z-index: 3;
+  width: 270px;
+  font-family: "Douyin Latin", "Source Han Sans CN", sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 60px;
+  letter-spacing: 2px;
+  text-align: center;
+  white-space: nowrap;
+  color: #ffffff;
 }
 
 .button::after {

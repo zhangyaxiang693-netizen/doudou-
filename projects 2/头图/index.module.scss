@@ -56,10 +56,27 @@
   line-height: 92px;
   font-weight: 400;
   min-height: 92px;
+  max-height: 184px;
+  overflow: hidden;
+}
+.textSingleLine {
+  top: 46px;
 }
 .textLine {
   display: block;
   height: 92px;
+}
+.textLineLarge {
+  font-size: 76px;
+}
+.textLineCompact {
+  font-size: 70px;
+}
+.textLineLarge .douyinNumber {
+  font-size: 89px;
+}
+.textLineCompact .douyinNumber {
+  font-size: 82px;
 }
 .textLineGradient {
   color: transparent;
@@ -73,7 +90,6 @@
 }
 .douyinNumber {
   font-family: "Douyin Number ABC", "MFBenHeiNoncommercial";
-  font-size: 82px;
   font-weight: 800;
 }
 .container {
@@ -88,6 +104,9 @@
   padding: 0 15px;
   box-sizing: border-box;
 }
+.containerSingleLine {
+  top: 153.36px;
+}
 .content {
   width: auto;
   border-radius: 32px;
@@ -98,6 +117,8 @@
 }
 .text1 {
   position: relative;
+  max-width: 308px;
+  overflow: hidden;
   transform: rotate(1.129999680560335e-7deg);
   font-family: "Source Han Sans CN";
   font-size: 28px;

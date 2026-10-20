@@ -19,6 +19,17 @@ const subjectStyles: Record<string, React.CSSProperties> = {
   'subject-4': {
     transform: 'translateY(-8px)',
   },
+  'subject-5': {
+    transform: 'translateY(-1px) scale(0.9)',
+  },
+}
+
+const subjectLayerImageStyles: Record<string, Record<number, React.CSSProperties>> = {
+  'subject-5': {
+    1: {
+      transform: 'translateY(12px) scale(1.16)',
+    },
+  },
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
@@ -37,12 +48,24 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     <div className={styles.page}>
       <LayeredMainVisual
         scheme={mainVisualImage}
-        className={styles.image}
+        className={[
+          styles.image,
+          mainVisualImage === 'subject-5' ? styles.subject5Image : '',
+        ].filter(Boolean).join(' ')}
         style={subjectStyles[mainVisualImage]}
+        layerImageStyles={subjectLayerImageStyles[mainVisualImage]}
       />
-      <div className={styles.wrap}>
-        <div className={styles.container} style={{backgroundColor: buttonColor}}>
-          <span className={styles.buttonText} style={{fontSize}}>
+      <div className={styles.wrap} data-gif-button-pulse>
+        <div
+          className={styles.container}
+          style={{backgroundColor: buttonColor}}
+          data-png-button-shine
+        >
+          <span
+            className={styles.buttonText}
+            style={{fontSize}}
+            data-react-edit-prop="buttonText"
+          >
             {buttonText}
           </span>
         </div>

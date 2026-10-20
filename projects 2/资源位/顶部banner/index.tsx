@@ -5,6 +5,7 @@ import subject1 from '../../头图/主体替换/主体替换-方案1.png'
 import subject2 from '../../头图/主体替换/主体替换-方案2.png'
 import subject3 from '../../头图/主体替换/主体替换-方案3.png'
 import subject4 from '../../头图/主体替换/主体替换-方案4.png'
+import LayeredMainVisual from '../分层主视觉'
 
 export type IGeneratedComponent = {
   campaignText?: string
@@ -32,7 +33,12 @@ const subjectStyles: Record<string, React.CSSProperties> = {
   'subject-4': {transform: 'translateY(-14px) scale(1.08)'},
 }
 
-function useFitText(value: string, maxFontSize: number, minFontSize: number) {
+function useFitText(
+  value: string,
+  maxFontSize: number,
+  minFontSize: number,
+  fitHeight = true,
+) {
   const ref = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
@@ -45,7 +51,7 @@ function useFitText(value: string, maxFontSize: number, minFontSize: number) {
       while (
         size > minFontSize &&
         (element.scrollWidth > element.clientWidth + 1 ||
-          element.scrollHeight > element.clientHeight + 1)
+          (fitHeight && element.scrollHeight > element.clientHeight + 1))
       ) {
         size -= 1
         element.style.fontSize = `${size}px`
@@ -54,7 +60,7 @@ function useFitText(value: string, maxFontSize: number, minFontSize: number) {
 
     fit()
     document.fonts?.ready.then(fit)
-  }, [value, maxFontSize, minFontSize])
+  }, [value, maxFontSize, minFontSize, fitHeight])
 
   return ref
 }
@@ -84,8 +90,8 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     buttonGradientEnd = '#FF166F',
     buttonText = '立即参与',
   } = props
-  const campaignRef = useFitText(campaignText, 38, 18)
-  const headlineRef = useFitText(headlineText, 58, 28)
+  const campaignRef = useFitText(campaignText, 38, 18, false)
+  const headlineRef = useFitText(headlineText, 55, 28, false)
   const buttonRef = useFitText(buttonText, 34, 18)
   const headlineParts = getHeadlineParts(headlineText, headlineHighlightText)
   const subjectImage = subjectImages[mainVisualImage] || subject1
@@ -132,11 +138,20 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             </div>
           </div>
         </div>
-        <img
-          src={subjectImage}
-          className={styles.mainVisual}
-          style={subjectStyles[mainVisualImage]}
-        />
+        {mainVisualImage === 'subject-5' ? (
+          <LayeredMainVisual
+            scheme={mainVisualImage}
+            className={styles.mainVisual}
+            style={{transform: 'translateY(19px) scale(0.98)'}}
+            animated={false}
+          />
+        ) : (
+          <img
+            src={subjectImage}
+            className={styles.mainVisual}
+            style={subjectStyles[mainVisualImage]}
+          />
+        )}
       </div>
     </div>
   )

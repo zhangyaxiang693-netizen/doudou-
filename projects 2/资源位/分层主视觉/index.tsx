@@ -27,6 +27,11 @@ import subject4Ribbon from '../../主视觉拆分/方案4/Frame 2147240519.png'
 import subject4Coin from '../../主视觉拆分/方案4/Mask group-1.png'
 import subject4Badge from '../../主视觉拆分/方案4/Mask group.png'
 
+import subject5Core from '../../主视觉拆分/方案5/主体.png'
+import subject5Bag from '../../主视觉拆分/方案5/购物袋.png'
+import subject5Spark from '../../主视觉拆分/方案5/火花2 1.png'
+import subject5Coin from '../../主视觉拆分/方案5/金币2 1.png'
+
 type Layer = {
   src: string
   className: string
@@ -66,24 +71,34 @@ const layerSets: Record<string, Layer[]> = {
     {src: subject4Badge, className: styles.floatFast, left: 29, top: 224, width: 77, height: 67},
     {src: subject4Coin, className: styles.coinFloat, left: 284, top: 215, width: 62, height: 61},
   ],
+  'subject-5': [
+    {src: subject5Bag, className: styles.floatSlow, left: 20, top: 105, width: 101, height: 105},
+    {src: subject5Core, className: styles.coreFloat, left: 51, top: -7, width: 286, height: 321},
+    {src: subject5Spark, className: styles.floatFast, left: 292, top: 25, width: 70, height: 66},
+    {src: subject5Coin, className: styles.coinFloat, left: 307, top: 213, width: 48, height: 39},
+  ],
 }
 
 type LayeredMainVisualProps = {
   scheme?: string
   className?: string
   style?: React.CSSProperties
+  animated?: boolean
+  layerImageStyles?: Record<number, React.CSSProperties>
 }
 
 export default function LayeredMainVisual({
   scheme = 'subject-1',
   className,
   style,
+  animated = true,
+  layerImageStyles,
 }: LayeredMainVisualProps) {
   const layers = layerSets[scheme] || layerSets['subject-1']
 
   return (
     <div
-      className={[styles.viewport, className].filter(Boolean).join(' ')}
+      className={[styles.viewport, !animated && styles.static, className].filter(Boolean).join(' ')}
       style={style}
       data-main-visual-scheme={scheme}
     >
@@ -115,7 +130,12 @@ export default function LayeredMainVisual({
               } as React.CSSProperties
             })()}
           >
-            <img src={layer.src} className={layer.className} draggable={false} />
+            <img
+              src={layer.src}
+              className={layer.className}
+              style={layerImageStyles?.[index]}
+              draggable={false}
+            />
           </div>
         ))}
       </div>

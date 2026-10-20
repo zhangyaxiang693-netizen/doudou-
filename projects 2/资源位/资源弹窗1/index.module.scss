@@ -46,6 +46,9 @@
   width: 327.75px;
   height: 26.95px;
 }
+.content1Hidden {
+  visibility: hidden;
+}
 .main {
   display: flex;
   justify-content: center;
@@ -82,15 +85,18 @@
 .image5 {
   width: max-content;
   max-width: calc(100% - 68px);
-  height: 26px;
+  height: 32px;
   flex: 0 1 auto;
   color: var(--detail-popup-text-color);
-  font-family: "Douyin Sans", sans-serif;
-  font-size: 26px;
+  font-family: "Douyin Latin", "Douyin Sans", sans-serif;
+  font-size: 30px;
   font-weight: 700;
-  line-height: 26px;
+  line-height: 32px;
   text-align: center;
   white-space: nowrap;
+}
+.campaignLatin {
+  font-size: 0.9333em;
 }
 .subSection {
   flex: 1 1 42.3px;
@@ -110,7 +116,7 @@
   margin-top: 39.29px;
   margin-left: 100px;
   position: relative;
-  font-family: MFBenHeiNoncommercial, sans-serif;
+  font-family: "Douyin Latin", MFBenHeiNoncommercial, sans-serif;
   font-size: 66px;
   font-weight: 900;
   line-height: 1;
@@ -135,6 +141,14 @@
   top: 90px;
 }
 
+.headlineSingleLine .headlineLine {
+  top: 45px;
+}
+
+.headlineWithoutCampaignTag {
+  transform: translateY(-18px);
+}
+
 .headlineHighlight {
   color: var(--detail-popup-highlight-color);
 }
@@ -145,10 +159,29 @@
   position: absolute;
   top: 358.99px;
   left: 105px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   overflow: hidden;
   border-radius: 999px;
+  box-sizing: border-box;
+  background: var(--detail-popup-button-background);
   transform-origin: center;
   animation: popupButtonPulse 1.2s ease-in-out infinite;
+}
+
+.buttonText {
+  position: relative;
+  z-index: 3;
+  width: 270px;
+  font-family: "Douyin Latin", "Source Han Sans CN", sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 60px;
+  letter-spacing: 2px;
+  text-align: center;
+  white-space: nowrap;
+  color: #ffffff;
 }
 
 .button::after {

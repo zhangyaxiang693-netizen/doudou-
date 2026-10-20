@@ -32,7 +32,7 @@
       "label": "主标题文案",
       "type": "string",
       "default": "好礼天天抽 赢千元流量",
-      "description": "主标题作为一段文案输入，每行最多 6 个字符，空格可主动分行，整体保持居中。"
+      "description": "默认先显示一行，超过 6 个字符后自动进入第二行；用户手动换行时优先使用手动换行位置，最多两行并保持居中。"
     },
     {
       "key": "campaignText",
@@ -43,12 +43,36 @@
       "description": "顶部活动标签文案，随内容长度保持居中并自动缩放。"
     },
     {
+      "key": "showCampaignTag",
+      "name": "showCampaignTag",
+      "label": "显示活动标签",
+      "type": "boolean",
+      "default": true,
+      "description": "关闭后隐藏顶部活动标签，并自动上移主标题。"
+    },
+    {
       "key": "headlineHighlightText",
       "name": "headlineHighlightText",
       "label": "标题高亮内容",
       "type": "string",
       "default": "赢千元流量",
       "description": "填写主标题中需要高亮显示的文案内容。"
+    },
+    {
+      "key": "showSubtitle",
+      "name": "showSubtitle",
+      "label": "显示副标题",
+      "type": "boolean",
+      "default": true,
+      "description": "控制主标题下方的圆角副标题是否显示。"
+    },
+    {
+      "key": "subtitleText",
+      "name": "subtitleText",
+      "label": "副标题文案",
+      "type": "string",
+      "default": "千元流量券等你抽",
+      "description": "副标题底色宽度随文案自适应，超长时自动缩小字号。"
     },
     {
       "key": "mainVisualImage",
@@ -73,6 +97,10 @@
         {
           "label": "主体替换-方案4",
           "value": "subject-4"
+        },
+        {
+          "label": "主体替换-方案5",
+          "value": "subject-5"
         }
       ]
     },

@@ -37,6 +37,12 @@ import {
   syncCollaborationState,
   unlockAdminAccess,
 } from "./collaboration/api.js";
+import {
+  clampDailyHeaderTitle,
+  getFittingDailyHeaderDateInsertion,
+  getFittingDailyHeaderInsertion,
+  isDailyHeaderDateOverflow,
+} from "./daily-header-title-layout.js";
 
 const GUIDED_CUT_EXPORT_WIDTH = 750;
 const GUIDED_CONSUMPTION_RETURN_EXPORT_SIDE_SPACE = 24;
@@ -55,6 +61,225 @@ const RESOURCE_S_LEVEL_DISABLED_REASON = "大促期间才会开启";
 const DEFAULT_TRAFFIC_COUPON_THRESHOLD = "00";
 const DEFAULT_LOTTERY_PRIZE_COUNT = 3;
 const INITIAL_LOTTERY_PRIZE_COUNT = 8;
+let dailyHeaderTitleNoticeTimer = null;
+let dailyHeaderTitleNoticeTarget = null;
+const dailyHeaderTitleInputSnapshots = new WeakMap();
+
+function showDailyHeaderTitleLimitNotice(
+  target,
+  message = "已达两行上限，无法继续输入",
+) {
+  dailyHeaderTitleNoticeTarget?.classList.remove("is-title-width-limited");
+  dailyHeaderTitleNoticeTarget = target || null;
+  target?.classList.add("is-title-width-limited");
+  let notice = document.querySelector("[data-title-width-limit-notice]");
+  if (!notice) {
+    notice = document.createElement("div");
+    notice.className = "title-width-limit-notice";
+    notice.dataset.titleWidthLimitNotice = "";
+    notice.setAttribute("role", "status");
+    notice.setAttribute("aria-live", "polite");
+    document.body.append(notice);
+  }
+  notice.textContent = message;
+  const targetRect = target?.getBoundingClientRect?.();
+  if (targetRect) {
+    const noticeWidth = 196;
+    const noticeHeight = 28;
+    const gap = 6;
+    const left = Math.min(
+      window.innerWidth - noticeWidth - 12,
+      Math.max(12, targetRect.left),
+    );
+    const top = targetRect.bottom + noticeHeight + gap <= window.innerHeight
+      ? targetRect.bottom + gap
+      : Math.max(12, targetRect.top - noticeHeight - gap);
+    notice.style.left = `${left}px`;
+    notice.style.top = `${top}px`;
+  }
+  notice.classList.add("is-visible");
+  window.clearTimeout(dailyHeaderTitleNoticeTimer);
+  dailyHeaderTitleNoticeTimer = window.setTimeout(() => {
+    notice.classList.remove("is-visible");
+    dailyHeaderTitleNoticeTarget?.classList.remove("is-title-width-limited");
+    dailyHeaderTitleNoticeTarget = null;
+  }, 2200);
+}
+
+function getBlueprintInputRowKey(input) {
+  if (input?.dataset.prdTemplateVariableRow) {
+    return input.dataset.prdTemplateVariableRow;
+  }
+  const rowIndex = Number(input?.dataset.prdTableRow);
+  return Number.isInteger(rowIndex) ? state.prdTableRows?.[rowIndex]?.key || "" : "";
+}
+
+function getDailyHeaderBlueprintFieldKey(input) {
+  const rowKey = getBlueprintInputRowKey(input);
+  const parsed =
+    parsePageTemplateVariableVersionRowKey(rowKey) ||
+    parsePageTemplateVariableRowKey(rowKey);
+  if (
+    !parsed ||
+    !["text", "dateText"].includes(parsed.compoundKey) ||
+    state.guidedHeaderLevelId === "s"
+  ) {
+    return "";
+  }
+  const moduleRow = input.closest?.("[data-prd-template-module-row]");
+  const [templateId] = String(moduleRow?.dataset.prdTemplateModuleRow || "").split("|");
+  const pageTemplate = [...pageTemplates, ...customPageTemplates].find(
+    (item) => item.id === templateId,
+  ) || getActivePrdPageTemplate();
+  return getPageTemplateRawNodeSchemaId(pageTemplate?.nodes?.[parsed.moduleIndex]) === "头图"
+    ? parsed.compoundKey
+    : "";
+}
+
+function getDailyHeaderTitleTarget(source) {
+  const blueprintInput = source?.closest?.(
+    "[data-prd-template-variable-row], [data-prd-table-row]",
+  );
+  if (blueprintInput && getDailyHeaderBlueprintFieldKey(blueprintInput)) {
+    return blueprintInput;
+  }
+  const editable = source?.closest?.(
+    '[data-edit-prop="text"], [data-edit-prop="dateText"]',
+  );
+  const nodeId = editable?.closest("[data-node-id]")?.dataset.nodeId;
+  const found = nodeId ? findNode(state.nodes, nodeId) : null;
+  return found?.node?.schemaId === "头图" ? editable : null;
+}
+
+function getDailyHeaderFieldRule(target) {
+  const key = target?.dataset?.editProp || getDailyHeaderBlueprintFieldKey(target);
+  if (key === "dateText") {
+    return {
+      key,
+      isOverflow: isDailyHeaderDateOverflow,
+      getFittingInsertion: getFittingDailyHeaderDateInsertion,
+      notice: "时间文案不能超过11个中文宽度",
+    };
+  }
+  if (key === "text") {
+    return {
+      key,
+      isOverflow: (value) => clampDailyHeaderTitle(value).overflow,
+      getFittingInsertion: getFittingDailyHeaderInsertion,
+      notice: "已达两行上限，无法继续输入",
+    };
+  }
+  return null;
+}
+
+function getDailyHeaderTitleValue(target) {
+  return "value" in target ? target.value : target.textContent || "";
+}
+
+function getDailyHeaderTitleSelection(target) {
+  if ("selectionStart" in target) {
+    return {
+      start: target.selectionStart ?? target.value.length,
+      end: target.selectionEnd ?? target.value.length,
+    };
+  }
+  const selection = window.getSelection?.();
+  if (!selection?.rangeCount) {
+    const end = (target.textContent || "").length;
+    return { start: end, end };
+  }
+  const range = selection.getRangeAt(0);
+  if (!target.contains(range.startContainer) || !target.contains(range.endContainer)) {
+    const end = (target.textContent || "").length;
+    return { start: end, end };
+  }
+  const startRange = range.cloneRange();
+  startRange.selectNodeContents(target);
+  startRange.setEnd(range.startContainer, range.startOffset);
+  const endRange = range.cloneRange();
+  endRange.selectNodeContents(target);
+  endRange.setEnd(range.endContainer, range.endOffset);
+  return {
+    start: startRange.toString().length,
+    end: endRange.toString().length,
+  };
+}
+
+function captureDailyHeaderTitleSnapshot(source) {
+  const target = getDailyHeaderTitleTarget(source);
+  if (!target) return null;
+  const selection = getDailyHeaderTitleSelection(target);
+  dailyHeaderTitleInputSnapshots.set(target, {
+    value: getDailyHeaderTitleValue(target),
+    ...selection,
+  });
+  return target;
+}
+
+function restoreDailyHeaderTitleSnapshot(target, snapshot) {
+  if ("value" in target) {
+    target.value = snapshot.value;
+    target.setSelectionRange?.(snapshot.start, snapshot.end);
+    return;
+  }
+  target.textContent = snapshot.value;
+  restoreTextOffsetWithin(target, snapshot.start);
+}
+
+function getPersistedDailyHeaderTitleValue(target) {
+  const rule = getDailyHeaderFieldRule(target);
+  const rowKey = getBlueprintInputRowKey(target);
+  if (rowKey) {
+    return state.prdTableRows?.find((row) => row.key === rowKey)?.value ?? "";
+  }
+  const nodeId = target.closest?.("[data-node-id]")?.dataset.nodeId;
+  return nodeId
+    ? findNode(state.nodes, nodeId)?.node?.props?.[rule?.key || "text"] ?? ""
+    : "";
+}
+
+function constrainDailyHeaderTitleInput(source) {
+  const target = getDailyHeaderTitleTarget(source);
+  if (!target) return false;
+  const rule = getDailyHeaderFieldRule(target);
+  if (!rule) return false;
+  const value = getDailyHeaderTitleValue(target);
+  if (!rule.isOverflow(value)) {
+    captureDailyHeaderTitleSnapshot(target);
+    return false;
+  }
+  const snapshot = dailyHeaderTitleInputSnapshots.get(target) || {
+    value: String(getPersistedDailyHeaderTitleValue(target)),
+    start: String(getPersistedDailyHeaderTitleValue(target)).length,
+    end: String(getPersistedDailyHeaderTitleValue(target)).length,
+  };
+  restoreDailyHeaderTitleSnapshot(target, snapshot);
+  showDailyHeaderTitleLimitNotice(target, rule.notice);
+  return true;
+}
+
+function getDailyHeaderTitleInsertion(event) {
+  if (event.inputType === "insertLineBreak" || event.inputType === "insertParagraph") {
+    return "\n";
+  }
+  return event.dataTransfer?.getData?.("text/plain") ?? event.data ?? "";
+}
+
+function applyDailyHeaderTitleInsertion(target, value, start, end, insertion) {
+  if ("value" in target) {
+    target.setRangeText(insertion, start, end, "end");
+  } else {
+    target.textContent = `${value.slice(0, start)}${insertion}${value.slice(end)}`;
+    restoreTextOffsetWithin(target, start + insertion.length);
+  }
+  target.dispatchEvent(
+    new InputEvent("input", {
+      bubbles: true,
+      data: insertion,
+      inputType: "insertFromPaste",
+    }),
+  );
+}
 
 function getDefaultTrafficCouponThreshold(amount) {
   const thresholds = {
@@ -73,6 +298,36 @@ const _schemaModules = import.meta.glob('../**/schema.json', { eager: true, as: 
 const _cssVarModules = import.meta.glob('../**/index.module.scss', { eager: true, query: '?raw', import: 'default' });
 const _headerMainVisualModules = import.meta.glob("../头图/主体替换/*.png", { eager: true, query: "?url", import: "default" });
 const headerDefaultMainVisualUrl = new URL("../头图/assets/主视觉.png", import.meta.url).href;
+const resourceSubject5PreviewLayers = [
+  {
+    url: new URL("../主视觉拆分/方案5/购物袋.png", import.meta.url).href,
+    left: 5.2,
+    top: 34.3,
+    width: 26.1,
+    height: 34.3,
+  },
+  {
+    url: new URL("../主视觉拆分/方案5/主体.png", import.meta.url).href,
+    left: 13.2,
+    top: -2.3,
+    width: 73.9,
+    height: 104.9,
+  },
+  {
+    url: new URL("../主视觉拆分/方案5/火花2 1.png", import.meta.url).href,
+    left: 75.5,
+    top: 8.2,
+    width: 18.1,
+    height: 21.6,
+  },
+  {
+    url: new URL("../主视觉拆分/方案5/金币2 1.png", import.meta.url).href,
+    left: 79.3,
+    top: 69.6,
+    width: 12.4,
+    height: 12.7,
+  },
+];
 const navigationBarSvgUrl = new URL("../导航栏/顶栏.svg", import.meta.url).href;
 const contentModuleImageUrl = new URL("../内容模块.png", import.meta.url).href;
 const contentModuleImage2Url = new URL("../内容模块2.png", import.meta.url).href;
@@ -1138,6 +1393,7 @@ const PAGE_TEMPLATE_HEADER_BLUEPRINT_SPEC = {
       fields: [
         ["text", "文案"],
         ["dateText", "日期文案"],
+        ["mainVisualImage", "主体替换"],
       ],
     },
   ],
@@ -3778,6 +4034,7 @@ const RESOURCE_LEVEL_CONFIGS = {
               { label: "主体替换-方案2", value: "subject-2" },
               { label: "主体替换-方案3", value: "subject-3" },
               { label: "主体替换-方案4", value: "subject-4" },
+              { label: "主体替换-方案5", value: "subject-5" },
             ],
           },
           { key: "buttonText", label: "按钮文案", default: "七夕抽奖" },
@@ -3810,11 +4067,25 @@ const RESOURCE_LEVEL_CONFIGS = {
               { label: "主体替换-方案2", value: "subject-2" },
               { label: "主体替换-方案3", value: "subject-3" },
               { label: "主体替换-方案4", value: "subject-4" },
+              { label: "主体替换-方案5", value: "subject-5" },
             ],
           },
           { key: "headlineText", label: "主标题文案", default: "好礼天天抽 赢千元流量" },
+          {
+            key: "showCampaignTag",
+            label: "显示活动标签",
+            type: "boolean",
+            default: true,
+          },
           { key: "campaignText", label: "活动标签文案", default: "DOU+双节狂欢投" },
           { key: "headlineHighlightText", label: "标题高亮内容", default: "赢千元流量" },
+          {
+            key: "showSubtitle",
+            label: "显示副标题",
+            type: "boolean",
+            default: true,
+          },
+          { key: "subtitleText", label: "副标题文案", default: "千元流量券等你抽" },
           { key: "buttonText", label: "按钮文案", default: "立即参与" },
         ],
       },
@@ -3834,6 +4105,7 @@ const RESOURCE_LEVEL_CONFIGS = {
               { label: "主体替换-方案2", value: "subject-2" },
               { label: "主体替换-方案3", value: "subject-3" },
               { label: "主体替换-方案4", value: "subject-4" },
+              { label: "主体替换-方案5", value: "subject-5" },
             ],
           },
           { key: "campaignText", label: "活动标签文案", default: "DOU+双节狂欢投" },
@@ -3858,6 +4130,7 @@ const RESOURCE_LEVEL_CONFIGS = {
               { label: "主体替换-方案2", value: "subject-2" },
               { label: "主体替换-方案3", value: "subject-3" },
               { label: "主体替换-方案4", value: "subject-4" },
+              { label: "主体替换-方案5", value: "subject-5" },
             ],
           },
           { key: "campaignText", label: "活动标签文案", default: "DOU+双节狂欢投" },
@@ -3882,7 +4155,14 @@ const RESOURCE_LEVEL_CONFIGS = {
               { label: "主体替换-方案2", value: "subject-2" },
               { label: "主体替换-方案3", value: "subject-3" },
               { label: "主体替换-方案4", value: "subject-4" },
+              { label: "主体替换-方案5", value: "subject-5" },
             ],
+          },
+          {
+            key: "showCampaignTag",
+            label: "显示活动标签",
+            type: "boolean",
+            default: true,
           },
           { key: "campaignText", label: "活动标签文案", default: "DOU+双节狂欢投" },
           { key: "headlineText", label: "主标题文案", default: "投一单DOU+ 抽千元流量" },
@@ -3896,8 +4176,14 @@ const RESOURCE_LEVEL_CONFIGS = {
         schemaId: "详情页弹窗",
         defaultThemeId: "pink",
         fields: [
+          {
+            key: "showCampaignTag",
+            label: "显示活动标签",
+            type: "boolean",
+            default: true,
+          },
           { key: "campaignText", label: "活动标签文案", default: "DOU+双节狂欢投" },
-          { key: "headlineText", label: "主标题文案", default: "完成任务 抽流量好礼" },
+          { key: "headlineText", label: "主标题文案", default: "完成任务\n抽流量好礼" },
           { key: "headlineHighlightText", label: "标题高亮内容", default: "流量好礼" },
           { key: "buttonText", label: "按钮文案", default: "立即参与" },
         ],
@@ -4347,8 +4633,38 @@ function getHeaderMainVisualOptions() {
   ];
 }
 
+function getHeaderMainVisualBlueprintField(field = {}) {
+  return {
+    ...field,
+    type: "select",
+    default: headerDefaultMainVisualUrl,
+    options: getHeaderMainVisualOptions().map((item) => ({
+      label: item.name,
+      value: item.url,
+    })),
+  };
+}
+
+function getHeaderMainVisualOption(value) {
+  return getHeaderMainVisualOptions().find(
+    (item) => item.url === value || item.id === value,
+  ) || getHeaderMainVisualOptions()[0];
+}
+
+function applyHeaderMainVisualSelectionToNodeProps(node, value) {
+  if (!node) return;
+  const option = getHeaderMainVisualOption(value);
+  node.props = {
+    ...(node.props || {}),
+    mainVisualImage: option.url,
+    mainVisualOffsetY: Number(option.offsetY || 0),
+    mainVisualScale: Number(option.scale || 1),
+  };
+  markPrdBoundProp(node, "mainVisualImage");
+}
+
 function getResourceMainVisualOptions() {
-  return getHeaderMainVisualOptions()
+  const legacyOptions = getHeaderMainVisualOptions()
     .map((item) => {
       const match = item.name.match(/主体替换-方案([1-4])$/);
       return match
@@ -4359,6 +4675,14 @@ function getResourceMainVisualOptions() {
         : null;
     })
     .filter(Boolean);
+  return [
+    ...legacyOptions,
+    {
+      id: "subject-5",
+      name: "主体替换-方案5",
+      previewLayers: resourceSubject5PreviewLayers,
+    },
+  ];
 }
 
 function applyResourceMainVisualToNode(node, mainVisualImage, visited = new WeakSet()) {
@@ -7449,7 +7773,18 @@ function renderResourceBlueprintModule(slot, draft) {
               ${versions.map((version) => {
                 const value = version.values?.[field.key] ?? field.default;
                 const dataAttr = `data-resource-field="${escapeAttr(`${slot.id}|${version.id}|${field.key}`)}"`;
-                return isSelectPropField(field)
+                return field.type === "boolean"
+                  ? `
+                    <label class="resource-variable-checkbox">
+                      <input
+                        type="checkbox"
+                        ${dataAttr}
+                        ${value === true || value === "true" ? "checked" : ""}
+                      />
+                      <span>显示</span>
+                    </label>
+                  `
+                  : isSelectPropField(field)
                   ? renderSelectFieldControl(
                       field,
                       value,
@@ -8767,12 +9102,17 @@ function getPageTemplateVerifierFields(
       .filter(([key, field]) => {
         const value = node.props?.[key] ?? field.default;
         return blueprintTextProps.has(key) ||
+          (activeSchemaId === "头图" && key === "mainVisualImage") ||
           isPrizePropField(field) ||
           field.type === "boolean" ||
           isCopyPropField(key, field, value);
       })
       .map(([key, field]) => {
         const compoundKey = getPageBlueprintKey(nodeIndex, key);
+        const controlField =
+          activeSchemaId === "头图" && key === "mainVisualImage"
+            ? getHeaderMainVisualBlueprintField(field)
+            : field;
         return {
           scope: "atom",
           moduleIndex: nodeIndex,
@@ -8782,8 +9122,12 @@ function getPageTemplateVerifierFields(
           childName: moduleName,
           key,
           compoundKey,
-          field,
-          value: verifier?.blueprint?.[compoundKey] ?? node.props?.[key] ?? field.default ?? "",
+          field: controlField,
+          value:
+            verifier?.blueprint?.[compoundKey] ??
+            node.props?.[key] ??
+            controlField.default ??
+            "",
         };
       });
   });
@@ -11808,7 +12152,16 @@ function createPageTemplateBlueprintPreviewNode(group) {
       }
       return;
     }
-    if (node.props && localKey in node.props) node.props[localKey] = value;
+    if (node.props && localKey in node.props) {
+      if (
+        localKey === "mainVisualImage" &&
+        (node.schemaId === "头图" || node.name === "头图")
+      ) {
+        applyHeaderMainVisualSelectionToNodeProps(node, value);
+      } else {
+        node.props[localKey] = value;
+      }
+    }
   });
   prizeCountsByChild.forEach((count, childIndex) => {
     const child = node.children?.[Number(childIndex)];
@@ -17000,8 +17353,15 @@ function applyPageTemplateVariableValuesToNode(node, values) {
         isLotteryPrizePropKey(compoundKey) ||
         compoundKey === "prizeCount"
       ) {
-        node.props[compoundKey] = value;
-        markPrdBoundProp(node, compoundKey);
+        if (
+          compoundKey === "mainVisualImage" &&
+          (node.schemaId === "头图" || node.name === "头图")
+        ) {
+          applyHeaderMainVisualSelectionToNodeProps(node, value);
+        } else {
+          node.props[compoundKey] = value;
+          markPrdBoundProp(node, compoundKey);
+        }
         const prizeIndex = Number(String(compoundKey).match(/^prize(\d+)/)?.[1] || 0);
         if (prizeIndex) maxPrizeIndex = Math.max(maxPrizeIndex, prizeIndex);
       }
@@ -18972,9 +19332,16 @@ function getNodeValueByPath(node, path) {
 function setNodeValueByPath(node, path, value) {
   const parts = path.split(".");
   if (parts.length === 1) {
-    if (!node.props) node.props = {};
-    node.props[parts[0]] = value;
-    markPrdBoundProp(node, parts[0]);
+    if (
+      parts[0] === "mainVisualImage" &&
+      (node.schemaId === "头图" || node.name === "头图")
+    ) {
+      applyHeaderMainVisualSelectionToNodeProps(node, value);
+    } else {
+      if (!node.props) node.props = {};
+      node.props[parts[0]] = value;
+      markPrdBoundProp(node, parts[0]);
+    }
     return;
   }
   const [childIndex, ...rest] = parts;
@@ -20196,7 +20563,24 @@ function renderGuidedFloatingPanel(node, options = {}) {
               data-guided-resource-main-visual="${escapeAttr(item.id)}"
               aria-label="全局替换为${escapeAttr(item.name)}"
             >
-              <span><img src="${escapeAttr(item.url)}" alt="" loading="lazy" /></span>
+              <span class="${item.previewLayers ? "is-layered-preview" : ""}">
+                ${
+                  item.previewLayers
+                    ? item.previewLayers
+                        .map(
+                          (layer, layerIndex) => `
+                            <img
+                              src="${escapeAttr(layer.url)}"
+                              alt=""
+                              loading="lazy"
+                              style="left:${layer.left}%;top:${layer.top}%;width:${layer.width}%;height:${layer.height}%;z-index:${layerIndex}"
+                            />
+                          `,
+                        )
+                        .join("")
+                    : `<img src="${escapeAttr(item.url)}" alt="" loading="lazy" />`
+                }
+              </span>
               <strong>${escapeHtml(item.name)}</strong>
             </button>
           `)
@@ -22447,9 +22831,13 @@ function downloadBlob(filename, blob) {
   window.setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
-function findGuidedExportElement(entryId) {
-  return [...document.querySelectorAll("[data-export-cut-id]")]
-    .find((element) => element.dataset.exportCutId === entryId);
+function findGuidedExportElement(entryId, format = "png") {
+  const selector = format === "gif"
+    ? "[data-export-gif-id]"
+    : "[data-export-cut-id]";
+  const dataKey = format === "gif" ? "exportGifId" : "exportCutId";
+  return [...document.querySelectorAll(selector)]
+    .find((element) => element.dataset[dataKey] === entryId);
 }
 
 const guidedExportFontCssPromises = new Map();
@@ -22483,7 +22871,6 @@ function getGuidedExportFontCss(element) {
 
 async function exportElementToPngBlob(element, options = {}) {
   const width = Number(options.width || GUIDED_CUT_EXPORT_WIDTH);
-
   if (window.waitForReactMaterialFonts) {
     await window.waitForReactMaterialFonts(element);
   }
@@ -22796,6 +23183,7 @@ function renderGuidedExportPreview(entry) {
   const previewScale = width > 720 ? 0.44 : 0.46;
   const previewWidth = Math.ceil(width * previewScale);
   const previewHeight = Math.ceil(height * previewScale);
+  const supportsGif = isAnimatedResourceExportEntry(entry);
   const content = entry.exportKind === "page-background"
     ? renderPageBackgroundExportContent(entry)
     : entry.exportKind === "fallback-page"
@@ -22822,12 +23210,26 @@ function renderGuidedExportPreview(entry) {
       <div
         class="guided-export-cut-preview"
         data-export-cut-id="${escapeAttr(entry.id)}"
+        ${state.workflowType === "resource" ? 'data-resource-static-export="true"' : ""}
         ${dynamicExportHeight ? 'data-dynamic-export-height="true"' : ""}
         style="width:${width}px;${dynamicExportHeight ? "height:auto;" : `height:${height}px;`}padding:0 ${exportSideSpace}px ${bottomSpace}px;box-sizing:border-box;--export-preview-scale:${previewScale};"
       >
         ${content}
       </div>
     </div>
+    ${
+      supportsGif
+        ? `
+          <div
+            class="guided-export-gif-source"
+            data-export-gif-id="${escapeAttr(entry.id)}"
+            style="width:${width}px;${dynamicExportHeight ? "height:auto;" : `height:${height}px;`}padding:0 ${exportSideSpace}px ${bottomSpace}px;box-sizing:border-box;"
+          >
+            ${content}
+          </div>
+        `
+        : ""
+    }
   `;
 }
 
@@ -22873,10 +23275,10 @@ function renderGuidedExportCard(entry) {
           <strong>${escapeHtml(entry.variantTitle)}</strong>
         </div>
         <div class="guided-export-card-actions">
-          <button data-guided-export-single="${escapeAttr(entry.id)}">下载 PNG</button>
+          <button data-guided-export-single="${escapeAttr(entry.id)}" disabled>下载 PNG</button>
           ${
             supportsGif
-              ? `<button data-guided-export-gif="${escapeAttr(entry.id)}">下载 GIF</button>`
+              ? `<button data-guided-export-gif="${escapeAttr(entry.id)}" disabled>下载 GIF</button>`
               : ""
           }
         </div>
@@ -22954,6 +23356,7 @@ function renderGuidedExportModuleGroup(moduleTitle, entries) {
             data-guided-export-module
             data-guided-export-module-page="${escapeAttr(entries[0]?.pageId || "")}"
             data-guided-export-module-key="${escapeAttr(getGuidedExportModuleKey(entries[0]))}"
+            disabled
           >下载本模块全部切图</button>
         </div>
       </header>
@@ -23000,6 +23403,35 @@ function renderGuidedExportPageGroup(page, entries) {
   `;
 }
 
+let guidedExportReadyPromise = Promise.resolve();
+
+async function initializeGuidedExportPage(root) {
+  window.renderReactMaterials?.(root);
+  if (window.waitForReactMaterialFonts) {
+    await window.waitForReactMaterialFonts(root);
+  }
+  if (document.fonts?.ready) {
+    await document.fonts.ready;
+  }
+  await waitForNextFrame();
+  await waitForNextFrame();
+  syncGuidedDynamicExportPreviewHeights();
+  root.dataset.exportReady = "true";
+  root
+    .querySelectorAll(
+      "[data-guided-export-single], [data-guided-export-gif], [data-guided-export-module], [data-guided-export-batch]",
+    )
+    .forEach((button) => {
+      if (
+        button.matches("[data-guided-export-batch]") &&
+        !root.querySelector("[data-export-cut-id]")
+      ) {
+        return;
+      }
+      button.removeAttribute("disabled");
+    });
+}
+
 function renderGuidedExportPage() {
   const center = $(".activity-center");
   if (!center) return;
@@ -23023,7 +23455,7 @@ function renderGuidedExportPage() {
             <strong>${escapeHtml(state.activity?.name || demoPrdBlueprint.activityName || "活动")}</strong>
             <em>${pageGroups.length} 个${state.workflowType === "resource" ? "资源位" : "页面"} · ${entries.length} 张切图</em>
           </div>
-          <button class="guided-export-batch" data-guided-export-batch ${entries.length ? "" : "disabled"}>
+          <button class="guided-export-batch" data-guided-export-batch disabled>
             批量下载 ZIP
           </button>
         </div>
@@ -23041,10 +23473,13 @@ function renderGuidedExportPage() {
       </main>
     </section>
   `;
-  window.renderReactMaterials?.();
-  window.requestAnimationFrame(() => {
-    window.requestAnimationFrame(syncGuidedDynamicExportPreviewHeights);
-  });
+  const exportPage = center.querySelector(".guided-export-page");
+  guidedExportReadyPromise = exportPage
+    ? initializeGuidedExportPage(exportPage).catch((error) => {
+        console.error("[guided-export] initialization failed", error);
+        exportPage.dataset.exportFailed = "true";
+      })
+    : Promise.resolve();
 }
 
 function getExportEntryById(entryId) {
@@ -23052,15 +23487,7 @@ function getExportEntryById(entryId) {
 }
 
 async function waitForExportPreviewReady() {
-  await waitForNextFrame();
-  await waitForNextFrame();
-  if (document.fonts?.ready) {
-    try {
-      await document.fonts.ready;
-    } catch (error) {
-      console.warn("[guided-export] font readiness skipped", error);
-    }
-  }
+  await guidedExportReadyPromise;
 }
 
 async function captureGuidedExportEntry(entry, options = {}) {
@@ -23071,7 +23498,10 @@ async function captureGuidedExportEntry(entry, options = {}) {
     width: dimensions.width,
     ...(hasFixedGuidedExportHeight(entry) ? { height: dimensions.height } : {}),
   };
-  return exportElementToPngBlob(element, { ...options, ...captureDimensions });
+  return exportElementToPngBlob(element, {
+    ...options,
+    ...captureDimensions,
+  });
 }
 
 const GUIDED_GIF_DURATION_MS = 1200;
@@ -23236,7 +23666,7 @@ function getGuidedGifAnimatedRegions(element, animations) {
 }
 
 function freezeGuidedGifStaticPixels(sourceFrames, animatedRegions) {
-  const referenceFrame = sourceFrames[0];
+  const referenceFrame = sourceFrames[sourceFrames.length - 1];
   if (!referenceFrame || sourceFrames.length < 2) return;
   const { width, height } = referenceFrame;
   const animatedMask = new Uint8Array(width * height);
@@ -23251,7 +23681,8 @@ function freezeGuidedGifStaticPixels(sourceFrames, animatedRegions) {
       animatedMask.fill(1, y * width + left, y * width + right);
     }
   });
-  for (let frameIndex = 1; frameIndex < sourceFrames.length; frameIndex += 1) {
+
+  for (let frameIndex = 0; frameIndex < sourceFrames.length; frameIndex += 1) {
     const frameData = sourceFrames[frameIndex].data;
     for (let pixelIndex = 0; pixelIndex < animatedMask.length; pixelIndex += 1) {
       if (animatedMask[pixelIndex]) continue;
@@ -23262,6 +23693,58 @@ function freezeGuidedGifStaticPixels(sourceFrames, animatedRegions) {
       frameData[offset + 3] = referenceFrame.data[offset + 3];
     }
   }
+}
+
+function getGuidedGifButtonTextOverlays(element) {
+  const rootRect = element.getBoundingClientRect();
+  return [...element.querySelectorAll('[data-react-edit-prop="buttonText"]')]
+    .map((textElement) => {
+      const rect = textElement.getBoundingClientRect();
+      if (!rect.width || !rect.height) return null;
+      const style = getComputedStyle(textElement);
+      return {
+        element: textElement,
+        text: textElement.textContent?.trim() || "",
+        left: rect.left - rootRect.left,
+        top: rect.top - rootRect.top,
+        width: rect.width,
+        height: rect.height,
+        color: style.color,
+        font: `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
+        letterSpacing: Number.parseFloat(style.letterSpacing) || 0,
+        visibility: textElement.style.visibility,
+      };
+    })
+    .filter(Boolean);
+}
+
+function drawGuidedGifButtonTextOverlays(canvas, overlays, rootWidth, rootHeight) {
+  const context = canvas.getContext("2d");
+  if (!context || !rootWidth || !rootHeight) return;
+  const scaleX = canvas.width / rootWidth;
+  const scaleY = canvas.height / rootHeight;
+  overlays.forEach((overlay) => {
+    const characters = Array.from(overlay.text);
+    if (!characters.length) return;
+    context.save();
+    context.scale(scaleX, scaleY);
+    context.font = overlay.font;
+    context.fillStyle = overlay.color;
+    context.textAlign = "left";
+    context.textBaseline = "middle";
+    const characterWidths = characters.map(
+      (character) => context.measureText(character).width,
+    );
+    const textWidth = characterWidths.reduce((sum, width) => sum + width, 0) +
+      overlay.letterSpacing * Math.max(0, characters.length - 1);
+    let x = overlay.left + (overlay.width - textWidth) / 2;
+    const y = overlay.top + overlay.height / 2;
+    characters.forEach((character, index) => {
+      context.fillText(character, x, y);
+      x += characterWidths[index] + overlay.letterSpacing;
+    });
+    context.restore();
+  });
 }
 
 function encodeGuidedGifFrames(sourceFrames, profile, onProgress) {
@@ -23312,7 +23795,7 @@ function encodeGuidedGifFrames(sourceFrames, profile, onProgress) {
 }
 
 async function captureGuidedExportEntryGif(entry, onProgress) {
-  const element = findGuidedExportElement(entry.id);
+  const element = findGuidedExportElement(entry.id, "gif");
   if (!element) throw new Error("找不到导出组件");
   const dimensions = getExportEntryDimensions(entry);
   const captureDimensions = {
@@ -23321,6 +23804,11 @@ async function captureGuidedExportEntryGif(entry, onProgress) {
   };
   const animations = element.getAnimations({ subtree: true });
   animations.forEach((animation) => animation.pause());
+  const rootRect = element.getBoundingClientRect();
+  const buttonTextOverlays = getGuidedGifButtonTextOverlays(element);
+  buttonTextOverlays.forEach((overlay) => {
+    overlay.element.style.visibility = "hidden";
+  });
   const sourceFrames = [];
   const animatedRegions = [];
   const frameDelay = GUIDED_GIF_DURATION_MS / GUIDED_GIF_CAPTURE_FRAME_COUNT;
@@ -23336,6 +23824,12 @@ async function captureGuidedExportEntryGif(entry, onProgress) {
       const canvas = await exportElementToCanvas(element, captureDimensions);
       const context = canvas.getContext("2d", { willReadFrequently: true });
       if (!context) throw new Error("无法读取 GIF 画布");
+      drawGuidedGifButtonTextOverlays(
+        canvas,
+        buttonTextOverlays,
+        rootRect.width,
+        rootRect.height,
+      );
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       sourceFrames.push({
         data: imageData.data,
@@ -23345,6 +23839,9 @@ async function captureGuidedExportEntryGif(entry, onProgress) {
       onProgress?.(index + 1, GUIDED_GIF_CAPTURE_FRAME_COUNT, "capture");
     }
   } finally {
+    buttonTextOverlays.forEach((overlay) => {
+      overlay.element.style.visibility = overlay.visibility;
+    });
     animations.forEach((animation) => animation.play());
   }
 
@@ -25612,6 +26109,12 @@ function bindEvents() {
         const mainVisualOffsetY = Number(headerMainVisual.dataset.guidedHeaderMainVisualOffsetY || 0);
         const mainVisualScale = Number(headerMainVisual.dataset.guidedHeaderMainVisualScale || 1);
         applyHeaderMainVisualToNode(found.node, mainVisualImage, mainVisualOffsetY, mainVisualScale);
+        syncPageTemplateInlineEditToRows(
+          found.node,
+          found.node.activeLineageVariantId || "base",
+          "mainVisualImage",
+          mainVisualImage,
+        );
         syncFallbackHeaderMainVisual(mainVisualImage, mainVisualOffsetY, mainVisualScale);
       }
       render();
@@ -26523,6 +27026,54 @@ function bindEvents() {
     { passive: false },
   );
 
+  document.addEventListener("focusin", (event) => {
+    captureDailyHeaderTitleSnapshot(event.target);
+  });
+
+  document.addEventListener("compositionstart", (event) => {
+    captureDailyHeaderTitleSnapshot(event.target);
+  });
+
+  document.addEventListener("beforeinput", (event) => {
+    const target = captureDailyHeaderTitleSnapshot(event.target);
+    const rule = getDailyHeaderFieldRule(target);
+    if (
+      !target ||
+      !rule ||
+      event.isComposing ||
+      event.inputType === "insertCompositionText" ||
+      event.inputType.startsWith("delete")
+    ) {
+      return;
+    }
+    const insertion = getDailyHeaderTitleInsertion(event);
+    if (!insertion) return;
+    const value = getDailyHeaderTitleValue(target);
+    const { start, end } = getDailyHeaderTitleSelection(target);
+    const nextValue = `${value.slice(0, start)}${insertion}${value.slice(end)}`;
+    if (!rule.isOverflow(nextValue)) return;
+
+    event.preventDefault();
+    if (event.inputType === "insertFromPaste") {
+      const accepted = rule.getFittingInsertion(
+        value,
+        start,
+        end,
+        insertion,
+      );
+      if (accepted) {
+        applyDailyHeaderTitleInsertion(
+          target,
+          value,
+          start,
+          end,
+          accepted,
+        );
+      }
+    }
+    showDailyHeaderTitleLimitNotice(target, rule.notice);
+  });
+
   document.addEventListener("paste", (event) => {
     const blueprintCell = event.target.closest("[data-prd-blueprint-cell]");
     const returnStrategyTarget = event.target.closest(
@@ -26603,6 +27154,13 @@ function bindEvents() {
   });
 
   document.addEventListener("input", (event) => {
+    if (
+      !event.isComposing &&
+      !String(event.inputType || "").startsWith("delete")
+    ) {
+      constrainDailyHeaderTitleInput(event.target);
+    }
+
     const saveProjectName = event.target.closest("[data-save-project-name]");
     if (saveProjectName) {
       const projectName = saveProjectName.value.trim();
@@ -26659,7 +27217,9 @@ function bindEvents() {
       );
       if (version) {
         version.values ||= {};
-        version.values[propKey] = resourceField.value;
+        version.values[propKey] = resourceField.type === "checkbox"
+          ? resourceField.checked
+          : resourceField.value;
       }
       refreshResourceModulePreview(slotId, versionId);
       return;
@@ -27320,9 +27880,9 @@ function bindEvents() {
       } else if (found.node.isLotteryResultPopup && popupLosePreview) {
         setLotteryPopupResult(found.node, "lose");
       }
+      const propKey = prop.dataset.editProp;
       const caretOffset = getTextOffsetWithin(prop);
       const value = prop.textContent;
-      const propKey = prop.dataset.editProp;
       found.node.props[propKey] = value;
       const activeVariant = found.node.variants?.find((item) => item.id === found.node.activeVariantId);
       if (activeVariant && propKey in activeVariant.props) {
@@ -27377,6 +27937,7 @@ function bindEvents() {
   });
 
   document.addEventListener("compositionend", (event) => {
+    constrainDailyHeaderTitleInput(event.target);
     if (state.view !== "guided-preview") return;
     const prop = event.target.closest("[data-edit-prop]");
     const variantProp = event.target.closest("[data-variant-prop]");
