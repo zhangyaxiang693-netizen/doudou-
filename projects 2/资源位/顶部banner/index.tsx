@@ -8,6 +8,7 @@ import subject4 from '../../头图/主体替换/主体替换-方案4.png'
 import LayeredMainVisual from '../分层主视觉'
 
 export type IGeneratedComponent = {
+  showSubtitle?: boolean
   campaignText?: string
   headlineText?: string
   headlineHighlightText?: string
@@ -79,6 +80,7 @@ function getHeadlineParts(value: string, highlightText: string) {
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
   const {
+    showSubtitle = true,
     campaignText = 'DOU+双节狂欢投',
     headlineText = '好礼天天抽 赢千元流量',
     headlineHighlightText = '千元流量',
@@ -107,16 +109,18 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     <div className={styles.page}>
       <div className={styles.container} style={themeStyle}>
         <div className={styles.content}>
-          <div
-            ref={campaignRef}
-            className={styles.campaignText}
-            data-react-edit-prop="campaignText"
-          >
-            {campaignText}
-          </div>
+          {showSubtitle ? (
+            <div
+              ref={campaignRef}
+              className={styles.campaignText}
+              data-react-edit-prop="campaignText"
+            >
+              {campaignText}
+            </div>
+          ) : null}
           <div
             ref={headlineRef}
-            className={styles.headline}
+            className={`${styles.headline} ${!showSubtitle ? styles.headlineWithoutSubtitle : ''}`}
             data-react-edit-prop="headlineText"
           >
             {headlineParts.map((part, index) => (
@@ -128,7 +132,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
               </span>
             ))}
           </div>
-          <div className={styles.actionButton}>
+          <div className={`${styles.actionButton} ${!showSubtitle ? styles.actionButtonWithoutSubtitle : ''}`}>
             <div
               ref={buttonRef}
               className={styles.buttonText}
