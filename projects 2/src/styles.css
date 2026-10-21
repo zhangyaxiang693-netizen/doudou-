@@ -18464,6 +18464,61 @@ button:hover {
   font-style: normal;
 }
 
+.save-current-record {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  margin: 20px 24px 0;
+  padding: 16px;
+  border: 1px solid #182230;
+  border-radius: 6px;
+  background: #f8fafb;
+}
+
+.save-current-record > div {
+  display: grid;
+  gap: 6px;
+}
+
+.save-current-record strong {
+  color: #182230;
+  font-size: 14px;
+}
+
+.save-current-record span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.save-current-record button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #182230;
+  border-radius: 6px;
+  background: #182230;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.save-scope-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px 0;
+  color: #98a2b3;
+  font-size: 12px;
+}
+
+.save-scope-divider::before,
+.save-scope-divider::after {
+  height: 1px;
+  flex: 1;
+  background: #e4e7ec;
+  content: "";
+}
+
 .save-scope-options {
   display: grid;
   gap: 10px;
@@ -18863,6 +18918,7 @@ textarea.is-title-width-limited,
   }
 
   .project-history-group-filter,
+  .save-current-record,
   .save-scope-group > div,
   .save-scope-create-group > div {
     grid-template-columns: 1fr;
