@@ -111,7 +111,7 @@ function createCollaborationRepository(supabase) {
   async function getExistingRecord(recordId) {
     const { data, error } = await supabase
       .from("collaboration_records")
-      .select("id,owner_id,scope")
+      .select("id,owner_id,scope,created_at,updated_at")
       .eq("id", recordId)
       .maybeSingle();
     if (error) throw storageError(error);
@@ -144,7 +144,7 @@ function createCollaborationRepository(supabase) {
           name: String(group.name || "未命名组"),
           created_by: user.id,
           created_at: group.createdAt || timestamp,
-          updated_at: timestamp,
+          updated_at: group.updatedAt || timestamp,
         },
         { onConflict: "id" },
       );
@@ -185,8 +185,8 @@ function createCollaborationRepository(supabase) {
           scope,
           group_id: scope === "team" ? String(record.teamId || "") : null,
           snapshot_json: record.snapshot || {},
-          created_at: record.createdAt || timestamp,
-          updated_at: timestamp,
+          created_at: record.createdAt || existing?.created_at || timestamp,
+          updated_at: record.updatedAt || existing?.updated_at || timestamp,
         },
         { onConflict: "id" },
       );
@@ -226,35 +226,36 @@ function createCollaborationRepository(supabase) {
     if (updateRecordError) throw storageError(updateRecordError);
 
     if (record.project_id) {
-      const { data: latestVersion, error: versionError } = await supabase
-        .from("project_versions")
-        .select("version_no")
-        .eq("project_id", record.project_id)
-        .order("version_no", { ascending: false })
-        .limit(1)
+      const { data: project, error: projectError } = await supabase
+        .from("projects")
+        .select("latest_version_id")
+        .eq("id", record.project_id)
         .maybeSingle();
-      if (versionError) throw storageError(versionError);
+      if (projectError) throw storageError(projectError);
 
-      const { data: insertedVersion, error: insertError } = await supabase
+      if (!project?.latest_version_id) {
+        throw new CollaborationRepositoryError(
+          "RECORD_NOT_FOUND",
+          "项目快照不存在",
+        );
+      }
+      const { error: versionError } = await supabase
         .from("project_versions")
-        .insert({
-          project_id: record.project_id,
-          version_no: Number(latestVersion?.version_no || 0) + 1,
-          save_type: "manual",
+        .update({
           schema_version: Number(snapshot.schemaVersion || 1),
           app_version: String(snapshot.appVersion || ""),
           snapshot_json: snapshot,
           snapshot_saved_at: snapshot.savedAt,
+          created_at: timestamp,
         })
-        .select("id")
-        .single();
-      if (insertError) throw storageError(insertError);
+        .eq("id", project.latest_version_id)
+        .eq("project_id", record.project_id);
+      if (versionError) throw storageError(versionError);
 
       const { error: updateProjectError } = await supabase
         .from("projects")
         .update({
           name: changes.name,
-          latest_version_id: insertedVersion.id,
           updated_at: timestamp,
         })
         .eq("id", record.project_id);

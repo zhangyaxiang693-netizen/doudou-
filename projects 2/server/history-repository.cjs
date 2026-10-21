@@ -113,37 +113,54 @@ function createHistoryRepository(supabase) {
     };
   }
 
-  async function saveVersion(ownerId, projectId, input) {
-    await getOwnedProject(ownerId, projectId);
-    const { data, error } = await supabase.rpc(
-      "save_history_project_version",
-      {
-        p_owner_id: ownerId,
-        p_project_id: projectId,
-        p_save_type: "manual",
-        p_base_version_id: input.baseVersionId || null,
-        p_schema_version: input.snapshot.schemaVersion,
-        p_app_version: input.snapshot.appVersion || "",
-        p_snapshot_json: input.snapshot,
-      },
-    );
-
-    if (error) {
-      if (
-        error.code === "40001" ||
-        String(error.message || "").includes("VERSION_CONFLICT")
-      ) {
-        throw new HistoryRepositoryError(
-          "VERSION_CONFLICT",
-          "A newer project version already exists",
-          error,
-        );
-      }
-      throw storageError(error);
+  async function overwriteProject(ownerId, projectId, input) {
+    const existing = await getOwnedProject(ownerId, projectId);
+    if (!existing.latest_version_id) {
+      throw new HistoryRepositoryError(
+        "PROJECT_NOT_FOUND",
+        "Project snapshot not found",
+      );
     }
 
-    const row = Array.isArray(data) ? data[0] : data;
-    return mapVersion(row);
+    const timestamp = new Date().toISOString();
+    const { data: versionRow, error: versionError } = await supabase
+      .from("project_versions")
+      .update({
+        schema_version: input.snapshot.schemaVersion,
+        app_version: input.snapshot.appVersion || "",
+        snapshot_json: input.snapshot,
+        snapshot_saved_at: input.snapshot.savedAt,
+        created_at: timestamp,
+      })
+      .eq("id", existing.latest_version_id)
+      .eq("project_id", projectId)
+      .select(
+        "id,project_id,version_no,save_type,schema_version,app_version,created_at",
+      )
+      .single();
+    if (versionError) throw storageError(versionError);
+
+    const { data: projectRow, error: projectError } = await supabase
+      .from("projects")
+      .update({
+        name: input.name,
+        prd_url: input.prdUrl,
+        template_id: input.templateId,
+        updated_at: timestamp,
+      })
+      .eq("id", projectId)
+      .eq("owner_id", ownerId)
+      .is("deleted_at", null)
+      .select(
+        "id,name,prd_url,template_id,latest_version_id,created_at,updated_at",
+      )
+      .single();
+    if (projectError) throw storageError(projectError);
+
+    return {
+      project: mapProject(projectRow),
+      version: mapVersion(versionRow),
+    };
   }
 
   async function listVersions(ownerId, projectId) {
@@ -204,7 +221,7 @@ function createHistoryRepository(supabase) {
     getVersion,
     listProjects,
     listVersions,
-    saveVersion,
+    overwriteProject,
   };
 }
 
