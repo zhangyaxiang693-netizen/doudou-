@@ -67,10 +67,13 @@ export function createProject({
   });
 }
 
-export function createVersion(projectId, { baseVersionId, snapshot }) {
-  return request(`/projects/${encodeURIComponent(projectId)}/versions`, {
-    method: "POST",
-    body: JSON.stringify({ baseVersionId, snapshot }),
+export function overwriteProject(
+  projectId,
+  { name, prdUrl, templateId, snapshot },
+) {
+  return request(`/projects/${encodeURIComponent(projectId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name, prdUrl, templateId, snapshot }),
   });
 }
 

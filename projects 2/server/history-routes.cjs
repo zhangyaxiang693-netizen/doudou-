@@ -114,46 +114,39 @@ function createHistoryRouter(options = {}) {
     }
   });
 
-  async function saveVersion(req, res) {
+  router.patch("/projects/:projectId", async (req, res) => {
+    const name = String(req.body?.name || "").trim();
     if (
       !validateProjectId(req.params.projectId) ||
+      !name ||
+      name.length > 120 ||
       !validateSnapshot(req.body?.snapshot)
     ) {
       return sendError(
         res,
         new HistoryRepositoryError(
           "INVALID_SNAPSHOT",
-          "项目 ID 或快照格式无效",
-        ),
-      );
-    }
-
-    const baseVersionId = req.body?.baseVersionId || null;
-    if (!baseVersionId || !validateProjectId(baseVersionId)) {
-      return sendError(
-        res,
-        new HistoryRepositoryError(
-          "INVALID_SNAPSHOT",
-          "基础版本 ID 缺失或格式无效",
+          "项目 ID、名称或快照格式无效",
         ),
       );
     }
 
     try {
-      const version = await getRepository().saveVersion(
+      const result = await getRepository().overwriteProject(
         req.historyUser.id,
         req.params.projectId,
-        { baseVersionId, snapshot: req.body.snapshot },
+        {
+          name,
+          prdUrl: String(req.body?.prdUrl || "").trim(),
+          templateId: String(req.body?.templateId || "").trim(),
+          snapshot: req.body.snapshot,
+        },
       );
-      res.json({ success: true, data: { version } });
+      res.json({ success: true, data: result });
     } catch (error) {
       sendError(res, error);
     }
-  }
-
-  router.post("/projects/:projectId/versions", (req, res) =>
-    saveVersion(req, res),
-  );
+  });
 
   router.get("/projects/:projectId/versions", async (req, res) => {
     if (!validateProjectId(req.params.projectId)) {

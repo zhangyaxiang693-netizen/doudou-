@@ -125,10 +125,17 @@ test("rejects malformed snapshots before calling storage", async () => {
   assert.equal(body.code, "INVALID_SNAPSHOT");
 });
 
-test("requires a base version when updating an existing project", async () => {
+test("overwrites an existing project instead of creating another version", async () => {
+  let capturedOwnerId = null;
+  let capturedInput = null;
   const repository = {
-    async saveVersion() {
-      assert.fail("repository must not receive an update without a base");
+    async overwriteProject(ownerId, id, input) {
+      capturedOwnerId = ownerId;
+      capturedInput = { id, ...input };
+      return {
+        project: { id, name: input.name },
+        version: { id: "22222222-2222-4222-8222-222222222222" },
+      };
     },
   };
   const baseUrl = await startServer({
@@ -136,22 +143,23 @@ test("requires a base version when updating an existing project", async () => {
     repository,
   });
   const response = await fetch(
-    `${baseUrl}/api/projects/${projectId}/versions`,
+    `${baseUrl}/api/projects/${projectId}`,
     {
-      method: "POST",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ snapshot }),
+      body: JSON.stringify({ name: "覆盖后的活动", snapshot }),
     },
   );
-  const body = await response.json();
 
-  assert.equal(response.status, 400);
-  assert.equal(body.code, "INVALID_SNAPSHOT");
+  assert.equal(response.status, 200);
+  assert.equal(capturedOwnerId, "trusted-user");
+  assert.equal(capturedInput.id, projectId);
+  assert.equal(capturedInput.name, "覆盖后的活动");
 });
 
 test("does not expose an autosave endpoint", async () => {
   const repository = {
-    async saveVersion() {
+    async overwriteProject() {
       assert.fail("autosave must not reach the repository");
     },
   };

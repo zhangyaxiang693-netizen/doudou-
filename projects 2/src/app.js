@@ -11,12 +11,11 @@ import {
 import {
   ProjectHistoryApiError,
   createProject,
-  createVersion,
   deleteProject,
   getCurrentUser,
   getVersion,
   listProjects,
-  listVersions,
+  overwriteProject,
 } from "./project-history/api.js";
 import {
   addUser,
@@ -4404,10 +4403,8 @@ const state = {
   libraryReturnView: null,
   historyUser: sessionUser,
   historyProjects: [],
-  historyVersions: {},
   historyStatus: "idle",
   historyError: "",
-  historyExpandedProjectId: null,
   historyCurrentProjectId: null,
   historyCurrentVersionId: null,
 };
@@ -6949,9 +6946,7 @@ async function performProjectSnapshotSave({
     currentVersionId = ownedProject.latestVersionId;
   }
   const overwriteCollaborationOnly =
-    overwriteCurrent &&
-    sourceRecord &&
-    (!currentProjectId || !currentVersionId);
+    overwriteCurrent && sourceRecord && !ownedProject;
 
   try {
     if (!state.historyUser) {
@@ -6971,22 +6966,15 @@ async function performProjectSnapshotSave({
       currentProjectId = result.project.id;
       currentVersionId = result.version.id;
       upsertHistoryProject(result.project);
-    } else {
-      const result = await createVersion(currentProjectId, {
-        baseVersionId: currentVersionId,
+    } else if (ownedProject) {
+      const result = await overwriteProject(currentProjectId, {
+        name: projectName,
+        prdUrl: state.prdFeishuUrl || "",
+        templateId: state.currentTemplateId || "",
         snapshot,
       });
       currentVersionId = result.version.id;
-      const existing = state.historyProjects.find(
-        (item) => item.id === currentProjectId,
-      );
-      if (existing) {
-        existing.name = state.activity?.name || existing.name;
-        existing.prdUrl = state.prdFeishuUrl || "";
-        existing.templateId = state.currentTemplateId || "";
-        existing.latestVersionId = result.version.id;
-        existing.updatedAt = result.version.createdAt;
-      }
+      upsertHistoryProject(result.project);
     }
     state.historyCurrentProjectId = currentProjectId;
     state.historyCurrentVersionId = currentVersionId;
@@ -7101,23 +7089,6 @@ function openProjectHistory() {
   state.historyStatus = "loading";
   render();
   loadProjectHistory();
-}
-
-async function toggleProjectVersions(projectId) {
-  if (state.historyExpandedProjectId === projectId) {
-    state.historyExpandedProjectId = null;
-    render();
-    return;
-  }
-  state.historyExpandedProjectId = projectId;
-  render();
-  try {
-    state.historyVersions[projectId] = await listVersions(projectId);
-    state.historyError = "";
-  } catch (error) {
-    state.historyError = error.message || "版本列表加载失败";
-  }
-  render();
 }
 
 function restoreSnapshotTemplates(snapshot) {
@@ -7345,7 +7316,7 @@ function renderProjectHistory() {
       ${
         state.historyStatus !== "loading" &&
         !hasRecords
-          ? `<div class="project-history-empty"><strong>${activeScope === "team" ? activeGroup ? "这个组还没有项目" : "还没有创建组" : "还没有保存的项目"}</strong><span>完成编辑后使用保存按钮创建第一个版本。</span></div>`
+          ? `<div class="project-history-empty"><strong>${activeScope === "team" ? activeGroup ? "这个组还没有项目" : "还没有创建组" : "还没有保存的项目"}</strong><span>完成编辑后使用保存按钮创建第一条记录。</span></div>`
           : ""
       }
       ${
@@ -7356,9 +7327,6 @@ function renderProjectHistory() {
               <div class="project-history-list">
                 ${personalCloudProjects
                   .map((project) => {
-                    const versions = state.historyVersions[project.id];
-                    const expanded =
-                      state.historyExpandedProjectId === project.id;
                     return `
                       <article class="project-history-item">
                         <div>
@@ -7382,28 +7350,9 @@ function renderProjectHistory() {
                               `
                               : ""
                           }
-                          <button type="button" data-toggle-versions="${project.id}">${expanded ? "收起版本" : "查看版本"}</button>
                           <button type="button" data-delete-project="${project.id}" aria-label="删除项目">删除</button>
                         </div>
                       </article>
-                      ${
-                        expanded
-                          ? `<div class="project-version-list">${
-                              versions
-                                ? versions
-                                    .map(
-                                      (version) => `
-                                        <button type="button" data-restore-project="${project.id}" data-version-id="${version.id}">
-                                          <span>V${version.versionNo} · 正式版本</span>
-                                          <time>${formatHistoryTime(version.createdAt)}</time>
-                                        </button>
-                                      `,
-                                    )
-                                    .join("")
-                                : "<span>正在加载版本...</span>"
-                            }</div>`
-                          : ""
-                      }
                     `;
                   })
                   .join("")}
@@ -7612,7 +7561,7 @@ function renderResourceFlowNav(activeStep) {
         <span class="${activeStep === 2 ? "active" : ""}">02 预览</span>
       </div>
       <div class="prd-nav-actions">
-        <button type="button" class="prd-admin-link" data-save>保存版本</button>
+        <button type="button" class="prd-admin-link" data-save>保存</button>
         <button type="button" class="prd-admin-link" data-open-my-projects>我的</button>
       </div>
     </nav>
@@ -8037,7 +7986,7 @@ function renderSaveScopeModal() {
               <div class="save-current-record">
                 <div>
                   <strong>覆盖当前记录</strong>
-                  <span>更新“${escapeHtml(currentLocation)}”中的当前记录，列表位置不变</span>
+                  <span>更新“${escapeHtml(currentLocation)}”中的当前内容，不新增版本或记录</span>
                 </div>
                 <button type="button" data-save-current>覆盖保存</button>
               </div>
@@ -10419,7 +10368,7 @@ function renderPrdDemoFlow() {
           <span>03 预览</span>
         </div>
         <div class="prd-nav-actions">
-          <button type="button" class="prd-admin-link" data-save>保存版本</button>
+          <button type="button" class="prd-admin-link" data-save>保存</button>
           <button type="button" class="prd-admin-link" data-open-my-projects>我的</button>
         </div>
       </nav>
@@ -18719,7 +18668,7 @@ function renderGuidedBlueprintPane(mode, visiblePageIds) {
         ${renderGuidedSidebarItems(visiblePageIds)}
       </div>
       <footer class="guided-history-actions">
-        <button type="button" data-save>保存版本</button>
+        <button type="button" data-save>保存</button>
         <button type="button" data-open-my-projects>我的</button>
       </footer>
     </aside>
@@ -18793,7 +18742,7 @@ function renderGuidedBlueprintTablePane(visiblePageIds) {
         </div>
       </div>
       <footer class="guided-history-actions">
-        <button type="button" data-save>保存版本</button>
+        <button type="button" data-save>保存</button>
         <button type="button" data-open-my-projects>我的</button>
       </footer>
     </aside>
@@ -24963,12 +24912,6 @@ function bindEvents() {
       return;
     }
 
-    const toggleVersions = event.target.closest("[data-toggle-versions]");
-    if (toggleVersions) {
-      toggleProjectVersions(toggleVersions.dataset.toggleVersions);
-      return;
-    }
-
     const restoreProject = event.target.closest("[data-restore-project]");
     if (restoreProject) {
       restoreCloudProject(
@@ -29200,7 +29143,7 @@ function mount() {
     console.warn("后台解锁状态清理失败", error);
   });
   render();
-  refreshCollaborationFromServer();
+  refreshCollaborationFromServer({ syncLocal: false });
 }
 
 mount();
