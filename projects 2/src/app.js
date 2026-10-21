@@ -6913,6 +6913,7 @@ function upsertHistoryProject(project) {
 async function performProjectSnapshotSave({
   targetScope = state.historySaveScope,
   targetGroupId = state.historySaveGroupId,
+  saveMode = "auto",
 } = {}) {
   const projectName = String(state.activity?.name || "").trim();
   if (!projectName || projectName === "未命名活动") {
@@ -6928,12 +6929,37 @@ async function performProjectSnapshotSave({
   state.historySaveScope = normalizedScope;
   state.historySaveGroupId = group?.id || "";
   const snapshot = createCurrentProjectSnapshot();
+  const sourceRecord = state.collaboration.records.find(
+    (record) => record.id === state.historyCollaborationRecordId,
+  );
+  const saveAsCopy = saveMode === "copy";
+  const overwriteCurrent = saveMode === "overwrite";
+  let currentProjectId = saveAsCopy
+    ? null
+    : state.historyCurrentProjectId;
+  let currentVersionId = saveAsCopy
+    ? null
+    : state.historyCurrentVersionId;
+  const ownedProject = currentProjectId
+    ? state.historyProjects.find(
+        (project) => project.id === currentProjectId,
+      )
+    : null;
+  if (!currentVersionId && ownedProject?.latestVersionId) {
+    currentVersionId = ownedProject.latestVersionId;
+  }
+  const overwriteCollaborationOnly =
+    overwriteCurrent &&
+    sourceRecord &&
+    (!currentProjectId || !currentVersionId);
 
   try {
     if (!state.historyUser) {
       state.historyUser = await getCurrentUser();
     }
-    if (!state.historyCurrentProjectId) {
+    if (overwriteCollaborationOnly) {
+      currentProjectId = sourceRecord.projectId || null;
+    } else if (!currentProjectId) {
       const result = await createProject({
         name: projectName,
         prdUrl: state.prdFeishuUrl || "",
@@ -6942,17 +6968,17 @@ async function performProjectSnapshotSave({
         scope: normalizedScope,
         teamId: group?.id || null,
       });
-      state.historyCurrentProjectId = result.project.id;
-      state.historyCurrentVersionId = result.version.id;
+      currentProjectId = result.project.id;
+      currentVersionId = result.version.id;
       upsertHistoryProject(result.project);
     } else {
-      const result = await createVersion(state.historyCurrentProjectId, {
-        baseVersionId: state.historyCurrentVersionId,
+      const result = await createVersion(currentProjectId, {
+        baseVersionId: currentVersionId,
         snapshot,
       });
-      state.historyCurrentVersionId = result.version.id;
+      currentVersionId = result.version.id;
       const existing = state.historyProjects.find(
-        (item) => item.id === state.historyCurrentProjectId,
+        (item) => item.id === currentProjectId,
       );
       if (existing) {
         existing.name = state.activity?.name || existing.name;
@@ -6962,30 +6988,39 @@ async function performProjectSnapshotSave({
         existing.updatedAt = result.version.createdAt;
       }
     }
+    state.historyCurrentProjectId = currentProjectId;
+    state.historyCurrentVersionId = currentVersionId;
 
     state.historyError = "";
     const owner = getCurrentCollaborationUser();
     if (owner) {
-      const sourceRecord = state.collaboration.records.find(
-        (record) => record.id === state.historyCollaborationRecordId,
-      );
       const keepsSource =
-        sourceRecord &&
-        sourceRecord.scope === normalizedScope &&
-        (normalizedScope !== "team" || sourceRecord.teamId === group?.id);
+        overwriteCurrent && sourceRecord;
+      const recordScope = keepsSource
+        ? sourceRecord.scope
+        : normalizedScope;
+      const recordGroupId =
+        recordScope === "team"
+          ? keepsSource
+            ? sourceRecord.teamId
+            : group?.id || null
+          : null;
+      const nextRecordId = keepsSource
+        ? sourceRecord.id
+        : currentProjectId;
       setCollaborationState(
         upsertRecord(state.collaboration, {
-          id: keepsSource
-            ? sourceRecord.id
-            : state.historyCurrentProjectId,
-          projectId: state.historyCurrentProjectId,
-          ownerId: owner.id,
+          id: nextRecordId,
+          projectId:
+            currentProjectId || sourceRecord?.projectId || null,
+          ownerId: keepsSource ? sourceRecord.ownerId : owner.id,
           name: state.activity?.name || "未命名活动",
-          scope: normalizedScope,
-          teamId: group?.id || null,
+          scope: recordScope,
+          teamId: recordGroupId,
           snapshot,
         }),
       );
+      state.historyCollaborationRecordId = nextRecordId;
     }
     return { cloudSaved: true, snapshot };
   } catch (error) {
@@ -7014,13 +7049,14 @@ function runManualProjectSave(
   button,
   targetScope = "personal",
   targetGroupId = "",
+  saveMode = "auto",
 ) {
   if (!button) return;
   const originalText = button.dataset.saveOriginalText || button.textContent;
   button.dataset.saveOriginalText = originalText;
   button.disabled = true;
   button.textContent = "保存中";
-  saveCurrentProjectSnapshot({ targetScope, targetGroupId })
+  saveCurrentProjectSnapshot({ targetScope, targetGroupId, saveMode })
     .then((result) => {
       button.textContent = result.cloudSaved ? "已保存" : "保存失败";
       button.classList.toggle("saved", result.cloudSaved);
@@ -7131,9 +7167,16 @@ async function restoreCloudProject(projectId, versionId) {
     const project = state.historyProjects.find(
       (item) => item.id === projectId,
     );
+    const linkedRecord = state.collaboration.records.find(
+      (record) => record.projectId === projectId,
+    );
     const targetVersionId = versionId || project?.latestVersionId;
     if (!targetVersionId) throw new Error("该项目没有可恢复的版本");
     const version = await getVersion(projectId, targetVersionId);
+    state.historySaveScope = linkedRecord?.scope || "personal";
+    state.historySaveGroupId =
+      linkedRecord?.scope === "team" ? linkedRecord.teamId || "" : "";
+    state.historyCollaborationRecordId = linkedRecord?.id || null;
     applyRestoredProject(
       version.snapshot,
       projectId,
@@ -7955,13 +7998,23 @@ function renderSaveScopeModal() {
   const currentProjectName = String(state.activity?.name || "").trim();
   const projectName =
     currentProjectName === "未命名活动" ? "" : currentProjectName;
+  const currentRecord = state.historyCollaborationRecordId
+    ? state.collaboration.records.find(
+        (record) => record.id === state.historyCollaborationRecordId,
+      )
+    : null;
+  const hasCurrentHistory =
+    Boolean(state.historyCurrentProjectId) || Boolean(currentRecord);
+  const currentLocation = currentRecord?.scope === "team"
+    ? getGroupById(currentRecord.teamId)?.name || "当前组"
+    : "个人项目";
   return `
     <div class="admin-auth-modal" data-save-scope-modal>
       <section class="admin-auth-dialog save-scope-dialog" role="dialog" aria-modal="true" aria-labelledby="save-scope-title">
         <header>
           <div>
             <span>SAVE PROJECT</span>
-            <h2 id="save-scope-title">保存到哪里？</h2>
+            <h2 id="save-scope-title">${hasCurrentHistory ? "保存项目" : "保存到哪里？"}</h2>
           </div>
           <button type="button" data-close-save-scope aria-label="关闭">×</button>
         </header>
@@ -7978,13 +8031,27 @@ function renderSaveScopeModal() {
           />
           <em data-save-project-name-error hidden>请输入项目名称后再保存</em>
         </label>
+        ${
+          hasCurrentHistory
+            ? `
+              <div class="save-current-record">
+                <div>
+                  <strong>覆盖当前记录</strong>
+                  <span>更新“${escapeHtml(currentLocation)}”中的当前记录，列表位置不变</span>
+                </div>
+                <button type="button" data-save-current>覆盖保存</button>
+              </div>
+              <div class="save-scope-divider"><span>或另存为</span></div>
+            `
+            : ""
+        }
         <div class="save-scope-options">
           <button type="button" data-save-scope="personal">
-            <strong>保存到个人</strong>
-            <span>仅自己可以在“我的”中查看和继续编辑</span>
+            <strong>${hasCurrentHistory ? "另存为个人项目" : "保存到个人"}</strong>
+            <span>${hasCurrentHistory ? "创建一条独立的新记录" : "仅自己可以在“我的”中查看和继续编辑"}</span>
           </button>
           <div class="save-scope-group">
-            <label for="save-group-select">保存到已有组</label>
+            <label for="save-group-select">${hasCurrentHistory ? "另存到已有组" : "保存到已有组"}</label>
             <div>
               <select id="save-group-select" data-save-group-select ${state.collaboration.teams.length ? "" : "disabled"}>
                 ${
@@ -7996,7 +8063,7 @@ function renderSaveScopeModal() {
                     .join("") || '<option value="">暂无组</option>'
                 }
               </select>
-              <button type="button" data-save-scope="team" ${state.collaboration.teams.length ? "" : "disabled"}>保存到组</button>
+              <button type="button" data-save-scope="team" ${state.collaboration.teams.length ? "" : "disabled"}>${hasCurrentHistory ? "另存到组" : "保存到组"}</button>
             </div>
             <span>所有用户都可以查看、编辑和复制组内记录</span>
           </div>
@@ -24882,10 +24949,15 @@ function bindEvents() {
         state.historySaveGroupId =
           record.scope === "team" ? record.teamId || "" : "";
         state.historyCollaborationRecordId = record.id;
+        const linkedProject = record.projectId
+          ? state.historyProjects.find(
+              (project) => project.id === record.projectId,
+            )
+          : null;
         applyRestoredProject(
           record.snapshot,
           record.projectId,
-          null,
+          linkedProject?.latestVersionId || null,
         );
       }
       return;
@@ -26575,12 +26647,31 @@ function bindEvents() {
         document.querySelector("[data-save-scope-modal]")?.remove();
         const button = pendingManualSaveButton;
         pendingManualSaveButton = null;
-        runManualProjectSave(button, "team", group.id);
+        const saveMode =
+          state.historyCurrentProjectId ||
+          state.historyCollaborationRecordId
+            ? "copy"
+            : "auto";
+        runManualProjectSave(button, "team", group.id, saveMode);
       } catch (error) {
         input?.setCustomValidity(error.message);
         input?.reportValidity();
         input?.setCustomValidity("");
       }
+      return;
+    }
+
+    if (event.target.closest("[data-save-current]")) {
+      if (!applyRequiredSaveProjectName()) return;
+      document.querySelector("[data-save-scope-modal]")?.remove();
+      const button = pendingManualSaveButton;
+      pendingManualSaveButton = null;
+      runManualProjectSave(
+        button,
+        state.historySaveScope,
+        state.historySaveGroupId,
+        "overwrite",
+      );
       return;
     }
 
@@ -26597,7 +26688,17 @@ function bindEvents() {
       document.querySelector("[data-save-scope-modal]")?.remove();
       const button = pendingManualSaveButton;
       pendingManualSaveButton = null;
-      runManualProjectSave(button, targetScope, targetGroupId);
+      const saveMode =
+        state.historyCurrentProjectId ||
+        state.historyCollaborationRecordId
+          ? "copy"
+          : "auto";
+      runManualProjectSave(
+        button,
+        targetScope,
+        targetGroupId,
+        saveMode,
+      );
       return;
     }
 
