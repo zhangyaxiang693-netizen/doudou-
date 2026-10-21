@@ -8,7 +8,7 @@
   --detail-popup-text-color: #2c0113;
   --detail-popup-highlight-color: #f00073;
   width: 560px;
-  height: 694px;
+  height: 740px;
   overflow: hidden;
   box-sizing: border-box;
   position: relative;
@@ -16,7 +16,7 @@
 .wrap {
   position: absolute;
   z-index: 1;
-  top: 176px;
+  top: 224px;
   left: 0px;
   display: flex;
   justify-content: center;
@@ -220,10 +220,12 @@
   height: 317px;
   position: absolute;
   z-index: 3;
-  top: 15px;
+  top: 45px;
   left: 67px;
   overflow: visible;
   pointer-events: none;
+  transform: scale(1.08);
+  transform-origin: center;
 }
 
 .mainVisualCanvas {
