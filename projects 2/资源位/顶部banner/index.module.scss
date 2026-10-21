@@ -63,6 +63,10 @@
   color: var(--top-banner-text-color);
 }
 
+.headlineWithoutSubtitle {
+  transform: translateY(-20px);
+}
+
 .headlineHighlight {
   color: var(--top-banner-highlight-color);
 }
@@ -84,6 +88,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.actionButtonWithoutSubtitle {
+  transform: translateY(-20px);
 }
 
 .buttonText {

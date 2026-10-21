@@ -8,6 +8,7 @@ import subject4 from '../../头图/主体替换/主体替换-方案4.png'
 import LayeredMainVisual from '../分层主视觉'
 
 export type IGeneratedComponent = {
+  showSubtitle?: boolean
   campaignText?: string
   headlineText?: string
   headlineHighlightText?: string
@@ -79,6 +80,7 @@ function getHeadlineParts(value: string, highlightText: string) {
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
   const {
+    showSubtitle = true,
     campaignText = 'DOU+双节狂欢投',
     headlineText = '完成任务 抽赢好礼',
     headlineHighlightText = '抽赢',
@@ -106,16 +108,18 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   return (
     <div className={styles.page} style={themeStyle}>
       <div className={styles.copy}>
-        <div
-          ref={campaignRef}
-          className={styles.campaignText}
-          data-react-edit-prop="campaignText"
-        >
-          {campaignText}
-        </div>
+        {showSubtitle ? (
+          <div
+            ref={campaignRef}
+            className={styles.campaignText}
+            data-react-edit-prop="campaignText"
+          >
+            {campaignText}
+          </div>
+        ) : null}
         <div
           ref={headlineRef}
-          className={styles.headline}
+          className={`${styles.headline} ${!showSubtitle ? styles.headlineWithoutSubtitle : ''}`}
           data-react-edit-prop="headlineText"
         >
           {headlineParts.map((part, index) => (

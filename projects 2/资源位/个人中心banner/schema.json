@@ -27,9 +27,17 @@
   },
   "props": [
     {
+      "key": "showSubtitle",
+      "name": "showSubtitle",
+      "label": "显示副标题",
+      "type": "boolean",
+      "default": true,
+      "description": "关闭后隐藏副标题，并将主标题上移至垂直居中。"
+    },
+    {
       "key": "campaignText",
       "name": "campaignText",
-      "label": "活动标签文案",
+      "label": "副标题文案",
       "type": "string",
       "default": "DOU+双节狂欢投",
       "description": "活动标签保持原位置单行展示，超长时自动缩放。"
