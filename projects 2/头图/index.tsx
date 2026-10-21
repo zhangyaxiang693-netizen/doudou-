@@ -28,10 +28,10 @@ export type IGeneratedComponent = {
 }
 
 function renderTitleTextWithNumberFont(value: string) {
-  const segments = value.split(/([0-9０-９]+)/g)
+  const segments = value.split(/([A-Za-z0-9０-９+＋]+)/g)
   return segments.map((segment, index) => {
     if (!segment) return null
-    if (/^[0-9０-９]+$/.test(segment)) {
+    if (/^[A-Za-z0-9０-９+＋]+$/.test(segment)) {
       return (
         <span key={`${segment}-${index}`} className={styles.douyinNumber}>
           {segment}
