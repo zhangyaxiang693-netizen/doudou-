@@ -18,6 +18,7 @@ export type IGeneratedComponent = {
   burstOpacity?: number | string
   glowOpacity?: number | string
   background?: string
+  preserveBackgroundGradientStops?: boolean
   ribbonColor?: string
   textColor?: string
   headlineGradientTop?: string
@@ -162,6 +163,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     mainVisualImage = 'subject-1',
     burstColor = '#0FB3FF',
     background = 'linear-gradient(180deg, #ABF9FF 0%, #B5FBFF 30%, #CAF1F3 100%)',
+    preserveBackgroundGradientStops = false,
     ribbonColor = '#00C8F5',
     textColor = '#092E39',
     headlineGradientTop = '#008BD4',
@@ -205,7 +207,9 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     transform: subjectTransform || undefined,
   }
   const themeStyle = {
-    '--checkout-background': makeEvenGradient(background),
+    '--checkout-background': preserveBackgroundGradientStops
+      ? background
+      : makeEvenGradient(background),
     '--checkout-ribbon-color': ribbonColor,
     '--checkout-subtitle-color': makeSubtitleColor(background, ribbonColor),
     '--checkout-text-color': textColor,

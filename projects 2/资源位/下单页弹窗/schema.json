@@ -134,6 +134,13 @@
       "default": "linear-gradient(180deg, #ABF9FF 0%, #B5FBFF 30%, #CAF1F3 100%)"
     },
     {
+      "key": "preserveBackgroundGradientStops",
+      "name": "preserveBackgroundGradientStops",
+      "label": "保留背景渐变停靠点",
+      "type": "boolean",
+      "default": false
+    },
+    {
       "key": "ribbonColor",
       "name": "ribbonColor",
       "label": "顶部标签颜色",

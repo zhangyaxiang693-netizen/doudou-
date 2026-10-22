@@ -4505,7 +4505,7 @@ const guidedPageThemePresets = [
   },
   {
     id: "node-anniversary",
-    name: "节点色系-周年庆",
+    name: "节点色系-2026双十一",
     background: makeGuidedPageBackgroundLowerDeep(["#BF0E3E", "#EF436C", "#FFCFD9", "#FFECEE"]),
     solidBackground: "#FFE8E8",
     primary: "#9B0C33",
@@ -9224,7 +9224,7 @@ function getThemeButtonTextColor(themeId) {
 
 function getThemeButtonGradient(themeId) {
   if (themeId === "node-anniversary") {
-    return { start: "#E8174F", end: "#FF4F7E" };
+    return { start: "#FF180E", end: "#FF166F" };
   }
   if (new Set(["pink", "node-womens-day"]).has(themeId)) {
     return { start: "#FF1473", end: "#FF229F" };
@@ -9275,9 +9275,13 @@ function getThemeAdjustedGradientEnd(theme) {
     .join("")}`;
 }
 
-function getThemeCheckoutGradient(theme) {
+function getThemeCheckoutGradient(
+  theme,
+  anniversaryThirdStop = 66,
+  anniversaryFourthStop = 92,
+) {
   if (theme?.id === "node-anniversary") {
-    return "linear-gradient(165deg, #C00F3F 0%, #F2456E 28%, #FBB3C0 66%, #FEE7EA 100%)";
+    return `linear-gradient(165deg, #CF0038 0%, #F84B74 28%, #FBB3C0 ${anniversaryThirdStop}%, #FEE7EA ${anniversaryFourthStop}%)`;
   }
   const background = String(theme?.background || "");
   const colors = background.match(/#[0-9a-f]{6}/gi) || [];
@@ -9393,17 +9397,24 @@ function applyDirectThemePropsToAtomNode(node, themeId) {
   const isTwoColorPopup = isRetentionPopup || isDetailPopup;
   const theme = guidedPageThemePresets.find((item) => item.id === themeId) || guidedPageThemePresets[0];
   const adjustedGradientEnd = getThemeAdjustedGradientEnd(theme);
+  if (
+    node.schemaId === "下单页弹窗" &&
+    "preserveBackgroundGradientStops" in node.props
+  ) {
+    node.props.preserveBackgroundGradientStops =
+      themeId === "node-anniversary";
+  }
   if (usesHeaderVisualEffects && "background" in node.props) {
     node.props.background =
       node.schemaId === "下单页弹窗" && themeId === "node-anniversary"
-        ? getThemeCheckoutGradient(theme)
+        ? getThemeCheckoutGradient(theme, 55, 82)
         : theme?.background;
   }
   if (isTwoColorBanner && "background" in node.props) {
     if (themeId === "node-anniversary") {
       const direction = node.schemaId === "个人中心banner" ? "90deg" : "180deg";
       node.props.background =
-        `linear-gradient(${direction}, #C00F3F 0%, #F2456E 28%, #FBB3C0 66%, #FEE7EA 100%)`;
+        `linear-gradient(${direction}, #CF0038 0%, #F84B74 28%, #FBB3C0 66%, #FEE7EA 92%)`;
     } else {
       const endStop = node.schemaId === "个人中心banner" ? "73.03%" : "81.44%";
       const adjustedGradientStart = lightenThemeHexColor(theme?.primary, 0.15);
@@ -9436,6 +9447,14 @@ function applyDirectThemePropsToAtomNode(node, themeId) {
     if ("buttonGradientEnd" in node.props) {
       node.props.buttonGradientEnd = buttonGradient.end;
     }
+  }
+  if (node.schemaId === "挂件") {
+    const buttonGradient =
+      themeId === "node-anniversary"
+        ? getThemeButtonGradient(themeId)
+        : { start: "", end: "" };
+    node.props.buttonGradientStart = buttonGradient.start;
+    node.props.buttonGradientEnd = buttonGradient.end;
   }
   if (usesHeaderVisualEffects && "ribbonColor" in node.props) {
     node.props.ribbonColor = getThemeRibbonColor(themeId);
