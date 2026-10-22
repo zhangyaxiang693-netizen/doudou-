@@ -1713,6 +1713,7 @@ function getCanonicalPrdPageTemplateFieldSpec(field) {
 }
 
 const ACTIVITY_STORAGE_KEY = "builder_activity_data_empty_v1_";
+const HISTORY_PENDING_RESYNC_KEY = "builder_history_pending_resync_v1";
 const PRD_TABLE_PACKAGE_ID = "saved-prd-table";
 try {
   localStorage.removeItem("builder_prd_generated_history");
@@ -3983,6 +3984,37 @@ function loadActivityFromStorage(templateId) {
     console.warn("加载活动数据失败", e);
     return null;
   }
+}
+
+// 登录回跳后：若存在"会话失效未保存完"的本地草稿，自动恢复并重新保存
+function resumePendingActivitySave() {
+  let templateId = null;
+  try {
+    templateId = localStorage.getItem(HISTORY_PENDING_RESYNC_KEY);
+  } catch (e) {
+    return;
+  }
+  const stored = templateId ? loadActivityFromStorage(templateId) : null;
+  if (!templateId || !stored || !stored.activity || !Array.isArray(stored.pages)) {
+    return;
+  }
+  state.activity = stored.activity;
+  state.pages = stored.pages;
+  state.selectedDimension = stored.selectedDimension || "默认维度";
+  state.activePageId =
+    stored.activePageId || (stored.pages[0] && stored.pages[0].id) || "";
+  state.currentTemplateId = templateId;
+  render();
+  saveCurrentProjectSnapshot({ saveMode: "auto" }).then((result) => {
+    if (result && result.cloudSaved) {
+      try {
+        localStorage.removeItem(HISTORY_PENDING_RESYNC_KEY);
+        localStorage.removeItem(ACTIVITY_STORAGE_KEY + templateId);
+      } catch (e) {
+        console.warn("清除待重存标记失败", e);
+      }
+    }
+  });
 }
 
 const RESOURCE_THEME_FIELD = {
@@ -7016,7 +7048,27 @@ async function performProjectSnapshotSave({
         ? error.message
         : "云端保存失败";
     state.historyError = cloudError;
-    window.alert(state.historyError);
+    // 无论何种失败，先把当前编辑落盘，刷新/关闭也不丢
+    saveActivityToStorage();
+    const isAuthExpired =
+      error instanceof ProjectHistoryApiError && error.status === 401;
+    if (isAuthExpired) {
+      // 会话被空闲回收：标记待重存，跳转重新登录，登录回跳后自动恢复并重存
+      try {
+        localStorage.setItem(
+          HISTORY_PENDING_RESYNC_KEY,
+          state.currentTemplateId || "",
+        );
+      } catch (e) {
+        console.warn("记录待重存标记失败", e);
+      }
+      window.alert("登录已过期，你的编辑已自动备份到本地，重新登录后将自动恢复并保存。");
+      window.location.href =
+        "/api/auth/login?state=" +
+        encodeURIComponent(window.location.pathname);
+      return { cloudSaved: false, snapshot };
+    }
+    window.alert(cloudError);
     return {
       cloudSaved: false,
       snapshot,
@@ -29202,6 +29254,7 @@ function mount() {
   });
   render();
   refreshCollaborationFromServer({ syncLocal: false });
+  resumePendingActivitySave();
 }
 
 mount();
