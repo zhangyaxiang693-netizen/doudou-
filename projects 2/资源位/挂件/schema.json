@@ -53,6 +53,20 @@
       ]
     },
     {
+      "key": "buttonGradientStart",
+      "name": "buttonGradientStart",
+      "label": "按钮渐变开始",
+      "type": "color",
+      "default": ""
+    },
+    {
+      "key": "buttonGradientEnd",
+      "name": "buttonGradientEnd",
+      "label": "按钮渐变结束",
+      "type": "color",
+      "default": ""
+    },
+    {
       "key": "mainVisualImage",
       "name": "mainVisualImage",
       "label": "主体替换",

@@ -23,6 +23,7 @@ export type IGeneratedComponent = {
   glowOpacity?: number | string
   textColor?: string
   buttonBackgroundColor?: string
+  buttonTextColor?: string
   headlineGradientTop?: string
   headlineGradientBottom?: string
 }
@@ -80,6 +81,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     maskSize: '100% 100%',
   }
   const buttonStyle = props.buttonBackgroundColor ? {background: props.buttonBackgroundColor} : undefined
+  const buttonTextStyle = props.buttonTextColor ? {color: props.buttonTextColor} : undefined
   const glowStyle: React.CSSProperties = {
     opacity: Number.isFinite(glowOpacity) ? glowOpacity : 0.6,
   }
@@ -125,7 +127,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
         </div>
         <div className={`${styles.container} ${isSingleLineTitle ? styles.containerSingleLine : ''}`}>
           <div className={styles.content} style={buttonStyle}></div>
-          <div className={styles.text1} data-react-edit-prop="dateText">{dateText}</div>
+          <div className={styles.text1} style={buttonTextStyle} data-react-edit-prop="dateText">{dateText}</div>
         </div>
       </div>
     </div>

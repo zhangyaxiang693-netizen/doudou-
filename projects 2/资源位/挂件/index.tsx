@@ -6,6 +6,8 @@ import LayeredMainVisual from '../分层主视觉'
 export type IGeneratedComponent = {
   buttonText?: string
   buttonColor?: string
+  buttonGradientStart?: string
+  buttonGradientEnd?: string
   mainVisualImage?: string
 }
 
@@ -36,6 +38,8 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const {
     buttonText = '七夕抽奖',
     buttonColor = '#FF1372',
+    buttonGradientStart = '',
+    buttonGradientEnd = '',
     mainVisualImage = 'subject-1',
   } = props
   const textUnits = Array.from(buttonText).reduce(
@@ -58,7 +62,12 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       <div className={styles.wrap} data-gif-button-pulse>
         <div
           className={styles.container}
-          style={{backgroundColor: buttonColor}}
+          style={{
+            background:
+              buttonGradientStart && buttonGradientEnd
+                ? `linear-gradient(90deg, ${buttonGradientStart} 0%, ${buttonGradientEnd} 100%)`
+                : buttonColor,
+          }}
           data-png-button-shine
         >
           <span
