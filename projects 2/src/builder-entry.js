@@ -37,19 +37,9 @@ async function checkAuth() {
   }
 }
 
-// 会话保活：登录后定期静默探测，避免网关因空闲超时回收会话
-function startSessionKeepAlive(intervalMs = 3 * 60 * 1000) {
-  const ping = () => {
-    fetch("/api/auth/me", { credentials: "same-origin" }).catch(() => {});
-  };
-  ping();
-  window.setInterval(ping, intervalMs);
-}
-
 // 先检查登录，再加载应用
 checkAuth().then((isAuthenticated) => {
   if (isAuthenticated) {
-    startSessionKeepAlive();
     renderReactMaterials();
 
     import("./app.js")
