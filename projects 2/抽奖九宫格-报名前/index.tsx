@@ -126,7 +126,9 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           <div className={styles.content6}>
             <div className={styles.main}>
               <div className={styles.section}></div>
-              <PrizeImage prize={prize5} />
+              <div className={styles.content5}>
+                <PrizeImage prize={prize5} />
+              </div>
               <div className={`${styles.text2} ${isSingleLinePrize(prize5) ? styles.prizeNameRecommend : ''}`}>{prize5.name}</div>
             </div>
           </div>
