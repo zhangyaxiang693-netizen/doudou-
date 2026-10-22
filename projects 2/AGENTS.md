@@ -40,7 +40,10 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
     │   ├── build.sh                   # 构建脚本（pnpm install + vite build）
     │   └── run.sh                     # 启动脚本（Express 服务器）
     ├── server/
-    │   └── index.cjs                  # Express 服务器
+    │   ├── index.cjs                  # Express 服务器
+    │   ├── supabase-session-store.cjs # express-session 用 Supabase 表持久化登录态
+    │   └── supabase-client.cjs        # Supabase 客户端（getSupabaseServiceClient）
+    ├── supabase/migrations/           # 数据库迁移脚本（含 POST /api/auth 相关建表）
     ├── dist/                          # 构建产物
     └── [组件目录]/                     # 各组件源码
 ```
@@ -73,6 +76,13 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 - **前端入口拦截**：`src/builder-entry.js` 的 `checkAuth()` 在加载应用前请求 `/api/auth/me`，未登录则重定向到 `/api/auth/login?state=...`；`index.html` 含 `#auth-loading` 登录加载页。**若这两处被移除/回退，登录系统会"消失"（应用直接进入、无登录拦截）。**
 - **后端 OAuth**：`server/index.cjs` 提供 `/api/auth/login`（重定向飞书授权页）、`/api/auth/callback`（换 token + 取用户 + 写 session）、`/api/auth/me`、`/api/auth/logout`，依赖 `express-session`。
 - OAuth 回调地址 = `DEPLOY_BASE_URL/api/auth/callback`，`DEPLOY_BASE_URL` 默认 `https://doujiadacu.coze.bytedance.net`，需与环境匹配，且飞书应用后台已配置该回调白名单。
+
+### ⚠️ Session 已持久化到 Supabase（FaaS 重启不丢登录态，关键教训）
+
+- **问题根因**：`express-session` 默认走进程内 `MemoryStore`。线上是 FaaS 无状态/多实例部署（日志可见 `[FaaS System] Received signal "terminated"`），实例重建或缩容时内存 session 被清空 → 浏览器带着有效的 `connect.sid`，服务端却查不到对应 session，历史保存等接口返回 401「请先登录」。症状："已登录但操作一会儿后点保存提示重新登录"（尤其闲置较久后）。
+- **修复方案**：新增 `server/supabase-session-store.cjs`（`SupabaseSessionStore extends session.Store`，实现 get/set/touch/destroy），在 `server/index.cjs` 的 `session({ store: new SupabaseSessionStore() })` 中替换默认 MemoryStore，把 session 持久化到 `public.sessions` 表。复用既有 `getSupabaseServiceClient()`（service_role 客户端）；表已 `revoke` anon/authenticated，仅 service_role 可读写，sess 以 jsonb 存整份。
+- **建表**（`supabase/migrations/20261022210001_create_sessions.sql`）：`public.sessions(id text pk, sess jsonb, expire timestamptz)`，含 `expire` 索引；`expire` 由 cookie 的 expires/maxAge 推导，读到时过期自动销毁；store 定时 tidy 清理过期行。**迁移已手动在库中应用**（`exec_sql` 执行 CREATE TABLE 成功）；与协作 migration 同理，新环境需在对应 Supabase 库（develop/product 各一份）应用同一 DDL。
+- **兜底行为**：store 依赖 Supabase 连接；若连接失败/表缺失，会话读写会 callback error（不静默丢 session 也绝不 crash），需注意运维监控 `sessions` 表可写。
 
 ## 项目历史登录态（关键）
 

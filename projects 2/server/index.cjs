@@ -4,6 +4,7 @@ const path = require("path");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 const session = require("express-session");
+const { SupabaseSessionStore } = require("./supabase-session-store.cjs");
 const { createHistoryRouter } = require("./history-routes.cjs");
 const { createCollaborationRouter } = require("./collaboration-routes.cjs");
 const { createAdminAccessRouter } = require("./admin-access.cjs");
@@ -24,10 +25,11 @@ const HOST = "0.0.0.0";
 const distDir = path.join(__dirname, "..", "dist");
 const projectRoot = path.join(__dirname, "..");
 
-// Session 配置
+// Session 配置（登录态存 Supabase，跨 FaaS 实例重启不丢失）
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "h5-builder-secret-key-change-in-production",
+    store: new SupabaseSessionStore(),
     resave: false,
     saveUninitialized: false,
     cookie: {
