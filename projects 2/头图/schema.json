@@ -122,6 +122,13 @@
       "default": "#FF62B8"
     },
     {
+      "key": "buttonTextColor",
+      "name": "buttonTextColor",
+      "label": "按钮文案颜色",
+      "type": "color",
+      "default": "#FFFFFF"
+    },
+    {
       "key": "headlineGradientTop",
       "name": "headlineGradientTop",
       "label": "抽奖金额顶部渐变",
@@ -143,6 +150,7 @@
       "props": {
         "burstColor": "#FF88C1",
         "buttonBackgroundColor": "#FF62B8",
+        "buttonTextColor": "#FFFFFF",
         "headlineGradientTop": "#FF5F5F"
       }
     },
@@ -155,6 +163,7 @@
       "props": {
         "burstColor": "#88BEFF",
         "buttonBackgroundColor": "#FF6265",
+        "buttonTextColor": "#FFFFFF",
         "headlineGradientTop": "#FF7D65"
       }
     },
@@ -167,6 +176,7 @@
       "props": {
         "burstColor": "#FFBE88",
         "buttonBackgroundColor": "#FF8F4A",
+        "buttonTextColor": "#FFFFFF",
         "headlineGradientTop": "#FFB047"
       }
     }

@@ -4506,7 +4506,7 @@ const guidedPageThemePresets = [
   {
     id: "node-anniversary",
     name: "节点色系-周年庆",
-    background: makeGuidedPageBackgroundLowerDeep(["#9B0C33", "#F1446D", "#FFCFD9", "#FFECEE"]),
+    background: makeGuidedPageBackgroundLowerDeep(["#BF0E3E", "#EF436C", "#FFCFD9", "#FFECEE"]),
     solidBackground: "#FFE8E8",
     primary: "#9B0C33",
     secondary: "#FFECEE",
@@ -4588,7 +4588,6 @@ const canvasColorChoices = guidedPageThemePresets.map((theme) => theme.backgroun
 const DISABLED_GUIDED_THEME_IDS = new Set([
   "node-womens-day",
   "node-breath",
-  "node-anniversary",
   "node-double-festival",
   "node-new-year",
   "node-mid-autumn",
@@ -8972,6 +8971,7 @@ function getAdminVerifierProps(schema, verifier) {
         burstColor: getThemePrimaryColor(verifier?.parentThemeId || variantThemeId),
         burstOpacity: getThemeBurstOpacity(verifier?.parentThemeId || variantThemeId),
         buttonBackgroundColor: getThemeButtonBackgroundColor(verifier?.parentThemeId || variantThemeId),
+        buttonTextColor: getThemeButtonTextColor(verifier?.parentThemeId || variantThemeId),
         ribbonColor: getThemeRibbonColor(verifier?.parentThemeId || variantThemeId),
         glowOpacity: getThemeGlowOpacity(verifier?.parentThemeId || variantThemeId),
         headlineGradientTop: headlineTextColor === "#FFFFFF"
@@ -9198,6 +9198,7 @@ function getThemeBurstOpacity(themeId) {
 }
 
 function getThemeButtonBackgroundColor(themeId) {
+  if (themeId === "node-anniversary") return "#FFFFFF";
   const buttonColorMap = {
     pink: "#FF62B8",
     "daily-cyan": "#0FB3FF",
@@ -9217,7 +9218,14 @@ function getThemeButtonBackgroundColor(themeId) {
   return buttonColorMap[themeId] || buttonColorMap[getGuidedVariantThemeId(themeId)] || "#FF62B8";
 }
 
+function getThemeButtonTextColor(themeId) {
+  return themeId === "node-anniversary" ? "#D91758" : "#FFFFFF";
+}
+
 function getThemeButtonGradient(themeId) {
+  if (themeId === "node-anniversary") {
+    return { start: "#E8174F", end: "#FF4F7E" };
+  }
   if (new Set(["pink", "node-womens-day"]).has(themeId)) {
     return { start: "#FF1473", end: "#FF229F" };
   }
@@ -9268,6 +9276,9 @@ function getThemeAdjustedGradientEnd(theme) {
 }
 
 function getThemeCheckoutGradient(theme) {
+  if (theme?.id === "node-anniversary") {
+    return "linear-gradient(165deg, #C00F3F 0%, #F2456E 28%, #FBB3C0 66%, #FEE7EA 100%)";
+  }
   const background = String(theme?.background || "");
   const colors = background.match(/#[0-9a-f]{6}/gi) || [];
   const selectedColors = colors.length >= 4
@@ -9296,7 +9307,7 @@ function getThemeRibbonColor(themeId) {
     "node-womens-day": "#24B9FF",
     "node-breath": "#FF56CC",
     "node-mid-autumn": "#B23AD1",
-    "node-anniversary": "#FF1F55",
+    "node-anniversary": "#F2456E",
     "node-double-festival": "#3B8CFF",
     "node-double-11": "#FF4B00",
   };
@@ -9340,7 +9351,7 @@ function getThemeHeadlineHighlightColor(themeId) {
     "node-womens-day": "#007FC8",
     "node-breath": "#D000A9",
     "node-mid-autumn": "#7C169B",
-    "node-anniversary": "#CF1645",
+    "node-anniversary": "#FFEC62",
     "node-double-festival": "#006BD8",
     "node-double-11": "#D83900",
   };
@@ -9367,6 +9378,12 @@ function getThemeHeadlineTextColor(themeId) {
   return textColorMap[themeId] || textColorMap[getGuidedVariantThemeId(themeId)] || "#2C0113";
 }
 
+function getThemeResourceHeadlineTextColor(themeId) {
+  return themeId === "node-anniversary"
+    ? "#FFFFFF"
+    : getThemeHeadlineTextColor(themeId);
+}
+
 function applyDirectThemePropsToAtomNode(node, themeId) {
   if (!node?.props) return;
   const usesHeaderVisualEffects = new Set(["头图", "下单页弹窗"]).has(node.schemaId);
@@ -9377,12 +9394,21 @@ function applyDirectThemePropsToAtomNode(node, themeId) {
   const theme = guidedPageThemePresets.find((item) => item.id === themeId) || guidedPageThemePresets[0];
   const adjustedGradientEnd = getThemeAdjustedGradientEnd(theme);
   if (usesHeaderVisualEffects && "background" in node.props) {
-    node.props.background = theme?.background;
+    node.props.background =
+      node.schemaId === "下单页弹窗" && themeId === "node-anniversary"
+        ? getThemeCheckoutGradient(theme)
+        : theme?.background;
   }
   if (isTwoColorBanner && "background" in node.props) {
-    const endStop = node.schemaId === "个人中心banner" ? "73.03%" : "81.44%";
-    const adjustedGradientStart = lightenThemeHexColor(theme?.primary, 0.15);
-    node.props.background = `linear-gradient(90deg, ${adjustedGradientStart} 0%, ${adjustedGradientEnd} ${endStop})`;
+    if (themeId === "node-anniversary") {
+      const direction = node.schemaId === "个人中心banner" ? "90deg" : "180deg";
+      node.props.background =
+        `linear-gradient(${direction}, #C00F3F 0%, #F2456E 28%, #FBB3C0 66%, #FEE7EA 100%)`;
+    } else {
+      const endStop = node.schemaId === "个人中心banner" ? "73.03%" : "81.44%";
+      const adjustedGradientStart = lightenThemeHexColor(theme?.primary, 0.15);
+      node.props.background = `linear-gradient(90deg, ${adjustedGradientStart} 0%, ${adjustedGradientEnd} ${endStop})`;
+    }
   }
   if (isTwoColorPopup && "background" in node.props) {
     node.props.background = getThemeCheckoutGradient(theme);
@@ -9398,6 +9424,9 @@ function applyDirectThemePropsToAtomNode(node, themeId) {
   }
   if (usesHeaderVisualEffects && "buttonBackgroundColor" in node.props) {
     node.props.buttonBackgroundColor = getThemeButtonBackgroundColor(themeId);
+  }
+  if (usesHeaderVisualEffects && "buttonTextColor" in node.props) {
+    node.props.buttonTextColor = getThemeButtonTextColor(themeId);
   }
   if (new Set(["下单页弹窗", "顶部banner", "个人中心banner", "挽留页弹窗", "详情页弹窗"]).has(node.schemaId)) {
     const buttonGradient = getThemeButtonGradient(themeId);
@@ -9423,16 +9452,19 @@ function applyDirectThemePropsToAtomNode(node, themeId) {
         : getThemeHeadlineGradientTop(themeId);
   }
   if (usesHeaderVisualEffects && "textColor" in node.props) {
-    node.props.textColor = getThemeHeadlineTextColor(themeId);
+    node.props.textColor =
+      node.schemaId === "下单页弹窗"
+        ? getThemeResourceHeadlineTextColor(themeId)
+        : getThemeHeadlineTextColor(themeId);
   }
   if (isTwoColorBanner && "textColor" in node.props) {
-    node.props.textColor = getThemeHeadlineTextColor(themeId);
+    node.props.textColor = getThemeResourceHeadlineTextColor(themeId);
   }
   if (isTwoColorBanner && "headlineHighlightColor" in node.props) {
     node.props.headlineHighlightColor = getThemeHeadlineHighlightColor(themeId);
   }
   if (isTwoColorPopup && "headlineTextColor" in node.props) {
-    node.props.headlineTextColor = getThemeHeadlineTextColor(themeId);
+    node.props.headlineTextColor = getThemeResourceHeadlineTextColor(themeId);
   }
   if (isTwoColorPopup && "headlineHighlightColor" in node.props) {
     node.props.headlineHighlightColor = getThemeHeadlineHighlightColor(themeId);
@@ -9515,6 +9547,7 @@ function applyMoleculeThemeToVerifier(molecule, verifier, themeId) {
       verifier.blueprint[getMoleculeBlueprintKey(childIndex, "burstColor")] = getThemePrimaryColor(themeId);
       verifier.blueprint[getMoleculeBlueprintKey(childIndex, "burstOpacity")] = getThemeBurstOpacity(themeId);
       verifier.blueprint[getMoleculeBlueprintKey(childIndex, "buttonBackgroundColor")] = getThemeButtonBackgroundColor(themeId);
+      verifier.blueprint[getMoleculeBlueprintKey(childIndex, "buttonTextColor")] = getThemeButtonTextColor(themeId);
       verifier.blueprint[getMoleculeBlueprintKey(childIndex, "ribbonColor")] = getThemeRibbonColor(themeId);
       verifier.blueprint[getMoleculeBlueprintKey(childIndex, "glowOpacity")] = getThemeGlowOpacity(themeId);
       verifier.blueprint[getMoleculeBlueprintKey(childIndex, "headlineGradientTop")] = headlineTextColor === "#FFFFFF"
