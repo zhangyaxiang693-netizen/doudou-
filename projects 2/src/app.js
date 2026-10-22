@@ -4369,6 +4369,7 @@ const state = {
   selectedBlueprintSceneId: "",
   demoSelectedNodeId: null,
   blueprintReturningFromPreview: false,
+  guidedPageThemeId: "pink",
   guidedHeaderLevelId: "default",
   guidedHeaderLevelDrafts: {
     s: {
@@ -6846,6 +6847,7 @@ async function openAdminDashboard() {
 }
 
 function startNewHistorySession() {
+  state.guidedPageThemeId = "pink";
   state.historyCurrentProjectId = null;
   state.historyCurrentVersionId = null;
   state.historySaveScope = "personal";
@@ -11263,6 +11265,53 @@ function setPrdTableRowValueByKey(rowKey, value) {
   return state.prdTableRows.length - 1;
 }
 
+function syncConsumptionReturnSharedStateField(rowKey, value, sourceTemplateId = "") {
+  const stateParsed = parsePageTemplateStateDetailRowKey(rowKey);
+  const parsed = stateParsed || parsePageTemplateVariableRowKey(rowKey);
+  if (!parsed || isConsumptionReturnAudienceSpecificKey(parsed.compoundKey)) return false;
+  const templateId = stateParsed?.templateId || sourceTemplateId || getActivePrdPageTemplate()?.id;
+  const template = [...pageTemplates, ...customPageTemplates].find((item) => item.id === templateId);
+  const schemaId = getPageTemplateRawNodeSchemaId(template?.nodes?.[parsed.moduleIndex]);
+  if (!isConsumptionReturnMoleculeNode({ schemaId })) return false;
+  const states = PAGE_TEMPLATE_BUSINESS_STATES[schemaId]?.states || [];
+  const propKey = parsed.compoundKey.split(".").pop();
+  if (states.some((entry) => (entry.lockedPropKeys || []).includes(propKey))) return false;
+  const modeRow = state.prdTableRows.find(
+    (row) => row.key === getConsumptionReturnDetailModeRowKey(parsed.moduleIndex),
+  );
+  const versionCount = getManualModuleBlueprintVersions(
+    getPageTemplateVersionModuleKey(templateId, parsed.moduleIndex),
+  ).length + 1;
+  const mode = getConsumptionReturnDetailMode(
+    new Map([[CONSUMPTION_RETURN_DETAIL_MODE_KEY, modeRow?.value || ""]]),
+    versionCount,
+  );
+  if (mode !== CONSUMPTION_RETURN_DETAIL_MODE_SHARED) return false;
+  setPrdTableRowValueByKey(
+    getPageTemplateVariableRowKey({ moduleIndex: parsed.moduleIndex, compoundKey: parsed.compoundKey }),
+    value,
+  );
+  state.prdTableRows.forEach((row) => {
+    const base = parsePageTemplateVariableRowKey(row.key);
+    const cached = parsePageTemplateStateDetailRowKey(row.key);
+    if (
+      (
+        base?.moduleIndex === parsed.moduleIndex &&
+        base.compoundKey === parsed.compoundKey
+      ) ||
+      (
+        cached?.templateId === templateId &&
+        cached.moduleIndex === parsed.moduleIndex &&
+        cached.compoundKey === parsed.compoundKey &&
+        states.some((entry) => entry.id === cached.stateId)
+      )
+    ) {
+      row.value = value;
+    }
+  });
+  return true;
+}
+
 function getPageTemplateSourceFieldForPath(sourceNode, path) {
   const templateId = sourceNode?.sourcePageTemplateId || "";
   const moduleIndex = Number(sourceNode?.sourcePageTemplateNodeIndex);
@@ -11307,6 +11356,9 @@ function setNodeAndGuidedStatesValueByPath(node, path, value) {
   (node.guidedStates || []).forEach((entry) => {
     if ((entry.lockedPropKeys || []).includes(propKey)) return;
     setNodeValueByPath(entry.node, path, value);
+    if (entry.detailValues && Object.hasOwn(entry.detailValues, path)) {
+      entry.detailValues[path] = value;
+    }
   });
 }
 
@@ -11388,6 +11440,11 @@ function syncPageTemplateInlineEditToRows(sourceNode, variantId, path, value) {
   const versionName = getLineageVersionNameForVariant(sourceNode, variantId);
   if (sharedConsumptionReturnDetail) {
     setPrdTableRowValueByKey(getPageTemplateVariableRowKey(field), value);
+    syncConsumptionReturnSharedStateField(
+      getPageTemplateVariableRowKey(field),
+      value,
+      sourceNode.sourcePageTemplateId,
+    );
   } else {
     const rowKey = versionName
       ? getPageTemplateVariableVersionRowKey(field, versionName)
@@ -15520,7 +15577,8 @@ function renderBlueprintStateTables(tableContexts, isShared) {
 }
 
 function buildDemoGeneratedActivity() {
-  const defaultTheme = getGuidedThemePreset("pink") || guidedPageThemePresets[0];
+  const selectedTheme = getGuidedThemePreset(state.guidedPageThemeId || "pink") ||
+    getGuidedThemePreset("pink") || guidedPageThemePresets[0];
   const isTimePackage = state.selectedDemoPackageId === demoTimeActivityPackage.id;
   const isPrdTablePackage = state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID;
   const prdTableBlueprint = isPrdTablePackage ? getPrdTableBlueprint() : null;
@@ -15587,8 +15645,8 @@ function buildDemoGeneratedActivity() {
         : context.modules.map((module) => module.name),
       sourceContextId: context.id,
       sourcePageTemplateId: prdPageTemplate?.id || "",
-      canvasBackground: defaultTheme.background,
-      colorThemeId: defaultTheme.id,
+      canvasBackground: selectedTheme.background,
+      colorThemeId: selectedTheme.id,
       navBarEnabled: prdPageTemplate
         ? Boolean(prdPageTemplate.navBarEnabled)
         : false,
@@ -15604,8 +15662,10 @@ function buildDemoGeneratedActivity() {
         : "PRD 文本 → 页面模块"
       : "PRD mock → 活动包 → 人群页面",
   };
-  const fallbackPages = createGuidedFallbackPages(pages[0]);
+  const fallbackPages = createGuidedFallbackPages(pages[0] || selectedTheme);
   state.pages = [...pages, ...fallbackPages];
+  state.guidedPageThemeId = selectedTheme.id;
+  state.pages.forEach((page) => applyThemeBoundVariantsToNodes(page.nodes, selectedTheme.id));
   state.activePageId = pages[0]?.id || fallbackPages[0].id;
   if (state.guidedHeaderLevelId === "s") {
     applyGuidedHeaderLevel("s");
@@ -20542,6 +20602,7 @@ function applyGuidedPageTheme(themeId) {
   const page = activePage();
   const theme = guidedPageThemePresets.find((item) => item.id === themeId);
   if (!page || !theme) return;
+  state.guidedPageThemeId = theme.id;
   if (state.workflowType === "resource") {
     applyResourceGlobalDraftValue("__themeId", theme.id);
   }
@@ -27175,6 +27236,29 @@ function bindEvents() {
   });
 
   document.addEventListener("beforeinput", (event) => {
+    const ruleBody = event.target.closest(
+      '[data-react-component="正文-活动规则样式3"] [contenteditable="true"]',
+    );
+    const ruleBodyKey =
+      ruleBody?.dataset.editProp ||
+      ruleBody?.dataset.variantProp ||
+      ruleBody?.dataset.guidedLineageInline?.split("|")[1]?.split(".").pop();
+    if (
+      ["firstBodyText", "secondBodyText", "thirdBodyText"].includes(ruleBodyKey) &&
+      ["insertLineBreak", "insertParagraph"].includes(event.inputType) &&
+      !event.isComposing
+    ) {
+      event.preventDefault();
+      const caretOffset = getTextOffsetWithin(ruleBody);
+      const atEnd = caretOffset === ruleBody.textContent.length;
+      // 保留真实换行字符，避免浏览器创建 div/br 后被 textContent 丢弃。
+      document.execCommand("insertHTML", false, atEnd ? "&#10;<br>" : "&#10;");
+      if (ruleBody.textContent.endsWith("\n") && ruleBody.lastChild?.nodeName !== "BR") {
+        ruleBody.append(document.createElement("br"));
+      }
+      restoreTextOffsetWithin(ruleBody, caretOffset == null ? null : caretOffset + 1);
+      return;
+    }
     const target = captureDailyHeaderTitleSnapshot(event.target);
     const rule = getDailyHeaderFieldRule(target);
     if (
@@ -27620,6 +27704,10 @@ function bindEvents() {
       state.prdTableRows[rowIndex].value = prdTemplateVariableInput.type === "checkbox"
         ? (prdTemplateVariableInput.checked ? "true" : "")
         : prdTemplateVariableInput.value;
+      syncConsumptionReturnSharedStateField(
+        rowKey,
+        state.prdTableRows[rowIndex].value,
+      );
       syncGuidedSHeaderTableRow(
         rowKey,
         state.prdTableRows[rowIndex].value,
@@ -27758,6 +27846,10 @@ function bindEvents() {
           ? (prdTableRowInput.checked ? "true" : "")
           : prdTableRowInput.value;
         syncBigdayCouponSharedStateField(
+          rowKey,
+          state.prdTableRows[rowIndex].value,
+        );
+        syncConsumptionReturnSharedStateField(
           rowKey,
           state.prdTableRows[rowIndex].value,
         );

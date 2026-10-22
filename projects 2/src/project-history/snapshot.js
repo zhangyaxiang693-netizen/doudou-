@@ -23,6 +23,7 @@ const EDITOR_FIELDS = [
   "prdTableBlueprintSignature",
   "pageTemplateBlueprintStates",
   "pageTemplateChildStates",
+  "guidedPageThemeId",
   "guidedHeaderLevelId",
   "guidedHeaderLevelDrafts",
   "guidedHeaderDefaultPageSnapshots",
@@ -122,6 +123,8 @@ function migrateV1(snapshot) {
     note: "活动 → 维度 → 页面 → 模块 → 变体",
   };
   migrated.editor.pages ||= [];
+  migrated.editor.guidedPageThemeId ||=
+    migrated.editor.pages.find((page) => page.colorThemeId)?.colorThemeId || "pink";
   migrated.editor.guidedLotteryPrizeOverrides ||= null;
   migrated.templates.activePageTemplate ||= null;
   migrated.templates.referencedPageTemplates ||= [];

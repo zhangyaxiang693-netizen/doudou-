@@ -69,6 +69,45 @@ test("restores editor fields and clears transient UI state", () => {
   assert.equal(target.colorPanelOpen, false);
 });
 
+test("preserves the selected page theme when saving and restoring a project", () => {
+  const source = createState();
+  source.guidedPageThemeId = "node-anniversary";
+  source.pages[0].colorThemeId = "node-anniversary";
+  const snapshot = createProjectSnapshot(source, { stage: "preview" });
+  source.guidedPageThemeId = "pink";
+  source.pages[0].colorThemeId = "pink";
+  const target = { ...createState(), guidedPageThemeId: "blue" };
+
+  applyProjectSnapshot(target, snapshot);
+
+  assert.equal(snapshot.editor.guidedPageThemeId, "node-anniversary");
+  assert.equal(target.guidedPageThemeId, "node-anniversary");
+  assert.equal(target.pages[0].colorThemeId, "node-anniversary");
+  assert.equal(snapshot.resume.stage, "preview");
+});
+
+test("restores the theme from saved pages for older snapshots", () => {
+  const source = createState();
+  source.pages[0].colorThemeId = "blue";
+  const snapshot = createProjectSnapshot(source);
+  delete snapshot.editor.guidedPageThemeId;
+  const target = { ...createState(), guidedPageThemeId: "node-anniversary" };
+
+  applyProjectSnapshot(target, snapshot);
+
+  assert.equal(target.guidedPageThemeId, "blue");
+});
+
+test("uses the default theme for an older project without saved colors", () => {
+  const snapshot = createProjectSnapshot(createState());
+  delete snapshot.editor.guidedPageThemeId;
+  const target = { ...createState(), guidedPageThemeId: "node-anniversary" };
+
+  applyProjectSnapshot(target, snapshot);
+
+  assert.equal(target.guidedPageThemeId, "pink");
+});
+
 test("rejects snapshots created by a newer schema", () => {
   assert.throws(
     () =>

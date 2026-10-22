@@ -95,11 +95,7 @@ function renderHighlightedLine(value: string, highlights: string[], keyPrefix: s
 
 function renderHighlightedText(value: string, highlightText: string) {
   const highlights = parseTextList(highlightText).sort((a, b) => b.length - a.length)
-  return value.split('\n').map((line, index) => (
-    <div key={`${line}-${index}`}>
-      {renderHighlightedLine(line, highlights, `line-${index}`)}
-    </div>
-  ))
+  return renderHighlightedLine(value, highlights, 'body')
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {

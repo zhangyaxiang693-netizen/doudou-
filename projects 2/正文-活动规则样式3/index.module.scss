@@ -103,11 +103,17 @@
   width: 571px;
   font-family: "Source Han Sans CN Regular";
   font-size: 24px;
-  white-space: normal;
   text-align: left;
   color: rgba(81, 81, 81, 1);
   line-height: 36px;
   font-weight: 400;
   flex-shrink: 0;
   overflow-wrap: anywhere;
+}
+
+.text1,
+.text2,
+.text3 {
+  white-space: pre-wrap;
+  word-break: break-all;
 }
