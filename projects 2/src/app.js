@@ -9636,6 +9636,12 @@ function applyCutExportRulesToNode(node) {
   if (!node) return node;
   if (node.type === "molecule") {
     (node.children || []).forEach(applyCutExportRulesToNode);
+    if (isConsumptionReturnMoleculeNode(node)) {
+      const dataBarChild = (node.children || []).find(
+        (child) => child?.schemaId === "横排按钮数据条",
+      );
+      if (dataBarChild?.props) dataBarChild.props.hideNumbers = true;
+    }
     if (
       isConsumptionReturnMoleculeNode(node) &&
       node.activeGuidedStateId === "unregistered"
