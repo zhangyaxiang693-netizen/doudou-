@@ -5544,9 +5544,7 @@ function getConsumptionReturnDetailMode(
   ) {
     return explicitMode;
   }
-  return Number(audienceCount) >= 2
-    ? CONSUMPTION_RETURN_DETAIL_MODE_AUDIENCE
-    : CONSUMPTION_RETURN_DETAIL_MODE_SHARED;
+  return CONSUMPTION_RETURN_DETAIL_MODE_SHARED;
 }
 
 function isConsumptionReturnAudienceSpecificKey(compoundKey) {
@@ -9644,12 +9642,12 @@ function applyCutExportRulesToNode(node) {
       );
       if (dataBarChild?.props) dataBarChild.props.hideNumbers = true;
     }
-    if (
-      isConsumptionReturnMoleculeNode(node) &&
-      node.activeGuidedStateId === "unregistered"
-    ) {
+    if (isConsumptionReturnMoleculeNode(node)) {
       const progressChild = node.children?.[1];
-      if (progressChild?.props) progressChild.props.hideProgressGraphic = false;
+      if (progressChild?.props) {
+        progressChild.props.hideProgressGraphic =
+          node.activeGuidedStateId !== "unregistered";
+      }
     }
     return node;
   }
@@ -25443,10 +25441,6 @@ function bindEvents() {
           .forEach((field) =>
             ensurePageTemplateVariableVersionRow(field, version.name),
           );
-        upsertPrdTableRow(
-          getConsumptionReturnDetailModeRowKey(pageModule.moduleIndex),
-          CONSUMPTION_RETURN_DETAIL_MODE_AUDIENCE,
-        );
       }
       syncGuidedSHeaderVersionAdded(moduleKey, version);
       if (!refreshPageTemplateVariableGroupRow(moduleRow)) render();
