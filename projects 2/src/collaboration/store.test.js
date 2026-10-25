@@ -6,6 +6,9 @@ import {
   createTeam,
   listRecordsForUser,
   upsertRecord,
+  loadCollaborationState,
+  saveCollaborationState,
+  COLLABORATION_STORAGE_KEY,
 } from "./store.js";
 
 test("group history is visible to every user while personal history stays private", () => {
@@ -51,6 +54,46 @@ test("group history is visible to every user while personal history stays privat
     ),
     ["personal-record"],
   );
+});
+
+test("account cache is isolated and never imports the former shared admin cache", () => {
+  const values = new Map();
+  globalThis.localStorage = {
+    getItem: (key) => values.get(key) || null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  try {
+    values.set(COLLABORATION_STORAGE_KEY, JSON.stringify({
+      records: [{ id: "private", ownerId: "other", scope: "personal" }],
+    }));
+    let first = loadCollaborationState({ id: "first" });
+    assert.equal(first.records.length, 0);
+    first = upsertRecord(first, { id: "first-private", ownerId: "first" });
+    saveCollaborationState(first);
+    const second = loadCollaborationState({ id: "second" });
+    assert.equal(second.records.length, 0);
+    assert.equal(loadCollaborationState({ id: "first" }).records[0].id, "first-private");
+  } finally { delete globalThis.localStorage; }
+});
+
+test("browser quota failure does not interrupt loading or cloud state acceptance", () => {
+  globalThis.localStorage = {
+    getItem() { throw new Error("storage disabled"); },
+    setItem() { throw new Error("quota exceeded"); },
+  };
+  try {
+    const state = loadCollaborationState({ id: "owner" });
+    assert.doesNotThrow(() => upsertRecord(state, { id: "record", ownerId: "owner" }));
+  } finally { delete globalThis.localStorage; }
+});
+
+test("copy has an independent snapshot and restores with the copy name", () => {
+  const state = upsertRecord(createCollaborationState({ id: "u" }), {
+    id: "r", ownerId: "u", name: "原稿", snapshot: { editor: { activity: { name: "原稿" } } },
+  });
+  const next = copyRecord(state, "r", { ownerId: "u" });
+  assert.equal(next.records[0].snapshot.editor.activity.name, "原稿 - 副本");
+  assert.equal(state.records[0].snapshot.editor.activity.name, "原稿");
 });
 
 test("records can be copied between personal and group scopes", () => {

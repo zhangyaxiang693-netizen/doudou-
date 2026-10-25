@@ -9,6 +9,15 @@ class CollaborationRepositoryError extends Error {
 
 function storageError(error) {
   if (error instanceof CollaborationRepositoryError) return error;
+  const messages = {
+    VERSION_CONFLICT: "该记录已被更新，请保留当前编辑并另存副本，或重新打开最新记录",
+    RECORD_NOT_FOUND: "历史记录不存在或已删除，请刷新",
+    RECORD_FORBIDDEN: "无权修改该个人记录",
+    INVALID_SNAPSHOT: "项目快照格式无效",
+  };
+  if (messages[error?.message]) {
+    return new CollaborationRepositoryError(error.message, messages[error.message], error);
+  }
   return new CollaborationRepositoryError(
     "STORAGE_ERROR",
     error?.message || "Collaboration storage failed",
@@ -111,7 +120,7 @@ function createCollaborationRepository(supabase) {
   async function getExistingRecord(recordId) {
     const { data, error } = await supabase
       .from("collaboration_records")
-      .select("id,owner_id,scope,created_at,updated_at")
+      .select("id,project_id,owner_id,name,scope,group_id,snapshot_json,created_at,updated_at")
       .eq("id", recordId)
       .maybeSingle();
     if (error) throw storageError(error);
@@ -120,89 +129,23 @@ function createCollaborationRepository(supabase) {
 
   async function sync(user, state, isAdmin = false) {
     await upsertCurrentUser(user);
-    const timestamp = new Date().toISOString();
-
-    for (const item of state.users || []) {
-      if (!isAdmin && String(item.id) !== user.id) continue;
-      const { error } = await supabase.from("app_users").upsert(
-        {
-          id: String(item.id),
-          name: String(item.name || "未命名用户"),
-          avatar_url: String(item.avatarUrl || ""),
-          updated_at: timestamp,
-          last_seen_at: timestamp,
-        },
-        { onConflict: "id" },
-      );
-      if (error) throw storageError(error);
-    }
-
-    for (const group of state.teams || []) {
-      const { error } = await supabase.from("collaboration_groups").upsert(
-        {
-          id: String(group.id),
-          name: String(group.name || "未命名组"),
-          created_by: user.id,
-          created_at: group.createdAt || timestamp,
-          updated_at: group.updatedAt || timestamp,
-        },
-        { onConflict: "id" },
-      );
-      if (error) throw storageError(error);
-    }
-
-    for (const record of state.records || []) {
-      const id = String(record.id || "");
-      const scope = record.scope === "team" ? "team" : "personal";
-      if (!id) continue;
-      const existing = await getExistingRecord(id);
-      if (
-        existing?.scope === "personal" &&
-        existing.owner_id !== user.id &&
-        !isAdmin
-      ) {
-        throw new CollaborationRepositoryError(
-          "RECORD_FORBIDDEN",
-          "无权修改其他用户的个人记录",
-        );
-      }
-      if (
-        scope === "personal" &&
-        String(record.ownerId || user.id) !== user.id &&
-        !isAdmin
-      ) {
-        continue;
-      }
-      const ownerId =
-        existing?.owner_id ||
-        (isAdmin ? String(record.ownerId || user.id) : user.id);
-      const { error } = await supabase.from("collaboration_records").upsert(
-        {
-          id,
-          project_id: record.projectId || null,
-          owner_id: ownerId,
-          name: String(record.name || "未命名活动"),
-          scope,
-          group_id: scope === "team" ? String(record.teamId || "") : null,
-          snapshot_json: record.snapshot || {},
-          created_at: record.createdAt || existing?.created_at || timestamp,
-          updated_at: record.updatedAt || existing?.updated_at || timestamp,
-        },
-        { onConflict: "id" },
-      );
-      if (error) throw storageError(error);
-    }
-
-    return bootstrap(user, isAdmin);
+    const { data, error } = await supabase.rpc("sync_collaboration_changes", {
+      p_user_id: user.id,
+      p_state: state,
+      p_is_admin: isAdmin,
+    });
+    if (error) throw storageError(error);
+    return {
+      version: 1,
+      users: data.users.map(mapUser),
+      teams: data.teams.map(mapGroup),
+      records: data.records.map(mapRecord),
+      updatedAt: new Date().toISOString(),
+    };
   }
 
-  async function overrideRecord(recordId, changes) {
-    const { data: record, error: recordError } = await supabase
-      .from("collaboration_records")
-      .select("id,project_id,owner_id,scope")
-      .eq("id", recordId)
-      .maybeSingle();
-    if (recordError) throw storageError(recordError);
+  async function overrideRecord(recordId, changes, user) {
+    const record = await getExistingRecord(recordId);
     if (!record) {
       throw new CollaborationRepositoryError(
         "RECORD_NOT_FOUND",
@@ -210,59 +153,11 @@ function createCollaborationRepository(supabase) {
       );
     }
 
-    const timestamp = new Date().toISOString();
-    const snapshot = {
-      ...changes.snapshot,
-      savedAt: changes.snapshot.savedAt || timestamp,
-    };
-    const { error: updateRecordError } = await supabase
-      .from("collaboration_records")
-      .update({
-        name: changes.name,
-        snapshot_json: snapshot,
-        updated_at: timestamp,
-      })
-      .eq("id", recordId);
-    if (updateRecordError) throw storageError(updateRecordError);
-
-    if (record.project_id) {
-      const { data: project, error: projectError } = await supabase
-        .from("projects")
-        .select("latest_version_id")
-        .eq("id", record.project_id)
-        .maybeSingle();
-      if (projectError) throw storageError(projectError);
-
-      if (!project?.latest_version_id) {
-        throw new CollaborationRepositoryError(
-          "RECORD_NOT_FOUND",
-          "项目快照不存在",
-        );
-      }
-      const { error: versionError } = await supabase
-        .from("project_versions")
-        .update({
-          schema_version: Number(snapshot.schemaVersion || 1),
-          app_version: String(snapshot.appVersion || ""),
-          snapshot_json: snapshot,
-          snapshot_saved_at: snapshot.savedAt,
-          created_at: timestamp,
-        })
-        .eq("id", project.latest_version_id)
-        .eq("project_id", record.project_id);
-      if (versionError) throw storageError(versionError);
-
-      const { error: updateProjectError } = await supabase
-        .from("projects")
-        .update({
-          name: changes.name,
-          updated_at: timestamp,
-        })
-        .eq("id", record.project_id);
-      if (updateProjectError) throw storageError(updateProjectError);
-    }
-
-    return { ...record, name: changes.name, snapshot };
+    const result = await sync(user, {
+      users: [], teams: [],
+      records: [{ ...mapRecord(record), ...changes }],
+    }, true);
+    return result.records.find((item) => item.id === recordId);
   }
 
   return { bootstrap, overrideRecord, sync };

@@ -6,6 +6,7 @@ const {
 } = require("./collaboration-repository.cjs");
 const { getSupabaseServiceClient } = require("./supabase-client.cjs");
 const { extractAdminFromRequest } = require("./admin-token.cjs");
+const { validateSnapshot } = require("./history-routes.cjs");
 
 function sendError(res, error) {
   const code =
@@ -13,6 +14,8 @@ function sendError(res, error) {
       ? error.code
       : "STORAGE_ERROR";
   const status = {
+    INVALID_SNAPSHOT: 400,
+    VERSION_CONFLICT: 409,
     RECORD_FORBIDDEN: 403,
     RECORD_NOT_FOUND: 404,
     STORAGE_ERROR: 500,
@@ -94,7 +97,7 @@ function createCollaborationRouter(options = {}) {
       name.length > 120 ||
       !snapshot ||
       typeof snapshot !== "object" ||
-      Array.isArray(snapshot)
+      !validateSnapshot(snapshot)
     ) {
       return res.status(400).json({
         success: false,
@@ -105,7 +108,8 @@ function createCollaborationRouter(options = {}) {
     try {
       const record = await getRepository().overrideRecord(
         String(req.params.recordId),
-        { name, snapshot },
+        { name, snapshot, baseUpdatedAt: req.body.baseUpdatedAt || null },
+        req.historyUser,
       );
       res.json({ success: true, data: { record } });
     } catch (error) {

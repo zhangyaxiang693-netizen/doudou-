@@ -24,15 +24,16 @@ import {
   listRecordsForUser,
   loadCollaborationState,
   normalizeCollaborationState,
+  saveCollaborationState,
   renameUser,
   updateRecord,
   updateTeam,
   upsertRecord,
 } from "./collaboration/store.js";
+import { collaborationChanges, createCollaborationQueue } from "./collaboration/changes.js";
 import {
   getCollaborationState,
   lockAdminAccess,
-  overrideCollaborationRecord,
   syncCollaborationState,
   unlockAdminAccess,
 } from "./collaboration/api.js";
@@ -6759,77 +6760,36 @@ function currentUserIsAdmin() {
   return state.adminUnlocked;
 }
 
-let collaborationSyncTimer = null;
+const enqueueCollaboration = createCollaborationQueue();
 
 function setCollaborationState(nextState) {
-  state.collaboration = nextState;
-  window.clearTimeout(collaborationSyncTimer);
-  collaborationSyncTimer = window.setTimeout(async () => {
+  const changes = collaborationChanges(state.collaboration, nextState);
+  return enqueueCollaboration(async () => {
     try {
-      await syncCollaborationState(state.collaboration);
+      const remote = await syncCollaborationState(changes);
+      state.collaboration = saveCollaborationState(
+        normalizeCollaborationState(remote, sessionUser),
+      );
+      return state.collaboration;
     } catch (error) {
-      console.warn("协作数据暂未同步到服务端，已保留本地副本", error);
-    }
-  }, 400);
-  return nextState;
-}
-
-function mergeCollaborationCollections(remoteItems = [], localItems = []) {
-  const merged = new Map();
-  [...remoteItems, ...localItems].forEach((item) => {
-    if (!item?.id) return;
-    const existing = merged.get(String(item.id));
-    if (
-      !existing ||
-      new Date(item.updatedAt || 0).getTime() >=
-        new Date(existing.updatedAt || 0).getTime()
-    ) {
-      merged.set(String(item.id), item);
+      saveCollaborationState(state.collaboration);
+      throw error;
     }
   });
-  return [...merged.values()];
 }
 
-async function refreshCollaborationFromServer({ syncLocal = true } = {}) {
-  try {
+function refreshCollaborationFromServer() {
+  return enqueueCollaboration(async () => {
     const remote = await getCollaborationState();
-    const merged = normalizeCollaborationState(
-      {
-        version: 1,
-        users: mergeCollaborationCollections(
-          remote.users,
-          state.collaboration.users,
-        ),
-        teams: mergeCollaborationCollections(
-          remote.teams,
-          state.collaboration.teams,
-        ),
-        records: mergeCollaborationCollections(
-          remote.records,
-          state.collaboration.records,
-        ),
-        updatedAt: remote.updatedAt,
-      },
-      sessionUser,
+    state.collaboration = saveCollaborationState(
+      normalizeCollaborationState(remote, sessionUser),
     );
-    state.collaboration = merged;
-    if (!state.historyGroupId && merged.teams[0]) {
-      state.historyGroupId = merged.teams[0].id;
-    }
-    if (syncLocal) {
-      window.clearTimeout(collaborationSyncTimer);
-      collaborationSyncTimer = window.setTimeout(() => {
-        syncCollaborationState(state.collaboration).catch((error) => {
-          console.warn("本地协作数据上传失败", error);
-        });
-      }, 100);
+    if (!state.historyGroupId && state.collaboration.teams[0]) {
+      state.historyGroupId = state.collaboration.teams[0].id;
     }
     render();
     return true;
-  } catch (error) {
-    console.warn("协作服务不可用，继续使用本地数据", error);
-    return false;
-  }
+  });
 }
 
 async function openAdminDashboard() {
@@ -6851,6 +6811,8 @@ function startNewHistorySession() {
   state.historySaveScope = "personal";
   state.historySaveGroupId = "";
   state.historyCollaborationRecordId = null;
+  state.historyBaseUpdatedAt = null;
+  state.historyRecordBaseUpdatedAt = null;
 }
 
 function collectReferencedSchemaIds(nodes, result = new Set()) {
@@ -6921,6 +6883,11 @@ async function performProjectSnapshotSave({
   }
   const group =
     targetScope === "team" ? getGroupById(targetGroupId) : null;
+  if (targetScope === "team" && !group) {
+    state.historyError = "所选组不存在，请刷新后重新选择";
+    window.alert(state.historyError);
+    return { cloudSaved: false };
+  }
   const normalizedScope = group ? "team" : "personal";
   state.historySaveScope = normalizedScope;
   state.historySaveGroupId = group?.id || "";
@@ -6929,7 +6896,6 @@ async function performProjectSnapshotSave({
     (record) => record.id === state.historyCollaborationRecordId,
   );
   const saveAsCopy = saveMode === "copy";
-  const overwriteCurrent = saveMode === "overwrite";
   let currentProjectId = saveAsCopy
     ? null
     : state.historyCurrentProjectId;
@@ -6944,16 +6910,28 @@ async function performProjectSnapshotSave({
   if (!currentVersionId && ownedProject?.latestVersionId) {
     currentVersionId = ownedProject.latestVersionId;
   }
-  const overwriteCollaborationOnly =
-    overwriteCurrent && sourceRecord && !ownedProject;
-
   try {
     if (!state.historyUser) {
       state.historyUser = await getCurrentUser();
     }
-    if (overwriteCollaborationOnly) {
+    if (!saveAsCopy && sourceRecord) {
+      const updated = updateRecord(state.collaboration, sourceRecord.id, {
+        name: projectName,
+        snapshot,
+        baseUpdatedAt: state.historyRecordBaseUpdatedAt || sourceRecord.updatedAt,
+      });
+      await setCollaborationState(updated);
       currentProjectId = sourceRecord.projectId || null;
+      const savedRecord = state.collaboration.records.find((record) => record.id === sourceRecord.id);
+      state.historyRecordBaseUpdatedAt = savedRecord.updatedAt;
+      state.historyBaseUpdatedAt = savedRecord.updatedAt;
+      if (ownedProject) {
+        upsertHistoryProject({ ...ownedProject, name: projectName, updatedAt: savedRecord.updatedAt });
+      }
     } else if (!currentProjectId) {
+      if (!saveAsCopy && state.historyCollaborationRecordId) {
+        throw new Error("当前记录已不存在，请另存副本");
+      }
       const result = await createProject({
         name: projectName,
         prdUrl: state.prdFeishuUrl || "",
@@ -6965,56 +6943,41 @@ async function performProjectSnapshotSave({
       currentProjectId = result.project.id;
       currentVersionId = result.version.id;
       upsertHistoryProject(result.project);
+      state.historyBaseUpdatedAt = result.project.updatedAt;
+      state.historyRecordBaseUpdatedAt = result.project.updatedAt;
+      state.historyCollaborationRecordId = currentProjectId;
+      state.collaboration = upsertRecord(state.collaboration, {
+        id: currentProjectId,
+        projectId: currentProjectId,
+        ownerId: state.historyUser.id,
+        name: projectName,
+        scope: normalizedScope,
+        teamId: group?.id || null,
+        snapshot,
+        createdAt: result.project.createdAt,
+        updatedAt: result.project.updatedAt,
+      });
     } else if (ownedProject) {
       const result = await overwriteProject(currentProjectId, {
         name: projectName,
         prdUrl: state.prdFeishuUrl || "",
         templateId: state.currentTemplateId || "",
         snapshot,
+        baseUpdatedAt: state.historyBaseUpdatedAt || ownedProject.updatedAt,
       });
       currentVersionId = result.version.id;
       upsertHistoryProject(result.project);
+      state.historyBaseUpdatedAt = result.project.updatedAt;
+    } else {
+      throw new Error("当前记录已不存在，请另存副本");
     }
     state.historyCurrentProjectId = currentProjectId;
     state.historyCurrentVersionId = currentVersionId;
 
     state.historyError = "";
-    const owner = getCurrentCollaborationUser();
-    if (owner) {
-      const keepsSource =
-        overwriteCurrent && sourceRecord;
-      const recordScope = keepsSource
-        ? sourceRecord.scope
-        : normalizedScope;
-      const recordGroupId =
-        recordScope === "team"
-          ? keepsSource
-            ? sourceRecord.teamId
-            : group?.id || null
-          : null;
-      const nextRecordId = keepsSource
-        ? sourceRecord.id
-        : currentProjectId;
-      setCollaborationState(
-        upsertRecord(state.collaboration, {
-          id: nextRecordId,
-          projectId:
-            currentProjectId || sourceRecord?.projectId || null,
-          ownerId: keepsSource ? sourceRecord.ownerId : owner.id,
-          name: state.activity?.name || "未命名活动",
-          scope: recordScope,
-          teamId: recordGroupId,
-          snapshot,
-        }),
-      );
-      state.historyCollaborationRecordId = nextRecordId;
-    }
     return { cloudSaved: true, snapshot };
   } catch (error) {
-    const cloudError =
-      error instanceof ProjectHistoryApiError
-        ? error.message
-        : "云端保存失败";
+    const cloudError = error.message || "云端保存失败";
     state.historyError = cloudError;
     window.alert(state.historyError);
     return {
@@ -7069,6 +7032,7 @@ async function loadProjectHistory() {
   try {
     const user = await getCurrentUser();
     state.historyUser = user;
+    await refreshCollaborationFromServer();
     state.historyProjects = await listProjects();
     state.historyStatus = "ready";
   } catch (error) {
@@ -7147,6 +7111,8 @@ async function restoreCloudProject(projectId, versionId) {
     state.historySaveGroupId =
       linkedRecord?.scope === "team" ? linkedRecord.teamId || "" : "";
     state.historyCollaborationRecordId = linkedRecord?.id || null;
+    state.historyBaseUpdatedAt = project?.updatedAt || null;
+    state.historyRecordBaseUpdatedAt = linkedRecord?.updatedAt || null;
     applyRestoredProject(
       version.snapshot,
       projectId,
@@ -7165,10 +7131,14 @@ async function copyCloudProjectToGroup(projectId, groupId) {
   if (!project?.latestVersionId || !group || !owner) return;
   try {
     const version = await getVersion(projectId, project.latestVersionId);
-    setCollaborationState(
+    const copyName = `${project.name} - 副本`;
+    if (version.snapshot.editor?.activity) {
+      version.snapshot.editor.activity.name = copyName;
+    }
+    await setCollaborationState(
       upsertRecord(state.collaboration, {
         ownerId: owner.id,
-        name: `${project.name} - 副本`,
+        name: copyName,
         scope: "team",
         teamId: group.id,
         snapshot: version.snapshot,
@@ -7189,12 +7159,19 @@ async function removeHistoryProject(projectId) {
   }
   try {
     await deleteProject(projectId);
+    state.collaboration = saveCollaborationState({
+      ...state.collaboration,
+      records: state.collaboration.records.filter((record) => record.projectId !== projectId),
+    });
     state.historyProjects = state.historyProjects.filter(
       (item) => item.id !== projectId,
     );
     if (state.historyCurrentProjectId === projectId) {
       state.historyCurrentProjectId = null;
       state.historyCurrentVersionId = null;
+      state.historyCollaborationRecordId = null;
+      state.historyBaseUpdatedAt = null;
+      state.historyRecordBaseUpdatedAt = null;
     }
     render();
   } catch (error) {
@@ -24789,7 +24766,7 @@ function bindEvents() {
       event.preventDefault();
       const data = new FormData(addUserForm);
       try {
-        setCollaborationState(
+        await setCollaborationState(
           addUser(state.collaboration, {
             id: data.get("userId"),
             name: data.get("userName"),
@@ -24810,7 +24787,7 @@ function bindEvents() {
       event.preventDefault();
       const data = new FormData(createTeamForm);
       try {
-        setCollaborationState(
+        await setCollaborationState(
           createTeam(state.collaboration, {
             name: data.get("teamName"),
           }),
@@ -24836,16 +24813,12 @@ function bindEvents() {
           name: String(data.get("recordName") || "").trim(),
           snapshot,
         };
-        setCollaborationState(
+        await setCollaborationState(
           updateRecord(
             state.collaboration,
             recordForm.dataset.recordId,
             changes,
           ),
-        );
-        await overrideCollaborationRecord(
-          recordForm.dataset.recordId,
-          changes,
         );
         state.adminEditingRecordId = null;
         state.adminNotice = "历史记录已覆盖";
@@ -24856,7 +24829,7 @@ function bindEvents() {
     }
   });
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
     if (event.target.closest("[data-placement-case-scrollbar]")) return;
 
     if (event.target.closest("[data-open-resource-flow]")) {
@@ -24955,14 +24928,19 @@ function bindEvents() {
     if (copyRecordToPersonal) {
       const owner = getCurrentCollaborationUser();
       if (!owner) return;
-      setCollaborationState(
-        copyRecord(
-          state.collaboration,
-          copyRecordToPersonal.dataset.copyRecordPersonal,
-          { ownerId: owner.id, scope: "personal" },
-        ),
-      );
-      state.historyScope = "personal";
+      try {
+        await setCollaborationState(
+          copyRecord(
+            state.collaboration,
+            copyRecordToPersonal.dataset.copyRecordPersonal,
+            { ownerId: owner.id, scope: "personal" },
+          ),
+        );
+        state.historyScope = "personal";
+        state.historyError = "";
+      } catch (error) {
+        state.historyError = error.message;
+      }
       render();
       return;
     }
@@ -24977,15 +24955,20 @@ function bindEvents() {
         `[data-copy-record-group="${CSS.escape(recordId)}"]`,
       )?.value;
       if (!owner || !getGroupById(groupId)) return;
-      setCollaborationState(
-        copyRecord(state.collaboration, recordId, {
-          ownerId: owner.id,
-          scope: "team",
-          teamId: groupId,
-        }),
-      );
-      state.historyGroupId = groupId;
-      state.historyScope = "team";
+      try {
+        await setCollaborationState(
+          copyRecord(state.collaboration, recordId, {
+            ownerId: owner.id,
+            scope: "team",
+            teamId: groupId,
+          }),
+        );
+        state.historyGroupId = groupId;
+        state.historyScope = "team";
+        state.historyError = "";
+      } catch (error) {
+        state.historyError = error.message;
+      }
       render();
       return;
     }
@@ -25015,6 +24998,8 @@ function bindEvents() {
         state.historySaveGroupId =
           record.scope === "team" ? record.teamId || "" : "";
         state.historyCollaborationRecordId = record.id;
+        state.historyRecordBaseUpdatedAt = record.updatedAt;
+        state.historyBaseUpdatedAt = record.updatedAt;
         const linkedProject = record.projectId
           ? state.historyProjects.find(
               (project) => project.id === record.projectId,
@@ -26366,7 +26351,7 @@ function bindEvents() {
         `[data-admin-user-name="${CSS.escape(userId)}"]`,
       );
       try {
-        setCollaborationState(
+        await setCollaborationState(
           renameUser(state.collaboration, userId, input?.value),
         );
         state.adminNotice = "用户名称已更新";
@@ -26384,7 +26369,7 @@ function bindEvents() {
         `[data-admin-team-name="${CSS.escape(teamId)}"]`,
       )?.value;
       try {
-        setCollaborationState(
+        await setCollaborationState(
           updateTeam(state.collaboration, teamId, { name }),
         );
         state.adminNotice = "组名称已更新";
@@ -26699,7 +26684,7 @@ function bindEvents() {
           name: input?.value,
         });
         const group = nextState.teams[nextState.teams.length - 1];
-        setCollaborationState(nextState);
+        await setCollaborationState(nextState);
         document.querySelector("[data-save-scope-modal]")?.remove();
         const button = pendingManualSaveButton;
         pendingManualSaveButton = null;
@@ -29287,7 +29272,10 @@ function mount() {
     console.warn("后台解锁状态清理失败", error);
   });
   render();
-  refreshCollaborationFromServer({ syncLocal: false });
+  refreshCollaborationFromServer().catch((error) => {
+    state.historyError = error.message || "协作数据加载失败，请刷新重试";
+    console.warn("协作数据加载失败", error);
+  });
 }
 
 mount();

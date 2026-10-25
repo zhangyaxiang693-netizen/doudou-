@@ -27,6 +27,7 @@ export function createCollaborationState(currentUser, options = {}) {
   }
   return {
     version: 1,
+    cacheUserId: normalizedCurrentUser?.id || "",
     users: normalizedCurrentUser ? [normalizedCurrentUser] : [],
     teams: [],
     records: [],
@@ -39,6 +40,7 @@ export function normalizeCollaborationState(value, currentUser, options = {}) {
     value && typeof value === "object"
       ? {
           version: 1,
+          cacheUserId: String(currentUser?.id || ""),
           users: Array.isArray(value.users)
             ? value.users.map(normalizeUser).filter(Boolean)
             : [],
@@ -92,8 +94,11 @@ export function loadCollaborationState(currentUser, options = {}) {
   let stored = null;
   try {
     stored = JSON.parse(
-      localStorage.getItem(COLLABORATION_STORAGE_KEY) || "null",
+      localStorage.getItem(
+        `${COLLABORATION_STORAGE_KEY}:${encodeURIComponent(currentUser?.id || "")}`,
+      ) || "null",
     );
+    // Do not import the former shared cache: its account/admin origin is unknown.
   } catch {
     stored = null;
   }
@@ -104,8 +109,21 @@ export function loadCollaborationState(currentUser, options = {}) {
 
 export function saveCollaborationState(state) {
   const next = { ...state, updatedAt: now() };
-  if (typeof localStorage !== "undefined") {
-    localStorage.setItem(COLLABORATION_STORAGE_KEY, JSON.stringify(next));
+  try {
+    if (typeof localStorage !== "undefined" && next.cacheUserId) {
+      localStorage.setItem(
+        `${COLLABORATION_STORAGE_KEY}:${encodeURIComponent(next.cacheUserId)}`,
+        JSON.stringify({
+          ...next,
+          users: next.users.filter((user) => user.id === next.cacheUserId),
+          records: next.records.filter(
+            (record) => record.scope === "team" || record.ownerId === next.cacheUserId,
+          ),
+        }),
+      );
+    }
+  } catch {
+    // Browser quota/private mode must not turn a successful cloud write into failure.
   }
   return next;
 }
@@ -240,6 +258,9 @@ export function copyRecord(
     (record) => record.id === String(recordId),
   );
   if (!source) throw new Error("历史记录不存在");
+  const name = `${source.name} - 副本`;
+  const snapshot = source.snapshot ? JSON.parse(JSON.stringify(source.snapshot)) : null;
+  if (snapshot?.editor?.activity) snapshot.editor.activity.name = name;
   return upsertRecord(state, {
     ...source,
     id: createId("record"),
@@ -247,7 +268,8 @@ export function copyRecord(
     ownerId,
     scope,
     teamId: scope === "team" ? teamId : null,
-    name: `${source.name} - 副本`,
+    name,
+    snapshot,
     createdAt: now(),
     updatedAt: now(),
   });

@@ -52,9 +52,11 @@ test("rejects project history requests without a trusted user", async () => {
 
 test("uses the trusted user id for project creation", async () => {
   let capturedOwnerId = null;
+  let capturedInput = null;
   const repository = {
     async createProject(ownerId, input) {
       capturedOwnerId = ownerId;
+      capturedInput = input;
       return {
         project: { id: projectId, name: input.name },
         version: { id: "22222222-2222-4222-8222-222222222222" },
@@ -71,12 +73,16 @@ test("uses the trusted user id for project creation", async () => {
     body: JSON.stringify({
       name: "测试活动",
       ownerId: "forged-user",
+      scope: "team",
+      teamId: "test-group",
       snapshot,
     }),
   });
 
   assert.equal(response.status, 201);
   assert.equal(capturedOwnerId, "trusted-user");
+  assert.equal(capturedInput.scope, "team");
+  assert.equal(capturedInput.teamId, "test-group");
 });
 
 test("maps cross-user repository checks to 403", async () => {
@@ -147,7 +153,7 @@ test("overwrites an existing project instead of creating another version", async
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "覆盖后的活动", snapshot }),
+      body: JSON.stringify({ name: "覆盖后的活动", snapshot, baseUpdatedAt: snapshot.savedAt }),
     },
   );
 
@@ -155,6 +161,7 @@ test("overwrites an existing project instead of creating another version", async
   assert.equal(capturedOwnerId, "trusted-user");
   assert.equal(capturedInput.id, projectId);
   assert.equal(capturedInput.name, "覆盖后的活动");
+  assert.equal(capturedInput.baseUpdatedAt, snapshot.savedAt);
 });
 
 test("does not expose an autosave endpoint", async () => {

@@ -40,6 +40,7 @@ function validateProjectId(value) {
 function sendError(res, error) {
   const statusByCode = {
     INVALID_SNAPSHOT: 400,
+    INVALID_GROUP: 400,
     UNAUTHENTICATED: 401,
     PROJECT_FORBIDDEN: 403,
     PROJECT_NOT_FOUND: 404,
@@ -88,7 +89,9 @@ function createHistoryRouter(options = {}) {
   router.post("/projects", async (req, res) => {
     const name = String(req.body?.name || "").trim();
     const snapshot = req.body?.snapshot;
-    if (!name || name.length > 120 || !validateSnapshot(snapshot)) {
+    if (!name || name.length > 120 || !validateSnapshot(snapshot) ||
+        (req.body?.scope && !["personal", "team"].includes(req.body.scope)) ||
+        (req.body?.scope === "team" && !String(req.body.teamId || "").trim())) {
       return sendError(
         res,
         new HistoryRepositoryError(
@@ -106,6 +109,8 @@ function createHistoryRouter(options = {}) {
           prdUrl: String(req.body?.prdUrl || "").trim(),
           templateId: String(req.body?.templateId || "").trim(),
           snapshot,
+          scope: req.body?.scope === "team" ? "team" : "personal",
+          teamId: req.body?.scope === "team" ? String(req.body.teamId).trim() : null,
         },
       );
       res.status(201).json({ success: true, data: result });
@@ -140,6 +145,7 @@ function createHistoryRouter(options = {}) {
           prdUrl: String(req.body?.prdUrl || "").trim(),
           templateId: String(req.body?.templateId || "").trim(),
           snapshot: req.body.snapshot,
+          baseUpdatedAt: req.body.baseUpdatedAt || null,
         },
       );
       res.json({ success: true, data: result });

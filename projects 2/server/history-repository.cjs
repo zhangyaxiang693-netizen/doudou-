@@ -9,6 +9,15 @@ class HistoryRepositoryError extends Error {
 
 function storageError(error) {
   if (error instanceof HistoryRepositoryError) return error;
+  const messages = {
+    VERSION_CONFLICT: "该记录已被更新，请保留当前编辑并另存副本，或重新打开最新记录",
+    PROJECT_NOT_FOUND: "项目不存在或已删除",
+    PROJECT_FORBIDDEN: "无权修改该项目",
+    INVALID_GROUP: "所选组不存在，请刷新后重试",
+  };
+  if (messages[error?.message]) {
+    return new HistoryRepositoryError(error.message, messages[error.message], error);
+  }
   return new HistoryRepositoryError(
     "STORAGE_ERROR",
     error?.message || "Project history storage failed",
@@ -84,82 +93,23 @@ function createHistoryRepository(supabase) {
   }
 
   async function createProject(ownerId, input) {
-    const { data, error } = await supabase.rpc(
-      "create_history_project",
-      {
-        p_owner_id: ownerId,
-        p_name: input.name,
-        p_prd_url: input.prdUrl,
-        p_template_id: input.templateId,
-        p_schema_version: input.snapshot.schemaVersion,
-        p_app_version: input.snapshot.appVersion || "",
-        p_snapshot_json: input.snapshot,
-      },
-    );
-
-    if (error) throw storageError(error);
-    const row = Array.isArray(data) ? data[0] : data;
-    return {
-      project: mapProject(row),
-      version: {
-        id: row.version_id,
-        projectId: row.id,
-        versionNo: row.version_no,
-        saveType: "manual",
-        schemaVersion: row.schema_version,
-        appVersion: row.app_version,
-        createdAt: row.version_created_at,
-      },
-    };
+    return writeProject(ownerId, null, input);
   }
 
   async function overwriteProject(ownerId, projectId, input) {
-    const existing = await getOwnedProject(ownerId, projectId);
-    if (!existing.latest_version_id) {
-      throw new HistoryRepositoryError(
-        "PROJECT_NOT_FOUND",
-        "Project snapshot not found",
-      );
-    }
+    return writeProject(ownerId, projectId, input);
+  }
 
-    const timestamp = new Date().toISOString();
-    const { data: versionRow, error: versionError } = await supabase
-      .from("project_versions")
-      .update({
-        schema_version: input.snapshot.schemaVersion,
-        app_version: input.snapshot.appVersion || "",
-        snapshot_json: input.snapshot,
-        snapshot_saved_at: input.snapshot.savedAt,
-        created_at: timestamp,
-      })
-      .eq("id", existing.latest_version_id)
-      .eq("project_id", projectId)
-      .select(
-        "id,project_id,version_no,save_type,schema_version,app_version,created_at",
-      )
-      .single();
-    if (versionError) throw storageError(versionError);
-
-    const { data: projectRow, error: projectError } = await supabase
-      .from("projects")
-      .update({
-        name: input.name,
-        prd_url: input.prdUrl,
-        template_id: input.templateId,
-        updated_at: timestamp,
-      })
-      .eq("id", projectId)
-      .eq("owner_id", ownerId)
-      .is("deleted_at", null)
-      .select(
-        "id,name,prd_url,template_id,latest_version_id,created_at,updated_at",
-      )
-      .single();
-    if (projectError) throw storageError(projectError);
-
+  async function writeProject(ownerId, projectId, input) {
+    const { data, error } = await supabase.rpc("write_history_project", {
+      p_owner_id: ownerId,
+      p_project_id: projectId,
+      p_input: input,
+    });
+    if (error) throw storageError(error);
     return {
-      project: mapProject(projectRow),
-      version: mapVersion(versionRow),
+      project: mapProject(data.project),
+      version: mapVersion(data.version),
     };
   }
 

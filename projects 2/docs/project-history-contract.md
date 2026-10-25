@@ -93,8 +93,9 @@ PROJECT_HISTORY_AUTH_ADAPTER=server/deployment-auth.cjs
 
 约束：`(project_id, version_no)` 唯一。
 
-每次用户手动保存都创建一个不可覆盖的正式版本。
-同一客户端必须串行提交保存请求，避免生成乱序版本。
+首次保存创建项目与一个正式快照；“覆盖当前记录”更新现有快照，不新增版本。
+“另存副本”创建独立记录。旧版本仍可查询，但本功能不是逐次保存的版本时间线。
+同一客户端串行提交保存请求，云端确认成功后才显示“已保存”。
 
 ## 快照格式
 
@@ -169,13 +170,16 @@ PROJECT_HISTORY_AUTH_ADAPTER=server/deployment-auth.cjs
 
 创建项目并生成第一个手动版本。
 
-### 创建正式版本
+### 覆盖当前项目
 
-`POST /api/projects/:projectId/versions`
+`PATCH /api/projects/:projectId`
 
 ```json
 {
-  "baseVersionId": "uuid",
+  "name": "活动名称",
+  "prdUrl": "",
+  "templateId": "",
+  "baseUpdatedAt": "打开记录时的云端 updatedAt",
   "snapshot": {}
 }
 ```
@@ -192,7 +196,15 @@ PROJECT_HISTORY_AUTH_ADAPTER=server/deployment-auth.cjs
 
 `DELETE /api/projects/:projectId`
 
-采用软删除。
+采用软删除，同时清理关联协作记录，禁止旧缓存重新上传该关联记录。
+
+### 协作记录
+
+`GET /api/collaboration/bootstrap` 返回本人个人记录及全部公共组记录；管理员返回管理范围内的记录。
+`PUT /api/collaboration/sync` 只提交发生修改的 users / teams / records，不回传整份浏览器缓存。
+修改已有组或记录需携带 `baseUpdatedAt`，冲突返回 409，编辑者可以保留当前内容另存副本。
+公共组任何登录成员可编辑；关联项目与协作快照在同一数据库事务内更新。
+创建项目的 POST 接口接受 `scope: personal|team` 和 `teamId`，目标组和快照一起提交。
 
 ## 错误码
 
@@ -216,7 +228,24 @@ PROJECT_HISTORY_AUTH_ADAPTER=server/deployment-auth.cjs
 ## 验收
 
 1. 同一飞书用户在刷新和重新登录后仍能查看项目。
-2. 不同用户不能读取、修改或删除彼此项目。
+2. 不同用户不能读取、修改或删除彼此个人项目；公共组按共享规则可读写。
 3. 恢复后 PRD、蓝图、人群、状态、页面及组件内容一致。
 4. 平台升级后旧 `schemaVersion` 快照可以迁移打开。
 5. 云端保存失败时明确提示用户，网络恢复后可再次手动保存。
+
+## 2026-10-25 上线依赖
+
+- 先在目标数据库执行 `supabase/migrations/202610250001_history_consistency.sql`，
+  再部署对应前后端；开发库、生产库分别执行。迁移依赖前两份历史/协作建表脚本。
+- 本地检查不会自动执行线上迁移。缺少新增 RPC 时保存会明确失败。
+- 迁移会清理已软删除项目对应的协作记录；其他现有项目保持不变。
+- HTTPS 在平台代理层终止时，生产环境默认信任一跳代理；如部署拓扑不同，
+  配置 `TRUST_PROXY_HOPS` 为实际可信代理跳数，禁止将应用端口直接暴露给不可信来源。
+- 继续配置 `PROJECT_HISTORY_AUTH_ADAPTER`、稳定的 `SESSION_SECRET`、
+  `DEPLOY_BASE_URL` 及 Supabase 服务端配置；确认 sessions 表可用。
+- 新前端缓存按用户隔离，不自动导入旧共享缓存。未同步到云端的旧本地草稿，
+  上线前应在原页面打开并另存，避免把其他账号或管理员缓存误上传。
+- 部署后刷新旧标签页，用两个测试账号验收保存、共享编辑冲突、删除、重新登录恢复。
+- 数据库测试：临时安装 `@electric-sql/pglite` 后设置 `PGLITE_MODULE_PATH`
+  为其绝对模块路径，再执行 `node --test server/__tests__/*.test.cjs src/project-history/*.test.js src/collaboration/*.test.js`。
+  未设置时 SQL 集成测试会明确跳过，其余测试照常运行。

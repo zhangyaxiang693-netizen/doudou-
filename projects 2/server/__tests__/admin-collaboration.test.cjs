@@ -132,7 +132,7 @@ test("history override requires a password-unlocked session", async () => {
   });
   const body = JSON.stringify({
     name: "覆盖后的记录",
-    snapshot: { schemaVersion: 1 },
+    snapshot: { schemaVersion: 1, savedAt: "2026-10-25T08:00:00Z", editor: { pages: [] } },
   });
 
   const locked = await fetch(

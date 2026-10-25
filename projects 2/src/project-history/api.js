@@ -69,11 +69,11 @@ export function createProject({
 
 export function overwriteProject(
   projectId,
-  { name, prdUrl, templateId, snapshot },
+  { name, prdUrl, templateId, snapshot, baseUpdatedAt },
 ) {
   return request(`/projects/${encodeURIComponent(projectId)}`, {
     method: "PATCH",
-    body: JSON.stringify({ name, prdUrl, templateId, snapshot }),
+    body: JSON.stringify({ name, prdUrl, templateId, snapshot, baseUpdatedAt }),
   });
 }
 

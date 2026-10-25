@@ -131,3 +131,27 @@ test("migrates venue snapshots from schema version 1", () => {
   assert.equal(migrated.editor.workflowType, "venue");
   assert.equal(migrated.editor.resourceLevel, "daily");
 });
+
+test("old projects clear another project's child states, resource selections and header drafts", () => {
+  const target = {
+    pageTemplateChildStates: { stale: "old child" },
+    pageTemplateBlueprintStates: { stale: "old blueprint" },
+    guidedHeaderLevelId: "s",
+    guidedHeaderLevelDrafts: { s: { mainTitle: "别的项目" } },
+    resourcePreviewVersionIds: { slot: "old-version" },
+    selectedLineageVariantId: "other",
+    prdTemplatePreviewVersions: { old: 1 },
+  };
+  applyProjectSnapshot(target, { schemaVersion: 1, editor: { pages: [] } });
+  assert.deepEqual(target.pageTemplateChildStates, {});
+  assert.deepEqual(target.pageTemplateBlueprintStates, {});
+  assert.deepEqual(target.resourcePreviewVersionIds, {});
+  assert.deepEqual(target.prdTemplatePreviewVersions, {});
+  assert.equal(target.selectedLineageVariantId, "base");
+  assert.equal(target.guidedHeaderLevelId, "default");
+  assert.equal(target.guidedHeaderLevelDrafts.s.mainTitle, "任务通关赢X元流量");
+  target.guidedHeaderLevelDrafts.s.mainTitle = "修改默认值";
+  const another = {};
+  applyProjectSnapshot(another, { schemaVersion: 1, editor: { pages: [] } });
+  assert.equal(another.guidedHeaderLevelDrafts.s.mainTitle, "任务通关赢X元流量");
+});

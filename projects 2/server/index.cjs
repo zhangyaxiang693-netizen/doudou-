@@ -8,6 +8,7 @@ const { SupabaseSessionStore } = require("./supabase-session-store.cjs");
 const { createHistoryRouter } = require("./history-routes.cjs");
 const { createCollaborationRouter } = require("./collaboration-routes.cjs");
 const { createAdminAccessRouter } = require("./admin-access.cjs");
+const { configureSessionProxy } = require("./session-proxy.cjs");
 
 try {
   process.loadEnvFile?.(path.join(__dirname, "..", ".env.local"));
@@ -16,6 +17,7 @@ try {
 }
 
 const app = express();
+configureSessionProxy(app);
 app.use(express.json({ limit: "10mb" }));
 const execFileAsync = promisify(execFile);
 
@@ -83,7 +85,7 @@ apiRouter.get("/auth/callback", async (req, res) => {
       return res.status(400).json({ success: false, error: "缺少授权码" });
     }
 
-    console.log("OAuth 回调收到 code:", code);
+    console.log("OAuth 回调收到授权码");
 
     // 用 code 换取 user_access_token（10s 超时，避免挂起）
     let tokenResponse;
@@ -110,14 +112,13 @@ apiRouter.get("/auth/callback", async (req, res) => {
     }
 
     const tokenData = await tokenResponse.json();
-    console.log("获取 access_token 响应:", JSON.stringify(tokenData, null, 2));
+    console.log("获取 access_token 业务状态:", tokenData.code);
     
     if (tokenData.code !== 0) {
-      console.error("获取 access_token 失败:", tokenData);
+      console.error("获取 access_token 失败，业务状态:", tokenData.code);
       return res.status(400).json({ 
         success: false, 
-        error: `登录失败：${tokenData.msg || tokenData.error || "未知错误"}`,
-        detail: tokenData 
+        error: `登录失败：${tokenData.msg || tokenData.error || "未知错误"}`
       });
     }
 

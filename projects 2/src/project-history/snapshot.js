@@ -36,6 +36,13 @@ const EDITOR_FIELDS = [
 ];
 
 const TRANSIENT_DEFAULTS = {
+  resourcePreviewVersionIds: {},
+  blueprintReturningFromPreview: false,
+  demoSelectedNodeId: null,
+  prdTemplateAddAfterIndex: null,
+  prdTemplateAddModal: null,
+  prdTemplateSelectedModuleIndex: null,
+  prdBlueprintPasteError: "",
   selectedId: null,
   dropIndex: null,
   dropPageId: null,
@@ -52,6 +59,43 @@ const TRANSIENT_DEFAULTS = {
   guidedPanelMode: null,
   guidedStateMenuNodeId: null,
   guidedAddTargetContext: null,
+};
+
+const EDITOR_DEFAULTS = {
+  workflowType: "venue",
+  resourceLevel: "daily",
+  resourceDrafts: {},
+  activity: { name: "未命名活动", note: "活动 → 维度 → 页面 → 模块 → 变体" },
+  pages: [],
+  currentTemplateId: null,
+  activePageId: "",
+  selectedDimension: "",
+  prdTextInput: "",
+  prdBlueprintPasteTemplateName: "",
+  prdBlueprintPasteVersions: [],
+  prdBlueprintPasteModuleVersions: {},
+  prdBlueprintPasteRows: [],
+  prdTableRows: [],
+  prdManualModuleVersions: {},
+  selectedDemoPackageId: "",
+  selectedBlueprintAudienceId: "",
+  selectedBlueprintSceneId: "",
+  prdTableBlueprint: null,
+  prdTableBlueprintSignature: "",
+  pageTemplateBlueprintStates: {},
+  pageTemplateChildStates: {},
+  guidedPageThemeId: "pink",
+  guidedHeaderLevelId: "default",
+  guidedHeaderLevelDrafts: {
+    s: { mainTitle: "任务通关赢X元流量", highlightText: "X元流量", subtitle: "为爱加投", dateText: "" },
+  },
+  guidedHeaderDefaultPageSnapshots: [],
+  guidedLotteryPrizeOverrides: null,
+  guidedVisiblePageIds: [],
+  guidedVisibleCompanionNodeIds: [],
+  prdTemplatePreviewVersions: {},
+  guidedLineageVersion: "v3",
+  selectedLineageVariantId: "base",
 };
 
 function clone(value) {
@@ -171,9 +215,11 @@ export function migrateProjectSnapshot(snapshot) {
 export function applyProjectSnapshot(state, snapshot) {
   const migrated = migrateProjectSnapshot(snapshot);
   EDITOR_FIELDS.forEach((field) => {
-    if (migrated.editor[field] !== undefined) {
-      state[field] = clone(migrated.editor[field]);
-    }
+    state[field] = clone(
+      migrated.editor[field] === undefined
+        ? EDITOR_DEFAULTS[field]
+        : migrated.editor[field],
+    );
   });
 
   state.prdFeishuUrl = String(migrated.source.prdUrl || "");
