@@ -40,7 +40,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
         <div className={styles.container}>
           <div className={styles.content}>
             {taskTag ? <img src={taskTag.src} alt={taskTag.label} className={styles.newTag}
-              style={{width: 33 * taskTag.width / taskTag.height}} /> : null}
+              style={{width: taskTag.displayHeight * taskTag.width / taskTag.height, height: taskTag.displayHeight}} /> : null}
             <div className={styles.text}>{taskTitle}</div>
             <div className={styles.main}>
               <div className={styles.section}>
