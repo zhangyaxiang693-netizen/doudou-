@@ -87,6 +87,30 @@ test("browser quota failure does not interrupt loading or cloud state acceptance
   } finally { delete globalThis.localStorage; }
 });
 
+test("local record caches store metadata only and copies require a loaded detail", () => {
+  const values = new Map();
+  globalThis.localStorage = {
+    getItem: (key) => values.get(key) || null,
+    setItem: (key, value) => values.set(key, value),
+  };
+  try {
+    const state = upsertRecord(createCollaborationState({ id: "owner" }), {
+      id: "record", ownerId: "owner", snapshot: { editor: { pages: [] } },
+    });
+    const cached = JSON.parse(values.get(`${COLLABORATION_STORAGE_KEY}:owner`));
+    assert.equal(Object.hasOwn(cached.records[0], "snapshot"), false);
+    saveCollaborationState({ ...state, records: Array.from({ length: 150 }, (_, i) => ({
+      id: `many-${i}`, ownerId: "owner", updatedAt: "2026-10-26T08:00:00Z",
+    })) });
+    assert.equal(JSON.parse(values.get(`${COLLABORATION_STORAGE_KEY}:owner`)).records.length, 100);
+    saveCollaborationState(state);
+    assert.throws(() => copyRecord(loadCollaborationState({ id: "owner" }), "record", {
+      ownerId: "owner",
+    }), /读取完整项目/);
+    assert.ok(copyRecord(state, "record", { ownerId: "owner" }).records[0].snapshot);
+  } finally { delete globalThis.localStorage; }
+});
+
 test("copy has an independent snapshot and restores with the copy name", () => {
   const state = upsertRecord(createCollaborationState({ id: "u" }), {
     id: "r", ownerId: "u", name: "原稿", snapshot: { editor: { activity: { name: "原稿" } } },

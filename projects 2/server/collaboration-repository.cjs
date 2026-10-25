@@ -1,3 +1,6 @@
+const { readPagination, paginateQuery, pageResult } = require("./list-pagination.cjs");
+const RECORD_COLUMNS = "id,project_id,owner_id,name,scope,group_id,created_at,updated_at";
+
 class CollaborationRepositoryError extends Error {
   constructor(code, message, cause) {
     super(message);
@@ -51,9 +54,9 @@ function mapRecord(row) {
     name: row.name,
     scope: row.scope,
     teamId: row.group_id || null,
-    snapshot: row.snapshot_json,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    ...(Object.hasOwn(row, "snapshot_json") ? { snapshot: row.snapshot_json } : {}),
   };
 }
 
@@ -75,7 +78,7 @@ function createCollaborationRepository(supabase) {
 
   async function bootstrap(user, isAdmin = false) {
     await upsertCurrentUser(user);
-    const [usersResult, groupsResult, recordsResult] = await Promise.all([
+    const [usersResult, groupsResult] = await Promise.all([
       isAdmin
         ? supabase
             .from("app_users")
@@ -89,32 +92,36 @@ function createCollaborationRepository(supabase) {
         .from("collaboration_groups")
         .select("id,name,created_at,updated_at")
         .order("updated_at", { ascending: false }),
-      isAdmin
-        ? supabase
-            .from("collaboration_records")
-            .select(
-              "id,project_id,owner_id,name,scope,group_id,snapshot_json,created_at,updated_at",
-            )
-            .order("updated_at", { ascending: false })
-        : supabase
-            .from("collaboration_records")
-            .select(
-              "id,project_id,owner_id,name,scope,group_id,snapshot_json,created_at,updated_at",
-            )
-            .or(`scope.eq.team,and(scope.eq.personal,owner_id.eq.${user.id})`)
-            .order("updated_at", { ascending: false }),
     ]);
 
-    const error =
-      usersResult.error || groupsResult.error || recordsResult.error;
+    const error = usersResult.error || groupsResult.error;
     if (error) throw storageError(error);
     return {
       version: 1,
       users: (usersResult.data || []).map(mapUser),
       teams: (groupsResult.data || []).map(mapGroup),
-      records: (recordsResult.data || []).map(mapRecord),
+      records: [],
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  async function listRecords(user, options = {}, isAdmin = false) {
+    const scope = options.scope || "personal";
+    if (!["personal", "team", "all"].includes(scope) || (scope === "all" && !isAdmin)) {
+      throw new CollaborationRepositoryError("RECORD_FORBIDDEN", "无权查看该范围的记录");
+    }
+    let pagination;
+    try { pagination = readPagination(options); } catch {
+      throw new CollaborationRepositoryError("INVALID_PAGINATION", "分页参数无效");
+    }
+    let query = supabase.from("collaboration_records").select(RECORD_COLUMNS);
+    if (scope !== "all") query = query.eq("scope", scope);
+    if (scope === "personal") query = query.eq("owner_id", user.id);
+    if (scope === "team" && options.teamId) query = query.eq("group_id", String(options.teamId));
+    const { data, error } = await paginateQuery(query, pagination);
+    if (error) throw storageError(error);
+    const page = pageResult(data || [], pagination.limit, mapRecord);
+    return { records: page.items, hasMore: page.hasMore, nextCursor: page.nextCursor };
   }
 
   async function getExistingRecord(recordId) {
@@ -127,9 +134,18 @@ function createCollaborationRepository(supabase) {
     return data;
   }
 
+  async function getRecord(user, recordId, isAdmin = false) {
+    const row = await getExistingRecord(recordId);
+    if (!row) throw new CollaborationRepositoryError("RECORD_NOT_FOUND", "历史记录不存在或已删除");
+    if (!isAdmin && row.scope !== "team" && row.owner_id !== user.id) {
+      throw new CollaborationRepositoryError("RECORD_FORBIDDEN", "无权查看该个人记录");
+    }
+    return mapRecord(row);
+  }
+
   async function sync(user, state, isAdmin = false) {
     await upsertCurrentUser(user);
-    const { data, error } = await supabase.rpc("sync_collaboration_changes", {
+    const { data, error } = await supabase.rpc("sync_collaboration_changes_compact", {
       p_user_id: user.id,
       p_state: state,
       p_is_admin: isAdmin,
@@ -137,6 +153,7 @@ function createCollaborationRepository(supabase) {
     if (error) throw storageError(error);
     return {
       version: 1,
+      partial: true,
       users: data.users.map(mapUser),
       teams: data.teams.map(mapGroup),
       records: data.records.map(mapRecord),
@@ -160,7 +177,7 @@ function createCollaborationRepository(supabase) {
     return result.records.find((item) => item.id === recordId);
   }
 
-  return { bootstrap, overrideRecord, sync };
+  return { bootstrap, listRecords, getRecord, overrideRecord, sync };
 }
 
 module.exports = {

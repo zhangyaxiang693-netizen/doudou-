@@ -77,7 +77,7 @@ export function normalizeCollaborationState(value, currentUser, options = {}) {
     }));
   base.records = base.records
     .filter((record) => record && record.id && record.ownerId)
-    .map((record) => ({
+    .map(({ snapshot, baseUpdatedAt, ...record }) => ({
       ...record,
       id: String(record.id),
       ownerId: String(record.ownerId),
@@ -118,7 +118,9 @@ export function saveCollaborationState(state) {
           users: next.users.filter((user) => user.id === next.cacheUserId),
           records: next.records.filter(
             (record) => record.scope === "team" || record.ownerId === next.cacheUserId,
-          ),
+          ).sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")))
+            .slice(0, 100)
+            .map(({ snapshot, baseUpdatedAt, ...metadata }) => metadata),
         }),
       );
     }
@@ -212,7 +214,7 @@ export function upsertRecord(state, record) {
     name: String(record.name || "未命名活动"),
     scope: record.scope === "team" ? "team" : "personal",
     teamId: record.scope === "team" ? String(record.teamId || "") : null,
-    snapshot: record.snapshot || null,
+    ...(Object.hasOwn(record, "snapshot") ? { snapshot: record.snapshot } : {}),
     updatedAt: record.updatedAt || now(),
     createdAt: record.createdAt || now(),
   };
@@ -257,7 +259,7 @@ export function copyRecord(
   const source = state.records.find(
     (record) => record.id === String(recordId),
   );
-  if (!source) throw new Error("历史记录不存在");
+  if (!source?.snapshot) throw new Error("请先读取完整项目配置");
   const name = `${source.name} - 副本`;
   const snapshot = source.snapshot ? JSON.parse(JSON.stringify(source.snapshot)) : null;
   if (snapshot?.editor?.activity) snapshot.editor.activity.name = name;

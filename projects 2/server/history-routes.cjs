@@ -40,6 +40,7 @@ function validateProjectId(value) {
 function sendError(res, error) {
   const statusByCode = {
     INVALID_SNAPSHOT: 400,
+    INVALID_PAGINATION: 400,
     INVALID_GROUP: 400,
     UNAUTHENTICATED: 401,
     PROJECT_FORBIDDEN: 403,
@@ -79,8 +80,8 @@ function createHistoryRouter(options = {}) {
 
   router.get("/projects", async (req, res) => {
     try {
-      const projects = await getRepository().listProjects(req.historyUser.id);
-      res.json({ success: true, data: { projects } });
+      const page = await getRepository().listProjects(req.historyUser.id, req.query);
+      res.json({ success: true, data: page });
     } catch (error) {
       sendError(res, error);
     }

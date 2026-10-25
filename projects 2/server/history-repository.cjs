@@ -1,3 +1,5 @@
+const { readPagination, paginateQuery, pageResult } = require("./list-pagination.cjs");
+
 class HistoryRepositoryError extends Error {
   constructor(code, message, cause) {
     super(message);
@@ -77,19 +79,23 @@ function createHistoryRepository(supabase) {
     return data;
   }
 
-  async function listProjects(ownerId) {
-    const { data, error } = await supabase
+  async function listProjects(ownerId, options = {}) {
+    let pagination;
+    try { pagination = readPagination(options); } catch {
+      throw new HistoryRepositoryError("INVALID_PAGINATION", "分页参数无效");
+    }
+    const query = supabase
       .from("projects")
       .select(
         "id,name,prd_url,template_id,latest_version_id,created_at,updated_at",
       )
       .eq("owner_id", ownerId)
-      .is("deleted_at", null)
-      .order("updated_at", { ascending: false })
-      .limit(100);
+      .is("deleted_at", null);
+    const { data, error } = await paginateQuery(query, pagination);
 
     if (error) throw storageError(error);
-    return (data || []).map(mapProject);
+    const page = pageResult(data || [], pagination.limit, mapProject);
+    return { projects: page.items, hasMore: page.hasMore, nextCursor: page.nextCursor };
   }
 
   async function createProject(ownerId, input) {
@@ -101,7 +107,7 @@ function createHistoryRepository(supabase) {
   }
 
   async function writeProject(ownerId, projectId, input) {
-    const { data, error } = await supabase.rpc("write_history_project", {
+    const { data, error } = await supabase.rpc("write_history_project_compact", {
       p_owner_id: ownerId,
       p_project_id: projectId,
       p_input: input,

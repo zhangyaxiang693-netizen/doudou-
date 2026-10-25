@@ -13,6 +13,20 @@ export function collaborationChanges(previous, next) {
   return changes;
 }
 
+export function mergeCollaborationChanges(previous, response) {
+  const next = { ...previous, updatedAt: response.updatedAt || previous.updatedAt };
+  for (const collection of ["users", "teams", "records"]) {
+    const items = new Map(previous[collection].map((item) => [item.id, item]));
+    for (const item of response[collection] || []) {
+      // Replace the acknowledged object; never keep an old snapshot with a new timestamp.
+      const { snapshot, baseUpdatedAt, ...metadata } = item;
+      items.set(item.id, collection === "records" ? metadata : item);
+    }
+    next[collection] = [...items.values()];
+  }
+  return next;
+}
+
 export function createCollaborationQueue() {
   let pending = Promise.resolve();
   return (operation) => {

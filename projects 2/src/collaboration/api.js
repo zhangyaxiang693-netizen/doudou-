@@ -52,6 +52,18 @@ export async function getCollaborationState() {
   return data.state;
 }
 
+export function listCollaborationRecords({ scope = "personal", teamId = "", cursor = "", limit = 20 } = {}) {
+  const query = new URLSearchParams({ scope, limit: String(limit) });
+  if (teamId) query.set("teamId", teamId);
+  if (cursor) query.set("cursor", cursor);
+  return request(`/collaboration/records?${query}`);
+}
+
+export async function getCollaborationRecord(recordId) {
+  const data = await request(`/collaboration/records/${encodeURIComponent(recordId)}`);
+  return data.record;
+}
+
 export async function syncCollaborationState(state) {
   const data = await request("/collaboration/sync", {
     method: "PUT",

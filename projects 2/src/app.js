@@ -13,15 +13,12 @@ import {
   createProject,
   deleteProject,
   getCurrentUser,
-  getVersion,
-  listProjects,
   overwriteProject,
 } from "./project-history/api.js";
 import {
   addUser,
   copyRecord,
   createTeam,
-  listRecordsForUser,
   loadCollaborationState,
   normalizeCollaborationState,
   saveCollaborationState,
@@ -30,9 +27,11 @@ import {
   updateTeam,
   upsertRecord,
 } from "./collaboration/store.js";
-import { collaborationChanges, createCollaborationQueue } from "./collaboration/changes.js";
+import { collaborationChanges, createCollaborationQueue, mergeCollaborationChanges } from "./collaboration/changes.js";
 import {
+  getCollaborationRecord,
   getCollaborationState,
+  listCollaborationRecords,
   lockAdminAccess,
   syncCollaborationState,
   unlockAdminAccess,
@@ -4349,6 +4348,8 @@ const state = {
   historyCollaborationRecordId: null,
   adminSection: "users",
   adminEditingRecordId: null,
+  adminEditingRecord: null,
+  adminHistoryPage: { ids: [], nextCursor: null, hasMore: false, loading: false, requestId: 0 },
   adminNotice: "",
   adminUnlocked: false,
   adminAuthModalOpen: false,
@@ -4405,6 +4406,7 @@ const state = {
   libraryReturnView: null,
   historyUser: sessionUser,
   historyProjects: [],
+  historyPage: { ids: [], nextCursor: null, hasMore: false, loading: false, requestId: 0 },
   historyStatus: "idle",
   historyError: "",
   historyCurrentProjectId: null,
@@ -6768,7 +6770,7 @@ function setCollaborationState(nextState) {
     try {
       const remote = await syncCollaborationState(changes);
       state.collaboration = saveCollaborationState(
-        normalizeCollaborationState(remote, sessionUser),
+        normalizeCollaborationState(mergeCollaborationChanges(state.collaboration, remote), sessionUser),
       );
       return state.collaboration;
     } catch (error) {
@@ -6782,7 +6784,7 @@ function refreshCollaborationFromServer() {
   return enqueueCollaboration(async () => {
     const remote = await getCollaborationState();
     state.collaboration = saveCollaborationState(
-      normalizeCollaborationState(remote, sessionUser),
+      normalizeCollaborationState({ ...remote, records: state.collaboration.records }, sessionUser),
     );
     if (!state.historyGroupId && state.collaboration.teams[0]) {
       state.historyGroupId = state.collaboration.teams[0].id;
@@ -6920,9 +6922,9 @@ async function performProjectSnapshotSave({
         snapshot,
         baseUpdatedAt: state.historyRecordBaseUpdatedAt || sourceRecord.updatedAt,
       });
-      await setCollaborationState(updated);
+      const committed = await setCollaborationState(updated);
       currentProjectId = sourceRecord.projectId || null;
-      const savedRecord = state.collaboration.records.find((record) => record.id === sourceRecord.id);
+      const savedRecord = committed.records.find((record) => record.id === sourceRecord.id);
       state.historyRecordBaseUpdatedAt = savedRecord.updatedAt;
       state.historyBaseUpdatedAt = savedRecord.updatedAt;
       if (ownedProject) {
@@ -6953,7 +6955,6 @@ async function performProjectSnapshotSave({
         name: projectName,
         scope: normalizedScope,
         teamId: group?.id || null,
-        snapshot,
         createdAt: result.project.createdAt,
         updatedAt: result.project.updatedAt,
       });
@@ -7025,7 +7026,70 @@ function runManualProjectSave(
     });
 }
 
+function getPagedRecords(page) {
+  const records = new Map(state.collaboration.records.map((record) => [record.id, record]));
+  return page.ids.map((id) => records.get(id)).filter(Boolean);
+}
+
+async function loadHistoryRecordPage(reset = true, admin = false) {
+  const page = admin ? state.adminHistoryPage : state.historyPage;
+  if (!reset && (page.loading || !page.hasMore)) return;
+  const requestId = ++page.requestId;
+  const scope = admin ? "all" : state.historyScope;
+  const teamId = scope === "team" ? state.historyGroupId : "";
+  const cursor = reset ? "" : page.nextCursor;
+  if (reset) {
+    page.ids = [];
+    page.nextCursor = null;
+    page.hasMore = false;
+  }
+  page.loading = true;
+  if (admin) state.adminNotice = "";
+  else {
+    state.historyError = "";
+    if (reset) state.historyStatus = "loading";
+  }
+  render();
+  try {
+    const result = scope === "team" && !teamId
+      ? { records: [], hasMore: false, nextCursor: null }
+      : await listCollaborationRecords({ scope, teamId, cursor });
+    if (requestId !== page.requestId) return;
+    state.collaboration = saveCollaborationState(
+      mergeCollaborationChanges(state.collaboration, { records: result.records }),
+    );
+    page.ids = [...new Set([...page.ids, ...result.records.map((record) => record.id)])];
+    page.nextCursor = result.nextCursor;
+    page.hasMore = result.hasMore;
+    if (!admin) state.historyStatus = "ready";
+  } catch (error) {
+    if (requestId !== page.requestId) return;
+    if (admin) state.adminNotice = error.message || "历史记录加载失败";
+    else {
+      state.historyError = error.message || "项目历史加载失败";
+      state.historyStatus = "error";
+    }
+  } finally {
+    if (requestId === page.requestId) {
+      page.loading = false;
+      render();
+    }
+  }
+}
+
+function renderHistoryPagination(page, admin = false) {
+  if (!page.ids.length && !page.hasMore && !page.loading) return "";
+  return `
+    <div class="project-history-pagination">
+      <span>已加载 ${page.ids.length} 条${!page.hasMore && !page.loading ? " · 已全部加载" : ""}</span>
+      ${page.hasMore || page.loading ? `<button type="button" ${admin ? "data-admin-history-more" : "data-history-more"} ${page.loading ? "disabled" : ""}>${page.loading ? "加载中..." : "加载更多"}</button>` : ""}
+    </div>
+  `;
+}
+
 async function loadProjectHistory() {
+  state.historyPage.requestId++;
+  state.historyPage.ids = [];
   state.historyStatus = "loading";
   state.historyError = "";
   render();
@@ -7033,8 +7097,7 @@ async function loadProjectHistory() {
     const user = await getCurrentUser();
     state.historyUser = user;
     await refreshCollaborationFromServer();
-    state.historyProjects = await listProjects();
-    state.historyStatus = "ready";
+    await loadHistoryRecordPage();
   } catch (error) {
     state.historyUser = sessionUser;
     state.historyProjects = [];
@@ -7045,6 +7108,43 @@ async function loadProjectHistory() {
     state.historyStatus = "error";
   }
   render();
+}
+
+async function readHistoryRecord(recordId) {
+  const record = await getCollaborationRecord(recordId);
+  state.collaboration = saveCollaborationState(
+    mergeCollaborationChanges(state.collaboration, { records: [record] }),
+  );
+  return record;
+}
+
+async function restoreCollaborationProject(recordId) {
+  try {
+    const record = await readHistoryRecord(recordId);
+    state.historySaveScope = record.scope;
+    state.historySaveGroupId = record.scope === "team" ? record.teamId || "" : "";
+    state.historyCollaborationRecordId = record.id;
+    state.historyRecordBaseUpdatedAt = record.updatedAt;
+    state.historyBaseUpdatedAt = record.updatedAt;
+    state.historyError = "";
+    applyRestoredProject(record.snapshot, record.projectId, null);
+  } catch (error) {
+    state.historyError = error.message || "项目恢复失败";
+    render();
+  }
+}
+
+async function copyHistoryRecord(recordId, destination) {
+  const source = await readHistoryRecord(recordId);
+  const copied = copyRecord({
+    ...state.collaboration,
+    records: state.collaboration.records.map((record) => record.id === recordId ? source : record),
+  }, recordId, destination);
+  await setCollaborationState({
+    ...copied,
+    records: copied.records.map((record) => record.id === recordId
+      ? state.collaboration.records.find((item) => item.id === recordId) : record),
+  });
 }
 
 function openProjectHistory() {
@@ -7097,60 +7197,24 @@ function applyRestoredProject(snapshot, projectId, versionId) {
 }
 
 async function restoreCloudProject(projectId, versionId) {
-  try {
-    const project = state.historyProjects.find(
-      (item) => item.id === projectId,
-    );
-    const linkedRecord = state.collaboration.records.find(
-      (record) => record.projectId === projectId,
-    );
-    const targetVersionId = versionId || project?.latestVersionId;
-    if (!targetVersionId) throw new Error("该项目没有可恢复的版本");
-    const version = await getVersion(projectId, targetVersionId);
-    state.historySaveScope = linkedRecord?.scope || "personal";
-    state.historySaveGroupId =
-      linkedRecord?.scope === "team" ? linkedRecord.teamId || "" : "";
-    state.historyCollaborationRecordId = linkedRecord?.id || null;
-    state.historyBaseUpdatedAt = project?.updatedAt || null;
-    state.historyRecordBaseUpdatedAt = linkedRecord?.updatedAt || null;
-    applyRestoredProject(
-      version.snapshot,
-      projectId,
-      project?.latestVersionId || version.id,
-    );
-  } catch (error) {
-    state.historyError = error.message || "项目恢复失败";
-    render();
-  }
+  return restoreCollaborationProject(projectId);
 }
 
 async function copyCloudProjectToGroup(projectId, groupId) {
-  const project = state.historyProjects.find((item) => item.id === projectId);
   const group = getGroupById(groupId);
   const owner = getCurrentCollaborationUser();
-  if (!project?.latestVersionId || !group || !owner) return;
+  if (!group || !owner) return;
   try {
-    const version = await getVersion(projectId, project.latestVersionId);
-    const copyName = `${project.name} - 副本`;
-    if (version.snapshot.editor?.activity) {
-      version.snapshot.editor.activity.name = copyName;
-    }
-    await setCollaborationState(
-      upsertRecord(state.collaboration, {
-        ownerId: owner.id,
-        name: copyName,
-        scope: "team",
-        teamId: group.id,
-        snapshot: version.snapshot,
-      }),
-    );
+    await copyHistoryRecord(projectId, { ownerId: owner.id, scope: "team", teamId: group.id });
     state.historyGroupId = group.id;
     state.historyScope = "team";
     state.historyError = "";
   } catch (error) {
     state.historyError = error.message || "复制项目失败";
+    render();
+    return;
   }
-  render();
+  await loadHistoryRecordPage();
 }
 
 async function removeHistoryProject(projectId) {
@@ -7165,6 +7229,9 @@ async function removeHistoryProject(projectId) {
     });
     state.historyProjects = state.historyProjects.filter(
       (item) => item.id !== projectId,
+    );
+    state.historyPage.ids = state.historyPage.ids.filter(
+      (id) => state.collaboration.records.some((record) => record.id === id),
     );
     if (state.historyCurrentProjectId === projectId) {
       state.historyCurrentProjectId = null;
@@ -7200,32 +7267,11 @@ function renderProjectHistory() {
   if (activeGroup && state.historyGroupId !== activeGroup.id) {
     state.historyGroupId = activeGroup.id;
   }
-  const collaborationRecords = listRecordsForUser(
-    state.collaboration,
-    currentUser?.id,
-    activeScope,
-    activeGroup?.id,
+  const collaborationRecords = getPagedRecords(state.historyPage).filter(
+    (record) => record.scope === activeScope &&
+      (activeScope === "team" ? record.teamId === activeGroup?.id : record.ownerId === currentUser?.id),
   );
-  const cloudProjectIds = new Set(
-    state.historyProjects.map((project) => String(project.id)),
-  );
-  const standaloneRecords = collaborationRecords.filter(
-    (record) =>
-      !cloudProjectIds.has(String(record.projectId || record.id)),
-  );
-  const teamProjectIds = new Set(
-    state.collaboration.records
-      .filter((record) => record.scope === "team" && record.projectId)
-      .map((record) => String(record.projectId)),
-  );
-  const personalCloudProjects = state.historyProjects.filter(
-    (project) => !teamProjectIds.has(String(project.id)),
-  );
-  const hasRecords =
-    activeScope === "personal"
-      ? personalCloudProjects.length ||
-        standaloneRecords.length
-      : collaborationRecords.length;
+  const hasRecords = collaborationRecords.length;
   center.innerHTML = `
     <div class="project-history-shell">
       <nav class="prd-minimal-nav">
@@ -7296,61 +7342,15 @@ function renderProjectHistory() {
           : ""
       }
       ${
-        activeScope === "personal" && personalCloudProjects.length
-          ? `
-            <section class="project-history-section">
-              <header><strong>云端项目</strong><span>${personalCloudProjects.length} 个项目</span></header>
-              <div class="project-history-list">
-                ${personalCloudProjects
-                  .map((project) => {
-                    return `
-                      <article class="project-history-item">
-                        <div>
-                          <strong>${escapeHtml(project.name)}</strong>
-                          <span>${formatHistoryTime(project.updatedAt)}${project.prdUrl ? " · 飞书 PRD" : ""}</span>
-                        </div>
-                        <div class="project-history-actions">
-                          <button type="button" data-restore-project="${project.id}">打开</button>
-                          ${
-                            state.collaboration.teams.length
-                              ? `
-                                <select data-copy-project-group="${escapeAttr(project.id)}" aria-label="复制目标组">
-                                  ${state.collaboration.teams
-                                    .map(
-                                      (group) =>
-                                        `<option value="${escapeAttr(group.id)}">${escapeHtml(group.name)}</option>`,
-                                    )
-                                    .join("")}
-                                </select>
-                                <button type="button" data-copy-project-to-group="${escapeAttr(project.id)}">复制到组</button>
-                              `
-                              : ""
-                          }
-                          <button type="button" data-delete-project="${project.id}" aria-label="删除项目">删除</button>
-                        </div>
-                      </article>
-                    `;
-                  })
-                  .join("")}
-              </div>
-            </section>
-          `
-          : ""
-      }
-      ${
-        (activeScope === "team" ? collaborationRecords : standaloneRecords)
-          .length
+        collaborationRecords.length
           ? `
             <section class="project-history-section">
               <header>
-                <strong>${activeScope === "team" ? escapeHtml(activeGroup?.name || "组项目") : "本地历史"}</strong>
-                <span>${(activeScope === "team" ? collaborationRecords : standaloneRecords).length} 个项目</span>
+                <strong>${activeScope === "team" ? escapeHtml(activeGroup?.name || "组项目") : "云端项目"}</strong>
+                <span>${collaborationRecords.length} 个项目</span>
               </header>
               <div class="project-history-list">
-                ${(activeScope === "team"
-                  ? collaborationRecords
-                  : standaloneRecords
-                )
+                ${collaborationRecords
                   .map((record) => {
                     const owner = state.collaboration.users.find(
                       (user) => user.id === record.ownerId,
@@ -7380,6 +7380,7 @@ function renderProjectHistory() {
                                 `
                                 : ""
                           }
+                          ${activeScope === "personal" && record.projectId ? `<button type="button" data-delete-project="${escapeAttr(record.projectId)}" aria-label="删除项目">删除</button>` : ""}
                         </div>
                       </article>
                     `;
@@ -7390,6 +7391,7 @@ function renderProjectHistory() {
           `
           : ""
       }
+      ${renderHistoryPagination(state.historyPage)}
     </div>
   `;
 }
@@ -8069,7 +8071,7 @@ function renderAdminTeamManagement() {
             (team) => `
               <article class="collab-team-card">
                 <input value="${escapeAttr(team.name)}" data-admin-team-name="${escapeAttr(team.id)}" aria-label="组名称" />
-                <span>${state.collaboration.records.filter((record) => record.scope === "team" && record.teamId === team.id).length} 条共享记录</span>
+                <span>所有用户可查看和编辑</span>
                 <button type="button" data-admin-update-team="${escapeAttr(team.id)}">保存组名称</button>
               </article>
             `,
@@ -8091,12 +8093,13 @@ function renderAdminHistoryManagement() {
       <header>
         <div>
           <strong>历史记录管理</strong>
-          <span>${state.collaboration.records.length} 条记录</span>
+          <span>已加载 ${state.adminHistoryPage.ids.length} 条记录</span>
         </div>
+        <button type="button" data-admin-history-refresh>刷新</button>
       </header>
       <div class="collab-admin-history">
         ${
-          state.collaboration.records
+          getPagedRecords(state.adminHistoryPage)
             .map((record) => {
               const owner = state.collaboration.users.find(
                 (user) => user.id === record.ownerId,
@@ -8115,17 +8118,16 @@ function renderAdminHistoryManagement() {
               `;
             })
             .join("") ||
-          '<p class="collab-empty-copy">还没有可管理的历史记录</p>'
+          `<p class="collab-empty-copy">${state.adminHistoryPage.loading ? "正在加载历史记录..." : "还没有可管理的历史记录"}</p>`
         }
       </div>
+      ${renderHistoryPagination(state.adminHistoryPage, true)}
     </section>
   `;
 }
 
 function renderAdminRecordEditor() {
-  const record = state.collaboration.records.find(
-    (item) => item.id === state.adminEditingRecordId,
-  );
+  const record = state.adminEditingRecord;
   if (!record) return "";
   return `
     <div class="admin-auth-modal" data-admin-record-modal>
@@ -24812,6 +24814,7 @@ function bindEvents() {
         const changes = {
           name: String(data.get("recordName") || "").trim(),
           snapshot,
+          baseUpdatedAt: state.adminEditingRecord?.updatedAt,
         };
         await setCollaborationState(
           updateRecord(
@@ -24821,6 +24824,7 @@ function bindEvents() {
           ),
         );
         state.adminEditingRecordId = null;
+        state.adminEditingRecord = null;
         state.adminNotice = "历史记录已覆盖";
       } catch (error) {
         state.adminNotice = `保存失败：${error.message}`;
@@ -24914,11 +24918,16 @@ function bindEvents() {
       return;
     }
 
+    if (event.target.closest("[data-history-more]")) {
+      await loadHistoryRecordPage(false);
+      return;
+    }
+
     const historyScope = event.target.closest("[data-history-scope]");
     if (historyScope && !historyScope.disabled) {
       state.historyScope =
         historyScope.dataset.historyScope === "team" ? "team" : "personal";
-      render();
+      await loadHistoryRecordPage();
       return;
     }
 
@@ -24929,19 +24938,16 @@ function bindEvents() {
       const owner = getCurrentCollaborationUser();
       if (!owner) return;
       try {
-        await setCollaborationState(
-          copyRecord(
-            state.collaboration,
-            copyRecordToPersonal.dataset.copyRecordPersonal,
-            { ownerId: owner.id, scope: "personal" },
-          ),
-        );
+        await copyHistoryRecord(copyRecordToPersonal.dataset.copyRecordPersonal,
+          { ownerId: owner.id, scope: "personal" });
         state.historyScope = "personal";
         state.historyError = "";
       } catch (error) {
         state.historyError = error.message;
+        render();
+        return;
       }
-      render();
+      await loadHistoryRecordPage();
       return;
     }
 
@@ -24956,20 +24962,18 @@ function bindEvents() {
       )?.value;
       if (!owner || !getGroupById(groupId)) return;
       try {
-        await setCollaborationState(
-          copyRecord(state.collaboration, recordId, {
-            ownerId: owner.id,
-            scope: "team",
-            teamId: groupId,
-          }),
-        );
+        await copyHistoryRecord(recordId, {
+          ownerId: owner.id, scope: "team", teamId: groupId,
+        });
         state.historyGroupId = groupId;
         state.historyScope = "team";
         state.historyError = "";
       } catch (error) {
         state.historyError = error.message;
+        render();
+        return;
       }
-      render();
+      await loadHistoryRecordPage();
       return;
     }
 
@@ -24989,28 +24993,7 @@ function bindEvents() {
       "[data-restore-collab-record]",
     );
     if (restoreCollaborationRecord) {
-      const record = state.collaboration.records.find(
-        (item) =>
-          item.id === restoreCollaborationRecord.dataset.restoreCollabRecord,
-      );
-      if (record?.snapshot) {
-        state.historySaveScope = record.scope;
-        state.historySaveGroupId =
-          record.scope === "team" ? record.teamId || "" : "";
-        state.historyCollaborationRecordId = record.id;
-        state.historyRecordBaseUpdatedAt = record.updatedAt;
-        state.historyBaseUpdatedAt = record.updatedAt;
-        const linkedProject = record.projectId
-          ? state.historyProjects.find(
-              (project) => project.id === record.projectId,
-            )
-          : null;
-        applyRestoredProject(
-          record.snapshot,
-          record.projectId,
-          linkedProject?.latestVersionId || null,
-        );
-      }
+      await restoreCollaborationProject(restoreCollaborationRecord.dataset.restoreCollabRecord);
       return;
     }
 
@@ -26340,6 +26323,10 @@ function bindEvents() {
     if (adminSection) {
       state.adminSection = adminSection.dataset.adminSection;
       state.adminNotice = "";
+      if (state.adminSection === "history") {
+        await loadHistoryRecordPage(true, true);
+        return;
+      }
       render();
       return;
     }
@@ -26382,7 +26369,12 @@ function bindEvents() {
 
     const editAdminRecord = event.target.closest("[data-admin-edit-record]");
     if (editAdminRecord) {
-      state.adminEditingRecordId = editAdminRecord.dataset.adminEditRecord;
+      try {
+        state.adminEditingRecord = await readHistoryRecord(editAdminRecord.dataset.adminEditRecord);
+        state.adminEditingRecordId = state.adminEditingRecord.id;
+      } catch (error) {
+        state.adminNotice = error.message || "历史记录读取失败";
+      }
       render();
       return;
     }
@@ -26392,7 +26384,17 @@ function bindEvents() {
       event.target.matches("[data-admin-record-modal]")
     ) {
       state.adminEditingRecordId = null;
+      state.adminEditingRecord = null;
       render();
+      return;
+    }
+
+    if (event.target.closest("[data-admin-history-more]")) {
+      await loadHistoryRecordPage(false, true);
+      return;
+    }
+    if (event.target.closest("[data-admin-history-refresh]")) {
+      await loadHistoryRecordPage(true, true);
       return;
     }
 
@@ -28668,7 +28670,7 @@ function bindEvents() {
     );
     if (historyGroupSelect) {
       state.historyGroupId = historyGroupSelect.value;
-      render();
+      loadHistoryRecordPage();
       return;
     }
 

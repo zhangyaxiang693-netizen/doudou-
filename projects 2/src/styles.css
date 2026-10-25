@@ -18009,6 +18009,33 @@ button:hover {
   color: #ffffff;
 }
 
+.project-history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 24px 0;
+  color: #667085;
+  font-size: 12px;
+}
+
+.project-history-pagination button {
+  min-height: 32px;
+  padding: 0 16px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #344054;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.project-history-pagination button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .project-version-list {
   display: grid;
   padding: 4px 0 12px 24px;

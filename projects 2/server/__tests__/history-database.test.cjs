@@ -4,6 +4,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const { createHistoryRepository } = require("../history-repository.cjs");
 const { createCollaborationRepository } = require("../collaboration-repository.cjs");
+const { readPagination, pageResult } = require("../list-pagination.cjs");
 
 // Optional isolated PostgreSQL runtime; never connects to a Supabase environment.
 test("history transactions on isolated PostgreSQL", {
@@ -17,6 +18,7 @@ test("history transactions on isolated PostgreSQL", {
     "202609160001_create_project_history.sql",
     "202610090001_create_collaboration.sql",
     "202610250001_history_consistency.sql",
+    "202610260001_history_pagination.sql",
   ]) {
     const sql = await fs.readFile(path.join(__dirname, "../../supabase/migrations", file), "utf8");
     // PGlite has core gen_random_uuid(), but does not bundle pgcrypto.
@@ -28,11 +30,11 @@ test("history transactions on isolated PostgreSQL", {
   });
   const input = (name) => ({ name, snapshot: snapshot(name) });
   const write = async (owner, id, value) => (await db.query(
-    "select public.write_history_project($1, $2, $3::jsonb) as result",
+    "select public.write_history_project_compact($1, $2, $3::jsonb) as result",
     [owner, id, JSON.stringify(value)],
   )).rows[0].result;
   const sync = async (user, records = [], teams = [], admin = false) => db.query(
-    "select public.sync_collaboration_changes($1, $2::jsonb, $3)",
+    "select public.sync_collaboration_changes_compact($1, $2::jsonb, $3) as result",
     [user, JSON.stringify({ users: [], teams, records }), admin],
   );
   const record = async (id) => {
@@ -67,6 +69,7 @@ test("history transactions on isolated PostgreSQL", {
   });
   await t.test("stale clients cannot overwrite another member's changes", async () => {
     const old = await record(saved.project.id);
+    await new Promise((resolve) => setTimeout(resolve, 2));
     await sync("member", [{ ...old, ...input("最新修改"), baseUpdatedAt: old.updatedAt }]);
     await assert.rejects(sync("owner", [{ ...old, ...input("过期修改"), baseUpdatedAt: old.updatedAt }]), /VERSION_CONFLICT/);
     await assert.rejects(sync("owner", [{ ...old, ...input("旧客户端全量缓存") }]), /VERSION_CONFLICT/);
@@ -114,13 +117,14 @@ test("history transactions on isolated PostgreSQL", {
   await t.test("repository maps transactional results and preserves overwrite version id", async () => {
     const repository = createHistoryRepository({
       async rpc(name, args) {
-        assert.equal(name, "write_history_project");
+        assert.equal(name, "write_history_project_compact");
         try {
           return { data: await write(args.p_owner_id, args.p_project_id, args.p_input) };
         } catch (error) { return { error }; }
       },
     });
     const original = await repository.createProject("owner", input("原稿"));
+    await new Promise((resolve) => setTimeout(resolve, 2));
     const changed = await repository.overwriteProject("owner", original.project.id, {
       ...input("覆盖"), baseUpdatedAt: original.project.updatedAt,
     });
@@ -132,8 +136,8 @@ test("history transactions on isolated PostgreSQL", {
   });
   await t.test("database RPCs are unavailable to public browser roles", async () => {
     const result = await db.query(`select
-      has_function_privilege('anon', 'write_history_project(text,uuid,jsonb)', 'execute') as anon,
-      has_function_privilege('authenticated', 'sync_collaboration_changes(text,jsonb,boolean)', 'execute') as auth`);
+      has_function_privilege('anon', 'write_history_project_compact(text,uuid,jsonb)', 'execute') as anon,
+      has_function_privilege('authenticated', 'sync_collaboration_changes_compact(text,jsonb,boolean)', 'execute') as auth`);
     assert.deepEqual(result.rows[0], { anon: false, auth: false });
   });
   await t.test("sync returns committed timestamps without a separate bootstrap read", async () => {
@@ -144,7 +148,7 @@ test("history transactions on isolated PostgreSQL", {
       },
       async rpc(name, args) {
         const result = await sync(args.p_user_id, args.p_state.records, args.p_state.teams, args.p_is_admin);
-        return { data: result.rows[0].sync_collaboration_changes };
+        return { data: result.rows[0].result };
       },
     });
     const result = await repository.sync({ id: "member" }, {
@@ -152,7 +156,64 @@ test("history transactions on isolated PostgreSQL", {
     });
     const saved = result.records.find((item) => item.id === "response-copy");
     assert.equal(saved.name, "响应快照");
+    assert.equal(result.records.length, 1);
+    assert.equal(Object.hasOwn(saved, "snapshot"), false);
     assert.equal(Date.parse(saved.updatedAt), Date.parse((await record("response-copy")).updatedAt));
     assert.ok(result.records.every((item) => item.scope === "team" || item.ownerId === "member"));
+  });
+  await t.test("more than 100 personal/team records paginate completely, including equal timestamps", async () => {
+    for (const scope of ["personal", "team"]) {
+      await sync("pagination-owner", Array.from({ length: 125 }, (_, i) => ({
+        id: `page-${scope}-${String(i).padStart(3, "0")}`, scope, teamId: scope === "team" ? "g1" : null,
+        ...input(`分页${i}`),
+      })));
+    }
+    await db.exec("update collaboration_records set updated_at='2026-10-26T08:00:00Z' where id like 'page-%';");
+    for (const scope of ["personal", "team"]) {
+      const ids = [];
+      let cursor;
+      do {
+        const { cursor: decoded, limit } = readPagination({ cursor, limit: 20 });
+        const rows = (await db.query(`select id, updated_at from collaboration_records
+          where owner_id='pagination-owner' and scope=$1
+            and ($2::timestamptz is null or (updated_at,id) < ($2::timestamptz,$3::text))
+          order by updated_at desc,id desc limit $4`,
+        [scope, decoded?.updatedAt || null, decoded?.id || null, limit + 1])).rows
+          .map((row) => ({ ...row, updated_at: row.updated_at.toISOString() }));
+        const page = pageResult(rows, limit, (row) => row.id);
+        assert.ok(page.items.length <= 20);
+        ids.push(...page.items);
+        cursor = page.nextCursor;
+      } while (cursor);
+      assert.equal(ids.length, 125);
+      assert.equal(new Set(ids).size, 125);
+    }
+  });
+  await t.test("repeated personal overwrites and alternating team writers keep rows and responses bounded", async () => {
+    const personal = await write("repeat-owner", null, input("个人起点"));
+    const team = await write("repeat-owner", null, { ...input("组起点"), scope: "team", teamId: "g1" });
+    const staleTeam = await record(team.project.id);
+    let personalBase = personal.project.updated_at;
+    for (let i = 0; i < 100; i++) {
+      const written = await write("repeat-owner", personal.project.id, {
+        ...input(`个人${i}`), baseUpdatedAt: personalBase,
+      });
+      personalBase = written.project.updated_at;
+      assert.equal(Object.hasOwn(written.version, "snapshot_json"), false);
+      const old = await record(team.project.id);
+      const response = (await sync(i % 2 ? "member-a" : "member-b", [{
+        ...old, ...input(`交替${i}`), baseUpdatedAt: old.updatedAt,
+      }])).rows[0].result;
+      assert.equal(response.records.length, 1);
+      assert.equal(Object.hasOwn(response.records[0], "snapshot_json"), false);
+      assert.ok(JSON.stringify(response).length < 1500);
+    }
+    assert.equal((await record(personal.project.id)).name, "个人99");
+    assert.equal((await record(team.project.id)).name, "交替99");
+    assert.equal((await db.query("select count(*) from project_versions where project_id in ($1,$2)",
+      [personal.project.id, team.project.id])).rows[0].count, 2);
+    await assert.rejects(sync("member-a", [{
+      ...staleTeam, ...input("过期交替写入"), baseUpdatedAt: staleTeam.updatedAt,
+    }]), /VERSION_CONFLICT/);
   });
 });

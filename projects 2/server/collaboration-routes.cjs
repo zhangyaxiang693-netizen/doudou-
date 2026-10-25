@@ -15,6 +15,7 @@ function sendError(res, error) {
       : "STORAGE_ERROR";
   const status = {
     INVALID_SNAPSHOT: 400,
+    INVALID_PAGINATION: 400,
     VERSION_CONFLICT: 409,
     RECORD_FORBIDDEN: 403,
     RECORD_NOT_FOUND: 404,
@@ -50,6 +51,28 @@ function createCollaborationRouter(options = {}) {
         extractAdminFromRequest(req),
       );
       res.json({ success: true, data: { state } });
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  router.get("/records", async (req, res) => {
+    try {
+      const page = await getRepository().listRecords(
+        req.historyUser, req.query, extractAdminFromRequest(req),
+      );
+      res.json({ success: true, data: page });
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  router.get("/records/:recordId", async (req, res) => {
+    try {
+      const record = await getRepository().getRecord(
+        req.historyUser, String(req.params.recordId), extractAdminFromRequest(req),
+      );
+      res.json({ success: true, data: { record } });
     } catch (error) {
       sendError(res, error);
     }

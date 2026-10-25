@@ -41,9 +41,10 @@ export function getCurrentUser() {
   return request("/me");
 }
 
-export async function listProjects() {
-  const data = await request("/projects");
-  return data.projects || [];
+export function listProjects({ cursor = "", limit = 20 } = {}) {
+  const query = new URLSearchParams({ limit: String(limit) });
+  if (cursor) query.set("cursor", cursor);
+  return request(`/projects?${query}`);
 }
 
 export function createProject({

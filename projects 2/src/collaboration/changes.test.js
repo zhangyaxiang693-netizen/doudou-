@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { collaborationChanges, createCollaborationQueue } from "./changes.js";
+import { collaborationChanges, createCollaborationQueue, mergeCollaborationChanges } from "./changes.js";
 
 test("saving one object never resends other cached records or groups", () => {
   const old = {
@@ -33,4 +33,22 @@ test("queue waits for cloud completion, reports failures, then allows retry", as
   await failure;
   assert.equal(await second, "saved");
   assert.deepEqual(events, ["started", "retry"]);
+});
+
+test("compact acknowledgements preserve unrelated pages and remove outdated snapshot/base timestamps", () => {
+  const previous = {
+    users: [{ id: "u", name: "用户" }], teams: [{ id: "g", name: "组" }],
+    records: [
+      { id: "a", updatedAt: "old", snapshot: { old: true }, baseUpdatedAt: "old" },
+      { id: "b", updatedAt: "unrelated" },
+    ],
+  };
+  const next = mergeCollaborationChanges(previous, {
+    users: [], teams: [], records: [{ id: "a", updatedAt: "committed", name: "已保存" }],
+  });
+  assert.equal(next.records.length, 2);
+  assert.equal(next.records[1], previous.records[1]);
+  assert.deepEqual(next.users, previous.users);
+  assert.deepEqual(next.teams, previous.teams);
+  assert.deepEqual(next.records[0], { id: "a", updatedAt: "committed", name: "已保存" });
 });

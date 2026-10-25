@@ -166,3 +166,49 @@ test("history override requires a password-unlocked session", async () => {
   assert.equal(updated.status, 200);
   assert.equal(overrideCalls, 1);
 });
+
+test("record pages pass cursor and group filters with the trusted identity", async () => {
+  const baseUrl = await startServer((app) => app.use(
+    "/api/collaboration",
+    createCollaborationRouter({
+      resolveUser: async () => ({ id: "trusted-user" }),
+      repository: {
+        async listRecords(user, options, admin) {
+          assert.equal(user.id, "trusted-user");
+          assert.equal(options.scope, "team");
+          assert.equal(options.teamId, "g1");
+          assert.equal(options.cursor, "next-page");
+          assert.equal(admin, false);
+          return { records: [{ id: "r" }], nextCursor: null, hasMore: false };
+        },
+      },
+    }),
+  ));
+  const response = await fetch(`${baseUrl}/api/collaboration/records?scope=team&teamId=g1&cursor=next-page`);
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).data, {
+    records: [{ id: "r" }], nextCursor: null, hasMore: false,
+  });
+});
+
+test("record detail ownership errors cannot leak a snapshot", async () => {
+  const baseUrl = await startServer((app) => app.use(
+    "/api/collaboration",
+    createCollaborationRouter({
+      resolveUser: async () => ({ id: "trusted-user" }),
+      repository: {
+        async getRecord(user, id, admin) {
+          assert.equal(user.id, "trusted-user");
+          assert.equal(id, "private-record");
+          assert.equal(admin, false);
+          throw new CollaborationRepositoryError("RECORD_FORBIDDEN", "无权查看该个人记录");
+        },
+      },
+    }),
+  ));
+  const response = await fetch(`${baseUrl}/api/collaboration/records/private-record`);
+  assert.equal(response.status, 403);
+  const result = await response.json();
+  assert.equal(result.code, "RECORD_FORBIDDEN");
+  assert.equal(result.data, undefined);
+});
