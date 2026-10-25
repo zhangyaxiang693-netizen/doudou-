@@ -5647,6 +5647,13 @@ button:hover {
   transform: rotate(10deg);
 }
 
+.prize-library-ai-traffic-coupon-thumb b {
+  left: 13.76px;
+  top: 8.94px;
+  color: #ffffff;
+  transform: rotate(9deg);
+}
+
 .prize-library-thumb i {
   width: 24px;
   height: 24px;
@@ -11233,6 +11240,13 @@ button:hover {
 .prd-variable-section-actions.is-versioned .prd-paragraph-stepper {
   justify-self: center;
   align-self: center;
+}
+
+.prd-task-tag-options {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .prd-task-new-tag-toggle {

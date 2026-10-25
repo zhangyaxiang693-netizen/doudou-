@@ -9,6 +9,8 @@ import prizeDouziUrl from '../九宫格-奖品库/dou仔周边.png'
 import prizeRecommendUrl from '../九宫格-奖品库/dou+官方推荐机会.png'
 import prizePointsUrl from '../九宫格-奖品库/积分.png'
 import TrafficCouponPrize from '../奖品-流量券'
+import AiTrafficCouponPrize from '../奖品-ai流量券'
+import {getTrafficCouponAmountFromText, getTrafficCouponPrizeType, normalizeAiTrafficCouponName} from '../src/traffic-coupon'
 
 type PrizeValue =
   | string
@@ -78,7 +80,7 @@ function resolvePrize(
 
   if (prize && typeof prize === 'object') {
     return {
-      name: resolvedNameOverride || prize.name || prize.title || prize.label || fallback.name,
+      name: normalizeAiTrafficCouponName(resolvedNameOverride || prize.name || prize.title || prize.label || fallback.name, prize),
       image: prize.image || prize.imageUrl || prize.url || prize.src || fallback.image,
       type: prize.type,
       amount: prize.copyAmount,
@@ -100,12 +102,13 @@ function isSingleLinePrize(prize: {name: string; image: string}) {
 }
 
 function PrizeCard({prize}: {prize: {name: string; image: string; type?: string; amount?: string}}) {
-  const amount = prize.amount || prize.name.match(/(\d+(?:\.\d+)?)\s*元\s*流量券/)?.[1]
-  const isTrafficCoupon = prize.type === 'traffic_coupon' || Boolean(amount)
+  const amount = prize.amount || getTrafficCouponAmountFromText(prize.name)
+  const couponType = getTrafficCouponPrizeType(prize)
+  const CouponPrize = couponType === 'ai_traffic_coupon' ? AiTrafficCouponPrize : TrafficCouponPrize
   return (
     <div className={styles.prizeCard}>
-      {isTrafficCoupon ? (
-        <TrafficCouponPrize amount={amount || '10'} className={styles.trafficCouponPrize} />
+      {couponType ? (
+        <CouponPrize amount={amount || '10'} className={styles.trafficCouponPrize} />
       ) : (
         <img
           src={prize.image}

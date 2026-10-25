@@ -1,0 +1,26 @@
+{
+  "id": "奖品-ai流量券",
+  "name": "奖品-ai流量券",
+  "title": "奖品｜AI流量券",
+  "type": "atom",
+  "category": "奖品组件",
+  "description": "独立的 AI流量券奖品，沿用流量券的券面数字配置规则。",
+  "reactComponent": "奖品-ai流量券",
+  "dimensions": {
+    "width": 303.12,
+    "height": 224
+  },
+  "blueprint": {
+    "autoExposeProps": true,
+    "textProps": ["amount"]
+  },
+  "props": [
+    {
+      "key": "amount",
+      "name": "amount",
+      "label": "券面数字",
+      "type": "text",
+      "default": "10"
+    }
+  ]
+}

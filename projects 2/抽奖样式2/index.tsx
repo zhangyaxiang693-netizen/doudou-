@@ -9,6 +9,8 @@ import prizeJianyingVipUrl from '../九宫格-奖品库/剪映vip.png'
 import prizeTrafficCouponUrl from '../九宫格-奖品库/6元流量券.png'
 import prizeTrafficCouponGroupUrl from '../九宫格-奖品库/dou+流量券.png'
 import TrafficCouponPrize from '../奖品-流量券'
+import AiTrafficCouponPrize from '../奖品-ai流量券'
+import {getTrafficCouponAmountFromText, getTrafficCouponPrizeType, normalizeAiTrafficCouponName} from '../src/traffic-coupon'
 
 const DISPLAY_PRIZE_COUNT = 3
 const MAX_PRIZE_COUNT = 8
@@ -80,7 +82,7 @@ function resolvePrize(
 
   if (prize && typeof prize === 'object') {
     return {
-      name: resolvedNameOverride || prize.name || prize.title || prize.label || fallbackName,
+      name: normalizeAiTrafficCouponName(resolvedNameOverride || prize.name || prize.title || prize.label || fallbackName, prize),
       image: prize.image || prize.imageUrl || prize.url || prize.src || fallbackImage,
       type: prize.type,
       amount: prize.copyAmount,
@@ -119,14 +121,6 @@ function getPrizeCount(props: IGeneratedComponent) {
     MAX_PRIZE_COUNT,
     Math.max(DISPLAY_PRIZE_COUNT, explicitCount, lastConfiguredPrizeIndex),
   )
-}
-
-function getTrafficCouponAmount(name: string) {
-  return name.match(/(\d+(?:\.\d+)?)\s*元\s*流量券/)?.[1] || ''
-}
-
-function isTrafficCouponPrize(prize: { name: string; type?: string }) {
-  return prize.type === 'traffic_coupon' || prize.name.replace(/\s+/g, '').includes('流量券')
 }
 
 function normalizeDisplayPrizeName(name: string) {
@@ -176,28 +170,32 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
 
   return (
     <div className={styles.page}>
-      {prizes.map((prize, index) => (
-        <div className={styles.wrap} key={`${index}-${prize.name}`}>
-          <div className={styles.container}>
-            <div className={`${styles.text} ${isCompactPrizeTitle(prize.name) ? styles.textCompact : ''}`}>
-              {prize.name}
-            </div>
-            <div className={styles.content}>
-              <div className={styles.main}>
-                {isTrafficCouponPrize(prize) ? (
-                  <TrafficCouponPrize
-                    amount={prize.amount || getTrafficCouponAmount(prize.name) || '10'}
-                    className={styles.trafficCouponPrize}
-                  />
-                ) : (
-                  <img src={prize.image} className={styles.image} />
-                )}
+      {prizes.map((prize, index) => {
+        const couponType = getTrafficCouponPrizeType(prize)
+        const CouponPrize = couponType === 'ai_traffic_coupon' ? AiTrafficCouponPrize : TrafficCouponPrize
+        return (
+          <div className={styles.wrap} key={`${index}-${prize.name}`}>
+            <div className={styles.container}>
+              <div className={`${styles.text} ${isCompactPrizeTitle(prize.name) ? styles.textCompact : ''}`}>
+                {prize.name}
               </div>
+              <div className={styles.content}>
+                <div className={styles.main}>
+                  {couponType ? (
+                    <CouponPrize
+                      amount={prize.amount || getTrafficCouponAmountFromText(prize.name) || '10'}
+                      className={styles.trafficCouponPrize}
+                    />
+                  ) : (
+                    <img src={prize.image} className={styles.image} />
+                  )}
+                </div>
+              </div>
+              <img src={prize.ribbon} className={styles.image1} />
             </div>
-            <img src={prize.ribbon} className={styles.image1} />
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

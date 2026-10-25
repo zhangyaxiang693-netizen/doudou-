@@ -1,7 +1,7 @@
 /* eslint-disable*/
 import React, {useEffect, useState} from 'react'
 import styles from './index.module.scss'
-import newTagUrl from '../任务条-样式1/new.png'
+import {getTaskTagAsset} from '../任务条-样式1/task-tag-assets.js'
 
 export type IGeneratedComponent = {
   taskTitle?: string
@@ -21,7 +21,7 @@ export type IGeneratedComponent = {
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
-  const showNewTag = props.showNewTag === true || props.showNewTag === 'true' || props.showNewTag === '1'
+  const taskTag = getTaskTagAsset(props.showNewTag)
   const taskTitle = props.taskTitle || props.title || '投一单DOU+'
   const taskSubtitle = props.taskSubtitle || props.description || '投内容加热、粉丝经营目标且消耗达成30元'
   const rewardCountText = props.rewardCountText || props.rewardCount || '+1'
@@ -39,7 +39,8 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       <div className={styles.wrap}>
         <div className={styles.container}>
           <div className={styles.content}>
-            {showNewTag ? <img src={newTagUrl} className={styles.newTag} /> : null}
+            {taskTag ? <img src={taskTag.src} alt={taskTag.label} className={styles.newTag}
+              style={{width: 33 * taskTag.width / taskTag.height}} /> : null}
             <div className={styles.text}>{taskTitle}</div>
             <div className={styles.main}>
               <div className={styles.section}>

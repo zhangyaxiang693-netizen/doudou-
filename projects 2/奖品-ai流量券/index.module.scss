@@ -1,0 +1,19 @@
+.coupon {
+  --traffic-coupon-number-rotation: 11.5deg;
+  --traffic-coupon-currency-rotation: -1deg;
+  --traffic-coupon-three-digit-offset: -0.5cqw;
+}
+
+.coupon [data-coupon-value-row] {
+  // The AI artwork's value panel sits to the left of its built-in perforation.
+  left: 15%;
+  top: calc(35.3% - 3cqw);
+}
+
+.coupon [data-coupon-value-row] > div {
+  color: #ffffff;
+}
+
+.coupon [data-coupon-value-row] > img {
+  filter: brightness(0) invert(1);
+}

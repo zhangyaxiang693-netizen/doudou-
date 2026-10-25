@@ -42,6 +42,13 @@ import {
   getFittingDailyHeaderInsertion,
   isDailyHeaderDateOverflow,
 } from "./daily-header-title-layout.js";
+import { TASK_TAG_OPTIONS, normalizeTaskTag } from "./task-tags.js";
+import {
+  getTrafficCouponAmountFromText,
+  getTrafficCouponPrizeType,
+  isTrafficCouponType,
+  normalizeAiTrafficCouponName,
+} from "./traffic-coupon.js";
 
 const GUIDED_CUT_EXPORT_WIDTH = 750;
 const GUIDED_CONSUMPTION_RETURN_EXPORT_SIDE_SPACE = 24;
@@ -331,6 +338,7 @@ const navigationBarSvgUrl = new URL("../导航栏/顶栏.svg", import.meta.url).
 const contentModuleImageUrl = new URL("../内容模块.png", import.meta.url).href;
 const contentModuleImage2Url = new URL("../内容模块2.png", import.meta.url).href;
 const trafficCouponPrizeBaseUrl = new URL("../奖品-流量券/assets/image_1.png", import.meta.url).href;
+const aiTrafficCouponPrizeBaseUrl = new URL("../九宫格-奖品库/ai流量券.png", import.meta.url).href;
 const mockPrizeLibrary = [
   {
     id: "traffic_coupon",
@@ -341,6 +349,16 @@ const mockPrizeLibrary = [
     copyThreshold: "100",
     copy: "满100元赠价值10元流量",
     optionLabel: "流量券",
+  },
+  {
+    id: "ai_traffic_coupon",
+    name: "10元AI流量券",
+    image: aiTrafficCouponPrizeBaseUrl,
+    type: "ai_traffic_coupon",
+    copyAmount: "10",
+    copyThreshold: "100",
+    copy: "满100元赠价值10元流量",
+    optionLabel: "AI流量券",
   },
   {
     id: "official_recommendation",
@@ -1615,7 +1633,7 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
             title: `任务${taskNumber}`,
             fields: [
               [`${taskNumber}.taskTitle`, "标题"],
-              [`${taskNumber}.showNewTag`, "NEW标签"],
+              [`${taskNumber}.showNewTag`, "任务标签"],
               [`${taskNumber}.taskSubtitle`, "说明"],
               [`${taskNumber}.rewardCountText`, "奖励数量"],
               [`${taskNumber}.completionText`, "完成次数说明"],
@@ -8241,11 +8259,6 @@ function serializePrizeOption(prize) {
   });
 }
 
-function getTrafficCouponAmountFromText(value) {
-  const match = String(value || "").match(/(\d+(?:\.\d+)?)\s*元\s*流量券/);
-  return match?.[1] || "";
-}
-
 function getTrafficCouponCopyParts(value) {
   const source = String(value || "").replace(/,/g, "");
   const match = source.match(/(?:送)?满\s*(00|\d+(?:\.\d+)?)\s*元?\s*(?:赠|送)\s*(?:价值)?\s*(\d+(?:\.\d+)?)\s*元?(?:\s*流量)?/);
@@ -8296,7 +8309,7 @@ function normalizeLegacyCouponPackProps(schemaId, props = {}) {
 }
 
 function normalizePrizeCopyMeta(prize = {}, sourceText = "") {
-  const name = prize.name || prize.title || prize.label || "";
+  const name = normalizeAiTrafficCouponName(prize.name || prize.title || prize.label || "", prize);
   const copy = prize.copy || prize.text || prize.description || "";
   const image = prize.image || prize.imageUrl || prize.url || prize.src || "";
   const copyParts = getTrafficCouponCopyParts([sourceText, copy, name].filter(Boolean).join(" "));
@@ -8307,10 +8320,10 @@ function normalizePrizeCopyMeta(prize = {}, sourceText = "") {
     : null;
   const declaredType = imageLibraryItem
     ? imageLibraryItem.type || "standard"
-    : String(prize.type || "").trim();
+    : getTrafficCouponPrizeType(prize) || String(prize.type || "").trim();
   const isTrafficCoupon =
-    declaredType === "traffic_coupon" ||
-    (!declaredType && Boolean(nameAmount || sourceAmount || copyParts.amount));
+    isTrafficCouponType(declaredType) ||
+    (!declaredType && !image && Boolean(nameAmount || sourceAmount || copyParts.amount));
   const copyAmount = isTrafficCoupon
     ? prize.copyAmount || nameAmount || sourceAmount || copyParts.amount
     : "";
@@ -8319,7 +8332,7 @@ function normalizePrizeCopyMeta(prize = {}, sourceText = "") {
       prize.copyThreshold ||
       (copyAmount ? getDefaultTrafficCouponThreshold(copyAmount) : "")
     : "";
-  const type = isTrafficCoupon ? "traffic_coupon" : declaredType || "standard";
+  const type = declaredType || (isTrafficCoupon ? "traffic_coupon" : "standard");
   const explicitCopyParts = getTrafficCouponCopyParts(copy);
   const renderedCopy = isTrafficCoupon
     ? copy && !explicitCopyParts.amount
@@ -8339,12 +8352,12 @@ function normalizePrizeCopyMeta(prize = {}, sourceText = "") {
 
 function serializePrizeValueWithName(value, name) {
   const parsed = parsePrizeValue(value);
-  const trimmedName = String(name ?? "").trim();
+  const trimmedName = normalizeAiTrafficCouponName(String(name ?? "").trim(), parsed || {});
   if (!parsed) return "";
   const nameAmount = getTrafficCouponAmountFromText(trimmedName);
-  const amountOverrides = parsed.type === "traffic_coupon" && nameAmount
+  const amountOverrides = isTrafficCouponType(parsed.type) && nameAmount && trimmedName !== parsed.name
     ? {
-        type: "traffic_coupon",
+        type: parsed.type,
         copyAmount: nameAmount,
         copyThreshold: getDefaultTrafficCouponThreshold(nameAmount),
         copy: renderTrafficCouponCopy(
@@ -8393,7 +8406,7 @@ function serializePrizeValueWithAmount(value, amount) {
   const copyThreshold = getDefaultTrafficCouponThreshold(copyAmount);
   const normalized = normalizePrizeCopyMeta({
     ...parsed,
-    type: "traffic_coupon",
+    type: parsed.type,
     copyAmount,
     copyThreshold,
     copy: renderTrafficCouponCopy(copyAmount, copyThreshold),
@@ -8440,21 +8453,16 @@ function parsePrizeValue(value) {
 }
 
 function isTrafficCouponPrizeValue(prize) {
-  if (prize?.type) return prize.type === "traffic_coupon";
-  return Boolean(
-    prize && (
-      getTrafficCouponAmountFromText(prize.name) ||
-      getTrafficCouponAmountFromText(prize.copy)
-    )
-  );
+  return Boolean(prize && getTrafficCouponPrizeType(prize));
 }
 
 function renderPrizeLibraryThumbnail(prize) {
   if (!prize) return "<i></i>";
   if (isTrafficCouponPrizeValue(prize)) {
+    const isAiCoupon = getTrafficCouponPrizeType(prize) === "ai_traffic_coupon";
     return `
-      <span class="prize-library-traffic-coupon-thumb">
-        <img src="${escapeAttr(trafficCouponPrizeBaseUrl)}" alt="" />
+      <span class="prize-library-traffic-coupon-thumb${isAiCoupon ? " prize-library-ai-traffic-coupon-thumb" : ""}">
+        <img src="${escapeAttr(isAiCoupon ? aiTrafficCouponPrizeBaseUrl : trafficCouponPrizeBaseUrl)}" alt="" />
         <b>${escapeHtml(prize.copyAmount || getTrafficCouponAmountFromText(prize.name) || "10")}</b>
       </span>
     `;
@@ -8478,8 +8486,8 @@ function findPrizeLibraryItemByText(value) {
   const parsed = parsePrizeValue(value);
   const normalized = normalizePrizeLookupText(parsed?.name || value);
   if (!normalized) return null;
-  if (parsed?.type === "traffic_coupon") {
-    return mockPrizeLibrary.find((item) => item.id === "traffic_coupon") || null;
+  if (isTrafficCouponType(parsed?.type)) {
+    return mockPrizeLibrary.find((item) => item.id === parsed.type) || null;
   }
   const imageMatchedItem = parsed?.image
     ? mockPrizeLibrary.find((item) => item.image === parsed.image)
@@ -8498,6 +8506,7 @@ function findPrizeLibraryItemByText(value) {
     dou流量券: "traffic_coupon",
     "dou+流量券": "traffic_coupon",
     流量券: "traffic_coupon",
+    ai流量券: "ai_traffic_coupon",
     dou官方推荐机会: "official_recommendation",
     "dou+官方推荐机会": "official_recommendation",
     dou仔周边: "douzi_merch",
@@ -8647,7 +8656,8 @@ function getSelectFieldOptions(field) {
 }
 
 function renderSelectFieldControl(field, value, dataAttr, ariaLabel = "") {
-  const currentValue = String(value === undefined || value === null || value === "" ? field?.default ?? "" : value);
+  const selectedValue = value === undefined || value === null || value === "" ? field?.default ?? "" : value;
+  const currentValue = field?.key === "showNewTag" ? normalizeTaskTag(selectedValue) : String(selectedValue);
   return `
     <select ${dataAttr} ${ariaLabel ? `aria-label="${escapeAttr(ariaLabel)}"` : ""}>
       ${getSelectFieldOptions(field).map((option) => `
@@ -11602,7 +11612,7 @@ function getPrdPageTemplateInputFields(
     );
     const taskLabelByProp = {
       taskTitle: "标题",
-      showNewTag: "NEW标签",
+      showNewTag: "任务标签",
       taskSubtitle: "说明",
       rewardCountText: "奖励数量",
       completionText: "完成次数说明",
@@ -12553,7 +12563,7 @@ function getModuleBoundBlueprintSections(moduleConfig) {
       className: "is-task-card",
       fields: [
         [`${taskNumber}.taskTitle`, "标题"],
-        [`${taskNumber}.showNewTag`, "NEW标签"],
+        [`${taskNumber}.showNewTag`, "任务标签"],
         [`${taskNumber}.taskSubtitle`, "说明"],
         [`${taskNumber}.rewardCountText`, "奖励数量"],
         [`${taskNumber}.completionText`, "完成次数说明"],
@@ -12567,7 +12577,7 @@ function hydrateModuleBoundBlueprintSections({ moduleConfig, templateName, versi
     ...section,
     fields: section.fields.map((field) => {
       const normalizedField = Array.isArray(field)
-        ? { key: field[0], label: field[1], type: /\.showNewTag$/.test(field[0]) ? "boolean" : "string" }
+        ? { key: field[0], label: field[1], type: /\.showNewTag$/.test(field[0]) ? "select" : "string" }
         : typeof field === "string"
           ? { label: field }
           : field;
@@ -13411,22 +13421,31 @@ function renderModuleBoundBlueprintMatrixSection(
   const newTagRowIndexes = newTagFields
     .map((field) => field.rowIndex)
     .filter((rowIndex) => Number.isInteger(rowIndex));
-  const isNewTagChecked = newTagFields.some((field) =>
-    /^(?:true|1|yes|是|开启|开|new)$/i.test(String(state.prdTableRows[field.rowIndex]?.value || "")),
+  const selectedTaskTags = newTagFields.map((field) =>
+    normalizeTaskTag(state.prdTableRows[field.rowIndex]?.value),
   );
   const newTagControl = newTagRowIndexes.length
     ? `
-      <button
-        type="button"
-        class="prd-task-new-tag-toggle ${isNewTagChecked ? "is-checked" : ""}"
-        data-prd-task-new-tag-rows="${escapeAttr(newTagRowIndexes.join(","))}"
-        aria-pressed="${isNewTagChecked ? "true" : "false"}"
-        aria-label="${isNewTagChecked ? "关闭" : "开启"}NEW标签"
-        ${isContentLocked ? "disabled" : ""}
-      >
-        <i aria-hidden="true"></i>
-        <span>NEW标签</span>
-      </button>
+      <span class="prd-task-tag-options" role="group" aria-label="${escapeAttr(sectionTitle)}标签（最多一个）">
+        ${TASK_TAG_OPTIONS.map((tag) => {
+          const checked = selectedTaskTags.length > 0 &&
+            selectedTaskTags.every((value) => value === tag.value);
+          return `
+            <button
+              type="button"
+              class="prd-task-new-tag-toggle ${checked ? "is-checked" : ""}"
+              data-prd-task-new-tag-rows="${escapeAttr(newTagRowIndexes.join(","))}"
+              data-prd-task-tag="${escapeAttr(tag.value)}"
+              aria-pressed="${checked}"
+              aria-label="${checked ? "关闭" : "开启"}${escapeAttr(tag.label)}标签"
+              ${isContentLocked ? "disabled" : ""}
+            >
+              <i aria-hidden="true"></i>
+              <span>${escapeHtml(tag.label)}标签</span>
+            </button>
+          `;
+        }).join("")}
+      </span>
     `
     : "";
   const taskNumber = Number(String(sectionTitle).match(/^任务\s*(\d+)$/)?.[1] || 0);
@@ -25372,15 +25391,16 @@ function bindEvents() {
     }
 
     const taskNewTagToggle = event.target.closest("[data-prd-task-new-tag-rows]");
-    if (taskNewTagToggle) {
+    if (taskNewTagToggle && !taskNewTagToggle.disabled) {
       const nextChecked = taskNewTagToggle.getAttribute("aria-pressed") !== "true";
+      const nextTag = nextChecked ? normalizeTaskTag(taskNewTagToggle.dataset.prdTaskTag) : "";
       String(taskNewTagToggle.dataset.prdTaskNewTagRows || "")
         .split(",")
         .map(Number)
         .filter(Number.isInteger)
         .forEach((rowIndex) => {
           if (state.prdTableRows[rowIndex]) {
-            state.prdTableRows[rowIndex].value = nextChecked ? "true" : "";
+            state.prdTableRows[rowIndex].value = nextTag;
           }
         });
       state.prdTableBlueprint = null;

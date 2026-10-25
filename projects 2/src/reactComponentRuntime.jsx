@@ -63,6 +63,7 @@ import TopBanner from "../资源位/顶部banner";
 import CheckoutPopup from "../资源位/下单页弹窗";
 import Pendant from "../资源位/挂件";
 import TrafficCouponPrize from "../奖品-流量券";
+import AiTrafficCouponPrize from "../奖品-ai流量券";
 import RandomPrizeAddress from "../随机奖品填写地址";
 
 const roots = new WeakMap();
@@ -212,6 +213,7 @@ const componentMap = {
   "下单页弹窗": CheckoutPopup,
   "挂件": Pendant,
   "奖品-流量券": TrafficCouponPrize,
+  "奖品-ai流量券": AiTrafficCouponPrize,
   "随机奖品填写地址": RandomPrizeAddress,
 };
 

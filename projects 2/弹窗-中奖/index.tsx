@@ -7,6 +7,8 @@ import image3 from './assets/image_3.svg'
 import image4 from './assets/铃铛 4.png'
 import familyPackDecoration from '../九宫格-奖品库/装饰条.png'
 import TrafficCouponPrize from '../奖品-流量券'
+import AiTrafficCouponPrize from '../奖品-ai流量券'
+import {getTrafficCouponAmountFromText, getTrafficCouponPrizeType, normalizeAiTrafficCouponName} from '../src/traffic-coupon'
 import RandomPrizeAddress from '../随机奖品填写地址'
 
 type PrizeValue =
@@ -87,10 +89,6 @@ function renderTrafficCouponCopy(amount?: string, threshold?: string) {
     : ''
 }
 
-function getTrafficCouponAmount(value?: string) {
-  return String(value || '').match(/(\d+(?:\.\d+)?)\s*元\s*流量券/)?.[1] || ''
-}
-
 function resolvePrize(value: PrizeValue | undefined, fallbackName: string) {
   let prize = value
   if (typeof value === 'string') {
@@ -101,8 +99,8 @@ function resolvePrize(value: PrizeValue | undefined, fallbackName: string) {
     }
   }
   if (prize && typeof prize === 'object') {
-    const name = prize.name || prize.title || prize.label || fallbackName
-    const copyAmount = getTrafficCouponAmount(name) || prize.copyAmount
+    const name = normalizeAiTrafficCouponName(prize.name || prize.title || prize.label || fallbackName, prize)
+    const copyAmount = getTrafficCouponAmountFromText(name) || prize.copyAmount
     const copyThreshold = prize.copyThreshold || (copyAmount ? getDefaultTrafficCouponThreshold(copyAmount) : '')
     return {
       name,
@@ -165,20 +163,20 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const selectedIndex = Math.max(1, Math.min(availablePrizeCount, Number(selectedPrizeIndex) || 1))
   const selectedPrize = prizes[selectedIndex - 1]
   const normalizedSelectedPrizeName = selectedPrize.name.replace(/\s+/g, '')
-  const displayedPrizeText = prizeText || (
+  const displayedPrizeText = normalizeAiTrafficCouponName(prizeText || (
     normalizedSelectedPrizeName.includes('全家福随机发') || normalizedSelectedPrizeName.includes('周边全家福')
       ? 'DOU仔随机周边'
       : selectedPrize.name
-  )
+  ), selectedPrize)
   const displayedPrizeSubText = prizeSubText || selectedPrize.copy || '满30元赠价值5元流量'
-  const isTrafficCouponPrize =
-    selectedPrize.type === 'traffic_coupon' ||
-    /\d+(?:\.\d+)?元流量券/.test(selectedPrize.name)
+  const couponType = getTrafficCouponPrizeType(selectedPrize)
+  const isTrafficCouponPrize = Boolean(couponType)
+  const CouponPrize = couponType === 'ai_traffic_coupon' ? AiTrafficCouponPrize : TrafficCouponPrize
   const popupEditProp = (prop: string) => isTrafficCouponPrize ? undefined : prop
   const trafficCouponAmount =
     selectedPrize.amount ||
-    getTrafficCouponAmount(selectedPrize.name) ||
-    getTrafficCouponAmount(selectedPrize.copy)
+    getTrafficCouponAmountFromText(selectedPrize.name) ||
+    getTrafficCouponAmountFromText(selectedPrize.copy)
   const isOfficialRecommendationPrize =
     selectedPrize.type === 'official_recommendation' ||
     selectedPrize.name === 'DOU+官方推荐机会'
@@ -269,7 +267,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
             />
           </div>
           {isTrafficCouponPrize ? (
-            <TrafficCouponPrize
+            <CouponPrize
               amount={trafficCouponAmount || '10'}
               className={styles.trafficCouponComponent}
             />

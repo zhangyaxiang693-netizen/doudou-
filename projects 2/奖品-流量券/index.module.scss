@@ -37,11 +37,11 @@
   width: 10cqw;
   height: auto;
   margin-top: 6.1cqw;
-  transform: translateX(1cqw);
+  transform: translateX(1cqw) rotate(var(--traffic-coupon-currency-rotation, 0deg));
 }
 .valueRowThreeDigits .currency {
   margin-top: 5.1cqw;
-  transform: translateX(3cqw);
+  transform: translateX(3cqw) rotate(var(--traffic-coupon-currency-rotation, 0deg));
 }
 .amount {
   flex: 0 0 auto;
@@ -54,13 +54,13 @@
   line-height: 0.86;
   text-align: center;
   white-space: nowrap;
-  transform: rotate(12.5deg);
+  transform: rotate(var(--traffic-coupon-number-rotation, 12.5deg));
   transform-origin: center;
 }
 .amountMedium {
   top: 5cqw;
   font-size: clamp(18px, 22cqw, 67px);
-  transform: rotate(12.5deg) scaleX(0.92);
+  transform: translateX(var(--traffic-coupon-three-digit-offset, 0px)) rotate(var(--traffic-coupon-number-rotation, 12.5deg)) scaleX(0.92);
 }
 .amountSmall {
   font-size: clamp(16px, 18cqw, 55px);

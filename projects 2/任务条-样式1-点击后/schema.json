@@ -95,6 +95,9 @@
       "任务标题",
       "任务副标题",
       "NEW标签",
+      "ai投放标签",
+      "方法论标签",
+      "标杆领航标签",
       "抽奖加成",
       "每日可完成"
     ],
@@ -148,10 +151,17 @@
     {
       "key": "showNewTag",
       "name": "showNewTag",
-      "label": "NEW标签",
-      "type": "boolean",
-      "default": false,
-      "description": "开启后在任务标题前显示 NEW 标签。"
+      "label": "任务标签",
+      "type": "select",
+      "default": "",
+      "options": [
+        { "label": "不添加标签", "value": "" },
+        { "label": "NEW", "value": "new" },
+        { "label": "ai投放", "value": "ai投放" },
+        { "label": "方法论", "value": "方法论" },
+        { "label": "标杆领航", "value": "标杆领航" }
+      ],
+      "description": "在任务标题前显示所选标签，包含 NEW 在内最多一个；兼容旧版 NEW 开关。"
     },
     {
       "key": "taskSubtitle",
