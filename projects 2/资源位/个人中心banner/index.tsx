@@ -92,7 +92,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     buttonGradientEnd = '#FF166F',
     buttonText = '立即参与',
   } = props
-  const campaignRef = useFitText(campaignText, 26, 14, false)
+  const campaignRef = useFitText(campaignText, 22, 14, false)
   const headlineRef = useFitText(headlineText, 34, 20, false)
   const buttonRef = useFitText(buttonText, 24, 16)
   const headlineParts = getHeadlineParts(headlineText, headlineHighlightText)

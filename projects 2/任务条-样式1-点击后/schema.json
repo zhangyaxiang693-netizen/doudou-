@@ -242,8 +242,8 @@
         "parentThemeId": "sky"
       },
       "props": {
-        "buttonGradientStart": "#FF6265",
-        "buttonGradientEnd": "#FF6265",
+        "buttonGradientStart": "#FFA3A4",
+        "buttonGradientEnd": "#FFA3A4",
         "lotteryTagGradientStart": "#FF190E",
         "lotteryTagGradientEnd": "#FF166E",
         "rewardCountTextColor": "#FF6265"

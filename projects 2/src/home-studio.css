@@ -1,0 +1,554 @@
+/* 首页专属视觉层：入口使用 app.js 中既有的 data-* 事件绑定。 */
+.app-shell[data-view="home"] .activity-center {
+  padding: 0;
+  background: #f1f0f7;
+}
+
+.app-shell[data-view="home"] .studio-shell {
+  --studio-accent: #707070;
+  --studio-ink: #383838;
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 100svh;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 46% 37%, rgba(221, 219, 231, 0.26), transparent 52%),
+    radial-gradient(ellipse at 96% 0%, rgba(226, 224, 236, 0.3), transparent 44%),
+    #f1f0f7;
+  color: var(--studio-ink);
+  font-family: "Source Han Sans CN", sans-serif;
+  font-weight: 400;
+  font-synthesis: none;
+}
+
+.studio-shell .studio-nav {
+  position: relative;
+  z-index: 2;
+  height: 82px;
+  flex-shrink: 0;
+  padding: 0 42px;
+}
+
+.app-shell[data-view="home"] .studio-nav-back[data-back-home] {
+  display: flex;
+}
+
+.studio-shell .studio-nav-actions {
+  gap: 21px;
+}
+
+.studio-shell .studio-nav-link {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #858585;
+  font-size: 12px;
+  font-weight: 400;
+  transition: color 220ms ease-in-out;
+}
+
+.studio-shell .studio-nav-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: none;
+  transition: background 220ms ease-in-out, transform 220ms ease-in-out;
+}
+
+.studio-nav-icon svg {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.studio-shell .studio-nav-link:hover,
+.studio-shell .studio-nav-link:focus-visible {
+  background: transparent;
+  color: var(--studio-accent);
+}
+
+.studio-nav-link:hover .studio-nav-icon,
+.studio-nav-link:focus-visible .studio-nav-icon {
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: none;
+  transform: translateY(-2px);
+}
+
+.studio-shell .studio-home {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.studio-hero {
+  position: relative;
+  z-index: 1;
+  padding: 0 24px 18px;
+  text-align: center;
+}
+
+.studio-eyebrow {
+  display: inline-block;
+  padding: 5px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  color: #929292;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+}
+
+.studio-hero h1 {
+  margin: 10px 0 5px;
+  color: #616161;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(24px, 2.7vw, 42px);
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0.14em;
+}
+
+.studio-hero p {
+  margin: 0;
+  color: #929292;
+  font-size: clamp(12px, 1.2vw, 18px);
+  line-height: 1.6;
+  letter-spacing: 0.08em;
+}
+
+.studio-scene {
+  position: relative;
+  width: min(calc(100% - 112px), calc((100svh - 248px) * 4800 / 2680));
+  max-width: 1720px;
+  aspect-ratio: 4800 / 2680;
+  flex-shrink: 0;
+  margin: 22px auto 0;
+}
+
+.studio-workstations {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  user-select: none;
+  pointer-events: none;
+}
+
+.studio-floor-lines {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  stroke: rgba(255, 255, 255, 0.78);
+  stroke-width: 2;
+}
+
+.studio-shell .studio-station {
+  position: absolute;
+  z-index: 1;
+  top: 3%;
+  left: 44.5%;
+  width: 22.5%;
+  height: 42%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  color: var(--studio-ink);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.studio-shell .studio-station--resource,
+.studio-shell .studio-station--rest {
+  left: 72%;
+}
+
+.studio-shell .studio-station--away {
+  top: 49%;
+  cursor: default;
+}
+
+.studio-shell .studio-station--amenity {
+  cursor: default;
+}
+
+.studio-shell .studio-station--coffee {
+  top: 8%;
+  left: 3%;
+  width: 35%;
+  height: 38%;
+}
+
+.studio-shell .studio-station--treadmill {
+  top: 57%;
+  left: 7%;
+  width: 26%;
+  height: 34%;
+}
+
+.studio-station--amenity .studio-entry-card {
+  left: 42%;
+}
+
+.studio-station--amenity .studio-entry-copy strong {
+  font-size: clamp(15px, 1.2vw, 18px);
+}
+
+.studio-shell .studio-station:hover {
+  border: 0;
+  background: transparent;
+  color: var(--studio-ink);
+}
+
+.studio-entry-card {
+  position: absolute;
+  top: -62px;
+  left: 48%;
+  display: flex;
+  width: clamp(182px, 15.5vw, 258px);
+  min-height: 102px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 18px 25px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: none;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(2px);
+  transition: opacity 260ms ease-in-out, visibility 0s linear 260ms, transform 260ms ease-in-out, background 260ms ease-in-out, border-color 260ms ease-in-out;
+}
+
+.studio-station--resource .studio-entry-card,
+.studio-station--rest .studio-entry-card {
+  left: 44%;
+}
+
+.studio-station--away .studio-entry-copy strong {
+  font-size: clamp(15px, 1.2vw, 18px);
+}
+
+.studio-entry-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.studio-entry-kicker {
+  color: #999999;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.09em;
+}
+
+.studio-entry-copy strong {
+  color: var(--studio-ink);
+  font-size: clamp(17px, 1.35vw, 21px);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+
+.studio-station--activity .studio-entry-card {
+  min-width: 176px;
+}
+
+.studio-station--activity .studio-entry-copy strong {
+  white-space: nowrap;
+}
+
+.studio-entry-copy em {
+  color: #9b9b9b;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.studio-entry-arrow {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid rgba(112, 112, 112, 0.08);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.4);
+  color: var(--studio-accent);
+  box-shadow: none;
+  transition: background 260ms ease-in-out, color 260ms ease-in-out;
+}
+
+.studio-entry-arrow svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 260ms ease-in-out;
+}
+
+.studio-entry-connector {
+  position: absolute;
+  top: 19px;
+  left: 36%;
+  width: 20%;
+  height: 34px;
+  border-top: 1px solid rgba(255, 255, 255, 0.9);
+  border-left: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 9px 0 0 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 260ms ease-in-out, visibility 0s linear 260ms;
+}
+
+.studio-station:hover .studio-entry-connector,
+.studio-station:focus-visible .studio-entry-connector {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.studio-station:hover .studio-entry-card,
+.studio-station:focus-visible .studio-entry-card {
+  border-color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: none;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(-6px);
+  transition-delay: 0s;
+}
+
+.studio-station:hover .studio-entry-arrow,
+.studio-station:focus-visible .studio-entry-arrow {
+  background: rgba(255, 255, 255, 0.64);
+  box-shadow: none;
+}
+
+.studio-station:hover .studio-entry-arrow svg,
+.studio-station:focus-visible .studio-entry-arrow svg {
+  transform: translateX(2px);
+}
+
+.studio-shell .studio-station:focus-visible,
+.studio-shell .studio-nav-link:focus-visible {
+  outline: 2px solid rgba(112, 112, 112, 0.62);
+  outline-offset: 5px;
+}
+
+.studio-footer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: auto;
+  padding: 16px 42px 22px;
+  color: #aaaaaa;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 1100px) {
+  .studio-shell .studio-nav {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+
+  .studio-scene {
+    width: calc(100% - 104px);
+    margin-top: 45px;
+  }
+
+  .studio-entry-card {
+    top: -48px;
+    left: 32%;
+    width: 184px;
+    min-height: 94px;
+    gap: 10px;
+    padding: 16px 14px 16px 20px;
+    border-radius: 16px;
+  }
+
+  .studio-station--resource .studio-entry-card,
+  .studio-station--rest .studio-entry-card {
+    left: 20%;
+  }
+
+  .studio-station--amenity .studio-entry-card {
+    left: 20%;
+  }
+
+  .studio-entry-arrow {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 860px) {
+  .studio-shell .studio-nav {
+    height: 76px;
+    padding: 0 20px;
+  }
+
+  .studio-shell .studio-nav-actions {
+    gap: 14px;
+  }
+
+  .studio-shell .studio-nav-link {
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .studio-shell .studio-nav-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .studio-hero {
+    padding-top: 18px;
+  }
+
+  .studio-hero h1 {
+    font-size: clamp(19px, 4.2vw, 30px);
+    letter-spacing: 0.09em;
+  }
+
+  .studio-scene {
+    width: calc(100% - 24px);
+    margin-top: 116px;
+  }
+
+  .studio-entry-card {
+    top: -106px;
+    left: -24%;
+    width: 174px;
+    min-height: 92px;
+    padding: 15px;
+  }
+
+  .studio-station--resource .studio-entry-card,
+  .studio-station--rest .studio-entry-card {
+    left: -12%;
+  }
+
+  .studio-station--amenity .studio-entry-card {
+    top: -100px;
+    left: 8%;
+  }
+
+  .studio-entry-connector {
+    top: -16px;
+    left: 42%;
+    width: 1px;
+    height: 45px;
+    border-top: 0;
+    border-radius: 0;
+  }
+
+  .studio-footer {
+    padding: 24px 20px;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 520px) {
+  .studio-shell .studio-nav {
+    height: 70px;
+    padding: 0 16px;
+  }
+
+  .studio-shell .studio-nav-actions {
+    gap: 10px;
+  }
+
+  .studio-shell .studio-nav-link {
+    flex-direction: column;
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  .studio-shell .studio-station--activity .studio-entry-card,
+  .studio-shell .studio-station--commute .studio-entry-card {
+    left: -174%;
+  }
+
+  .studio-shell .studio-station--resource .studio-entry-card,
+  .studio-shell .studio-station--rest .studio-entry-card {
+    right: -6%;
+    left: auto;
+  }
+
+  .studio-entry-card {
+    width: clamp(128px, 40vw, 160px);
+    gap: 8px;
+    padding: 14px;
+  }
+
+  .studio-entry-copy em {
+    font-size: 9px;
+    white-space: normal;
+  }
+
+  .studio-entry-kicker {
+    font-size: 9px;
+  }
+
+  .studio-entry-connector {
+    display: none;
+  }
+
+  .studio-footer {
+    flex-direction: column;
+    gap: 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-shell *,
+  .studio-shell *::before,
+  .studio-shell *::after {
+    transition: none !important;
+  }
+}

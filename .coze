@@ -5,6 +5,8 @@ requires = ["nodejs-24"]
 project_type = "web"
 version = "0.0.35"
 entrypoint = "index.html"
+project_id = "7700581195041636361"
+app_id = "7700641910930817074"
 
 [preview]
 preview_enable = "enabled"

@@ -49,6 +49,9 @@ import {
   isTrafficCouponType,
   normalizeAiTrafficCouponName,
 } from "./traffic-coupon.js";
+import homeWorkstationsUrl from "../首页ui/workstations-off.png";
+import "./home-studio.css";
+import "./home-employees.js";
 
 const GUIDED_CUT_EXPORT_WIDTH = 750;
 const GUIDED_CONSUMPTION_RETURN_EXPORT_SIDE_SPACE = 24;
@@ -7419,63 +7422,107 @@ function renderActivityCenter() {
   if (!center) return;
 
   center.innerHTML = `
-    <div class="prd-flow-shell is-home">
-      <nav class="prd-minimal-nav">
-        <button class="prd-brand" data-back-home aria-label="返回首页">
-          <span>+</span>
-          <strong>DOU+ 活动生成器</strong>
+    <div class="prd-flow-shell is-home studio-shell">
+      <nav class="prd-minimal-nav studio-nav" aria-label="首页导航">
+        <button type="button" class="prd-admin-link studio-nav-link studio-nav-back" data-back-home aria-label="返回街区">
+          <span class="studio-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
+          </span>
+          <span>返回街区</span>
         </button>
-        <div class="prd-progress">
-          <span class="active">01 上传</span>
-          <i></i>
-          <span>02 确认</span>
-          <i></i>
-          <span>03 预览</span>
-        </div>
-        <div class="prd-nav-actions">
-          <button type="button" class="prd-admin-link" data-open-my-projects>我的</button>
-          <button type="button" class="prd-admin-link" data-open-admin-dashboard>后台管理</button>
+        <div class="prd-nav-actions studio-nav-actions">
+          <button type="button" class="prd-admin-link studio-nav-link" data-open-my-projects>
+            <span class="studio-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5"/><path d="M5 20v-2a7 7 0 0 1 14 0v2"/></svg>
+            </span>
+            <span>我的</span>
+          </button>
+          <button type="button" class="prd-admin-link studio-nav-link" data-open-admin-dashboard>
+            <span class="studio-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>
+            </span>
+            <span>后台管理</span>
+          </button>
         </div>
       </nav>
-      <section class="prd-home">
-        <header class="prd-home-hero">
-          <span>AI ACTIVITY BUILDER</span>
-          <h1>从 PRD 开始<br />生成完整活动</h1>
-          <p>自动识别页面、人群和业务内容，生成可直接确认的活动蓝图。</p>
+      <section class="studio-home">
+        <header class="studio-hero">
+          <span class="studio-eyebrow">AI ACTIVITY BUILDER</span>
+          <h1>DOU+ AI CREATIVE STUDIO</h1>
+          <p>一站式生成活动页面与资源位素材</p>
         </header>
-        <div class="prd-home-side flow-entry-grid">
-          <div class="prd-upload-tool">
-            <div class="prd-tool-head">
-              <span>新建活动</span>
-              <i>01</i>
-            </div>
-            <button class="prd-upload-target" data-demo-open-file-modal>
-              <span class="prd-upload-target-icon">↑</span>
-              <strong>上传活动 PRD</strong>
-              <em>导入文档或选择模板直接进入</em>
-            </button>
-            <div class="prd-tool-footer">
-              <span>DOCX</span>
-              <span>PDF</span>
-              <span>表格粘贴</span>
-              <b>最大 20MB</b>
-            </div>
+        <div class="studio-scene">
+          <svg class="studio-floor-lines" viewBox="0 0 2048 1142" fill="none" aria-hidden="true">
+            <path d="M80 575H560Q630 575 630 525V360Q630 315 690 315H850M570 1040H770Q835 1040 835 975V615Q835 565 900 565H1390Q1435 565 1435 615V1015Q1435 1070 1500 1070H1960M1390 295H1430Q1460 295 1460 340V515Q1460 555 1510 555H2000"/>
+          </svg>
+          <studio-employees>
+            <img class="studio-workstations" src="${homeWorkstationsUrl}" alt="活动生成工作台，包含四个电脑工位" width="4800" height="2680" draggable="false" />
+          </studio-employees>
+          <div class="studio-station studio-station--amenity studio-station--coffee" tabindex="0" role="group" aria-label="咖啡机，这班全靠它撑着，需求又加了，咖啡得加浓">
+            <span class="studio-entry-connector" aria-hidden="true"></span>
+            <span class="studio-entry-card">
+              <span class="studio-entry-copy">
+                <span class="studio-entry-kicker">COFFEE BREAK</span>
+                <strong>这班全靠它撑着</strong>
+                <em>需求又加了，咖啡得加浓</em>
+              </span>
+            </span>
           </div>
-          <div class="prd-upload-tool resource-entry-tool">
-            <div class="prd-tool-head">
-              <span>新建资源位</span>
-              <i>02</i>
-            </div>
-            <button class="prd-upload-target resource-entry-target" data-open-resource-flow>
-              <span class="prd-upload-target-icon">▦</span>
-              <strong>生成资源位</strong>
-              <em>选择活动级别，一次生成多个资源位</em>
-            </button>
-            <div class="prd-tool-footer">
-              <span>日常级别</span>
-              <span>S级别</span>
-              <b>多人群版本</b>
-            </div>
+          <div class="studio-station studio-station--amenity studio-station--treadmill" tabindex="0" role="group" aria-label="跑步机，起来走两步，改了一天需求，腿都坐麻了">
+            <span class="studio-entry-connector" aria-hidden="true"></span>
+            <span class="studio-entry-card">
+              <span class="studio-entry-copy">
+                <span class="studio-entry-kicker">跑步机</span>
+                <strong>起来走两步</strong>
+                <em>改了一天需求，腿都坐麻了</em>
+              </span>
+            </span>
+          </div>
+          <button type="button" class="studio-station studio-station--activity" data-demo-open-file-modal aria-label="生成会场页面：上传活动 PRD 或选择模板">
+            <span class="studio-entry-connector" aria-hidden="true"></span>
+            <span class="studio-entry-card">
+              <span class="studio-entry-copy">
+                <span class="studio-entry-kicker">SCENE GEN</span>
+                <strong>生成会场页面</strong>
+                <em>导入 PRD / 选择模板</em>
+              </span>
+              <span class="studio-entry-arrow" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none"><path d="m7.5 5 5 5-5 5"/></svg>
+              </span>
+            </span>
+          </button>
+          <button type="button" class="studio-station studio-station--resource" data-open-resource-flow aria-label="生成资源位">
+            <span class="studio-entry-connector" aria-hidden="true"></span>
+            <span class="studio-entry-card">
+              <span class="studio-entry-copy">
+                <span class="studio-entry-kicker">ASSETS GEN</span>
+                <strong>生成资源位</strong>
+                <em>素材生成 / 多人群版本</em>
+              </span>
+              <span class="studio-entry-arrow" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="none"><path d="m7.5 5 5 5-5 5"/></svg>
+              </span>
+            </span>
+          </button>
+          <div class="studio-station studio-station--away studio-station--commute" tabindex="0" role="group" aria-label="这位同事正在睡觉，昨晚又加班，先睡为敬">
+            <span class="studio-entry-connector" aria-hidden="true"></span>
+            <span class="studio-entry-card">
+              <span class="studio-entry-copy">
+                <span class="studio-entry-kicker">SLEEPING</span>
+                <strong>这位同事正在睡觉</strong>
+                <em>昨晚又加班，先睡为敬</em>
+              </span>
+            </span>
+          </div>
+          <div class="studio-station studio-station--away studio-station--rest" tabindex="0" role="group" aria-label="这位同事今天调休，假批了，消息倒是一条没少">
+            <span class="studio-entry-connector" aria-hidden="true"></span>
+            <span class="studio-entry-card">
+              <span class="studio-entry-copy">
+                <span class="studio-entry-kicker">DAY OFF</span>
+                <strong>这位同事今天调休</strong>
+                <em>假批了，消息倒是一条没少</em>
+              </span>
+            </span>
           </div>
         </div>
         ${
@@ -7484,6 +7531,10 @@ function renderActivityCenter() {
             : ""
         }
       </section>
+      <footer class="studio-footer">
+        <span>DOU+ CREATIVE WORKSPACE</span>
+        <span>让创意在这里发生</span>
+      </footer>
       ${state.createModalOpen ? renderCreateModal() : ""}
       ${state.adminAuthModalOpen ? renderAdminAuthModal() : ""}
     </div>
