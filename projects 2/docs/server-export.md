@@ -25,6 +25,23 @@ PNG（单张、模块/全量 ZIP、管理员组件验证器）及 GIF 的生成�
 
 复用既有服务端 Supabase 与历史身份适配器配置。新增表与函数仅 service_role 可用，前端不得持有服务端数据库凭据。
 
+### Coze 生产运行库修复（2026-11-04）
+
+首次生产导出在 Chromium 启动时退出。生产日志明确记录：
+
+```text
+/tmp/chromium: error while loading shared libraries: libnspr4.so:
+cannot open shared object file: No such file or directory
+```
+
+开发容器自检通过不能证明生产容器拥有同一套系统库。`@sparticuz/chromium` 仅在识别到特定 AWS/Vercel 环境时自动解压 `al2023.tar.br`，该归档实际包含缺失的 NSPR/NSS 库。
+
+修复后的 Linux 默认渲染器显式解压该归档，将其 `lib/` 和临时目录加入 Chromium 子进程的 `LD_LIBRARY_PATH`，保留已有搜索路径，并配置打包字体目录。即使 `/tmp/chromium` 已缓存，也执行库准备；不修改服务器进程的环境变量。
+
+针对“浏览器已缓存但生产运行库缺失”的回归检查先复现失败，再通过实际归档解压和启动参数检查验证修复。在 Coze Linux x64 / Node 24.21.0 / Chromium 153.0.8010.0 中，临时使用上述库加载配置实际生成了透明 PNG：750×128、17248 bytes、`ready: true`。没有修改 Coze 源码或数据库。
+
+此修复仅需更新代码并重新部署，不增加 SQL。新生产部署的 HTTP 出图仍需复测；重新部署后取消旧失败任务并新建导出，避免使用旧构建继续推进。
+
 ## 任务语义与限制
 
 - 这是页面驱动、可恢复的分步生成，尚无独立常驻队列消费者。关闭浏览器后暂停，重新打开导出任务并手动继续；不保证关闭页面后后台完成。

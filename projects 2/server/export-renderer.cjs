@@ -1,6 +1,7 @@
 const express = require("express");
 const fs = require("node:fs");
 const path = require("node:path");
+const { tmpdir } = require("node:os");
 const crypto = require("node:crypto");
 const { Worker } = require("node:worker_threads");
 const { chromium } = require("playwright-core");
@@ -34,14 +35,29 @@ class ExportRenderer {
       }
       let executablePath = this.executablePath || process.env.EXPORT_CHROMIUM_PATH;
       let args = ["--disable-dev-shm-usage"];
+      let browserEnv;
       if (!executablePath && process.platform === "darwin") executablePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
       if (!executablePath && process.platform === "linux") {
-        const bundled = require("@sparticuz/chromium").default;
+        const bundle = require("@sparticuz/chromium");
+        const bundled = bundle.default;
+        // Coze production is not detected as AWS Lambda by the package. Its
+        // minimal runtime lacks NSPR/NSS, even if /tmp/chromium is cached.
+        const libraryRoot = await bundle.inflate(path.join(
+          path.dirname(require.resolve("@sparticuz/chromium")), "..", "bin", "al2023.tar.br",
+        ));
+        browserEnv = {
+          ...process.env,
+          FONTCONFIG_PATH: process.env.FONTCONFIG_PATH || path.join(tmpdir(), "fonts"),
+          LD_LIBRARY_PATH: [...new Set([
+            path.join(libraryRoot, "lib"), tmpdir(),
+            ...(process.env.LD_LIBRARY_PATH || "").split(":").filter(Boolean),
+          ])].join(":"),
+        };
         executablePath = await bundled.executablePath();
         args = bundled.args;
       }
       if (!executablePath) throw new ExportError("请配置 EXPORT_CHROMIUM_PATH", "EXPORT_BROWSER_MISSING", 503);
-      this.browser = await chromium.launch({ executablePath, args, headless: true, timeout: 25000 });
+      this.browser = await chromium.launch({ executablePath, args, ...(browserEnv ? { env: browserEnv } : {}), headless: true, timeout: 25000 });
     })().finally(() => { this.opening = null; });
     return this.opening;
   }
