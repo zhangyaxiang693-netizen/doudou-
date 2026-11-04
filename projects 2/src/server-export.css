@@ -1,0 +1,18 @@
+.server-export-panel {
+  position: fixed; right: 24px; bottom: 24px; width: 340px; max-height: 65vh;
+  overflow: auto; z-index: 10000; padding: 18px; border: 1px solid #e2dfeb;
+  border-radius: 20px; background: #fff; box-shadow: 0 12px 48px #33245420;
+  color: #242033; font: 400 13px/1.6 "Source Han Sans CN", sans-serif;
+}
+.server-export-panel[hidden] { display: none; }
+.server-export-panel > header { display: flex; align-items: center; justify-content: space-between; }
+.server-export-panel > header > strong { font-weight: 500; font-size: 16px; }
+.server-export-panel button {
+  cursor: pointer; padding: 5px 12px; border: 0; border-radius: 9px; background: #f1eff8;
+  color: #51416b; font: inherit;
+}
+.server-export-job { padding-top: 14px; margin-top: 14px; border-top: 1px solid #eeeaf4; }
+.server-export-job > strong { display: block; overflow-wrap: anywhere; font-weight: 500; }
+.server-export-job > span { display: block; color: #686172; margin: 4px 0 10px; }
+.server-export-job > div { display: flex; gap: 8px; }
+@media (max-width: 500px) { .server-export-panel { width: calc(100vw - 32px); right: 16px; bottom: 16px; box-sizing: border-box; } }

@@ -16,6 +16,9 @@ export default defineConfig({
     },
   },
   build: {
+    rollupOptions: {
+      input: { app: "index.html", serverRender: "server-render.html" },
+    },
     target: "es2020",
     minify: "esbuild",
     sourcemap: false,

@@ -8,14 +8,17 @@
     "dev:server": "node --env-file=.env.local server/index.cjs",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --test server/__tests__/*.test.cjs src/project-history/*.test.js src/collaboration/*.test.js src/traffic-coupon.test.js"
+    "test": "node --test server/__tests__/*.test.cjs src/project-history/*.test.js src/collaboration/*.test.js src/traffic-coupon.test.js",
+    "export:check": "node scripts/server-export-preflight.cjs"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^153.0.0",
     "@supabase/supabase-js": "^2.112.3",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "gifenc": "^1.0.3",
-    "html-to-image": "^1.11.13",
+    "playwright-core": "^1.64.1",
+    "pngjs": "^7.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

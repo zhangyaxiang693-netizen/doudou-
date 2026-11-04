@@ -121,3 +121,12 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 - `pnpm-workspace.yaml` 必须包含 `packages: ["."]`，否则 pnpm 会因缺少 packages 字段报错
 - 项目中存在 `package-lock.json`（历史遗留），实际使用 pnpm 管理依赖，不要删除 pnpm-lock.yaml
 - 目录名 `projects 2` 含空格，部署平台执行时会被截断。根目录 `scripts/build.sh` 和 `scripts/run.sh` 是包装脚本，正确引用子项目路径，`.coze` 的 `[deploy]` 指向这两个包装脚本而非子项目内的脚本
+
+## 服务端导出（2026-11-04 本地实现）
+
+- 所有 PNG、ZIP 和 GIF 生成入口走 `/api/exports`；浏览器只预览、提交快照和下载文件，不恢复 html-to-image 截图或浏览器 ZIP/GIF 编码。
+- 服务端渲染入口为 `server-render.html`；Vite 必须保留双入口构建。公开静态服务器禁用该 HTML，渲染器使用私有 loopback 服务加载。
+- 上线前在目标 Supabase 库执行 `supabase/migrations/202611040003_server_exports.sql`。任务表与历史表独立，仅 service_role 可访问。
+- FaaS 下使用数据库租约与分步检查点，不依赖进程内任务队列。页面关闭会暂停后续步骤，重开同账号后继续；不可宣称关闭浏览器后仍自动完成。
+- Linux 默认使用随依赖安装的 Chromium，需在实际部署环境执行 `pnpm export:check` 并完成一次生产切图。macOS 通过不等于 Coze/Linux 已验证。
+- 详细实现、容量、清理和部署边界见 `docs/server-export.md`。

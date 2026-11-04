@@ -6,6 +6,7 @@ const { promisify } = require("util");
 const session = require("express-session");
 const { SupabaseSessionStore } = require("./supabase-session-store.cjs");
 const { createHistoryRouter } = require("./history-routes.cjs");
+const { createExportRouter } = require("./export-routes.cjs");
 const { createCollaborationRouter } = require("./collaboration-routes.cjs");
 const { createAdminAccessRouter } = require("./admin-access.cjs");
 const { configureSessionProxy } = require("./session-proxy.cjs");
@@ -900,6 +901,7 @@ apiRouter.post("/fetch-feishu-doc", async (req, res) => {
 });
 
 app.use("/api", apiRouter);
+app.use("/api/exports", createExportRouter({ resolveUser: resolveSessionUser }));
 app.use("/api/admin", createAdminAccessRouter());
 app.use(
   "/api/collaboration",
@@ -909,6 +911,11 @@ app.use("/api", createHistoryRouter({ resolveUser: resolveSessionUser }));
 
 app.use((error, req, res, next) => {
   if (!req.path.startsWith("/api/")) return next(error);
+  if (req.path.startsWith("/api/exports") && ["entity.too.large", "entity.parse.failed"].includes(error?.type)) {
+    return res.status(error.type === "entity.too.large" ? 413 : 400).json({
+      success: false, code: "EXPORT_INVALID_INPUT", error: "导出请求过大或格式无效，请按模块导出",
+    });
+  }
   if (error?.type === "entity.too.large") {
     return sendHistoryError(res, { code: "SNAPSHOT_TOO_LARGE", message: "保存请求超过容量限制，当前编辑已保留" });
   }
@@ -919,6 +926,8 @@ app.use((error, req, res, next) => {
 });
 
 // Serve static files from dist/
+// The renderer is served by a private loopback server, never the public app.
+app.use("/server-render.html", (req, res) => res.status(404).end());
 app.use(express.static(distDir, {
   maxAge: "1y",
   etag: true,

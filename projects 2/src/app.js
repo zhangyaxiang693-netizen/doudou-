@@ -1,9 +1,4 @@
-import {
-  getFontEmbedCSS,
-  toBlob as exportNodeToBlob,
-  toCanvas as exportNodeToCanvas,
-} from "html-to-image";
-import { GIFEncoder, quantize } from "gifenc";
+import { runServerExport, openServerExports, refreshServerExports } from "./server-export-client.js";
 import {
   applyProjectSnapshot,
   createProjectSnapshot,
@@ -23283,126 +23278,6 @@ function downloadBlob(filename, blob) {
   window.setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
-function findGuidedExportElement(entryId, format = "png") {
-  const selector = format === "gif"
-    ? "[data-export-gif-id]"
-    : "[data-export-cut-id]";
-  const dataKey = format === "gif" ? "exportGifId" : "exportCutId";
-  return [...document.querySelectorAll(selector)]
-    .find((element) => element.dataset[dataKey] === entryId);
-}
-
-const guidedExportFontCssPromises = new Map();
-
-function getGuidedExportFontCacheKey(element) {
-  const families = new Set();
-  [element, ...element.querySelectorAll("*")].forEach((item) => {
-    String(getComputedStyle(item).fontFamily || "")
-      .split(",")
-      .map((family) => family.trim().replace(/^['"]|['"]$/g, ""))
-      .filter(Boolean)
-      .forEach((family) => families.add(family));
-  });
-  return [...families].sort().join("|");
-}
-
-function getGuidedExportFontCss(element) {
-  const cacheKey = getGuidedExportFontCacheKey(element);
-  if (!guidedExportFontCssPromises.has(cacheKey)) {
-    const promise = getFontEmbedCSS(element).catch((error) => {
-      guidedExportFontCssPromises.delete(cacheKey);
-      console.error("[guided-export] font embedding failed", error);
-      throw new Error(
-        `字体嵌入失败，请重试：${error?.message || "未知错误"}`,
-      );
-    });
-    guidedExportFontCssPromises.set(cacheKey, promise);
-  }
-  return guidedExportFontCssPromises.get(cacheKey);
-}
-
-async function exportElementToPngBlob(element, options = {}) {
-  const width = Number(options.width || GUIDED_CUT_EXPORT_WIDTH);
-  if (window.waitForReactMaterialFonts) {
-    await window.waitForReactMaterialFonts(element);
-  }
-  if (document.fonts?.ready) {
-    try {
-      await document.fonts.ready;
-    } catch (error) {
-      console.warn("[guided-export] font readiness skipped", error);
-    }
-  }
-  await waitForNextFrame();
-  const height = Number(
-    options.height ||
-      Math.ceil(Math.max(element.scrollHeight, element.offsetHeight)),
-  );
-  if (!width || !height) throw new Error("empty export component");
-
-  const fontEmbedCSS = await getGuidedExportFontCss(element);
-  const exportOptions = {
-    width,
-    height,
-    pixelRatio: options.pixelRatio || 1,
-    cacheBust: false,
-    fontEmbedCSS,
-    backgroundColor: "transparent",
-    style: {
-      width: `${width}px`,
-      minHeight: `${height}px`,
-      overflow: "visible",
-      transform: "none",
-      transformOrigin: "top left",
-      "--react-component-scale": "1",
-    },
-  };
-  await exportNodeToCanvas(element, {
-    ...exportOptions,
-    pixelRatio: 1,
-  });
-  await waitForNextFrame();
-  const blob = await exportNodeToBlob(element, exportOptions);
-  if (!blob) throw new Error("failed to create png blob");
-  return blob;
-}
-
-async function exportElementToCanvas(element, options = {}) {
-  const width = Number(options.width || GUIDED_CUT_EXPORT_WIDTH);
-  if (window.waitForReactMaterialFonts) {
-    await window.waitForReactMaterialFonts(element);
-  }
-  if (document.fonts?.ready) {
-    try {
-      await document.fonts.ready;
-    } catch (error) {
-      console.warn("[guided-export] font readiness skipped", error);
-    }
-  }
-  const height = Number(
-    options.height ||
-      Math.ceil(Math.max(element.scrollHeight, element.offsetHeight)),
-  );
-  if (!width || !height) throw new Error("empty export component");
-  const fontEmbedCSS = await getGuidedExportFontCss(element);
-  return exportNodeToCanvas(element, {
-    width,
-    height,
-    pixelRatio: 1,
-    cacheBust: false,
-    fontEmbedCSS,
-    backgroundColor: "transparent",
-    style: {
-      width: `${width}px`,
-      minHeight: `${height}px`,
-      overflow: "visible",
-      transform: "none",
-      transformOrigin: "top left",
-      "--react-component-scale": "1",
-    },
-  });
-}
-
 function getExportDimensionTitle(graph, graphNode) {
   const dimension = graph?.dimensions?.find((item) => item.id === graphNode?.dimensionId);
   const title = dimension?.title || "默认维度";
@@ -23916,6 +23791,7 @@ function renderGuidedExportPage() {
           <button class="guided-export-batch" data-guided-export-batch disabled>
             批量下载 ZIP
           </button>
+          <button class="guided-export-batch" data-server-export-tasks>导出任务</button>
         </div>
       </header>
       <main class="guided-export-content">
@@ -23938,6 +23814,7 @@ function renderGuidedExportPage() {
         exportPage.dataset.exportFailed = "true";
       })
     : Promise.resolve();
+  refreshServerExports(sessionUser?.id);
 }
 
 function getExportEntryById(entryId) {
@@ -23946,157 +23823,6 @@ function getExportEntryById(entryId) {
 
 async function waitForExportPreviewReady() {
   await guidedExportReadyPromise;
-}
-
-async function captureGuidedExportEntry(entry, options = {}) {
-  const element = findGuidedExportElement(entry.id);
-  if (!element) throw new Error("找不到导出组件");
-  const dimensions = getExportEntryDimensions(entry);
-  const captureDimensions = {
-    width: dimensions.width,
-    ...(hasFixedGuidedExportHeight(entry) ? { height: dimensions.height } : {}),
-  };
-  return exportElementToPngBlob(element, {
-    ...options,
-    ...captureDimensions,
-  });
-}
-
-const GUIDED_GIF_DURATION_MS = 1200;
-const GUIDED_GIF_CAPTURE_FRAME_COUNT = 20;
-const GUIDED_GIF_MAX_BYTES = 2 * 1024 * 1024;
-const GUIDED_GIF_PALETTE_SAMPLE_PIXELS = 1000000;
-const GUIDED_GIF_DITHER_STRENGTH = 8;
-const GUIDED_GIF_PROFILES = [
-  { frameCount: 20, maxColors: 256 },
-  { frameCount: 18, maxColors: 256 },
-  { frameCount: 16, maxColors: 256 },
-  { frameCount: 14, maxColors: 256 },
-  { frameCount: 12, maxColors: 256 },
-  { frameCount: 10, maxColors: 256 },
-  { frameCount: 8, maxColors: 256 },
-];
-
-function createGuidedGifPalette(sourceFrames, maxColors) {
-  const totalPixels = sourceFrames.reduce(
-    (sum, frame) => sum + frame.data.length / 4,
-    0,
-  );
-  const sampleStride = Math.max(
-    1,
-    Math.ceil(totalPixels / GUIDED_GIF_PALETTE_SAMPLE_PIXELS),
-  );
-  const sampledRgba = new Uint8Array(
-    Math.ceil(totalPixels / sampleStride) * 4,
-  );
-  let sampleOffset = 0;
-  let pixelCursor = 0;
-  sourceFrames.forEach((frame) => {
-    for (let offset = 0; offset < frame.data.length; offset += 4) {
-      const alpha = frame.data[offset + 3];
-      if (alpha < 16) {
-        pixelCursor += 1;
-        continue;
-      }
-      if (pixelCursor % sampleStride === 0) {
-        sampledRgba[sampleOffset] = frame.data[offset];
-        sampledRgba[sampleOffset + 1] = frame.data[offset + 1];
-        sampledRgba[sampleOffset + 2] = frame.data[offset + 2];
-        sampledRgba[sampleOffset + 3] = 255;
-        sampleOffset += 4;
-      }
-      pixelCursor += 1;
-    }
-  });
-  const sample = sampledRgba.subarray(0, Math.max(4, sampleOffset));
-  const palette = quantize(sample, Math.max(2, maxColors - 1), {
-    format: "rgb565",
-  });
-  palette.push([0, 0, 0]);
-  return {
-    palette,
-    transparentIndex: palette.length - 1,
-  };
-}
-
-const GUIDED_GIF_BAYER_4X4 = [
-  0, 8, 2, 10,
-  12, 4, 14, 6,
-  3, 11, 1, 9,
-  15, 7, 13, 5,
-];
-
-function applyGuidedGifOrderedDither(frame) {
-  const dithered = new Uint8ClampedArray(frame.data);
-  for (let y = 0; y < frame.height; y += 1) {
-    for (let x = 0; x < frame.width; x += 1) {
-      const offset = (y * frame.width + x) * 4;
-      if (dithered[offset + 3] === 0) continue;
-      const matrixValue = GUIDED_GIF_BAYER_4X4[(y % 4) * 4 + (x % 4)];
-      const adjustment = (
-        (matrixValue + 0.5) / GUIDED_GIF_BAYER_4X4.length - 0.5
-      ) * GUIDED_GIF_DITHER_STRENGTH;
-      dithered[offset] += adjustment;
-      dithered[offset + 1] += adjustment;
-      dithered[offset + 2] += adjustment;
-    }
-  }
-  return dithered;
-}
-
-function flattenGuidedGifPartialAlpha(frame) {
-  for (let offset = 0; offset < frame.data.length; offset += 4) {
-    const alpha = frame.data[offset + 3];
-    if (alpha < 8) {
-      frame.data[offset + 3] = 0;
-      continue;
-    }
-    if (alpha === 255) continue;
-    const inverseAlpha = 255 - alpha;
-    frame.data[offset] = Math.round(
-      (frame.data[offset] * alpha + 255 * inverseAlpha) / 255,
-    );
-    frame.data[offset + 1] = Math.round(
-      (frame.data[offset + 1] * alpha + 255 * inverseAlpha) / 255,
-    );
-    frame.data[offset + 2] = Math.round(
-      (frame.data[offset + 2] * alpha + 255 * inverseAlpha) / 255,
-    );
-    frame.data[offset + 3] = 255;
-  }
-}
-
-function applyGuidedGifPalette(rgba, palette, colorCache) {
-  const indexedPixels = new Uint8Array(rgba.length / 4);
-  for (let offset = 0, pixelIndex = 0; offset < rgba.length; offset += 4, pixelIndex += 1) {
-    const red = rgba[offset];
-    const green = rgba[offset + 1];
-    const blue = rgba[offset + 2];
-    const colorKey = ((red << 8) & 0xf800) |
-      ((green << 2) & 0x03e0) |
-      (blue >> 3);
-    let paletteIndex = colorCache[colorKey];
-    if (paletteIndex === 0xffff) {
-      let nearestDistance = Number.POSITIVE_INFINITY;
-      paletteIndex = 0;
-      for (let index = 0; index < palette.length; index += 1) {
-        const paletteColor = palette[index];
-        const redDifference = red - paletteColor[0];
-        const greenDifference = green - paletteColor[1];
-        const blueDifference = blue - paletteColor[2];
-        const distance = redDifference * redDifference +
-          greenDifference * greenDifference +
-          blueDifference * blueDifference;
-        if (distance < nearestDistance) {
-          nearestDistance = distance;
-          paletteIndex = index;
-        }
-      }
-      colorCache[colorKey] = paletteIndex;
-    }
-    indexedPixels[pixelIndex] = paletteIndex;
-  }
-  return indexedPixels;
 }
 
 function getGuidedGifAnimationTarget(animation) {
@@ -24123,422 +23849,24 @@ function getGuidedGifAnimatedRegions(element, animations) {
     });
 }
 
-function freezeGuidedGifStaticPixels(sourceFrames, animatedRegions) {
-  const referenceFrame = sourceFrames[sourceFrames.length - 1];
-  if (!referenceFrame || sourceFrames.length < 2) return;
-  const { width, height } = referenceFrame;
-  const animatedMask = new Uint8Array(width * height);
-  const padding = 3;
-
-  animatedRegions.forEach((region) => {
-    const left = Math.max(0, Math.floor(region.left * width) - padding);
-    const top = Math.max(0, Math.floor(region.top * height) - padding);
-    const right = Math.min(width, Math.ceil(region.right * width) + padding);
-    const bottom = Math.min(height, Math.ceil(region.bottom * height) + padding);
-    for (let y = top; y < bottom; y += 1) {
-      animatedMask.fill(1, y * width + left, y * width + right);
-    }
-  });
-
-  for (let frameIndex = 0; frameIndex < sourceFrames.length; frameIndex += 1) {
-    const frameData = sourceFrames[frameIndex].data;
-    for (let pixelIndex = 0; pixelIndex < animatedMask.length; pixelIndex += 1) {
-      if (animatedMask[pixelIndex]) continue;
-      const offset = pixelIndex * 4;
-      frameData[offset] = referenceFrame.data[offset];
-      frameData[offset + 1] = referenceFrame.data[offset + 1];
-      frameData[offset + 2] = referenceFrame.data[offset + 2];
-      frameData[offset + 3] = referenceFrame.data[offset + 3];
-    }
-  }
-}
-
-function getGuidedGifButtonTextOverlays(element) {
-  return [...element.querySelectorAll('[data-react-edit-prop="buttonText"]')]
-    .map((textElement) => {
-      const style = getComputedStyle(textElement);
-      return {
-        element: textElement,
-        text: textElement.textContent?.trim() || "",
-        color: style.color,
-        fontStyle: style.fontStyle,
-        fontWeight: style.fontWeight,
-        fontSize: Number.parseFloat(style.fontSize) || 16,
-        fontFamily: style.fontFamily,
-        letterSpacing: Number.parseFloat(style.letterSpacing) || 0,
-        visibility: textElement.style.visibility,
-      };
-    })
-    .filter(Boolean);
-}
-
-function measureGuidedGifButtonTextOverlays(overlays, rootRect) {
-  return overlays
-    .map((overlay) => {
-      const rect = overlay.element.getBoundingClientRect();
-      if (!rect.width || !rect.height) return null;
-      const scale = overlay.element.offsetWidth
-        ? rect.width / overlay.element.offsetWidth
-        : 1;
-      return {
-        ...overlay,
-        left: rect.left - rootRect.left,
-        top: rect.top - rootRect.top,
-        width: rect.width,
-        height: rect.height,
-        scale,
-      };
-    })
-    .filter(Boolean);
-}
-
-function drawGuidedGifButtonTextOverlays(canvas, overlays, rootWidth, rootHeight) {
-  const context = canvas.getContext("2d");
-  if (!context || !rootWidth || !rootHeight) return;
-  const scaleX = canvas.width / rootWidth;
-  const scaleY = canvas.height / rootHeight;
-  overlays.forEach((overlay) => {
-    const characters = Array.from(overlay.text);
-    if (!characters.length) return;
-    context.save();
-    context.scale(scaleX, scaleY);
-    context.font = `${overlay.fontStyle} ${overlay.fontWeight} ${overlay.fontSize * overlay.scale}px ${overlay.fontFamily}`;
-    context.fillStyle = overlay.color;
-    context.textAlign = "left";
-    context.textBaseline = "middle";
-    const characterWidths = characters.map(
-      (character) => context.measureText(character).width,
-    );
-    const textWidth = characterWidths.reduce((sum, width) => sum + width, 0) +
-      overlay.letterSpacing * overlay.scale * Math.max(0, characters.length - 1);
-    let x = overlay.left + (overlay.width - textWidth) / 2;
-    const y = overlay.top + overlay.height / 2;
-    characters.forEach((character, index) => {
-      context.fillText(character, x, y);
-      x += characterWidths[index] + overlay.letterSpacing * overlay.scale;
-    });
-    context.restore();
-  });
-}
-
-function encodeGuidedGifFrames(sourceFrames, profile, onProgress) {
-  const gif = GIFEncoder();
-  const frameDelay = GUIDED_GIF_DURATION_MS / profile.frameCount;
-  const {
-    palette,
-    transparentIndex,
-  } = createGuidedGifPalette(
-    sourceFrames,
-    profile.maxColors,
-  );
-  const colorCache = new Uint16Array(65536);
-  colorCache.fill(0xffff);
-  for (let index = 0; index < profile.frameCount; index += 1) {
-    const sourceIndex = Math.min(
-      sourceFrames.length - 1,
-      Math.floor(index * sourceFrames.length / profile.frameCount),
-    );
-    const frame = sourceFrames[sourceIndex];
-    const opaquePalette = transparentIndex >= 0
-      ? palette.slice(0, transparentIndex)
-      : palette;
-    const ditheredRgba = applyGuidedGifOrderedDither(frame);
-    const indexedPixels = applyGuidedGifPalette(
-      ditheredRgba,
-      opaquePalette,
-      colorCache,
-    );
-    for (let pixelIndex = 0; pixelIndex < indexedPixels.length; pixelIndex += 1) {
-      const offset = pixelIndex * 4;
-      if (frame.data[offset + 3] === 0) {
-        indexedPixels[pixelIndex] = transparentIndex;
-      }
-    }
-    gif.writeFrame(indexedPixels, frame.width, frame.height, {
-      ...(index === 0 ? { palette } : {}),
-      delay: frameDelay,
-      repeat: 0,
-      transparent: true,
-      transparentIndex,
-      dispose: 2,
-    });
-    onProgress?.(index + 1, profile.frameCount, "encode");
-  }
-  gif.finish();
-  return new Blob([gif.bytes()], { type: "image/gif" });
-}
-
-async function captureGuidedExportEntryGif(entry, onProgress) {
-  const element = findGuidedExportElement(entry.id, "gif");
-  if (!element) throw new Error("找不到导出组件");
-  const dimensions = getExportEntryDimensions(entry);
-  const captureDimensions = {
-    width: dimensions.width,
-    ...(hasFixedGuidedExportHeight(entry) ? { height: dimensions.height } : {}),
-  };
-  const animations = element.getAnimations({ subtree: true });
-  animations.forEach((animation) => animation.pause());
-  const buttonTextOverlays = getGuidedGifButtonTextOverlays(element);
-  buttonTextOverlays.forEach((overlay) => {
-    overlay.element.style.visibility = "hidden";
-  });
-  const sourceFrames = [];
-  const animatedRegions = [];
-  const frameDelay = GUIDED_GIF_DURATION_MS / GUIDED_GIF_CAPTURE_FRAME_COUNT;
-
-  try {
-    for (let index = 0; index < GUIDED_GIF_CAPTURE_FRAME_COUNT; index += 1) {
-      const frameTime = index * frameDelay;
-      animations.forEach((animation) => {
-        animation.currentTime = frameTime;
-      });
-      await waitForNextFrame();
-      const frameRootRect = element.getBoundingClientRect();
-      const frameButtonTextOverlays = measureGuidedGifButtonTextOverlays(
-        buttonTextOverlays,
-        frameRootRect,
-      );
-      animatedRegions.push(...getGuidedGifAnimatedRegions(element, animations));
-      const canvas = await exportElementToCanvas(element, captureDimensions);
-      const context = canvas.getContext("2d", { willReadFrequently: true });
-      if (!context) throw new Error("无法读取 GIF 画布");
-      drawGuidedGifButtonTextOverlays(
-        canvas,
-        frameButtonTextOverlays,
-        frameRootRect.width,
-        frameRootRect.height,
-      );
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      sourceFrames.push({
-        data: imageData.data,
-        width: canvas.width,
-        height: canvas.height,
-      });
-      onProgress?.(index + 1, GUIDED_GIF_CAPTURE_FRAME_COUNT, "capture");
-    }
-  } finally {
-    buttonTextOverlays.forEach((overlay) => {
-      overlay.element.style.visibility = overlay.visibility;
-    });
-    animations.forEach((animation) => animation.play());
-  }
-
-  sourceFrames.forEach(flattenGuidedGifPartialAlpha);
-  freezeGuidedGifStaticPixels(sourceFrames, animatedRegions);
-
-  let smallestBlob = null;
-  for (const profile of GUIDED_GIF_PROFILES) {
-    const blob = encodeGuidedGifFrames(sourceFrames, profile, onProgress);
-    smallestBlob = blob;
-    if (blob.size <= GUIDED_GIF_MAX_BYTES) return blob;
-  }
-  if (smallestBlob?.size > GUIDED_GIF_MAX_BYTES) {
-    throw new Error("当前画面无法在保证清晰度的同时压缩到 2MB 以内");
-  }
-  return smallestBlob;
-}
-
 async function downloadGuidedExportEntry(entryId) {
   const entry = getExportEntryById(entryId);
   if (!entry) return;
-  await waitForExportPreviewReady();
-  try {
-    const blob = await captureGuidedExportEntry(entry);
-    downloadBlob(entry.fileName || `${sanitizeExportFilename(entry.variantTitle)}.png`, blob);
-  } catch (error) {
-    console.error("[guided-export] single export failed", entry, error);
-    window.alert(`单张导出失败：${error?.message || "未知错误"}`);
-  }
+  return submitServerExport({ format: "png", selection: { kind: "single", entryId }, filename: entry.fileName });
 }
 
 async function downloadGuidedExportEntryGif(entryId, button) {
   const entry = getExportEntryById(entryId);
   if (!entry || !isAnimatedResourceExportEntry(entry)) return;
-  await waitForExportPreviewReady();
-  button?.setAttribute("disabled", "true");
-  try {
-    const blob = await captureGuidedExportEntryGif(entry, (current, total, phase) => {
-      if (button) {
-        button.textContent = phase === "encode"
-          ? `压缩 ${current}/${total}`
-          : `渲染 ${current}/${total}`;
-      }
-    });
-    const fileName = String(
-      entry.fileName || `${sanitizeExportFilename(entry.variantTitle)}.png`,
-    ).replace(/\.png$/i, ".gif");
-    if (button) {
-      button.title = `最近导出：${(blob.size / 1024 / 1024).toFixed(2)}MB`;
-    }
-    downloadBlob(fileName, blob);
-  } catch (error) {
-    console.error("[guided-export] gif export failed", entry, error);
-    window.alert(`GIF 导出失败：${error?.message || "未知错误"}`);
-  } finally {
-    button?.removeAttribute("disabled");
-    if (button) button.textContent = "下载 GIF";
-  }
-}
-
-function makeCrc32Table() {
-  return Array.from({ length: 256 }, (_, index) => {
-    let value = index;
-    for (let bit = 0; bit < 8; bit += 1) {
-      value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
-    }
-    return value >>> 0;
-  });
-}
-
-const crc32Table = makeCrc32Table();
-
-function crc32(bytes) {
-  let crc = 0xffffffff;
-  bytes.forEach((byte) => {
-    crc = crc32Table[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-  });
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function uint16(value) {
-  const bytes = new Uint8Array(2);
-  new DataView(bytes.buffer).setUint16(0, value, true);
-  return bytes;
-}
-
-function uint32(value) {
-  const bytes = new Uint8Array(4);
-  new DataView(bytes.buffer).setUint32(0, value >>> 0, true);
-  return bytes;
-}
-
-async function blobToBytes(blob) {
-  return new Uint8Array(await blob.arrayBuffer());
-}
-
-function createZipBlob(files) {
-  const encoder = new TextEncoder();
-  const localParts = [];
-  const centralParts = [];
-  let offset = 0;
-
-  files.forEach((file) => {
-    const nameBytes = encoder.encode(file.path);
-    const data = file.bytes;
-    const crc = crc32(data);
-    const localHeader = [
-      uint32(0x04034b50),
-      uint16(20),
-      uint16(0x0800),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint32(crc),
-      uint32(data.length),
-      uint32(data.length),
-      uint16(nameBytes.length),
-      uint16(0),
-      nameBytes,
-    ];
-    const localSize = localHeader.reduce((sum, part) => sum + part.length, 0) + data.length;
-    localParts.push(...localHeader, data);
-    centralParts.push(
-      uint32(0x02014b50),
-      uint16(20),
-      uint16(20),
-      uint16(0x0800),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint32(crc),
-      uint32(data.length),
-      uint32(data.length),
-      uint16(nameBytes.length),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint16(0),
-      uint32(0),
-      uint32(offset),
-      nameBytes,
-    );
-    offset += localSize;
-  });
-
-  const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0);
-  const endRecord = [
-    uint32(0x06054b50),
-    uint16(0),
-    uint16(0),
-    uint16(files.length),
-    uint16(files.length),
-    uint32(centralSize),
-    uint32(offset),
-    uint16(0),
-  ];
-  return new Blob([...localParts, ...centralParts, ...endRecord], { type: "application/zip" });
-}
-
-async function mapLimit(items, limit, worker) {
-  const results = new Array(items.length);
-  let nextIndex = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (nextIndex < items.length) {
-      const currentIndex = nextIndex;
-      nextIndex += 1;
-      results[currentIndex] = await worker(items[currentIndex], currentIndex);
-    }
-  });
-  await Promise.all(workers);
-  return results;
+  return submitServerExport({ format: "gif", selection: { kind: "single", entryId }, filename: entry.fileName.replace(/\.png$/i, ".gif") }, button);
 }
 
 async function downloadGuidedExportBatch() {
-  const entries = getGuidedCutExportEntries();
-  if (!entries.length) return;
-  await waitForExportPreviewReady();
-  const button = document.querySelector("[data-guided-export-batch]");
-  button?.setAttribute("disabled", "true");
-  if (button) button.textContent = `正在生成 0/${entries.length}`;
-  try {
-    const files = [];
-    const failed = [];
-    let completed = 0;
-    await mapLimit(entries, 2, async (entry) => {
-      try {
-        const blob = await captureGuidedExportEntry(entry);
-        const file = {
-          path: entry.filePath,
-          bytes: await blobToBytes(blob),
-        };
-        files.push(file);
-      } catch (error) {
-        console.error("[guided-export] batch item failed", entry, error);
-        failed.push({ entry, error });
-      } finally {
-        completed += 1;
-        if (button) button.textContent = `正在生成 ${completed}/${entries.length}`;
-      }
-    });
-    if (!files.length) {
-      const reason = failed[0]?.error?.message || "没有成功生成的切图";
-      window.alert(`批量导出失败：${reason}`);
-      return;
-    }
-    files.sort((a, b) => a.path.localeCompare(b.path, "zh-Hans-CN"));
-    if (button) button.textContent = "正在打包 ZIP";
-    const zipBlob = createZipBlob(files);
-    downloadBlob(`${sanitizeExportFilename(`${state.activity?.name || "活动"}切图`)}.zip`, zipBlob);
-    if (failed.length) {
-      window.alert(`已导出 ${files.length} 张，${failed.length} 张失败。`);
-    }
-  } catch (error) {
-    console.error("[guided-export] batch export failed", error);
-    window.alert(`批量导出失败：${error?.message || "未知错误"}`);
-  } finally {
-    button?.removeAttribute("disabled");
-    if (button) button.textContent = "批量下载 ZIP";
-  }
+  if (!getGuidedCutExportEntries().length) return;
+  return submitServerExport({
+    format: "zip", selection: { kind: "all" },
+    filename: `${sanitizeExportFilename(`${state.activity?.name || "活动"}切图`)}.zip`,
+  }, document.querySelector("[data-guided-export-batch]"));
 }
 
 async function downloadGuidedExportModule(pageId, moduleKey, button) {
@@ -24548,40 +23876,22 @@ async function downloadGuidedExportModule(pageId, moduleKey, button) {
       getGuidedExportModuleKey(entry) === moduleKey,
   );
   if (!entries.length) return;
-  await waitForExportPreviewReady();
-  button?.setAttribute("disabled", "true");
-  if (button) button.textContent = `正在生成 0/${entries.length}`;
+  return submitServerExport({
+    format: "zip", selection: { kind: "module", pageId, moduleKey },
+    filename: `${sanitizeExportFilename(`${entries[0].pageName}_${entries[0].moduleTitle}_全部切图`)}.zip`,
+  }, button);
+}
+
+async function submitServerExport(input, button) {
+  const label = button?.textContent;
+  button?.setAttribute("disabled", "");
   try {
-    const files = [];
-    let completed = 0;
-    await mapLimit(entries, 2, async (entry) => {
-      const blob = await captureGuidedExportEntry(entry);
-      files.push({
-        path: [
-          entry.stateFolderTitle
-            ? sanitizeExportFilename(entry.stateFolderTitle)
-            : "默认状态",
-          entry.fileName,
-        ].join("/"),
-        bytes: await blobToBytes(blob),
-      });
-      completed += 1;
-      if (button) button.textContent = `正在生成 ${completed}/${entries.length}`;
-    });
-    files.sort((a, b) => a.path.localeCompare(b.path, "zh-Hans-CN"));
-    if (button) button.textContent = "正在打包 ZIP";
-    const moduleTitle = entries[0]?.moduleTitle || "模块";
-    const pageName = entries[0]?.pageName || "页面";
-    downloadBlob(
-      `${sanitizeExportFilename(`${pageName}_${moduleTitle}_全部切图`)}.zip`,
-      createZipBlob(files),
-    );
+    await runServerExport({ snapshot: createCurrentProjectSnapshot(), ...input }, sessionUser?.id);
   } catch (error) {
-    console.error("[guided-export] module export failed", error);
-    window.alert(`模块切图导出失败：${error?.message || "未知错误"}`);
+    console.error("[server-export]", error);
   } finally {
     button?.removeAttribute("disabled");
-    if (button) button.textContent = "下载本模块全部切图";
+    if (button) button.textContent = label;
   }
 }
 
@@ -26820,6 +26130,10 @@ function bindEvents() {
       return;
     }
 
+    if (event.target.closest("[data-server-export-tasks]")) {
+      openServerExports(sessionUser?.id);
+      return;
+    }
     if (event.target.closest("[data-admin-export-cut]")) {
       const target = document.querySelector("[data-admin-export-cut-capture]");
       if (target) {
@@ -26830,12 +26144,15 @@ function bindEvents() {
               ? getAdminVerifierMolecule()
               : getAdminVerifierSchema();
         const fileName = `${selected?.name || selected?.id || "组件切图"}.png`;
-        exportElementToPngBlob(target, { pixelRatio: 2 })
-            .then((blob) => downloadBlob(fileName, blob))
-          .catch((error) => {
-            console.error("[admin-export] cut export failed", error);
-            window.alert(`导出失败：${error?.message || "未知错误"}`);
-          });
+        const snapshot = createCurrentProjectSnapshot();
+        snapshot.templates.referencedMoleculeTemplates = clone(moleculeSchemas);
+        if (getAdminVerifierType() === "page" && selected) {
+          snapshot.templates.referencedPageTemplates.push(clone(selected));
+        }
+        await submitServerExport({
+          snapshot, format: "png", selection: { kind: "admin" },
+          verifier: clone(state.adminComponentVerifier), filename: fileName,
+        }, event.target.closest("[data-admin-export-cut]"));
       }
       return;
     }
@@ -29684,6 +29001,83 @@ function mount() {
   });
 }
 
-mount();
+function registerServerExportRuntime() {
+  let input = null;
+  let entries = [];
+  let animations = [];
+  const root = document.querySelector("#app");
+  window.serverExportRuntime = {
+    load(value) {
+      input = value;
+      const snapshot = applyProjectSnapshot(state, value.snapshot);
+      restoreSnapshotTemplates(snapshot);
+      setActivitySources(snapshot.activitySources || defaultActivitySources);
+      state.view = "guided-export";
+      entries = getGuidedCutExportEntries();
+    },
+    plan() {
+      const selection = input.selection;
+      if (selection.kind === "admin") return [{ id: "admin", path: input.filename, name: input.filename }];
+      const selected = entries.filter((entry) =>
+        selection.kind === "all" ||
+        (selection.kind === "single" && entry.id === selection.entryId) ||
+        (selection.kind === "module" && entry.pageId === selection.pageId && getGuidedExportModuleKey(entry) === selection.moduleKey));
+      if (!selected.length) throw new Error("找不到需要导出的切图");
+      if (input.format === "gif" && !isAnimatedResourceExportEntry(selected[0])) throw new Error("此组件不支持 GIF");
+      return selected.map((entry) => ({
+        id: entry.id, name: entry.fileName,
+        path: selection.kind === "module"
+          ? `${sanitizeExportFilename(entry.stateFolderTitle || "默认状态")}/${entry.fileName}` : entry.filePath,
+      }));
+    },
+    async render(id, format) {
+      root.innerHTML = '<div class="app-shell" data-view="guided-export" style="display:block;padding:0;background:transparent;height:auto;overflow:visible;"><main class="activity-center" style="display:block;padding:0;background:transparent;height:auto;max-height:none;overflow:visible;"></main></div>';
+      const center = root.querySelector(".activity-center");
+      let capture;
+      if (id === "admin") {
+        state.adminComponentVerifier = clone(input.verifier);
+        renderAdminComponentVerifier();
+        capture = center.querySelector("[data-admin-export-cut-capture]");
+      } else {
+        const entry = entries.find((item) => item.id === id);
+        if (!entry) throw new Error("找不到导出组件");
+        center.innerHTML = renderGuidedExportPreview(entry);
+        capture = center.querySelector(format === "gif" ? "[data-export-gif-id]" : "[data-export-cut-id]");
+      }
+      if (!capture) throw new Error("找不到截图区域");
+      // Keep only the real cut, before mounting React; preview panels, selection
+      // handles and the second animation source never enter the exported image.
+      center.replaceChildren(capture);
+      capture.dataset.serverCapture = "";
+      capture.style.position = "relative";
+      capture.style.transform = "none";
+      capture.style.setProperty("--react-component-scale", "1");
+      capture.style.left = "0"; capture.style.top = "0"; capture.style.zIndex = "1";
+      if (format !== "gif") capture.dataset.resourceStaticExport = "true";
+      window.renderReactMaterials?.(capture);
+      await window.waitForReactMaterialFonts?.(capture);
+      await Promise.all([...capture.querySelectorAll("img")].map(async (image) => {
+        if (!image.complete) await image.decode();
+        if (!image.naturalWidth) throw new Error("图片素材加载失败");
+      }));
+      await document.fonts.ready;
+      await waitForNextFrame(); await waitForNextFrame();
+      if (capture.querySelector('[data-render-failed="true"], [data-fonts-failed="true"]')) throw new Error("组件或字体渲染失败");
+      animations = format === "gif" ? capture.getAnimations({ subtree: true }) : [];
+      animations.forEach((animation) => { animation.pause(); animation.currentTime = 0; });
+      const rect = capture.getBoundingClientRect();
+      return { width: Math.ceil(rect.width), height: Math.ceil(rect.height) };
+    },
+    async frame(time) {
+      animations.forEach((animation) => { animation.pause(); animation.currentTime = time; });
+      await waitForNextFrame();
+      const capture = root.querySelector("[data-server-capture]");
+      return getGuidedGifAnimatedRegions(capture, animations);
+    },
+  };
+}
+
+if (window.__SERVER_EXPORT_MODE__) registerServerExportRuntime();
+else mount();
 
 export {};
