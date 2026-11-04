@@ -130,4 +130,5 @@ H5 Visual Builder — 一个 H5 页面可视化搭建工具。基于 Vite + Reac
 - FaaS 下使用数据库租约与分步检查点，不依赖进程内任务队列。页面关闭会暂停后续步骤，重开同账号后继续；不可宣称关闭浏览器后仍自动完成。
 - Linux 默认使用随依赖安装的 Chromium，需在实际部署环境执行 `pnpm export:check` 并完成一次生产切图。macOS 通过不等于 Coze/Linux 已验证。
 - Coze 生产容器曾实际缺少 `libnspr4.so`。Linux 默认浏览器启动必须显式解压依赖包中的 `al2023.tar.br`，给 Chromium 子进程配置该归档 `lib/` 的搜索路径；不能只依赖依赖包对 AWS/Vercel 的环境识别，也不能因 Chromium 可执行文件已缓存而跳过运行库准备。
+- 打包 Chromium 默认使用 `--single-process`。不同导出任务必须重新启动浏览器，不要关闭最后一个 context 后在同一浏览器上创建新页面；同一任务的分步 PNG/GIF 继续复用页面。页面关闭或浏览器断开时重建，初始化失败立即释放实例。`pnpm export:check` 必须连续完成三个不同任务并校验各自文案，单次成功不能证明连续导出可用。
 - 详细实现、容量、清理和部署边界见 `docs/server-export.md`。

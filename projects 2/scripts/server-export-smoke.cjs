@@ -72,13 +72,14 @@ async function main() {
     editor: { workflowType, activity: { name }, pages: [{ id: "page", name, dimension: "个人用户", nodes }], guidedPageThemeId: "pink" },
   });
   try {
-    const node = { id: "note", schemaId: "随机奖品填写地址", props: { prizeDescription: "毛绒公仔、挂件、盲盒随机发一件\n请填写准确地址\n第三行验收文案", buttonText: "填写地址" } };
+    const node = { id: "note", schemaId: "随机奖品填写地址", props: { descriptionText: "毛绒公仔、挂件、盲盒随机发一件\n请填写准确地址\n第三行验收文案", buttonText: "填写地址" } };
     const venue = snapshotPath ? JSON.parse(await fs.readFile(snapshotPath, "utf8")) : fixture("切图", [node]);
     const previewJob = { id: "plan-venue", input_json: { snapshot: venue, format: "zip", selection: { kind: "all" } } };
     const entries = await renderer.plan(previewJob);
     const chosen = entries.find((entry) => /消耗返|消返/.test(entry.name)) || entries.find((entry) => !/背景/.test(entry.name));
     const png = await complete({ snapshot: venue, format: "png", selection: { kind: "single", entryId: chosen.id }, filename: "会场.png" }, "服务端会场.png");
     assert.equal(PNG.sync.read(png).width, 750);
+    if (!snapshotPath) assert.ok((await renderer.page.locator("[data-server-capture]").textContent()).includes("第三行验收文案"));
     const small = fixture("透明切图", [node]);
     const zip = await complete({ snapshot: small, format: "zip", selection: { kind: "all" }, filename: "完整切图.zip" }, "服务端批量.zip");
     assert.equal(zip.readUInt32LE(0), 0x04034b50);

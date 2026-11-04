@@ -20,7 +20,7 @@ PNG（单张、模块/全量 ZIP、管理员组件验证器）及 GIF 的生成�
 1. 在目标数据库执行 `supabase/migrations/202611040003_server_exports.sql`，确认末尾四项 `ready` 为 true。develop/product 分别执行。迁移可重复执行，不改变活动历史表。
 2. 保持现有 Coze 根目录构建/启动脚本。安装 production dependencies，生成 `dist`；运行时为 Node.js 24。
 3. Linux 默认解压 `@sparticuz/chromium` 自带浏览器到临时目录。需允许子进程、可写临时目录以及兼容浏览器运行库。可通过 `EXPORT_CHROMIUM_PATH` 指定浏览器。建议至少 2GiB 内存起评估，需按实际任务监测；不是已验证的 Coze 资源值。
-4. 在目标运行环境执行 `pnpm export:check`。该 CLI 只验证真实字体、Chromium 和透明 PNG，不连接数据库、不修改活动，也不阻断网站普通启动。
+4. 在目标运行环境执行 `pnpm export:check`。该 CLI 连续生成三个不同任务的透明 PNG，核对各自文案和同任务页面复用，不连接数据库、不修改活动，也不阻断网站普通启动。
 5. 部署后通过生产 `/api/exports` 实际完成一次 PNG、ZIP 和 GIF，确认 FaaS 请求时限与数据库配额。macOS 检查不能代替 Linux 运行验证。
 
 复用既有服务端 Supabase 与历史身份适配器配置。新增表与函数仅 service_role 可用，前端不得持有服务端数据库凭据。
@@ -41,6 +41,20 @@ cannot open shared object file: No such file or directory
 针对“浏览器已缓存但生产运行库缺失”的回归检查先复现失败，再通过实际归档解压和启动参数检查验证修复。在 Coze Linux x64 / Node 24.21.0 / Chromium 153.0.8010.0 中，临时使用上述库加载配置实际生成了透明 PNG：750×128、17248 bytes、`ready: true`。没有修改 Coze 源码或数据库。
 
 此修复仅需更新代码并重新部署，不增加 SQL。新生产部署的 HTTP 出图仍需复测；重新部署后取消旧失败任务并新建导出，避免使用旧构建继续推进。
+
+### 连续任务浏览器复用修复（2026-11-04）
+
+运行库修复部署后，用户出现部分任务成功、部分失败。生产日志在 21:31:10 和 21:31:39 记录 `browserContext.newPage: Target page, context or browser has been closed`，失败发生在创建渲染页面时。
+
+原渲染器切换任务时关闭旧 context，再在同一浏览器创建新 context。打包 Chromium 默认使用 `--single-process`，关闭最后一个 context 后继续使用该浏览器存在兼容性风险。修复为每个任务使用独立浏览器；同任务的图片、GIF 帧继续复用页面。页面关闭、浏览器断开时重建；初始化失败立即释放资源。
+
+两个新增检查先失败再通过：连续任务及关闭后恢复、初始化失败释放及同任务重试。macOS 使用真实单进程 Chrome 出图，并仅模拟 Linux 关闭 context 时浏览器退出的效果；不将此称为真实 Linux 验收。最终 8 项导出检查通过，包括既有数据库租约检查。
+
+更新后的自检连续生成三个 PNG（750×128），并分别核对第 1、2、3 次任务文案。真实 HTTP/隔离数据库链路连续完成 PNG（22304 bytes）、ZIP（71170 bytes）、双倍组件 PNG（47455 bytes）及 GIF（150298 bytes）。证据位于工作区 `output/server-export-lifecycle/`；不连接生产数据库。
+
+Coze 终端的后续连续任务验证未取得可核查结果，浏览器桥接随后超时；修复后的 Linux 自检及生产 HTTP 连续导出仍为 `not_run`。前端构建产物未改变，本次无需重跑 Vite；部署仍应使用现有构建脚本。此修复不增加 SQL。
+
+附加视觉观察：修正烟测夹具的真实字段名 `descriptionText` 后，长文案能写入渲染 DOM，但“随机奖品填写地址”现有组件的 95.06px 固定高度和 `overflow: hidden` 会裁切过长文字。样图 `output/server-export-lifecycle/服务端会场.png` 已观察到该问题。该组件样式未纳入本次浏览器生命周期修复，不将长文案完整显示标记为通过；按用户保留的视觉手测范围单独处理。
 
 ## 任务语义与限制
 

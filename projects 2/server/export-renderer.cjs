@@ -62,51 +62,63 @@ class ExportRenderer {
     return this.opening;
   }
   async pageFor(job) {
-    await this.open();
-    clearTimeout(this.idleTimer);
-    this.idleTimer = setTimeout(() => this.close().catch(() => {}), 120000);
-    this.idleTimer.unref();
-    if (this.jobId === job.id && this.page && !this.page.isClosed()) return this.page;
-    await this.context?.close();
-    this.context = await this.browser.newContext({
-      viewport: { width: 1200, height: 1000 }, deviceScaleFactor: job.input_json.selection.kind === "admin" ? 2 : 1,
-      serviceWorkers: "block", reducedMotion: "no-preference",
-    });
-    await this.context.addInitScript((ownerId) => {
-      window.currentUser = { employeeId: ownerId, name: "导出任务" };
-    }, job.owner_id || "server-renderer");
-    this.page = await this.context.newPage();
-    this.page.setDefaultTimeout(25000);
-    this.loadErrors = [];
-    this.page.on("pageerror", (error) => this.loadErrors.push(error.message));
-    this.assetErrors = new Set();
-    await this.page.route("**/*", async (route) => {
-      const url = new URL(route.request().url());
-      if (url.protocol === "data:" || url.protocol === "blob:") return route.continue();
-      if (url.origin === this.origin && (url.pathname === "/server-render.html" || url.pathname.startsWith("/assets/"))) return route.continue();
-      // Old snapshots contain absolute deployed asset URLs. Resolve their
-      // hashed filenames against the current local build without network access.
-      if (url.pathname.startsWith("/assets/")) {
-        const relative = decodeURIComponent(url.pathname).slice(1);
-        const file = path.resolve(this.distDir, relative);
-        if (file.startsWith(path.join(this.distDir, "assets") + path.sep) && fs.existsSync(file)) {
-          return route.fulfill({ response: await route.fetch({ url: `${this.origin}${url.pathname}` }) });
+    // Bundled Linux Chromium uses --single-process. Closing its last context
+    // can terminate the browser before another context's page is created.
+    // Keep a browser for one job only; batches still reuse that job's page.
+    if (this.jobId !== job.id || !this.browser?.isConnected() || !this.page || this.page.isClosed()) {
+      await this.close();
+    }
+    try {
+      await this.open();
+      clearTimeout(this.idleTimer);
+      this.idleTimer = setTimeout(() => this.close().catch(() => {}), 120000);
+      this.idleTimer.unref();
+      if (this.jobId === job.id && this.page && !this.page.isClosed()) return this.page;
+      this.context = await this.browser.newContext({
+        viewport: { width: 1200, height: 1000 }, deviceScaleFactor: job.input_json.selection.kind === "admin" ? 2 : 1,
+        serviceWorkers: "block", reducedMotion: "no-preference",
+      });
+      await this.context.addInitScript((ownerId) => {
+        window.currentUser = { employeeId: ownerId, name: "导出任务" };
+      }, job.owner_id || "server-renderer");
+      this.page = await this.context.newPage();
+      this.page.setDefaultTimeout(25000);
+      this.loadErrors = [];
+      this.page.on("pageerror", (error) => this.loadErrors.push(error.message));
+      this.assetErrors = new Set();
+      await this.page.route("**/*", async (route) => {
+        const url = new URL(route.request().url());
+        if (url.protocol === "data:" || url.protocol === "blob:") return route.continue();
+        if (url.origin === this.origin && (url.pathname === "/server-render.html" || url.pathname.startsWith("/assets/"))) return route.continue();
+        // Old snapshots contain absolute deployed asset URLs. Resolve their
+        // hashed filenames against the current local build without network access.
+        if (url.pathname.startsWith("/assets/")) {
+          const relative = decodeURIComponent(url.pathname).slice(1);
+          const file = path.resolve(this.distDir, relative);
+          if (file.startsWith(path.join(this.distDir, "assets") + path.sep) && fs.existsSync(file)) {
+            return route.fulfill({ response: await route.fetch({ url: `${this.origin}${url.pathname}` }) });
+          }
         }
-      }
-      this.assetErrors.add(url.pathname.slice(0, 160));
-      return route.abort();
-    });
-    this.page.on("response", (response) => {
-      if (response.status() >= 400) this.assetErrors.add(new URL(response.url()).pathname.slice(0, 160));
-    });
-    await this.page.goto(`${this.origin}/server-render.html`, { waitUntil: "networkidle", timeout: 30000 });
-    await this.page.waitForFunction(() => Boolean(window.serverExportRuntime || window.serverExportLoadError))
-      .catch((error) => { throw new ExportError(`渲染入口加载失败：${this.loadErrors[0] || [...this.assetErrors][0] || error.message}`); });
-    const loadError = await this.page.evaluate(() => window.serverExportLoadError);
-    if (loadError) throw new ExportError(`渲染入口加载失败：${loadError}`);
-    await this.page.evaluate((input) => window.serverExportRuntime.load(input), job.input_json);
-    this.jobId = job.id;
-    return this.page;
+        this.assetErrors.add(url.pathname.slice(0, 160));
+        return route.abort();
+      });
+      this.page.on("response", (response) => {
+        if (response.status() >= 400) this.assetErrors.add(new URL(response.url()).pathname.slice(0, 160));
+      });
+      await this.page.goto(`${this.origin}/server-render.html`, { waitUntil: "networkidle", timeout: 30000 });
+      await this.page.waitForFunction(() => Boolean(window.serverExportRuntime || window.serverExportLoadError))
+        .catch((error) => { throw new ExportError(`渲染入口加载失败：${this.loadErrors[0] || [...this.assetErrors][0] || error.message}`); });
+      const loadError = await this.page.evaluate(() => window.serverExportLoadError);
+      if (loadError) throw new ExportError(`渲染入口加载失败：${loadError}`);
+      await this.page.evaluate((input) => window.serverExportRuntime.load(input), job.input_json);
+      this.jobId = job.id;
+      return this.page;
+    } catch (error) {
+      // A failed load must not leave a partially initialized browser around
+      // for the next task or a retry of this job.
+      await this.close().catch(() => {});
+      throw error;
+    }
   }
   async plan(job) {
     const page = await this.pageFor(job);
