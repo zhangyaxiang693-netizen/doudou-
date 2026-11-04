@@ -5,6 +5,7 @@ const {
   HistoryRepositoryError,
 } = require("../history-repository.cjs");
 const { createHistoryRouter } = require("../history-routes.cjs");
+const { validateSnapshot } = require("../history-routes.cjs");
 
 const servers = [];
 const projectId = "11111111-1111-4111-8111-111111111111";
@@ -48,6 +49,30 @@ test("rejects project history requests without a trusted user", async () => {
 
   assert.equal(response.status, 401);
   assert.equal(body.code, "UNAUTHENTICATED");
+});
+
+test("account changes reject direct, staged and committed saves from the previous editing account", async () => {
+  const writes = [];
+  const operation = "00000000-0000-4000-8000-000000000001";
+  const baseUrl = await startServer({
+    resolveUser: async () => ({ id: "new-account" }),
+    repository: {
+      async writeRecord(user) { writes.push(user.id); return { record: { id: projectId, revision: 1 } }; },
+      async stageUpload(user) { writes.push(user.id); },
+      async commitUpload(user) { writes.push(user.id); return { record: { id: projectId, revision: 1 } }; },
+    },
+  });
+  for (const [method, suffix] of [
+    ["PUT", ""], ["PUT", `/uploads/${operation}/0`], ["POST", `/uploads/${operation}/commit`],
+  ]) {
+    const response = await fetch(`${baseUrl}/api/project-records/${projectId}${suffix}`, {
+      method, headers: { "Content-Type": "application/json", "X-Project-User": "old-account" },
+      body: JSON.stringify({ operationId: operation, name: "共享记录", snapshot, create: false }),
+    });
+    assert.equal(response.status, 401);
+    assert.equal((await response.json()).code, "ACCOUNT_CHANGED");
+  }
+  assert.deepEqual(writes, [], "an old account's pending save must not become a new actor's overwrite");
 });
 
 test("uses the trusted user id for project creation", async () => {
@@ -187,4 +212,95 @@ test("does not expose an autosave endpoint", async () => {
   );
 
   assert.equal(response.status, 404);
+});
+
+test("accepts a 6MiB snapshot and distinguishes capacity from malformed data", () => {
+  const large = { ...snapshot, editor: { pages: [], prdTextInput: "x".repeat(6 * 1024 * 1024) } };
+  assert.equal(validateSnapshot(large), true);
+});
+
+test("unified save binds a client record ID and operation ID to the trusted user", async () => {
+  const operationId = "33333333-3333-4333-8333-333333333333";
+  let written;
+  const baseUrl = await startServer({
+    resolveUser: async () => ({ id: "trusted-user" }),
+    repository: {
+      async writeRecord(user, id, input) {
+        written = { user, id, input };
+        return { record: { id, revision: 1 }, replayed: false };
+      },
+    },
+  });
+  const response = await fetch(`${baseUrl}/api/project-records/${projectId}`, {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ operationId, create: true, name: "完整保存", snapshot, ownerId: "forged" }),
+  });
+  assert.equal(response.status, 200);
+  assert.equal(written.user.id, "trusted-user");
+  assert.equal(written.id, projectId);
+  assert.equal(written.input.operationId, operationId);
+  assert.equal(written.input.create, true);
+  assert.equal(written.input.ownerId, undefined);
+});
+
+test("a unified save without an operation ID is rejected before storage", async () => {
+  const baseUrl = await startServer({
+    resolveUser: async () => ({ id: "trusted-user" }),
+    repository: { async writeRecord() { assert.fail("missing operation ID"); } },
+  });
+  const response = await fetch(`${baseUrl}/api/project-records/${projectId}`, {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "活动", snapshot }),
+  });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).code, "INVALID_OPERATION");
+});
+
+test("failed saves return a request ID and never expose internal storage errors", async () => {
+  const baseUrl = await startServer({
+    resolveUser: async () => ({ id: "trusted-user" }),
+    repository: {
+      async createProject() { throw new Error("private database error"); },
+    },
+  });
+  const response = await fetch(`${baseUrl}/api/projects`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "活动", snapshot }),
+  });
+  const body = await response.json();
+  assert.equal(response.status, 503);
+  assert.ok(body.requestId);
+  assert.equal(response.headers.get("x-request-id"), body.requestId);
+  assert.ok(!JSON.stringify(body).includes("private database error"));
+});
+
+test("large records can upload small resumable parts and commit through the same record service", async () => {
+  const operationId = "44444444-4444-4444-8444-444444444444";
+  const calls = [];
+  const baseUrl = await startServer({
+    resolveUser: async () => ({ id: "trusted-user" }),
+    repository: {
+      async stageUpload(user, id, operation, index, input) {
+        calls.push({ user, id, operation, index, input });
+      },
+      async commitUpload(user, id, operation) {
+        assert.equal(user.id, "trusted-user");
+        assert.equal(id, projectId);
+        assert.equal(operation, operationId);
+        return { record: { id, revision: 3 }, replayed: false };
+      },
+    },
+  });
+  const response = await fetch(`${baseUrl}/api/project-records/${projectId}/uploads/${operationId}/0`, {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ totalParts: 1, encoding: "identity", data: "e30=" }),
+  });
+  assert.equal(response.status, 200);
+  assert.equal(calls[0].user.id, "trusted-user");
+  assert.equal(calls[0].index, 0);
+  const result = await fetch(`${baseUrl}/api/project-records/${projectId}/uploads/${operationId}/commit`, {
+    method: "POST",
+  });
+  assert.equal(result.status, 200);
+  assert.equal((await result.json()).data.record.revision, 3);
 });

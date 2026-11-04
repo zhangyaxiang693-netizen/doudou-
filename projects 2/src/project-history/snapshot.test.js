@@ -41,7 +41,7 @@ test("creates a business snapshot without transient selection state", () => {
     appVersion: "0.1.0",
   });
 
-  assert.equal(snapshot.schemaVersion, 2);
+  assert.equal(snapshot.schemaVersion, 3);
   assert.equal(snapshot.source.prdText, "PRD 正文");
   assert.equal(snapshot.editor.guidedLotteryPrizeOverrides.prize1, "5元流量券");
   assert.equal(snapshot.editor.workflowType, "resource");
@@ -127,9 +127,63 @@ test("migrates venue snapshots from schema version 1", () => {
     },
   });
 
-  assert.equal(migrated.schemaVersion, 2);
+  assert.equal(migrated.schemaVersion, 3);
   assert.equal(migrated.editor.workflowType, "venue");
   assert.equal(migrated.editor.resourceLevel, "daily");
+});
+
+test("saves all mutable activity sources and the previous generated pages", () => {
+  const sources = {
+    demoPrdBlueprint: { activityName: "保存完整来源", summary: "" },
+    demoActivityPackage: { id: "audience-only", audiences: [{ id: "a", modules: [{ rows: [{ value: "两行\n文案" }] }] }] },
+    demoTimeActivityPackage: { id: "audience-time", scenes: [] },
+  };
+  const source = createState();
+  source.generatedPageBaseline = [{ id: "original", nodes: [] }];
+  source.resourcePreviewVersionIds = { slot: "audience-2" };
+  const snapshot = createProjectSnapshot(source, { activitySources: sources });
+  const migrated = applyProjectSnapshot({}, snapshot);
+  sources.demoPrdBlueprint.summary = "后来改变";
+  assert.equal(migrated.activitySources.demoPrdBlueprint.summary, "");
+  assert.equal(migrated.activitySources.demoActivityPackage.audiences[0].modules[0].rows[0].value, "两行\n文案");
+  assert.deepEqual(migrated.editor.generatedPageBaseline, source.generatedPageBaseline);
+  assert.deepEqual(migrated.editor.resourcePreviewVersionIds, { slot: "audience-2" });
+});
+
+test("malformed snapshots leave every current editor field unchanged", () => {
+  for (const broken of [
+    { schemaVersion: 2, editor: {} },
+    { schemaVersion: 3, editor: { pages: [null] } },
+    { schemaVersion: 2, editor: { pages: [{ id: "p", nodes: {} }] } },
+    { schemaVersion: 3, editor: { pages: [] }, templates: { referencedPageTemplates: {} } },
+  ]) {
+    const target = createState();
+    const before = structuredClone(target);
+    assert.throws(() => applyProjectSnapshot(target, broken), /格式|无效/);
+    assert.deepEqual(target, before);
+  }
+});
+
+test("damaged activity sources, editor collections and active templates are rejected before application", () => {
+  const snapshot = createProjectSnapshot(createState());
+  const patches = [
+    { activitySources: { demoPrdBlueprint: "broken" } },
+    { activitySources: { demoActivityPackage: { audiences: {} } } },
+    { activitySources: { demoTimeActivityPackage: { scenes: [null] } } },
+    { editor: { ...snapshot.editor, prdTableRows: {} } },
+    { editor: { ...snapshot.editor, guidedVisiblePageIds: "broken" } },
+    { editor: { ...snapshot.editor, pageTemplateChildStates: [] } },
+    { templates: { activePageTemplate: { id: "template", nodes: [null] } } },
+    { templates: { referencedMoleculeTemplates: [{ id: "m", children: "broken" }] } },
+    { source: [] },
+    { resume: "preview" },
+  ];
+  for (const patch of patches) {
+    const target = createState();
+    const before = structuredClone(target);
+    assert.throws(() => applyProjectSnapshot(target, { ...snapshot, ...patch }), /格式|无效/);
+    assert.deepEqual(target, before);
+  }
 });
 
 test("old projects clear another project's child states, resource selections and header drafts", () => {

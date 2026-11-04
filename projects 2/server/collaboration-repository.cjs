@@ -1,5 +1,5 @@
 const { readPagination, paginateQuery, pageResult } = require("./list-pagination.cjs");
-const RECORD_COLUMNS = "id,project_id,owner_id,name,scope,group_id,created_at,updated_at";
+const { createProjectRecordRepository, mapRecord } = require("./project-record-repository.cjs");
 
 class CollaborationRepositoryError extends Error {
   constructor(code, message, cause) {
@@ -46,21 +46,8 @@ function mapGroup(row) {
   };
 }
 
-function mapRecord(row) {
-  return {
-    id: row.id,
-    projectId: row.project_id || null,
-    ownerId: row.owner_id,
-    name: row.name,
-    scope: row.scope,
-    teamId: row.group_id || null,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    ...(Object.hasOwn(row, "snapshot_json") ? { snapshot: row.snapshot_json } : {}),
-  };
-}
-
 function createCollaborationRepository(supabase) {
+  const records = createProjectRecordRepository(supabase);
   async function upsertCurrentUser(user) {
     const timestamp = new Date().toISOString();
     const { error } = await supabase.from("app_users").upsert(
@@ -106,28 +93,13 @@ function createCollaborationRepository(supabase) {
   }
 
   async function listRecords(user, options = {}, isAdmin = false) {
-    const scope = options.scope || "personal";
-    if (!["personal", "team", "all"].includes(scope) || (scope === "all" && !isAdmin)) {
-      throw new CollaborationRepositoryError("RECORD_FORBIDDEN", "无权查看该范围的记录");
-    }
-    let pagination;
-    try { pagination = readPagination(options); } catch {
-      throw new CollaborationRepositoryError("INVALID_PAGINATION", "分页参数无效");
-    }
-    let query = supabase.from("collaboration_records").select(RECORD_COLUMNS);
-    if (scope !== "all") query = query.eq("scope", scope);
-    if (scope === "personal") query = query.eq("owner_id", user.id);
-    if (scope === "team" && options.teamId) query = query.eq("group_id", String(options.teamId));
-    const { data, error } = await paginateQuery(query, pagination);
-    if (error) throw storageError(error);
-    const page = pageResult(data || [], pagination.limit, mapRecord);
-    return { records: page.items, hasMore: page.hasMore, nextCursor: page.nextCursor };
+    return records.listRecords(user, options, isAdmin);
   }
 
   async function getExistingRecord(recordId) {
     const { data, error } = await supabase
-      .from("collaboration_records")
-      .select("id,project_id,owner_id,name,scope,group_id,snapshot_json,created_at,updated_at")
+      .from("project_records")
+      .select("id,project_id,version_id,owner_id,name,scope,group_id,revision,snapshot_json,created_at,updated_at,deleted_at")
       .eq("id", recordId)
       .maybeSingle();
     if (error) throw storageError(error);
@@ -135,12 +107,7 @@ function createCollaborationRepository(supabase) {
   }
 
   async function getRecord(user, recordId, isAdmin = false) {
-    const row = await getExistingRecord(recordId);
-    if (!row) throw new CollaborationRepositoryError("RECORD_NOT_FOUND", "历史记录不存在或已删除");
-    if (!isAdmin && row.scope !== "team" && row.owner_id !== user.id) {
-      throw new CollaborationRepositoryError("RECORD_FORBIDDEN", "无权查看该个人记录");
-    }
-    return mapRecord(row);
+    return records.getRecord(user, recordId, isAdmin);
   }
 
   async function sync(user, state, isAdmin = false) {
@@ -163,18 +130,18 @@ function createCollaborationRepository(supabase) {
 
   async function overrideRecord(recordId, changes, user) {
     const record = await getExistingRecord(recordId);
-    if (!record) {
+    if (!record || record.deleted_at) {
       throw new CollaborationRepositoryError(
         "RECORD_NOT_FOUND",
         "历史记录不存在",
       );
     }
 
-    const result = await sync(user, {
-      users: [], teams: [],
-      records: [{ ...mapRecord(record), ...changes }],
+    const { randomUUID } = require("node:crypto");
+    const result = await records.writeRecord(user, recordId, {
+      name: changes.name, snapshot: changes.snapshot, operationId: changes.operationId || randomUUID(),
     }, true);
-    return result.records.find((item) => item.id === recordId);
+    return result.record;
   }
 
   return { bootstrap, listRecords, getRecord, overrideRecord, sync };

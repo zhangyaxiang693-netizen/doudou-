@@ -1,7 +1,8 @@
 const session = require("express-session");
 const { getSupabaseServiceClient } = require("./supabase-client.cjs");
+const { SESSION_TTL_MS } = require("./session-options.cjs");
 
-const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 与 cookie.maxAge 保持一致（7 天）
+const DEFAULT_TTL_MS = SESSION_TTL_MS;
 const DEFAULT_TIDY_INTERVAL_MS = 30 * 60 * 1000;
 
 // 把 express-session 的登录态存到 Supabase 的表（默认 public.sessions）。

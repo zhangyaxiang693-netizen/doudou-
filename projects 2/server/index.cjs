@@ -9,6 +9,9 @@ const { createHistoryRouter } = require("./history-routes.cjs");
 const { createCollaborationRouter } = require("./collaboration-routes.cjs");
 const { createAdminAccessRouter } = require("./admin-access.cjs");
 const { configureSessionProxy } = require("./session-proxy.cjs");
+const { createSessionOptions, renewAuthenticatedSession } = require("./session-options.cjs");
+const { MAX_REQUEST_BYTES } = require("./project-record-contract.cjs");
+const { historyRequestContext, sendHistoryError } = require("./history-http.cjs");
 
 try {
   process.loadEnvFile?.(path.join(__dirname, "..", ".env.local"));
@@ -18,7 +21,8 @@ try {
 
 const app = express();
 configureSessionProxy(app);
-app.use(express.json({ limit: "10mb" }));
+app.use("/api", historyRequestContext);
+app.use(express.json({ limit: MAX_REQUEST_BYTES }));
 const execFileAsync = promisify(execFile);
 
 const PORT = process.env.DEPLOY_RUN_PORT || process.env.PORT || 5050;
@@ -29,17 +33,9 @@ const projectRoot = path.join(__dirname, "..");
 
 // Session 配置（登录态存 Supabase，跨 FaaS 实例重启不丢失）
 app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "h5-builder-secret-key-change-in-production",
-    store: new SupabaseSessionStore(),
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
-    },
-  })
+  session(createSessionOptions(new SupabaseSessionStore()))
 );
+app.use(renewAuthenticatedSession);
 
 // 白名单配置
 const ALLOWED_EMPLOYEE_IDS = new Set([
@@ -910,6 +906,17 @@ app.use(
   createCollaborationRouter({ resolveUser: resolveSessionUser }),
 );
 app.use("/api", createHistoryRouter({ resolveUser: resolveSessionUser }));
+
+app.use((error, req, res, next) => {
+  if (!req.path.startsWith("/api/")) return next(error);
+  if (error?.type === "entity.too.large") {
+    return sendHistoryError(res, { code: "SNAPSHOT_TOO_LARGE", message: "保存请求超过容量限制，当前编辑已保留" });
+  }
+  if (error?.type === "entity.parse.failed") {
+    return sendHistoryError(res, { code: "INVALID_SNAPSHOT", message: "保存请求格式无效，当前编辑已保留" });
+  }
+  return sendHistoryError(res, error);
+});
 
 // Serve static files from dist/
 app.use(express.static(distDir, {

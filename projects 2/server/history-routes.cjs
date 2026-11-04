@@ -5,32 +5,14 @@ const {
   createHistoryRepository,
 } = require("./history-repository.cjs");
 const { getSupabaseServiceClient } = require("./supabase-client.cjs");
+const { extractAdminFromRequest } = require("./admin-token.cjs");
+const { historyRequestContext, sendHistoryError } = require("./history-http.cjs");
+const { RECORD_ID_PATTERN, OPERATION_ID_PATTERN, snapshotError } = require("./project-record-contract.cjs");
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MAX_SNAPSHOT_BYTES = 5 * 1024 * 1024;
-
 function validateSnapshot(snapshot) {
-  const hasInvalidShape =
-    !snapshot ||
-    typeof snapshot !== "object" ||
-    Array.isArray(snapshot) ||
-    !Number.isInteger(snapshot.schemaVersion) ||
-    snapshot.schemaVersion < 1 ||
-    typeof snapshot.savedAt !== "string" ||
-    Number.isNaN(Date.parse(snapshot.savedAt)) ||
-    !snapshot.editor ||
-    typeof snapshot.editor !== "object" ||
-    !Array.isArray(snapshot.editor.pages);
-  if (hasInvalidShape) {
-    return false;
-  }
-  try {
-    return Buffer.byteLength(JSON.stringify(snapshot), "utf8") <=
-      MAX_SNAPSHOT_BYTES;
-  } catch {
-    return false;
-  }
+  return !snapshotError(snapshot);
 }
 
 function validateProjectId(value) {
@@ -38,28 +20,7 @@ function validateProjectId(value) {
 }
 
 function sendError(res, error) {
-  const statusByCode = {
-    INVALID_SNAPSHOT: 400,
-    INVALID_PAGINATION: 400,
-    INVALID_GROUP: 400,
-    UNAUTHENTICATED: 401,
-    PROJECT_FORBIDDEN: 403,
-    PROJECT_NOT_FOUND: 404,
-    VERSION_CONFLICT: 409,
-    STORAGE_ERROR: 500,
-  };
-  const code =
-    error instanceof HistoryRepositoryError
-      ? error.code
-      : "STORAGE_ERROR";
-  return res.status(statusByCode[code] || 500).json({
-    success: false,
-    code,
-    error:
-      code === "STORAGE_ERROR"
-        ? "项目历史服务暂时不可用"
-        : error.message,
-  });
+  return sendHistoryError(res, error);
 }
 
 function createHistoryRouter(options = {}) {
@@ -72,7 +33,77 @@ function createHistoryRouter(options = {}) {
     return repository;
   };
 
-  router.use(requireUser);
+  router.use(historyRequestContext, requireUser);
+  router.use((req, res, next) => {
+    const expectedUser = req.get("X-Project-User");
+    if (expectedUser && ["PUT", "POST"].includes(req.method) &&
+      req.path.startsWith("/project-records/") && expectedUser !== req.historyUser.id) {
+      return sendError(res, new HistoryRepositoryError("ACCOUNT_CHANGED",
+        "登录账号与当前编辑账号不同，请切回原账号后保存；当前编辑已保留"));
+    }
+    next();
+  });
+
+  router.get("/project-records", async (req, res) => {
+    try {
+      const page = await getRepository().listRecords(req.historyUser, req.query, extractAdminFromRequest(req));
+      res.json({ success: true, data: page });
+    } catch (error) { sendError(res, error); }
+  });
+
+  router.get("/project-records/:recordId", async (req, res) => {
+    try {
+      const record = await getRepository().getRecord(req.historyUser, req.params.recordId, extractAdminFromRequest(req));
+      res.json({ success: true, data: { record } });
+    } catch (error) { sendError(res, error); }
+  });
+
+  router.put("/project-records/:recordId", async (req, res) => {
+    const body = req.body || {};
+    if (!RECORD_ID_PATTERN.test(req.params.recordId) || !OPERATION_ID_PATTERN.test(body.operationId || "") ||
+        (body.create !== undefined && typeof body.create !== "boolean")) {
+      return sendError(res, new HistoryRepositoryError("INVALID_OPERATION", "保存请求标识无效"));
+    }
+    const invalid = snapshotError(body.snapshot);
+    const name = String(body.name || "").trim();
+    if (invalid || !name || name.length > 120) {
+      return sendError(res, new HistoryRepositoryError(invalid || "INVALID_SNAPSHOT",
+        invalid === "SNAPSHOT_TOO_LARGE" ? "单条项目超过32MiB，当前编辑已保留" : "项目名称或数据格式无效"));
+    }
+    const input = {
+      name, snapshot: body.snapshot, operationId: body.operationId, create: Boolean(body.create),
+      ...(body.scope !== undefined ? { scope: body.scope } : {}),
+      ...(body.teamId !== undefined ? { teamId: body.teamId } : {}),
+    };
+    try {
+      const result = await getRepository().writeRecord(req.historyUser, req.params.recordId,
+        input, extractAdminFromRequest(req));
+      res.json({ success: true, data: result });
+    } catch (error) { sendError(res, error); }
+  });
+
+  router.delete("/project-records/:recordId", async (req, res) => {
+    try {
+      await getRepository().deleteRecord(req.historyUser, req.params.recordId, extractAdminFromRequest(req));
+      res.json({ success: true });
+    } catch (error) { sendError(res, error); }
+  });
+
+  router.put("/project-records/:recordId/uploads/:operationId/:partIndex", async (req, res) => {
+    try {
+      await getRepository().stageUpload(req.historyUser, req.params.recordId, req.params.operationId,
+        Number(req.params.partIndex), req.body);
+      res.json({ success: true });
+    } catch (error) { sendError(res, error); }
+  });
+
+  router.post("/project-records/:recordId/uploads/:operationId/commit", async (req, res) => {
+    try {
+      const result = await getRepository().commitUpload(req.historyUser, req.params.recordId,
+        req.params.operationId, extractAdminFromRequest(req));
+      res.json({ success: true, data: result });
+    } catch (error) { sendError(res, error); }
+  });
 
   router.get("/me", (req, res) => {
     res.json({ success: true, data: req.historyUser });

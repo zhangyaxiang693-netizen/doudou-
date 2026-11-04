@@ -7,7 +7,7 @@ const { createCollaborationRepository } = require("../collaboration-repository.c
 const { readPagination, pageResult } = require("../list-pagination.cjs");
 
 // Optional isolated PostgreSQL runtime; never connects to a Supabase environment.
-test("history transactions on isolated PostgreSQL", {
+test("legacy history baseline before rebuild migration on isolated PostgreSQL", {
   skip: !process.env.PGLITE_MODULE_PATH && "Set PGLITE_MODULE_PATH to run SQL integration checks",
 }, async (t) => {
   const { PGlite } = require(process.env.PGLITE_MODULE_PATH);

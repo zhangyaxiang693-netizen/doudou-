@@ -7,28 +7,10 @@ const {
 const { getSupabaseServiceClient } = require("./supabase-client.cjs");
 const { extractAdminFromRequest } = require("./admin-token.cjs");
 const { validateSnapshot } = require("./history-routes.cjs");
+const { historyRequestContext, sendHistoryError } = require("./history-http.cjs");
 
 function sendError(res, error) {
-  const code =
-    error instanceof CollaborationRepositoryError
-      ? error.code
-      : "STORAGE_ERROR";
-  const status = {
-    INVALID_SNAPSHOT: 400,
-    INVALID_PAGINATION: 400,
-    VERSION_CONFLICT: 409,
-    RECORD_FORBIDDEN: 403,
-    RECORD_NOT_FOUND: 404,
-    STORAGE_ERROR: 500,
-  }[code] || 500;
-  return res.status(status).json({
-    success: false,
-    code,
-    error:
-      code === "STORAGE_ERROR"
-        ? "协作数据服务暂时不可用"
-        : error.message,
-  });
+  return sendHistoryError(res, error);
 }
 
 function createCollaborationRouter(options = {}) {
@@ -42,7 +24,7 @@ function createCollaborationRouter(options = {}) {
     return repository;
   };
 
-  router.use(requireUser);
+  router.use(historyRequestContext, requireUser);
 
   router.get("/bootstrap", async (req, res) => {
     try {
@@ -131,7 +113,7 @@ function createCollaborationRouter(options = {}) {
     try {
       const record = await getRepository().overrideRecord(
         String(req.params.recordId),
-        { name, snapshot, baseUpdatedAt: req.body.baseUpdatedAt || null },
+        { name, snapshot, operationId: req.body.operationId },
         req.historyUser,
       );
       res.json({ success: true, data: { record } });

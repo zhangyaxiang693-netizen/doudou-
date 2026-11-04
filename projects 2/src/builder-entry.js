@@ -20,12 +20,12 @@ async function useLocalDevelopmentUser() {
 // 登录检查
 async function checkAuth() {
   try {
-    const res = await fetch("/api/auth/me");
+    const res = await fetch("/api/auth/me", { cache: "no-store", signal: AbortSignal.timeout(15000) });
     const data = await res.json();
     if (!data.success || !data.data) {
       if (await useLocalDevelopmentUser()) return true;
       // 未登录，跳转到飞书登录页
-      window.location.href = "/api/auth/login?state=" + encodeURIComponent(window.location.pathname);
+      window.location.href = "/api/auth/login?state=" + encodeURIComponent(window.location.pathname + window.location.search);
       return false;
     }
     // 已登录，显示用户信息
@@ -40,6 +40,13 @@ async function checkAuth() {
 // 先检查登录，再加载应用
 checkAuth().then((isAuthenticated) => {
   if (isAuthenticated) {
+    if (new URLSearchParams(window.location.search).get("historyReauth") === "1") {
+      const app = document.querySelector("#app");
+      app.textContent = "登录完成，请返回原编辑窗口继续保存。";
+      app.style.cssText = "padding:64px;font:16px/1.8 sans-serif";
+      window.opener?.postMessage({ type: "history-reauth-complete" }, window.location.origin);
+      return;
+    }
     renderReactMaterials();
 
     import("./app.js")

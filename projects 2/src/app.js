@@ -7,14 +7,22 @@ import { GIFEncoder, quantize } from "gifenc";
 import {
   applyProjectSnapshot,
   createProjectSnapshot,
+  migrateProjectSnapshot,
 } from "./project-history/snapshot.js";
 import {
   ProjectHistoryApiError,
-  createProject,
-  deleteProject,
+  deleteProjectRecord,
+  getProjectRecord,
+  listProjectRecords,
   getCurrentUser,
-  overwriteProject,
+  saveProjectRecord,
 } from "./project-history/api.js";
+import { createRecordCopier, createSaveController } from "./project-history/save-controller.js";
+import { createDraftBackup } from "./project-history/draft-backup.js";
+import { createTemplateOverlay } from "./project-history/template-overlay.js";
+import { reconcileGeneratedPages } from "./project-history/page-reconciliation.js";
+import { projectContentKey, syncResourceDraftField } from "./project-history/editor-content.js";
+import "./project-history/history-ui.css";
 import {
   addUser,
   copyRecord,
@@ -156,7 +164,7 @@ function getDailyHeaderTitleTarget(source) {
     '[data-edit-prop="text"], [data-edit-prop="dateText"]',
   );
   const nodeId = editable?.closest("[data-node-id]")?.dataset.nodeId;
-  const found = nodeId ? findNode(state.nodes, nodeId) : null;
+  const found = nodeId ? findNode(state.pages.flatMap((page) => page.nodes || []), nodeId) : null;
   return found?.node?.schemaId === "头图" ? editable : null;
 }
 
@@ -926,6 +934,7 @@ const moleculeSchemas = BUILT_IN_MOLECULE_SCHEMAS.map((schema) => ({
 }));
 
 const MOLECULE_STORAGE_KEY = "builder_molecule_templates_empty_v1";
+let projectTemplateOverlay = null;
 function loadMoleculeTemplates() {
   try {
     const raw = localStorage.getItem(MOLECULE_STORAGE_KEY);
@@ -943,7 +952,8 @@ function loadMoleculeTemplates() {
 }
 function saveMoleculeTemplatesToStorage() {
   try {
-    const userTemplates = moleculeSchemas.filter((item) => !BUILT_IN_MOLECULE_IDS.includes(item.id));
+    const definitions = projectTemplateOverlay?.persistable(moleculeSchemas, "molecules") || moleculeSchemas;
+    const userTemplates = definitions.filter((item) => !BUILT_IN_MOLECULE_IDS.includes(item.id));
     localStorage.setItem(MOLECULE_STORAGE_KEY, JSON.stringify(userTemplates));
   } catch (e) {
     console.warn("保存分子模板失败", e);
@@ -1212,7 +1222,8 @@ function loadCustomPageTemplates() {
 
 function saveCustomPageTemplatesToStorage() {
   try {
-    localStorage.setItem(PAGE_TEMPLATE_STORAGE_KEY, JSON.stringify(customPageTemplates));
+    const definitions = projectTemplateOverlay?.persistable(customPageTemplates, "custom") || customPageTemplates;
+    localStorage.setItem(PAGE_TEMPLATE_STORAGE_KEY, JSON.stringify(definitions));
   } catch (e) {
     console.warn("保存自定义页面模板失败", e);
   }
@@ -4299,7 +4310,7 @@ function getSessionUser() {
     : null;
 }
 
-const sessionUser = getSessionUser();
+let sessionUser = getSessionUser();
 const initialCollaborationState = loadCollaborationState(sessionUser);
 
 const state = {
@@ -4865,19 +4876,21 @@ function createPage() {
 
 Object.defineProperty(state, "nodes", {
   get() {
-    return activePage().nodes;
+    return activePage()?.nodes || [];
   },
   set(nodes) {
-    activePage().nodes = nodes;
+    const page = activePage();
+    if (page) page.nodes = nodes;
   },
 });
 
 Object.defineProperty(state, "canvasBackground", {
   get() {
-    return activePage().canvasBackground;
+    return activePage()?.canvasBackground || "#ffffff";
   },
   set(color) {
-    activePage().canvasBackground = color;
+    const page = activePage();
+    if (page) page.canvasBackground = color;
   },
 });
 
@@ -5300,10 +5313,11 @@ function syncInsertedComponentToPageTemplate(
   );
   if (!entry) return false;
   const boundedIndex = Math.max(0, Math.min(insertIndex, template.nodes.length));
+  getPageTemplateEntryHistoryKey(entry);
   remapPrdTemplateRowsForInsertedModule(boundedIndex);
   template.nodes.splice(boundedIndex, 0, entry);
   if (template.isCustom) saveCustomPageTemplatesToStorage();
-  return true;
+  return entry;
 }
 
 function insertGuidedComponentAt(
@@ -5323,8 +5337,9 @@ function insertGuidedComponentAt(
   const sortableNodes = (page.nodes || []).filter((item) => item.canvasPlacement !== "page-side");
   const sideNodes = (page.nodes || []).filter((item) => item.canvasPlacement === "page-side");
   const boundedIndex = Math.max(0, Math.min(insertIndex, sortableNodes.length));
+  let templateEntry = null;
   if (options.syncTemplate !== false) {
-    syncInsertedComponentToPageTemplate(
+    templateEntry = syncInsertedComponentToPageTemplate(
       page,
       boundedIndex,
       schemaId,
@@ -5332,6 +5347,8 @@ function insertGuidedComponentAt(
     );
   }
   node.sourcePageTemplateId = page.sourcePageTemplateId || getActivePrdPageTemplate()?.id || "";
+  node.sourcePageTemplateNodeKey = templateEntry
+    ? getPageTemplateEntryHistoryKey(templateEntry) : crypto.randomUUID();
   node.sourcePageTemplateNodeIndex = boundedIndex;
   sortableNodes.splice(boundedIndex, 0, node);
   sortableNodes.forEach((item, index) => {
@@ -5646,6 +5663,7 @@ function createConsumptionReturnNodeForTier(sourceNode, tierCount) {
     "sourceInputScope",
     "sourcePageTemplateId",
     "sourcePageTemplateNodeIndex",
+    "sourcePageTemplateNodeKey",
     "consumptionReturnDetailMode",
     "moduleGroupId",
     "moduleGroupRole",
@@ -6044,9 +6062,25 @@ function materializePageTemplateNodes(template) {
       (node.children || []).forEach(normalizeNodeNames);
       return node;
     };
-    return clone(template.nodes).map(normalizeNodeNames);
+    return template.nodes.map((entry) => {
+      const key = getPageTemplateEntryHistoryKey(entry);
+      const node = normalizeNodeNames(clone(entry));
+      node.sourcePageTemplateNodeKey = key;
+      return node;
+    });
   }
-  return template.nodes.map(createTemplateNode).filter(Boolean);
+  return template.nodes.map((entry) => {
+    const key = getPageTemplateEntryHistoryKey(entry);
+    const node = createTemplateNode(entry);
+    if (node) node.sourcePageTemplateNodeKey = key;
+    return node;
+  }).filter(Boolean);
+}
+
+function getPageTemplateEntryHistoryKey(entry) {
+  // Tuple metadata is serialized with the project and moves with its module.
+  const metadata = Array.isArray(entry) ? (entry[2] ||= {}) : entry;
+  return metadata.historyNodeKey ||= crypto.randomUUID();
 }
 
 function createTemplatePage(template, overrides = {}) {
@@ -6759,8 +6793,151 @@ function renderTemplatePreviewNode(entry) {
 }
 
 const PROJECT_HISTORY_APP_VERSION = "0.1.0";
-let projectHistorySaveChain = Promise.resolve();
 let pendingManualSaveButton = null;
+let historyDraftTimer = null;
+let historyDraftLastSignature = "";
+let historyRecoveryDrafts = [];
+let historyReauthPopup = null;
+const projectDraftBackup = createDraftBackup();
+projectTemplateOverlay = createTemplateOverlay({ pages: pageTemplates, custom: customPageTemplates, molecules: moleculeSchemas });
+const defaultActivitySources = clone({ demoPrdBlueprint, demoActivityPackage, demoTimeActivityPackage });
+const projectSaveController = createSaveController({
+  send: saveProjectRecord,
+  backup: projectDraftBackup,
+  onSaved(result, context) {
+    const record = result.record;
+    const existing = state.collaboration.records.find((item) => item.id === record.id);
+    if (!existing || Number(existing.revision || 0) <= record.revision) {
+      state.collaboration = saveCollaborationState(mergeCollaborationChanges(state.collaboration, { records: [record] }));
+    }
+    if (!context.isCurrent) return;
+    state.historyCollaborationRecordId = record.id;
+    state.historyCurrentProjectId = record.id;
+    state.historyCurrentVersionId = record.versionId || null;
+    state.historySaveScope = record.scope;
+    state.historySaveGroupId = record.teamId || "";
+    state.historyError = "";
+    if (document.querySelector("[data-history-save-notice]")) {
+      showHistorySaveNotice(result.replayed
+        ? "已确认上次云端保存；如需再次覆盖，请点击保存"
+        : "已保存到云端");
+    }
+  },
+  onError(error, context) {
+    if (!context.isCurrent) return;
+    state.historyError = error.message || "云端保存失败，当前编辑已保留";
+    showHistorySaveNotice(state.historyError, error.status === 401, error.requestId);
+  },
+});
+projectSaveController.start({ userId: sessionUser?.id });
+
+function setActivitySources(sources = defaultActivitySources) {
+  for (const [key, target] of Object.entries({ demoPrdBlueprint, demoActivityPackage, demoTimeActivityPackage })) {
+    Object.keys(target).forEach((field) => delete target[field]);
+    Object.assign(target, clone(sources[key] || defaultActivitySources[key]));
+  }
+}
+
+function getCurrentProjectName() {
+  if (state.workflowType === "resource") return String(getResourceDraft().activityName ?? state.activity?.name ?? "");
+  return String(state.activity?.name || (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID
+    ? getPrdTableBlueprint().activityName : demoPrdBlueprint.activityName) || "");
+}
+
+function setCurrentProjectName(name) {
+  state.activity ||= {};
+  state.activity.name = name;
+  if (state.workflowType === "resource") getResourceDraft().activityName = name;
+  else {
+    demoPrdBlueprint.activityName = name;
+    if (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID) {
+      let row = state.prdTableRows.find((item) => /^(活动名称|名称)$/.test(item.key));
+      if (!row) { row = { key: "活动名称", value: "" }; state.prdTableRows.unshift(row); }
+      row.value = name;
+      if (state.prdTableBlueprint) state.prdTableBlueprint.activityName = name;
+      state.prdTableBlueprintSignature = getPrdTableRowsSignature(normalizePrdTableRows(state.prdTableRows));
+    }
+  }
+}
+
+function showHistorySaveNotice(message, loginRequired = false, requestId = "") {
+  document.querySelector("[data-history-save-notice]")?.remove();
+  const notice = document.createElement("div");
+  notice.dataset.historySaveNotice = "";
+  notice.className = "history-save-notice";
+  notice.setAttribute("role", "status");
+  const text = document.createElement("span");
+  text.textContent = `${message}${requestId ? `（请求 ${requestId}）` : ""}`;
+  notice.append(text);
+  if (loginRequired) {
+    const login = document.createElement("button");
+    login.textContent = "重新登录";
+    login.addEventListener("click", () => {
+      flushHistoryDraftBackup();
+      historyReauthPopup = window.open(`/api/auth/login?state=${encodeURIComponent("/?historyReauth=1")}`, "history-reauth", "popup,width=640,height=760");
+      if (!historyReauthPopup) {
+        showHistorySaveNotice("请允许登录窗口弹出，当前页面和编辑内容已保留", true);
+      }
+    });
+    notice.append(login);
+    const check = document.createElement("button");
+    check.textContent = "已登录，继续保存";
+    check.addEventListener("click", async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user.id !== projectSaveController.current()?.userId) {
+          showHistorySaveNotice("登录账号与当前项目编辑账号不同，请切回原账号后保存", true);
+          return;
+        }
+        sessionUser = user;
+        state.historyUser = user;
+        const result = await saveCurrentProjectSnapshot();
+        if (result.cloudSaved) showHistorySaveNotice(result.replayed ? "已确认上次云端保存" : "已保存到云端");
+      } catch (error) { showHistorySaveNotice(error.message, true, error.requestId); }
+    });
+    notice.append(check);
+  }
+  const close = document.createElement("button");
+  close.textContent = "关闭";
+  close.addEventListener("click", () => notice.remove());
+  notice.append(close);
+  document.body.append(notice);
+}
+
+function isHistoryEditingView() {
+  return ["prd-demo", "resource-blueprint", "guided-preview", "guided-export", "workbench"].includes(state.view);
+}
+
+function flushHistoryDraftBackup() {
+  clearTimeout(historyDraftTimer);
+  historyDraftTimer = null;
+  const session = projectSaveController.current();
+  if (!session?.userId || !isHistoryEditingView()) return Promise.resolve();
+  try {
+    const snapshot = createCurrentProjectSnapshot();
+    const contentKey = projectContentKey(snapshot);
+    if (contentKey === session.savedContentKey) return Promise.resolve();
+    const signature = `${session.id}:${contentKey}`;
+    if (signature === historyDraftLastSignature) return Promise.resolve();
+    historyDraftLastSignature = signature;
+    return projectDraftBackup.put({
+      userId: session.userId, sessionId: session.id, recordId: session.recordId,
+      name: getCurrentProjectName(), snapshot, scope: session.scope, teamId: session.teamId,
+      capturedAt: Date.now(),
+    }).catch(() => { historyDraftLastSignature = ""; });
+  } catch { return Promise.resolve(); }
+}
+
+function scheduleHistoryDraftBackup() {
+  clearTimeout(historyDraftTimer);
+  if (isHistoryEditingView()) historyDraftTimer = window.setTimeout(flushHistoryDraftBackup, 700);
+}
+
+async function loadRecoverableHistoryDrafts() {
+  try { historyRecoveryDrafts = await projectDraftBackup.list(sessionUser?.id || ""); }
+  catch { historyRecoveryDrafts = []; }
+  if (state.view === "mine") render();
+}
 
 function getCurrentCollaborationUser() {
   const userId = sessionUser?.id || state.historyUser?.id || "";
@@ -6828,6 +7005,16 @@ async function openAdminDashboard() {
 }
 
 function startNewHistorySession() {
+  flushHistoryDraftBackup();
+  projectSaveController.start({ userId: sessionUser?.id });
+  projectTemplateOverlay.reset();
+  setActivitySources();
+  applyProjectSnapshot(state, { schemaVersion: 3, editor: {
+    pages: [],
+    resourceDrafts: { daily: createDefaultResourceDraft("daily"), s: createDefaultResourceDraft("s") },
+  } });
+  state.prdDemoStep = "upload";
+  historyDraftLastSignature = "";
   state.guidedPageThemeId = "pink";
   state.historyCurrentProjectId = null;
   state.historyCurrentVersionId = null;
@@ -6879,7 +7066,9 @@ function createCurrentProjectSnapshot() {
     activePageTemplate: activePageTemplate || null,
     referencedPageTemplates,
     referencedMoleculeTemplates,
-    stage: state.view === "guided-preview" ? "preview" : "blueprint",
+    stage: ["guided-preview", "guided-export"].includes(state.view) ? "preview"
+      : state.view === "workbench" ? "workbench" : "blueprint",
+    activitySources: { demoPrdBlueprint, demoActivityPackage, demoTimeActivityPackage },
   });
 }
 
@@ -6891,130 +7080,34 @@ function upsertHistoryProject(project) {
   else state.historyProjects.unshift(project);
 }
 
-async function performProjectSnapshotSave({
+function saveCurrentProjectSnapshot({
   targetScope = state.historySaveScope,
   targetGroupId = state.historySaveGroupId,
   saveMode = "auto",
+  capturedInput = null,
+  capturedSession = projectSaveController.current(),
 } = {}) {
-  const projectName = String(state.activity?.name || "").trim();
+  const projectName = String(capturedInput?.name ?? getCurrentProjectName()).trim();
   if (!projectName || projectName === "未命名活动") {
     state.historyError = "请输入项目名称后再保存";
-    return {
+    return Promise.resolve({
       cloudSaved: false,
       validationError: state.historyError,
-    };
+    });
   }
   const group =
     targetScope === "team" ? getGroupById(targetGroupId) : null;
   if (targetScope === "team" && !group) {
     state.historyError = "所选组不存在，请刷新后重新选择";
-    window.alert(state.historyError);
-    return { cloudSaved: false };
+    showHistorySaveNotice(state.historyError);
+    return Promise.resolve({ cloudSaved: false });
   }
   const normalizedScope = group ? "team" : "personal";
-  state.historySaveScope = normalizedScope;
-  state.historySaveGroupId = group?.id || "";
-  const snapshot = createCurrentProjectSnapshot();
-  const sourceRecord = state.collaboration.records.find(
-    (record) => record.id === state.historyCollaborationRecordId,
-  );
-  const saveAsCopy = saveMode === "copy";
-  let currentProjectId = saveAsCopy
-    ? null
-    : state.historyCurrentProjectId;
-  let currentVersionId = saveAsCopy
-    ? null
-    : state.historyCurrentVersionId;
-  const ownedProject = currentProjectId
-    ? state.historyProjects.find(
-        (project) => project.id === currentProjectId,
-      )
-    : null;
-  if (!currentVersionId && ownedProject?.latestVersionId) {
-    currentVersionId = ownedProject.latestVersionId;
-  }
-  try {
-    if (!state.historyUser) {
-      state.historyUser = await getCurrentUser();
-    }
-    if (!saveAsCopy && sourceRecord) {
-      const updated = updateRecord(state.collaboration, sourceRecord.id, {
-        name: projectName,
-        snapshot,
-        baseUpdatedAt: state.historyRecordBaseUpdatedAt || sourceRecord.updatedAt,
-      });
-      const committed = await setCollaborationState(updated);
-      currentProjectId = sourceRecord.projectId || null;
-      const savedRecord = committed.records.find((record) => record.id === sourceRecord.id);
-      state.historyRecordBaseUpdatedAt = savedRecord.updatedAt;
-      state.historyBaseUpdatedAt = savedRecord.updatedAt;
-      if (ownedProject) {
-        upsertHistoryProject({ ...ownedProject, name: projectName, updatedAt: savedRecord.updatedAt });
-      }
-    } else if (!currentProjectId) {
-      if (!saveAsCopy && state.historyCollaborationRecordId) {
-        throw new Error("当前记录已不存在，请另存副本");
-      }
-      const result = await createProject({
-        name: projectName,
-        prdUrl: state.prdFeishuUrl || "",
-        templateId: state.currentTemplateId || "",
-        snapshot,
-        scope: normalizedScope,
-        teamId: group?.id || null,
-      });
-      currentProjectId = result.project.id;
-      currentVersionId = result.version.id;
-      upsertHistoryProject(result.project);
-      state.historyBaseUpdatedAt = result.project.updatedAt;
-      state.historyRecordBaseUpdatedAt = result.project.updatedAt;
-      state.historyCollaborationRecordId = currentProjectId;
-      state.collaboration = upsertRecord(state.collaboration, {
-        id: currentProjectId,
-        projectId: currentProjectId,
-        ownerId: state.historyUser.id,
-        name: projectName,
-        scope: normalizedScope,
-        teamId: group?.id || null,
-        createdAt: result.project.createdAt,
-        updatedAt: result.project.updatedAt,
-      });
-    } else if (ownedProject) {
-      const result = await overwriteProject(currentProjectId, {
-        name: projectName,
-        prdUrl: state.prdFeishuUrl || "",
-        templateId: state.currentTemplateId || "",
-        snapshot,
-        baseUpdatedAt: state.historyBaseUpdatedAt || ownedProject.updatedAt,
-      });
-      currentVersionId = result.version.id;
-      upsertHistoryProject(result.project);
-      state.historyBaseUpdatedAt = result.project.updatedAt;
-    } else {
-      throw new Error("当前记录已不存在，请另存副本");
-    }
-    state.historyCurrentProjectId = currentProjectId;
-    state.historyCurrentVersionId = currentVersionId;
-
-    state.historyError = "";
-    return { cloudSaved: true, snapshot };
-  } catch (error) {
-    const cloudError = error.message || "云端保存失败";
-    state.historyError = cloudError;
-    window.alert(state.historyError);
-    return {
-      cloudSaved: false,
-      snapshot,
-    };
-  }
-}
-
-function saveCurrentProjectSnapshot(options = {}) {
-  const saveOperation = projectHistorySaveChain
-    .catch(() => null)
-    .then(() => performProjectSnapshotSave(options));
-  projectHistorySaveChain = saveOperation;
-  return saveOperation;
+  const snapshot = capturedInput?.snapshot || createCurrentProjectSnapshot();
+  return projectSaveController.save({
+    name: projectName, snapshot, copy: saveMode === "copy",
+    scope: normalizedScope, teamId: group?.id || null,
+  }, capturedSession);
 }
 
 function runManualProjectSave(
@@ -7022,15 +7115,16 @@ function runManualProjectSave(
   targetScope = "personal",
   targetGroupId = "",
   saveMode = "auto",
+  captured = {},
 ) {
   if (!button) return;
   const originalText = button.dataset.saveOriginalText || button.textContent;
   button.dataset.saveOriginalText = originalText;
   button.disabled = true;
   button.textContent = "保存中";
-  saveCurrentProjectSnapshot({ targetScope, targetGroupId, saveMode })
+  saveCurrentProjectSnapshot({ targetScope, targetGroupId, saveMode, ...captured })
     .then((result) => {
-      button.textContent = result.cloudSaved ? "已保存" : "保存失败";
+      button.textContent = result.cloudSaved ? result.replayed ? "已确认保存" : "已保存" : "保存失败";
       button.classList.toggle("saved", result.cloudSaved);
     })
     .catch((error) => {
@@ -7074,7 +7168,7 @@ async function loadHistoryRecordPage(reset = true, admin = false) {
   try {
     const result = scope === "team" && !teamId
       ? { records: [], hasMore: false, nextCursor: null }
-      : await listCollaborationRecords({ scope, teamId, cursor });
+      : await (admin ? listCollaborationRecords : listProjectRecords)({ scope, teamId, cursor });
     if (requestId !== page.requestId) return;
     state.collaboration = saveCollaborationState(
       mergeCollaborationChanges(state.collaboration, { records: result.records }),
@@ -7109,17 +7203,20 @@ function renderHistoryPagination(page, admin = false) {
 }
 
 async function loadProjectHistory() {
-  state.historyPage.requestId++;
+  const requestId = ++state.historyPage.requestId;
   state.historyPage.ids = [];
   state.historyStatus = "loading";
   state.historyError = "";
   render();
   try {
     const user = await getCurrentUser();
+    if (requestId !== state.historyPage.requestId || state.view !== "mine") return;
     state.historyUser = user;
     await refreshCollaborationFromServer();
+    if (requestId !== state.historyPage.requestId || state.view !== "mine") return;
     await loadHistoryRecordPage();
   } catch (error) {
+    if (requestId !== state.historyPage.requestId || state.view !== "mine") return;
     state.historyUser = sessionUser;
     state.historyProjects = [];
     state.historyError =
@@ -7132,7 +7229,7 @@ async function loadProjectHistory() {
 }
 
 async function readHistoryRecord(recordId) {
-  const record = await getCollaborationRecord(recordId);
+  const record = await getProjectRecord(recordId);
   state.collaboration = saveCollaborationState(
     mergeCollaborationChanges(state.collaboration, { records: [record] }),
   );
@@ -7140,81 +7237,74 @@ async function readHistoryRecord(recordId) {
 }
 
 async function restoreCollaborationProject(recordId) {
+  const token = projectSaveController.beginLoad();
   try {
     const record = await readHistoryRecord(recordId);
-    state.historySaveScope = record.scope;
-    state.historySaveGroupId = record.scope === "team" ? record.teamId || "" : "";
-    state.historyCollaborationRecordId = record.id;
-    state.historyRecordBaseUpdatedAt = record.updatedAt;
-    state.historyBaseUpdatedAt = record.updatedAt;
-    state.historyError = "";
-    applyRestoredProject(record.snapshot, record.projectId, null);
+    if (!projectSaveController.isCurrentLoad(token)) return;
+    applyRestoredProject(record.snapshot, record.id, record.versionId, record);
   } catch (error) {
+    if (!projectSaveController.isCurrentLoad(token)) return;
     state.historyError = error.message || "项目恢复失败";
     render();
   }
 }
 
+const historyRecordCopier = createRecordCopier({
+  read: readHistoryRecord, send: saveProjectRecord, prepare: migrateProjectSnapshot,
+  onSaved(result) {
+    state.collaboration = saveCollaborationState(mergeCollaborationChanges(state.collaboration, { records: [result.record] }));
+  },
+});
+
 async function copyHistoryRecord(recordId, destination) {
-  const source = await readHistoryRecord(recordId);
-  const copied = copyRecord({
-    ...state.collaboration,
-    records: state.collaboration.records.map((record) => record.id === recordId ? source : record),
-  }, recordId, destination);
-  await setCollaborationState({
-    ...copied,
-    records: copied.records.map((record) => record.id === recordId
-      ? state.collaboration.records.find((item) => item.id === recordId) : record),
-  });
+  const result = await historyRecordCopier.copy(recordId, destination);
+  if (!result.cloudSaved) throw result.error || new Error("复制未完成，请重试确认");
 }
 
 function openProjectHistory() {
+  flushHistoryDraftBackup();
+  projectSaveController.invalidateLoads();
   state.view = "mine";
   state.historyStatus = "loading";
   render();
   loadProjectHistory();
+  loadRecoverableHistoryDrafts();
 }
 
 function restoreSnapshotTemplates(snapshot) {
-  const templates = snapshot.templates || {};
-  (templates.referencedMoleculeTemplates || []).forEach((template) => {
-    if (
-      template?.id &&
-      !moleculeSchemas.some((item) => item.id === template.id)
-    ) {
-      moleculeSchemas.push(clone(template));
-    }
-  });
-  const restoredPageTemplates = [
-    ...(templates.referencedPageTemplates || []),
-    templates.activePageTemplate,
-  ].filter(Boolean);
-  restoredPageTemplates.forEach((pageTemplate) => {
-    if (
-      pageTemplate?.id &&
-      ![...pageTemplates, ...customPageTemplates].some(
-        (item) => item.id === pageTemplate.id,
-      )
-    ) {
-      customPageTemplates.push({ ...clone(pageTemplate), isCustom: true });
-    }
-  });
-  saveCustomPageTemplatesToStorage();
-  saveMoleculeTemplatesToStorage();
+  projectTemplateOverlay.apply(snapshot);
 }
 
-function applyRestoredProject(snapshot, projectId, versionId) {
-  const migrated = applyProjectSnapshot(state, snapshot);
-  restoreSnapshotTemplates(migrated);
-  state.historyCurrentProjectId = projectId || null;
-  state.historyCurrentVersionId = versionId || null;
-  state.prdDemoStep = "analysis";
-  state.view = migrated.resume?.stage === "preview"
-    ? "guided-preview"
-    : state.workflowType === "resource"
-      ? "resource-blueprint"
-      : "prd-demo";
-  render();
+function applyRestoredProject(snapshot, projectId, versionId, record = {}) {
+  const prepared = {};
+  const migrated = applyProjectSnapshot(prepared, snapshot);
+  const previousState = { ...state };
+  const previousSnapshot = createCurrentProjectSnapshot();
+  flushHistoryDraftBackup();
+  try {
+    restoreSnapshotTemplates(migrated);
+    setActivitySources(migrated.activitySources || defaultActivitySources);
+    Object.assign(state, prepared, {
+      historyCurrentProjectId: projectId || null,
+      historyCurrentVersionId: versionId || null,
+      historyCollaborationRecordId: projectId || null,
+      historySaveScope: record.scope || "personal",
+      historySaveGroupId: record.teamId || "",
+      historyError: "", prdDemoStep: "analysis",
+      view: migrated.resume?.stage === "workbench" ? "workbench"
+        : migrated.resume?.stage === "preview" ? "guided-preview"
+        : prepared.workflowType === "resource" ? "resource-blueprint" : "prd-demo",
+    });
+    render();
+    projectSaveController.start({ userId: sessionUser?.id, recordId: projectId, scope: record.scope, teamId: record.teamId });
+    if (projectId) projectSaveController.current().savedContentKey = projectContentKey(migrated);
+    historyDraftLastSignature = "";
+  } catch (error) {
+    restoreSnapshotTemplates(previousSnapshot);
+    setActivitySources(previousSnapshot.activitySources);
+    Object.assign(state, previousState);
+    throw new Error(`项目恢复失败，当前编辑未改变：${error.message}`);
+  }
 }
 
 async function restoreCloudProject(projectId, versionId) {
@@ -7243,10 +7333,10 @@ async function removeHistoryProject(projectId) {
     return;
   }
   try {
-    await deleteProject(projectId);
+    await deleteProjectRecord(projectId);
     state.collaboration = saveCollaborationState({
       ...state.collaboration,
-      records: state.collaboration.records.filter((record) => record.projectId !== projectId),
+      records: state.collaboration.records.filter((record) => record.id !== projectId),
     });
     state.historyProjects = state.historyProjects.filter(
       (item) => item.id !== projectId,
@@ -7254,13 +7344,7 @@ async function removeHistoryProject(projectId) {
     state.historyPage.ids = state.historyPage.ids.filter(
       (id) => state.collaboration.records.some((record) => record.id === id),
     );
-    if (state.historyCurrentProjectId === projectId) {
-      state.historyCurrentProjectId = null;
-      state.historyCurrentVersionId = null;
-      state.historyCollaborationRecordId = null;
-      state.historyBaseUpdatedAt = null;
-      state.historyRecordBaseUpdatedAt = null;
-    }
+    // Keep a deleted editor's target: an old page must explicitly save a copy.
     render();
   } catch (error) {
     state.historyError = error.message || "项目删除失败";
@@ -7276,6 +7360,63 @@ function formatHistoryTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function renderHistoryCover(id, local = false) {
+  const prefix = `history-cover-${local ? "local-" : ""}${String(id).replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const variant = Array.from(String(id)).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 3;
+  const paper = `url(#${prefix}-paper)`;
+  const edge = `url(#${prefix}-edge)`;
+  const artwork = [
+    `<path d="m78 145 83-45 86 46-84 47Z" fill="#e5e5e7"/>
+     <path d="m78 145 85 48v20l-85-48Z" fill="${edge}"/>
+     <path d="m163 193 84-47v20l-84 47Z" fill="#e1e1e3"/>
+     <path d="m89 134 73-41 74 42-74 42Z" fill="${paper}" stroke="#fff" stroke-width="2"/>
+     <path d="m89 134 73 43v5l-73-42Z" fill="#dddde0"/>
+     <path d="m162 177 74-42v5l-74 42Z" fill="#ebebed"/>
+     <path d="m94 123 69-39 67 39-68 39Z" fill="${paper}" stroke="#fff" stroke-width="2"/>
+     <path d="m94 123 68 39v5l-68-39Z" fill="#dddde0"/>
+     <path d="m162 162 68-39v5l-68 39Z" fill="#ebebed"/>
+     <path d="m115 113 40-23 16 9-40 23Z" fill="#28282c"/>
+     <path d="m138 127 42-24m-32 30 42-24" stroke="#d6d6da" stroke-width="3" stroke-linecap="round"/>
+     <path d="m78 153 21 12 13-2 35 20 16 19v15l-85-48Z" fill="${paper}" stroke="#f9f9fa"/>
+     <path d="m163 202 84-48v17l-84 48Z" fill="#e9e9eb"/>`,
+    `<path d="m71 178 85-48 92 52-85 48Z" fill="${paper}" stroke="#fff"/>
+     <path d="m71 178 92 52v8l-92-52Z" fill="#dcdcdf"/>
+     <path d="m163 230 85-48v8l-85 48Z" fill="#e7e7e9"/>
+     <path d="m146 152 29 17v35l-29-17Z" fill="#dddde0"/>
+     <path d="m175 169 8-5v35l-8 5Z" fill="#c9c9ce"/>
+     <path d="m92 53 132 75v80L92 133Z" fill="${paper}" stroke="#fff" stroke-width="2"/>
+     <path d="m224 128 7-4v79l-7 5Z" fill="#d9d9dc"/>
+     <path d="m92 53 7-4 132 75-7 4Z" fill="#fff"/>
+     <path d="m103 71 110 62v56l-110-62Z" fill="#eeeeef"/>
+     <path d="m114 86 40 23v38l-40-23Z" fill="#fff"/>
+     <path d="m162 117 40 23m-40-12 32 18m-32-7 37 21" stroke="#c9c9ce" stroke-width="3" stroke-linecap="round"/>
+     <ellipse cx="135" cy="118" rx="12" ry="16" transform="rotate(-31 135 118)" fill="#2c2c30"/>
+     <path d="m146 148 55 31" stroke="#d8d8dc" stroke-width="3" stroke-linecap="round"/>`,
+    `<path d="m76 171 84-47 88 49-84 48Z" fill="${paper}" stroke="#fff"/>
+     <path d="m76 171 88 50v13l-88-50Z" fill="${edge}"/>
+     <path d="m164 221 84-48v13l-84 48Z" fill="#e2e2e5"/>
+     <path d="m96 146 63-35 64 36-63 36Z" fill="#fff" stroke="#f6f6f7"/>
+     <path d="m96 146 64 37v11l-64-37Z" fill="#dedee1"/>
+     <path d="m160 183 63-36v11l-63 36Z" fill="#e8e8ea"/>
+     <path d="m115 94 43-24 46 26-44 25Z" fill="${paper}" stroke="#fff"/>
+     <path d="m115 94 45 27v44l-45-27Z" fill="${edge}"/>
+     <path d="m160 121 44-25v44l-44 25Z" fill="#e4e4e7"/>
+     <path d="m126 95 31-17 32 18-31 17Z" fill="#28282c"/>
+     <path d="m130 128 17 10m-17 0 17 10" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+     <path d="m181 124 10-6v15l-10 6Z" fill="#f8f8fa"/>`,
+  ][variant];
+  return `<svg class="project-card-art" viewBox="0 0 320 260" fill="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="${prefix}-paper" x1="90" y1="80" x2="230" y2="210" gradientUnits="userSpaceOnUse"><stop stop-color="#fff"/><stop offset="1" stop-color="#f0f0f2"/></linearGradient>
+      <linearGradient id="${prefix}-edge" x1="85" y1="120" x2="160" y2="220" gradientUnits="userSpaceOnUse"><stop stop-color="#f0f0f2"/><stop offset="1" stop-color="#d9d9dd"/></linearGradient>
+      <radialGradient id="${prefix}-shadow"><stop stop-color="#bebec5" stop-opacity=".38"/><stop offset="1" stop-color="#d5d5dc" stop-opacity="0"/></radialGradient>
+    </defs>
+    <path d="m31 180 124-71 139 77-124 71Z" fill="#f7f7f8"/>
+    <ellipse cx="171" cy="211" rx="113" ry="34" fill="url(#${prefix}-shadow)"/>
+    <g class="project-card-object">${artwork}</g>
+  </svg>`;
 }
 
 function renderProjectHistory() {
@@ -7294,101 +7435,102 @@ function renderProjectHistory() {
   );
   const hasRecords = collaborationRecords.length;
   center.innerHTML = `
-    <div class="project-history-shell">
-      <nav class="prd-minimal-nav">
-        <button class="prd-brand" data-back-home aria-label="返回活动中心">
-          <span>+</span>
-          <strong>DOU+ 活动生成器</strong>
+    <div class="project-history-shell project-gallery">
+      <nav class="project-gallery-nav" aria-label="项目导航">
+        <button type="button" data-back-home>
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
+          返回创意工作台
         </button>
-        <button type="button" class="project-history-back" data-back-home>返回活动中心</button>
+        <button type="button" data-history-refresh aria-label="刷新项目">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2 6M20 4v7h-7"/></svg>
+          刷新
+        </button>
       </nav>
-      <header class="project-history-header">
+      <header class="project-gallery-header">
         <div>
-          <span>MY PROJECTS</span>
           <h1>我的项目</h1>
-          <p>${currentUser ? `已绑定 ${escapeHtml(currentUser.name || "当前飞书用户")}` : "云端登录态未接入"}</p>
+          <p>让每一份创意，随时继续。</p>
         </div>
-        <button type="button" data-history-refresh>刷新</button>
+        <details class="project-gallery-new" data-history-menu>
+          <summary aria-label="新建项目" title="新建项目">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v16M4 12h16"/></svg>
+          </summary>
+          <div class="project-card-menu">
+            <span class="project-menu-caption">新建项目</span>
+            <button type="button" data-demo-open-file-modal>生成会场页面 <span aria-hidden="true">↗</span></button>
+            <button type="button" data-open-resource-flow>生成资源位 <span aria-hidden="true">↗</span></button>
+          </div>
+        </details>
       </header>
-      <div class="project-history-tabs" role="tablist" aria-label="历史记录范围">
-        <button
-          type="button"
-          class="${activeScope === "personal" ? "active" : ""}"
-          data-history-scope="personal"
-          role="tab"
-          aria-selected="${activeScope === "personal"}"
-        >个人</button>
-        <button
-          type="button"
-          class="${activeScope === "team" ? "active" : ""}"
-          data-history-scope="team"
-          role="tab"
-          aria-selected="${activeScope === "team"}"
-        >组</button>
-      </div>
-      ${
-        activeScope === "team"
-          ? `
-            <div class="project-history-group-filter">
-              <label for="history-group-select">当前组</label>
-              <select id="history-group-select" data-history-group-select ${activeGroup ? "" : "disabled"}>
-                ${
-                  state.collaboration.teams
-                    .map(
-                      (group) =>
-                        `<option value="${escapeAttr(group.id)}" ${group.id === activeGroup?.id ? "selected" : ""}>${escapeHtml(group.name)}</option>`,
-                    )
-                    .join("") || '<option value="">暂无组</option>'
-                }
-              </select>
-              <span>所有用户都可以查看和编辑组内记录</span>
-            </div>
-          `
-          : ""
-      }
+      ${historyRecoveryDrafts.length ? `
+        <section class="project-gallery-section history-local-drafts" aria-label="可恢复的本地编辑">
+          <header><h2>可恢复的本地编辑</h2><p>未确认云端保存 · 仅在此浏览器中保留</p></header>
+          <div class="project-history-grid">${historyRecoveryDrafts.map((draft) => `
+            <article class="project-card project-card--local">
+              <button type="button" class="project-card-open" data-restore-local-draft="${escapeAttr(draft.sessionId)}" aria-label="恢复编辑：${escapeAttr(draft.name || "未命名编辑")}">
+                <span class="project-card-kind"><i></i>本地备份</span>
+                <span class="project-card-cover">${renderHistoryCover(draft.sessionId, true)}</span>
+                <span class="project-card-info"><strong title="${escapeAttr(draft.name || "未命名编辑")}">${escapeHtml(draft.name || "未命名编辑")}</strong><span>本机编辑于 ${formatHistoryTime(draft.updatedAt)}</span></span>
+              </button>
+              <details class="project-card-more" data-history-menu>
+                <summary aria-label="本地备份更多操作：${escapeAttr(draft.name || "未命名编辑")}" title="更多操作"><span aria-hidden="true">⋮</span></summary>
+                <div class="project-card-menu"><button type="button" class="is-danger" data-remove-local-draft="${escapeAttr(draft.sessionId)}">删除本地备份</button></div>
+              </details>
+            </article>`).join("")}</div>
+        </section>` : ""}
       ${
         state.historyError
-          ? `<div class="project-history-notice">${escapeHtml(state.historyError)}</div>`
+          ? `<div class="project-history-notice" role="alert">${escapeHtml(state.historyError)}</div>`
           : ""
       }
-      ${
-        state.historyStatus === "loading"
-          ? `<div class="project-history-empty">正在加载项目...</div>`
-          : ""
-      }
-      ${
-        state.historyStatus !== "loading" &&
-        !hasRecords
-          ? `<div class="project-history-empty"><strong>${activeScope === "team" ? activeGroup ? "这个组还没有项目" : "还没有创建组" : "还没有保存的项目"}</strong><span>完成编辑后使用保存按钮创建第一条记录。</span></div>`
-          : ""
-      }
-      ${
-        collaborationRecords.length
-          ? `
-            <section class="project-history-section">
-              <header>
-                <strong>${activeScope === "team" ? escapeHtml(activeGroup?.name || "组项目") : "云端项目"}</strong>
-                <span>${collaborationRecords.length} 个项目</span>
-              </header>
-              <div class="project-history-list">
+      <section class="project-gallery-section" aria-label="${activeScope === "team" ? "小组项目" : "个人项目"}" aria-busy="${state.historyStatus === "loading"}">
+        <header>
+          <h2>${activeScope === "team" ? "小组项目" : "个人项目"}</h2>
+          ${activeScope === "team" ? `
+            <label class="project-gallery-group">
+              <span>当前小组</span>
+              <select data-history-group-select aria-label="当前小组" ${activeGroup ? "" : "disabled"}>
+                ${state.collaboration.teams.map((group) =>
+                  `<option value="${escapeAttr(group.id)}" ${group.id === activeGroup?.id ? "selected" : ""}>${escapeHtml(group.name)}</option>`,
+                ).join("") || '<option value="">暂无小组</option>'}
+              </select>
+            </label>` : ""}
+        </header>
+        ${activeScope === "team" && activeGroup ? `<p class="project-gallery-team-note">组内项目可共同编辑，以最后一次覆盖保存为准。</p>` : ""}
+        ${state.historyStatus === "loading" ? `<div class="project-history-empty" role="status">正在加载项目…</div>` : ""}
+        ${state.historyStatus !== "loading" && !hasRecords ? `
+          <div class="project-history-empty">
+            <span class="project-empty-symbol" aria-hidden="true">+</span>
+            <strong>${activeScope === "team" ? activeGroup ? "小组的第一份创意，从这里开始" : "还没有可用的小组" : "第一份创意，从这里开始"}</strong>
+            <span>${activeScope === "team" && !activeGroup ? "创建小组后，即可共享项目。" : "点击右上角 ＋ 新建，完成编辑后保存到这里。"}</span>
+          </div>` : ""}
+        ${collaborationRecords.length ? `
+              <div class="project-history-grid">
                 ${collaborationRecords
                   .map((record) => {
                     const owner = state.collaboration.users.find(
                       (user) => user.id === record.ownerId,
                     );
                     return `
-                      <article class="project-history-item">
-                        <div>
-                          <strong>${escapeHtml(record.name)}</strong>
-                          <span>${formatHistoryTime(record.updatedAt)}${activeScope === "team" ? ` · ${escapeHtml(owner?.name || "创建者")}` : ""}</span>
-                        </div>
-                        <div class="project-history-actions">
-                          <button type="button" data-restore-collab-record="${escapeAttr(record.id)}">打开编辑</button>
+                      <article class="project-card">
+                        <button type="button" class="project-card-open" data-restore-collab-record="${escapeAttr(record.id)}" aria-label="打开编辑：${escapeAttr(record.name)}">
+                          <span class="project-card-kind"><i></i>${activeScope === "team" ? "共享项目" : "云端项目"}</span>
+                          <span class="project-card-cover">${renderHistoryCover(record.id)}</span>
+                          <span class="project-card-info">
+                            <strong title="${escapeAttr(record.name)}">${escapeHtml(record.name)}</strong>
+                            <span>更新于 ${formatHistoryTime(record.updatedAt)}</span>
+                            ${activeScope === "team" && owner?.name ? `<span class="project-card-owner">创建者 · ${escapeHtml(owner.name)}</span>` : ""}
+                          </span>
+                        </button>
+                        <details class="project-card-more" data-history-menu>
+                          <summary aria-label="项目更多操作：${escapeAttr(record.name)}" title="更多操作"><span aria-hidden="true">⋮</span></summary>
+                          <div class="project-card-menu">
                           ${
                             activeScope === "team"
                               ? `<button type="button" data-copy-record-personal="${escapeAttr(record.id)}">复制到个人</button>`
                               : state.collaboration.teams.length
                                 ? `
+                                  <span class="project-menu-caption">复制到小组</span>
                                   <select data-copy-record-group="${escapeAttr(record.id)}" aria-label="复制目标组">
                                     ${state.collaboration.teams
                                       .map(
@@ -7401,18 +7543,29 @@ function renderProjectHistory() {
                                 `
                                 : ""
                           }
-                          ${activeScope === "personal" && record.projectId ? `<button type="button" data-delete-project="${escapeAttr(record.projectId)}" aria-label="删除项目">删除</button>` : ""}
-                        </div>
+                          ${activeScope === "personal" ? `<button type="button" class="is-danger" data-delete-project="${escapeAttr(record.id)}" aria-label="删除项目">删除项目</button>` : ""}
+                          </div>
+                        </details>
                       </article>
                     `;
                   })
                   .join("")}
               </div>
-            </section>
-          `
-          : ""
-      }
+          ` : ""}
+      </section>
       ${renderHistoryPagination(state.historyPage)}
+      <nav class="project-gallery-switch" role="tablist" aria-label="项目范围">
+        <button type="button" class="${activeScope === "personal" ? "active" : ""}" data-history-scope="personal" role="tab" aria-selected="${activeScope === "personal"}">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="7" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2Z"/></svg>
+          <span>个人项目</span><i aria-hidden="true"></i>
+        </button>
+        <span class="project-switch-divider" aria-hidden="true"></span>
+        <button type="button" class="${activeScope === "team" ? "active" : ""}" data-history-scope="team" role="tab" aria-selected="${activeScope === "team"}">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M6 20v-2a6 6 0 0 1 12 0v2ZM19 5a3 3 0 0 1 0 6m1 3a5 5 0 0 1 3 4M5 5a3 3 0 0 0 0 6m-1 3a5 5 0 0 0-3 4"/></svg>
+          <span>小组项目</span><i aria-hidden="true"></i>
+        </button>
+      </nav>
+      ${state.prdFileModalOpen ? renderPrdFileModal() : ""}
     </div>
   `;
 }
@@ -7936,7 +8089,48 @@ function refreshResourceGlobalControls(propKey, value) {
   });
 }
 
+function rebuildActivityPages(generate) {
+  const existing = state.pages;
+  const baseline = state.generatedPageBaseline;
+  const previous = {
+    activePageId: state.activePageId,
+    selectedDimension: state.selectedDimension,
+    visible: state.guidedVisiblePageIds,
+    companions: state.guidedVisibleCompanionNodeIds,
+    templateId: state.currentTemplateId,
+  };
+  generate();
+  const generated = clone(state.pages);
+  state.pages = reconcileGeneratedPages(existing, baseline, generated);
+  state.generatedPageBaseline = generated;
+  const ids = new Set(state.pages.map((page) => page.id));
+  if (ids.has(previous.activePageId)) {
+    state.activePageId = previous.activePageId;
+    state.selectedDimension = previous.selectedDimension;
+  } else {
+    state.activePageId = state.pages[0]?.id || "";
+    state.selectedDimension = state.pages[0]?.dimension || "";
+  }
+  if (existing.length) {
+    const oldIds = new Set(existing.map((page) => page.id));
+    state.guidedVisiblePageIds = [
+      ...(previous.visible || []).filter((id) => ids.has(id)),
+      ...state.pages.filter((page) => !oldIds.has(page.id)).map((page) => page.id),
+    ];
+    const nodeIds = new Set(state.pages.flatMap((page) => (page.nodes || []).map((node) => node.id)));
+    state.guidedVisibleCompanionNodeIds = (previous.companions || []).filter((id) => nodeIds.has(id));
+  } else {
+    // Raw generation IDs can change during reconciliation of legacy content.
+    state.guidedVisiblePageIds = state.pages.map((page) => page.id);
+  }
+  state.currentTemplateId = previous.templateId || state.pages.find((page) => page.sourcePageTemplateId)?.sourcePageTemplateId || null;
+}
+
 function buildResourceGeneratedActivity() {
+  rebuildActivityPages(generateResourceActivityPages);
+}
+
+function generateResourceActivityPages() {
   const level = getResourceLevelConfig();
   const draft = getResourceDraft();
   const defaultTheme = getGuidedThemePreset("pink") || guidedPageThemePresets[0];
@@ -7991,7 +8185,7 @@ function buildResourceGeneratedActivity() {
 }
 
 function renderSaveScopeModal() {
-  const currentProjectName = String(state.activity?.name || "").trim();
+  const currentProjectName = getCurrentProjectName().trim();
   const projectName =
     currentProjectName === "未命名活动" ? "" : currentProjectName;
   const currentRecord = state.historyCollaborationRecordId
@@ -8000,7 +8194,7 @@ function renderSaveScopeModal() {
       )
     : null;
   const hasCurrentHistory =
-    Boolean(state.historyCurrentProjectId) || Boolean(currentRecord);
+    Boolean(state.historyCollaborationRecordId || state.historyCurrentProjectId) || Boolean(currentRecord);
   const currentLocation = currentRecord?.scope === "team"
     ? getGroupById(currentRecord.teamId)?.name || "当前组"
     : "个人项目";
@@ -8087,8 +8281,7 @@ function applyRequiredSaveProjectName() {
     input?.focus();
     return false;
   }
-  state.activity ||= {};
-  state.activity.name = projectName;
+  setCurrentProjectName(projectName);
   return true;
 }
 
@@ -11556,6 +11749,11 @@ function syncGuidedInlineEditToSource(found, variantId, path, value) {
   const sourcePath = found?.parent
     ? `${found.parent.children.indexOf(found.node)}.${path}`
     : path;
+  if (sourceNode.sourceResourceSlotId) {
+    return syncResourceDraftField(state.resourceDrafts, state.resourceLevel,
+      sourceNode.sourceResourceSlotId, variantId || sourceNode.activeLineageVariantId,
+      sourcePath, value);
+  }
   if (sourceNode.schemaId === "S级-中秋头图") {
     if (syncPageTemplateInlineEditToRows(sourceNode, variantId, sourcePath, value)) {
       if (!variantId || variantId === "base") {
@@ -11575,10 +11773,10 @@ function getPageTemplateVariableBlueprintFromRows(rows = []) {
   const inferredTaskCountsByModule = new Map();
   normalizePrdTableRows(rows).forEach((row) => {
     const parsed = parsePageTemplateVariableRowKey(row.key);
-    const value = String(row.value || "").trim();
+    const value = String(row.value ?? "");
     const parsedVersion = parsePageTemplateVariableVersionRowKey(row.key);
     const parsedRow = parsed || parsedVersion;
-    if (!parsedRow || !value) return;
+    if (!parsedRow) return;
     if (parsed) blueprint[getPageBlueprintKey(parsed.moduleIndex, parsed.compoundKey)] = value;
     const explicitTaskCount = parsedRow.compoundKey === "taskCount" ? Number(value) : 0;
     const taskChildMatch = String(parsedRow.compoundKey || "").match(/^(\d+)\.(?:taskTitle|showNewTag|taskSubtitle|rewardCountText|completionText)$/);
@@ -15624,6 +15822,10 @@ function renderBlueprintStateTables(tableContexts, isShared) {
 }
 
 function buildDemoGeneratedActivity() {
+  rebuildActivityPages(generateDemoActivityPages);
+}
+
+function generateDemoActivityPages() {
   const selectedTheme = getGuidedThemePreset(state.guidedPageThemeId || "pink") ||
     getGuidedThemePreset("pink") || guidedPageThemePresets[0];
   const isTimePackage = state.selectedDemoPackageId === demoTimeActivityPackage.id;
@@ -16174,6 +16376,7 @@ function createGuidedHeaderNodeForLevel(levelId, sourceNode = {}, options = {}) 
     "sourceInputScope",
     "sourcePageTemplateId",
     "sourcePageTemplateNodeIndex",
+    "sourcePageTemplateNodeKey",
     "moduleGroupId",
     "canvasPlacement",
     "isBlueprintInserted",
@@ -16217,6 +16420,7 @@ function replaceGuidedHeaderNodeOnPage(page, sourceHeaderId, levelId, templateSo
     "sourceInputScope",
     "sourcePageTemplateId",
     "sourcePageTemplateNodeIndex",
+    "sourcePageTemplateNodeKey",
     "moduleGroupId",
     "canvasPlacement",
     "isBlueprintInserted",
@@ -19965,6 +20169,7 @@ function applyLineageVariantToNode(target, variant) {
     sourceInputScope: target.sourceInputScope,
     sourcePageTemplateId: target.sourcePageTemplateId,
     sourcePageTemplateNodeIndex: target.sourcePageTemplateNodeIndex,
+    sourcePageTemplateNodeKey: target.sourcePageTemplateNodeKey,
     moduleGroupId: target.moduleGroupId,
     moduleGroupRole: target.moduleGroupRole,
     canvasPlacement: target.canvasPlacement,
@@ -20345,6 +20550,7 @@ function createGuidedModuleReplacement(optionId, found) {
     sourceInputScope: found.node.sourceInputScope,
     sourcePageTemplateId: found.node.sourcePageTemplateId,
     sourcePageTemplateNodeIndex: found.node.sourcePageTemplateNodeIndex,
+    sourcePageTemplateNodeKey: found.node.sourcePageTemplateNodeKey,
     canvasPlacement: found.node.canvasPlacement,
   };
   if (optionId.startsWith("content:")) {
@@ -24334,6 +24540,7 @@ function showCode(title, code) {
 }
 
 function render() {
+  scheduleHistoryDraftBackup();
   document.body.dataset.view = state.view;
   const appShell = $(".app-shell");
   if (appShell) appShell.dataset.view = state.view;
@@ -24904,7 +25111,30 @@ function bindEvents() {
   });
 
   document.addEventListener("click", async (event) => {
+    const historyMenu = event.target.closest(".project-gallery [data-history-menu]");
+    document.querySelectorAll(".project-gallery [data-history-menu][open]").forEach((menu) => {
+      if (menu !== historyMenu) menu.open = false;
+    });
     if (event.target.closest("[data-placement-case-scrollbar]")) return;
+
+    const localDraftButton = event.target.closest("[data-restore-local-draft]");
+    if (localDraftButton) {
+      const draft = historyRecoveryDrafts.find((item) => item.sessionId === localDraftButton.dataset.restoreLocalDraft);
+      if (!draft || draft.userId !== sessionUser?.id) return;
+      try {
+        applyRestoredProject(draft.snapshot, draft.recordId, null, draft);
+        projectSaveController.resumeDraft(draft);
+        showHistorySaveNotice("已恢复本地编辑。确认内容后点击保存；恢复不会自动覆盖云端");
+      } catch (error) { state.historyError = error.message; render(); }
+      return;
+    }
+    const removeDraftButton = event.target.closest("[data-remove-local-draft]");
+    if (removeDraftButton) {
+      if (!window.confirm("删除此浏览器中的未保存备份？云端记录不受影响。")) return;
+      await projectDraftBackup.remove(sessionUser?.id, removeDraftButton.dataset.removeLocalDraft);
+      await loadRecoverableHistoryDrafts();
+      return;
+    }
 
     if (event.target.closest("[data-open-resource-flow]")) {
       startNewHistorySession();
@@ -26730,6 +26960,9 @@ function bindEvents() {
     }
 
     if (event.target.closest("[data-back-home]")) {
+      flushHistoryDraftBackup();
+      projectSaveController.invalidateLoads();
+      state.historyPage.requestId++;
       if (prdParseTimer) clearTimeout(prdParseTimer);
       state.view = "home";
       state.selectedId = null;
@@ -26752,21 +26985,22 @@ function bindEvents() {
     if (event.target.closest("[data-save-create-group]")) {
       const input = document.querySelector("[data-save-new-group]");
       if (!applyRequiredSaveProjectName()) return;
+      const captured = {
+        capturedInput: { name: getCurrentProjectName(), snapshot: createCurrentProjectSnapshot() },
+        capturedSession: projectSaveController.current(),
+      };
+      const saveMode = captured.capturedSession?.recordId ? "copy" : "auto";
+      const button = pendingManualSaveButton;
+      const capturedModal = document.querySelector("[data-save-scope-modal]");
+      pendingManualSaveButton = null;
       try {
         const nextState = createTeam(state.collaboration, {
           name: input?.value,
         });
         const group = nextState.teams[nextState.teams.length - 1];
         await setCollaborationState(nextState);
-        document.querySelector("[data-save-scope-modal]")?.remove();
-        const button = pendingManualSaveButton;
-        pendingManualSaveButton = null;
-        const saveMode =
-          state.historyCurrentProjectId ||
-          state.historyCollaborationRecordId
-            ? "copy"
-            : "auto";
-        runManualProjectSave(button, "team", group.id, saveMode);
+        capturedModal?.remove();
+        runManualProjectSave(button, "team", group.id, saveMode, captured);
       } catch (error) {
         input?.setCustomValidity(error.message);
         input?.reportValidity();
@@ -27471,7 +27705,7 @@ function bindEvents() {
 
     const resourceActivityName = event.target.closest("[data-resource-activity-name]");
     if (resourceActivityName) {
-      getResourceDraft().activityName = resourceActivityName.value;
+      setCurrentProjectName(resourceActivityName.value);
       return;
     }
 
@@ -27731,6 +27965,7 @@ function bindEvents() {
       } else {
         demoPrdBlueprint[key] = blueprintPrdField.value;
       }
+      if (key === "activityName") setCurrentProjectName(blueprintPrdField.value);
       return;
     }
 
@@ -27897,6 +28132,9 @@ function bindEvents() {
         state.prdTableRows[rowIndex].value = prdTableRowInput.type === "checkbox"
           ? (prdTableRowInput.checked ? "true" : "")
           : prdTableRowInput.value;
+        if (/^(活动名称|名称)$/.test(rowKey)) {
+          setCurrentProjectName(state.prdTableRows[rowIndex].value);
+        }
         syncBigdayCouponSharedStateField(
           rowKey,
           state.prdTableRows[rowIndex].value,
@@ -28150,7 +28388,7 @@ function bindEvents() {
     const prop = event.target.closest("[data-edit-prop]");
     const variantProp = event.target.closest("[data-variant-prop]");
     const editingNodeId = prop?.closest("[data-node-id]")?.dataset.nodeId;
-    const found = findNode(state.nodes, editingNodeId || state.selectedId);
+    const found = findNode(state.pages.flatMap((page) => page.nodes || []), editingNodeId || state.selectedId);
     if (!found) return;
 
     if (prop) {
@@ -28227,7 +28465,7 @@ function bindEvents() {
     const variantProp = event.target.closest("[data-variant-prop]");
     const propKey = prop?.dataset.editProp || variantProp?.dataset.variantProp;
     const editingNodeId = (prop || variantProp)?.closest("[data-node-id]")?.dataset.nodeId;
-    const found = findNode(state.nodes, editingNodeId || state.selectedId);
+    const found = findNode(state.pages.flatMap((page) => page.nodes || []), editingNodeId || state.selectedId);
     if (!found?.node || !shouldRefreshGuidedReactEditable(found.node, propKey, event)) return;
     const target = prop || variantProp;
     const popupPrizePreview = target.closest("[data-guided-popup-prize-preview]");
@@ -28970,8 +29208,29 @@ function bindEvents() {
     }
   });
 
-  document.addEventListener("keydown", (event) => {
-    if (event.code === "Space" && !event.repeat && !event.target.closest("input, textarea, select, [contenteditable='true']")) {
+  document.addEventListener("keydown", async (event) => {
+    const galleryTab = event.target.closest(".project-gallery-switch [data-history-scope]");
+    if (galleryTab && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      event.preventDefault();
+      const scope = event.key === "Home" ? "personal" : event.key === "End" ? "team"
+        : galleryTab.dataset.historyScope === "personal" ? "team" : "personal";
+      state.historyScope = scope;
+      await loadHistoryRecordPage();
+      if (state.view === "mine" && state.historyScope === scope) {
+        document.querySelector(`.project-gallery-switch [data-history-scope="${scope}"]`)?.focus();
+      }
+      return;
+    }
+    if (event.key === "Escape") {
+      const historyMenu = document.querySelector(".project-gallery [data-history-menu][open]");
+      if (historyMenu) {
+        historyMenu.open = false;
+        historyMenu.querySelector("summary")?.focus();
+        event.preventDefault();
+        return;
+      }
+    }
+    if (event.code === "Space" && !event.repeat && !event.target.closest("input, textarea, select, button, a, summary, [role='tab'], [contenteditable='true']")) {
       state.spaceDown = true;
       event.preventDefault();
       return;
@@ -29340,6 +29599,28 @@ function mount() {
     </main>
   `;
   bindEvents();
+  ["input", "change", "click"].forEach((type) => {
+    document.addEventListener(type, scheduleHistoryDraftBackup);
+  });
+  window.addEventListener("pagehide", flushHistoryDraftBackup);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushHistoryDraftBackup();
+  });
+  window.addEventListener("message", async (event) => {
+    if (event.origin !== window.location.origin || event.source !== historyReauthPopup ||
+      event.data?.type !== "history-reauth-complete") return;
+    try {
+      const user = await getCurrentUser();
+      if (user.id !== projectSaveController.current()?.userId) {
+        showHistorySaveNotice("登录账号与当前编辑账号不同，请切回原账号", true);
+        return;
+      }
+      sessionUser = user;
+      state.historyUser = user;
+      historyReauthPopup?.close();
+      showHistorySaveNotice("登录已恢复，当前编辑内容已保留。点击保存继续");
+    } catch (error) { showHistorySaveNotice(error.message, true, error.requestId); }
+  });
   state.adminUnlocked = false;
   lockAdminAccess().catch((error) => {
     console.warn("后台解锁状态清理失败", error);

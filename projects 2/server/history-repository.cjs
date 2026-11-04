@@ -1,4 +1,6 @@
 const { readPagination, paginateQuery, pageResult } = require("./list-pagination.cjs");
+const { createProjectRecordRepository } = require("./project-record-repository.cjs");
+const { createProjectUploadRepository } = require("./project-record-upload.cjs");
 
 class HistoryRepositoryError extends Error {
   constructor(code, message, cause) {
@@ -36,6 +38,7 @@ function mapProject(row) {
     latestVersionId: row.latest_version_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    revision: Number(row.revision || 1),
   };
 }
 
@@ -54,29 +57,14 @@ function mapVersion(row, includeSnapshot = false) {
 }
 
 function createHistoryRepository(supabase) {
+  const records = createProjectRecordRepository(supabase);
   async function getOwnedProject(ownerId, projectId) {
-    const { data, error } = await supabase
-      .from("projects")
-      .select(
-        "id,owner_id,name,prd_url,template_id,latest_version_id,created_at,updated_at,deleted_at",
-      )
-      .eq("id", projectId)
-      .maybeSingle();
-
-    if (error) throw storageError(error);
-    if (!data || data.deleted_at) {
-      throw new HistoryRepositoryError(
-        "PROJECT_NOT_FOUND",
-        "Project not found",
-      );
+    try {
+      return await records.getRecord({ id: ownerId }, projectId);
+    } catch (error) {
+      const code = { RECORD_NOT_FOUND: "PROJECT_NOT_FOUND", RECORD_FORBIDDEN: "PROJECT_FORBIDDEN" }[error.code];
+      throw code ? new HistoryRepositoryError(code, error.message, error) : error;
     }
-    if (data.owner_id !== ownerId) {
-      throw new HistoryRepositoryError(
-        "PROJECT_FORBIDDEN",
-        "Project belongs to another user",
-      );
-    }
-    return data;
   }
 
   async function listProjects(ownerId, options = {}) {
@@ -85,16 +73,18 @@ function createHistoryRepository(supabase) {
       throw new HistoryRepositoryError("INVALID_PAGINATION", "分页参数无效");
     }
     const query = supabase
-      .from("projects")
+      .from("project_records")
       .select(
-        "id,name,prd_url,template_id,latest_version_id,created_at,updated_at",
+        "id,name,version_id,revision,created_at,updated_at",
       )
       .eq("owner_id", ownerId)
       .is("deleted_at", null);
     const { data, error } = await paginateQuery(query, pagination);
 
     if (error) throw storageError(error);
-    const page = pageResult(data || [], pagination.limit, mapProject);
+    const page = pageResult(data || [], pagination.limit, (row) => mapProject({
+      ...row, latest_version_id: row.version_id,
+    }));
     return { projects: page.items, hasMore: page.hasMore, nextCursor: page.nextCursor };
   }
 
@@ -120,7 +110,7 @@ function createHistoryRepository(supabase) {
   }
 
   async function listVersions(ownerId, projectId) {
-    await getOwnedProject(ownerId, projectId);
+    const record = await getOwnedProject(ownerId, projectId);
     const { data, error } = await supabase
       .from("project_versions")
       .select(
@@ -132,11 +122,23 @@ function createHistoryRepository(supabase) {
       .limit(100);
 
     if (error) throw storageError(error);
-    return (data || []).map((row) => mapVersion(row));
+    const latest = {
+      id: record.versionId, projectId, versionNo: record.revision, saveType: "manual",
+      schemaVersion: record.snapshot.schemaVersion, appVersion: record.snapshot.appVersion || "",
+      createdAt: record.updatedAt,
+    };
+    return [latest, ...(data || []).filter((row) => row.id !== latest.id).map((row) => mapVersion(row))];
   }
 
   async function getVersion(ownerId, projectId, versionId) {
-    await getOwnedProject(ownerId, projectId);
+    const record = await getOwnedProject(ownerId, projectId);
+    if (record.versionId === versionId) {
+      return {
+        id: versionId, projectId, versionNo: record.revision, saveType: "manual",
+        schemaVersion: record.snapshot.schemaVersion, appVersion: record.snapshot.appVersion || "",
+        createdAt: record.updatedAt, snapshot: record.snapshot,
+      };
+    }
     const { data, error } = await supabase
       .from("project_versions")
       .select(
@@ -157,21 +159,12 @@ function createHistoryRepository(supabase) {
   }
 
   async function deleteProject(ownerId, projectId) {
-    await getOwnedProject(ownerId, projectId);
-    const { error } = await supabase
-      .from("projects")
-      .update({
-        deleted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", projectId)
-      .eq("owner_id", ownerId)
-      .is("deleted_at", null);
-
-    if (error) throw storageError(error);
+    await records.deleteRecord({ id: ownerId }, projectId);
   }
 
   return {
+    ...records,
+    ...createProjectUploadRepository(supabase, records),
     createProject,
     deleteProject,
     getVersion,

@@ -49,8 +49,8 @@ function themedIconSvg(iconGradientStart?: string, iconGradientEnd?: string) {
 }
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
-  const amountText = String(props.amountText || '600').replace(/\s*元\s*$/, '')
-  const actionText = props.actionText || '立即使用'
+  const amountText = String(props.amountText ?? '600').replace(/\s*元\s*$/, '')
+  const actionText = props.actionText ?? '立即使用'
   const hideExportMetaNumbers = Boolean(props.hideExportMetaNumbers)
   const iconSvg = themedIconSvg(props.iconGradientStart, props.iconGradientEnd)
   const contentStyle =

@@ -1,251 +1,117 @@
-# 用户项目历史协作契约
+# 项目存档协议
 
-## 目标
+版本：2026-11-04。需求依据：[历史记录重建方案与验收](../../../历史记录重建方案与验收.md)。本协议描述目标与接口，不代表整体或线上验收已经通过。
 
-用户完成飞书登录后，可以保存当前活动项目，并在“我的”中查看和恢复历史版本。
-前端部署更新后，原有 PRD 输入、蓝图变量、页面结构和组件状态仍可恢复。
+## 保存与覆盖
 
-## 职责边界
+个人项目与公共组项目使用同一个完整内容协议和存储入口。新保存写入 `project_records`，一条记录保留一份当前完整快照；重复覆盖不增加项目条数，不逐次存储大快照版本。
 
-### 线上 Agent
+每次保存固定点击时的项目 ID、编辑会话和内容。只有服务端事务提交成功才能提示“已保存”。保存后切换项目，迟到的响应只能确认原项目的保存，不能更改当前项目的身份或内容。
 
-- 从部署平台的可信登录会话中解析当前用户。
-- 实现项目和版本数据库表。
-- 实现本文件定义的 `/api/me`、`/api/projects` 和版本 API。
-- 所有读写操作在服务端校验 `owner_id`。
-- 提供数据库迁移、线上环境变量和部署配置。
+公共组的任一获准登录用户均可覆盖。**以服务端最后成功提交的内容为最新内容**，不依据打开时间或 `baseUpdatedAt` 拒绝记录覆盖。`revision` 在每条记录内部递增。组名称修改仍使用其独立的更新时间校验。
 
-### 本地 Agent
+同一次保存使用固定的 `operationId`。相同操作重试返回原来的提交回执，不重复创建，也不把旧内容再次覆盖到后来提交的新内容。使用同一个标识发送不同内容会返回 `OPERATION_MISMATCH`。新的主动覆盖使用新的操作标识。
 
-- 实现项目快照创建、校验、迁移和恢复。
-- 实现用户主动触发的手动保存和失败重试。
-- 实现“我的”项目与版本列表。
-- 接入本文件定义的 API。
+## 权限与删除
 
-## 身份约束
+身份来自可信飞书登录 Session；正文中的 `ownerId`、管理员声明、查询参数与用户自定义身份请求头均不能授权访问。
 
-服务端必须从可信 Session、JWT 或部署平台上下文中取得用户标识。
-禁止使用请求正文或查询参数中的 `owner_id` 作为身份依据。
+新客户端保存及各上传请求的 `X-Project-User` 只作编辑账号一致性检查，不提供授权；与可信 Session 的 ID 不一致时返回 `ACCOUNT_CHANGED`（401），保留原账号的待确认命令并阻止写入。这样账号切换不会将旧请求变成另一个用户的新覆盖。
 
-用户标识优先级：
+个人记录仅归属用户可读写；公共组记录按既有共享规则允许登录用户读写。后台密码解锁的管理员可以管理个人记录。复制创建独立记录，保存位置变化采用另存，不隐式移动原记录。
 
-1. 部署平台提供的稳定内部用户 ID
-2. 飞书 `union_id`
-3. 当前飞书应用内稳定的 `open_id`
+删除留下记录 ID 的删除标记，所有旧页覆盖、旧创建命令和原回执重试都不能复活该 ID。当前编辑内容可以使用新 ID 另存。删除操作与保存使用同一条记录的锁。
 
-`GET /api/me` 响应：
+## 数据与容量
 
-```json
-{
-  "success": true,
-  "data": {
-    "id": "stable-user-id",
-    "name": "用户显示名",
-    "avatarUrl": ""
-  }
-}
-```
+`project_records` 是当前内容的权威来源，字段包括 ID、归属、名称、共享范围、完整快照、修订号、提交人、时间及删除标记。
 
-未登录统一返回 HTTP `401`。
+`project_save_receipts` 仅保存操作摘要、内容指纹和原提交回执。它没有完整快照，保留这些小回执是为了长期识别旧请求重试。
 
-本地代码通过环境变量接入线上身份适配器：
+`project_save_chunks` 保存上传中的暂存分片，支持请求落到不同 FaaS 实例。成功后清理，未完成内容在24小时后过期，并在后续分片写入时清理。暂存超时不等于编辑内容丢失，客户端可以重新上传原命令。
 
-```text
-PROJECT_HISTORY_AUTH_ADAPTER=server/deployment-auth.cjs
-```
+产品不设累计项目条数上限。列表分页只读摘要，不下载大快照；数据库实际磁盘、账单或平台配额仍需部署环境核查。
 
-该模块必须导出 `async resolveUser(req)`，返回 `{ id, name, avatarUrl }` 或未登录时返回
-`null`。`id` 必须来自部署平台已校验的 Session/JWT 上下文；禁止读取前端可伪造的
-`X-User-Id`、请求正文或查询参数。未配置适配器时历史 API 返回 HTTP `503`
-和 `IDENTITY_UNAVAILABLE`，不会降级为不安全身份。
+本次服务器快照上限为 `32×1024×1024` 字节，按 UTF-8 JSON 计算；请求解析上限为40MiB。上传分片最大256KiB，最多160片，允许 gzip 或原始 UTF-8。客户端应优先用小分片传输较大内容，避免部署网关的大请求限制。超限或网络失败必须保留当前编辑并明确提示，不能将本地备份显示成云端成功。
 
-## 数据表
+浏览器完整备份和列表缓存不是云端保存的先决条件。浏览器容量不足不能把已提交的云端保存改判为失败。
 
-### projects
+## 完整内容与恢复
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| id | uuid | 项目 ID |
-| owner_id | text | 服务端解析的稳定用户 ID |
-| name | text | 活动名称 |
-| prd_url | text | 原始 PRD 链接 |
-| template_id | text | 页面模板 ID |
-| latest_version_id | uuid | 最新正式版本 |
-| created_at | timestamptz | 创建时间 |
-| updated_at | timestamptz | 更新时间 |
-| deleted_at | timestamptz nullable | 软删除时间 |
+保存会场与资源位的所有影响内容和导出的字段：PRD、名称、主题与自定义颜色、页面结构、人群、状态、节点与变体、手动换行与空值、奖品原始身份与数值、排序与增删、资源位独立版本、业务配置以及所引用模板。
 
-索引：`(owner_id, updated_at desc)`。
+恢复读取云端当前详情；列表摘要和浏览器缓存不能作为恢复的完整数据。先在临时对象中迁移、校验，再应用整个编辑会话。失败不得留下半恢复状态。快速打开不同记录时仅最新仍有效的打开请求可以应用。
 
-### project_versions
+同 ID 模板也必须使用存档内容，不能只因当前模板库存在该 ID 就忽略保存的定义。模板恢复应限于当前项目，避免污染其他新建项目。
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| id | uuid | 版本 ID |
-| project_id | uuid | 所属项目 |
-| version_no | integer | 项目内递增版本号 |
-| save_type | text | 新版本固定为 `manual`；旧 `autosave` 数据不再展示 |
-| schema_version | integer | 快照结构版本 |
-| app_version | text | 保存时应用版本 |
-| snapshot_json | jsonb | 完整项目快照 |
-| snapshot_saved_at | timestamptz | 客户端生成快照的时间 |
-| created_at | timestamptz | 保存时间 |
+schema 3 包含三个活动来源、上一份生成页面基线、资源位独立版本与工作区选择。恢复前校验页面、节点、编辑集合、活动来源及模板定义；应用或渲染失败回滚当前编辑状态和模板。记录详情加载与当前编辑会话采用有效请求隔离。
 
-约束：`(project_id, version_no)` 唯一。
+模板模块以 `historyNodeKey`／`sourcePageTemplateNodeKey` 保持身份，排序与插入时身份随模块移动。生成页面按当前编辑、前次基线及新表格结果合并；表格真正改动的字段及顺序更新，未被表格改变的预览编辑和手动空值保留。旧节点在首次重建时按来源索引和类型补身份。
 
-首次保存创建项目与一个正式快照；“覆盖当前记录”更新现有快照，不新增版本。
-“另存副本”创建独立记录。旧版本仍可查询，但本功能不是逐次保存的版本时间线。
-同一客户端串行提交保存请求，云端确认成功后才显示“已保存”。
+临时弹窗、拖拽过程、选中框、加载状态等不作为项目业务内容。预览、返回表格与再次进入预览须保持用户数据，最终切图内容与重开后的预览一致。
 
-## 快照格式
+## 统一 API
+
+| 方法与路径 | 用途 |
+| --- | --- |
+| GET `/api/me` | 当前可信用户 |
+| GET `/api/project-records?scope=personal\|team&teamId=&limit=&cursor=` | 分页摘要；管理范围 `all` 需后台解锁 |
+| GET `/api/project-records/:id` | 当前完整详情 |
+| PUT `/api/project-records/:id` | 完整提交 |
+| PUT `/api/project-records/:id/uploads/:operationId/:partIndex` | 暂存小分片 |
+| POST `/api/project-records/:id/uploads/:operationId/commit` | 组装、校验并提交原命令 |
+| DELETE `/api/project-records/:id` | 软删除 |
+
+客户端为首次保存生成稳定的记录 ID，并传 `create:true`；已有记录覆盖传 `create:false`。提交正文为：
 
 ```json
 {
-  "schemaVersion": 1,
-  "appVersion": "0.1.0",
-  "savedAt": "ISO-8601",
-  "source": {
-    "prdUrl": "",
-    "prdText": "",
-    "templateName": ""
-  },
-  "editor": {
-    "activity": {},
-    "pages": [],
-    "currentTemplateId": "",
-    "activePageId": "",
-    "selectedDimension": "",
-    "selectedDemoPackageId": "",
-    "prdTableRows": [],
-    "prdTableBlueprint": {},
-    "prdTableBlueprintSignature": "",
-    "prdBlueprintPasteRows": [],
-    "prdBlueprintPasteTemplateName": "",
-    "prdBlueprintPasteVersions": [],
-    "prdBlueprintPasteModuleVersions": {},
-    "prdManualModuleVersions": {},
-    "pageTemplateBlueprintStates": {},
-    "pageTemplateChildStates": {},
-    "guidedHeaderLevelId": "",
-    "guidedHeaderLevelDrafts": {},
-    "guidedHeaderDefaultPageSnapshots": {},
-    "guidedLotteryPrizeOverrides": {}
-  },
-  "templates": {
-    "activePageTemplate": {},
-    "referencedPageTemplates": [],
-    "referencedMoleculeTemplates": []
-  },
-  "resume": {
-    "stage": "blueprint"
-  }
+  "operationId": "UUID",
+  "create": false,
+  "name": "项目名称",
+  "snapshot": {},
+  "scope": "personal",
+  "teamId": null
 }
 ```
 
-`templates` 保存当前活动实际引用的模板定义，避免平台更新或模板删除后历史项目无法恢复。
-`resume` 只保存恢复工作所需的轻量 UI 上下文；当前阶段仅允许 `blueprint` 或 `preview`。
+分片上传传 `{totalParts, encoding, data}`，`data` 是连续字节片段的 base64。被分片的字节内容是上述整个命令的 UTF-8 JSON（可先 gzip），其中操作标识必须与 URL 相同。
 
-不保存弹窗开关、拖拽状态、选中框、滚动位置、加载状态和错误提示等临时 UI 状态。
+成功返回 `{success:true,data:{record:摘要,replayed:布尔}}`。摘要的修订号与时间是该操作自己的回执；重试旧成功请求时不代表该修订仍是云端最新。
 
-## API
+读写返回 `Cache-Control:no-store`。错误返回 `code`、用户可读说明及 `requestId`，并以 `X-Request-Id` 关联服务端日志。区分未登录401、无权限403、已删除404、操作标识不一致409、超限413及服务异常503。
 
-### 查询项目
+旧 `/api/projects`、版本读取及 `/api/collaboration` 接口保留为兼容适配器，记录读写均使用统一服务。旧版本内容只读自保留的原表；当前版本读取统一快照。旧接口无法替没有操作标识的旧客户端承诺提交去重，应刷新使用新客户端。
 
-`GET /api/projects`
+## 登录与异常恢复
 
-只返回当前用户且未删除的项目，按 `updated_at desc` 排序。
+登录 Session 存入 Supabase，cookie 与持久化过期策略统一为30天；活动请求续期，已有7天会话在活动时升级。真正过期时保持编辑内容，重新登录后继续手动保存。不得为保存失败跳转而丢失整个当前会话。
 
-### 创建项目
+断网、超时、重新登录和响应丢失后，能够恢复或重试原命令。项目切换和用户账户变化必须隔离备份与异步响应。
 
-`POST /api/projects`
+浏览器通过 IndexedDB 按账号和编辑会话备份未确认内容及原命令；“我的→恢复编辑”不自动写云端。未知提交结果保留原 operationId；明确格式、容量或权限拒绝后清除该重试命令，同时保留可编辑备份。只有成功提交才把首次生成的 ID 当作云端已存在记录。
 
-```json
-{
-  "name": "活动名称",
-  "prdUrl": "",
-  "templateId": "",
-  "snapshot": {}
-}
-```
+重新登录在独立窗口完成并通过同源消息回到原编辑页，保存前检查原账号一致。隔离测试使用模拟 OAuth；真实平台的弹窗、回调与会话仍须上线验证。
 
-创建项目并生成第一个手动版本。
+## 迁移与部署
 
-### 覆盖当前项目
+先在**实际目标库**执行原有历史、协作、Session 与一致性迁移，再依次执行：
 
-`PATCH /api/projects/:projectId`
+1. `supabase/migrations/202611040001_unified_project_records.sql`
+2. `supabase/migrations/202611040002_project_record_uploads.sql`
 
-```json
-{
-  "name": "活动名称",
-  "prdUrl": "",
-  "templateId": "",
-  "baseUpdatedAt": "打开记录时的云端 updatedAt",
-  "snapshot": {}
-}
-```
+迁移保留原始 `projects`、`project_versions` 与 `collaboration_records` 内容。存档不一致时选择较新的有效快照，保留 ID、归属、共享范围和时间；坏记录保留并标记 `migration_issue`；删除项目迁移为删除标记。重复执行不会覆盖已经统一保存的新内容。
 
-### 查询版本
+随后部署前后端并刷新旧标签页。保留稳定的 `SESSION_SECRET`、`PROJECT_HISTORY_AUTH_ADAPTER`、飞书 OAuth 配置、可信代理配置、部署 URL 和服务端 Supabase 凭据。开发库测试不表示生产库已经迁移。迁移及发布需在原实际发布对象执行，不能把另一个 Coze 环境的开发库或项目当作原生产目标。
 
-`GET /api/projects/:projectId/versions`
+上线前保留数据库备份和旧三张表，记录有效／删除／坏记录数量；上线后核查迁移归属与有效记录恢复。回退服务器版本之前必须评估新表中的新增保存，不能让旧服务器继续写旧表而忽略新表已有数据。
 
-### 读取版本
+## 验证要求
 
-`GET /api/projects/:projectId/versions/:versionId`
+自动检查使用隔离 PostgreSQL，设置 `PGLITE_MODULE_PATH` 和 `FAKE_INDEXEDDB_MODULE_PATH` 后运行 `pnpm test`；未设置时相应检查会跳过，不能宣称其通过。Node 24.19.0 下使用现有依赖运行 `npm test` 是本次本地执行的等价脚本入口。旧数据库测试只验证迁移前的历史基线，新数据库测试验证本协议。
 
-### 删除项目
+真实界面检查脚本及证据位于工作区 `output/history-acceptance`。本次已覆盖会场／资源位编辑、主题、人群／状态、往返、重开与代表 PNG 导出，以及断网、模拟过期登录、多用户覆盖、响应丢失重试、删除另存、乱序恢复和模块增删排序。
 
-`DELETE /api/projects/:projectId`
+容量证据区分：32MiB 为隔离 HTTP 客户端的精确边界测试；低压缩约 6.67MiB 数据验证实际多分片往返；240 条 SQL 记录验证分页样本。上述数字不证明生产磁盘、网关上传／下载限制或总量足够；产品没有条数上限，也不等于部署资源无限。
 
-采用软删除，同时清理关联协作记录，禁止旧缓存重新上传该关联记录。
-
-### 协作记录
-
-`GET /api/collaboration/bootstrap` 返回本人个人记录及全部公共组记录；管理员返回管理范围内的记录。
-`PUT /api/collaboration/sync` 只提交发生修改的 users / teams / records，不回传整份浏览器缓存。
-修改已有组或记录需携带 `baseUpdatedAt`，冲突返回 409，编辑者可以保留当前内容另存副本。
-公共组任何登录成员可编辑；关联项目与协作快照在同一数据库事务内更新。
-创建项目的 POST 接口接受 `scope: personal|team` 和 `teamId`，目标组和快照一起提交。
-
-## 错误码
-
-| HTTP | code | 说明 |
-| --- | --- | --- |
-| 400 | INVALID_SNAPSHOT | 快照格式无效 |
-| 401 | UNAUTHENTICATED | 未登录 |
-| 403 | PROJECT_FORBIDDEN | 项目不属于当前用户 |
-| 404 | PROJECT_NOT_FOUND | 项目或版本不存在 |
-| 409 | VERSION_CONFLICT | 基础版本已过期 |
-| 500 | STORAGE_ERROR | 云端保存失败 |
-
-## 恢复和升级
-
-- 前端恢复前必须执行 `migrateSnapshot(snapshot)`。
-- 数据迁移按 `schemaVersion` 逐级执行，禁止跳版本。
-- 新字段补默认值，字段改名显式转换。
-- 无法识别的组件保留原始节点并展示兼容占位，禁止静默丢弃。
-- 应用部署版本变化不得清空项目数据。
-
-## 验收
-
-1. 同一飞书用户在刷新和重新登录后仍能查看项目。
-2. 不同用户不能读取、修改或删除彼此个人项目；公共组按共享规则可读写。
-3. 恢复后 PRD、蓝图、人群、状态、页面及组件内容一致。
-4. 平台升级后旧 `schemaVersion` 快照可以迁移打开。
-5. 云端保存失败时明确提示用户，网络恢复后可再次手动保存。
-
-## 2026-10-25 上线依赖
-
-- 先在目标数据库执行 `supabase/migrations/202610250001_history_consistency.sql`，
-  再部署对应前后端；开发库、生产库分别执行。迁移依赖前两份历史/协作建表脚本。
-- 本地检查不会自动执行线上迁移。缺少新增 RPC 时保存会明确失败。
-- 迁移会清理已软删除项目对应的协作记录；其他现有项目保持不变。
-- HTTPS 在平台代理层终止时，生产环境默认信任一跳代理；如部署拓扑不同，
-  配置 `TRUST_PROXY_HOPS` 为实际可信代理跳数，禁止将应用端口直接暴露给不可信来源。
-- 继续配置 `PROJECT_HISTORY_AUTH_ADAPTER`、稳定的 `SESSION_SECRET`、
-  `DEPLOY_BASE_URL` 及 Supabase 服务端配置；确认 sessions 表可用。
-- 新前端缓存按用户隔离，不自动导入旧共享缓存。未同步到云端的旧本地草稿，
-  上线前应在原页面打开并另存，避免把其他账号或管理员缓存误上传。
-- 部署后刷新旧标签页，用两个测试账号验收保存、共享编辑冲突、删除、重新登录恢复。
-- 数据库测试：临时安装 `@electric-sql/pglite` 后设置 `PGLITE_MODULE_PATH`
-  为其绝对模块路径，再执行 `node --test server/__tests__/*.test.cjs src/project-history/*.test.js src/collaboration/*.test.js`。
-  未设置时 SQL 集成测试会明确跳过，其余测试照常运行。
+整体交付还必须验证真实用户的编辑→预览→返回→保存→重开→导出，以及线上登录、长停留、多用户覆盖、网络故障和真实平台容量。未部署、未运行或受阻的检查明确列出，不能以本地通过代替线上通过。
