@@ -236,6 +236,57 @@ function migrateV1ToV2(snapshot) {
   return migrated;
 }
 
+function reconcileLegacyTemplateStructure(snapshot) {
+  const definitions = new Map([
+    ...(snapshot.templates?.referencedPageTemplates || []),
+    snapshot.templates?.activePageTemplate,
+  ].filter(Boolean).map((template) => [template.id, template]));
+  const schemaId = (entry) => Array.isArray(entry) ? entry[0] : entry?.schemaId;
+  for (const template of definitions.values()) {
+    // Old saves could serialize an upgraded catalogue alongside a page and
+    // table still using the original indexes. Only complete legacy source
+    // sequences can recover that original structure without guessing.
+    const nodes = snapshot.editor.pages
+      .filter((page) => !page.isSystemFallback && page.sourcePageTemplateId === template.id)
+      .map((page) => page.nodes.filter((node) =>
+        node.sourcePageTemplateId === template.id &&
+        Number.isInteger(node.sourcePageTemplateNodeIndex)))
+      .sort((a, b) => b.length - a.length)[0];
+    if (!nodes?.length || !template.nodes?.length ||
+        nodes.some((node, index) => node.sourcePageTemplateNodeIndex !== index ||
+          node.sourcePageTemplateNodeKey)) continue;
+    const used = new Set();
+    const indexes = nodes.map((node) => {
+      const schemas = new Set([node.schemaId,
+        ...(node.guidedStates || []).map((entry) => entry.node?.schemaId)]);
+      const index = template.nodes.findIndex((entry, i) => !used.has(i) && schemas.has(schemaId(entry)));
+      used.add(index);
+      return index;
+    });
+    if (indexes.includes(-1) ||
+        (indexes.length === template.nodes.length && indexes.every((index, i) => index === i))) continue;
+    const restored = { ...template, nodes: indexes.map((index) => template.nodes[index]) };
+    if (snapshot.templates.activePageTemplate?.id === template.id) {
+      snapshot.templates.activePageTemplate = clone(restored);
+    }
+    snapshot.templates.referencedPageTemplates = (snapshot.templates.referencedPageTemplates || [])
+      .map((entry) => entry.id === template.id ? clone(restored) : entry);
+    snapshot.editor.pageTemplateBlueprintStates ||= {};
+    snapshot.editor.pageTemplateChildStates ||= {};
+    nodes.forEach((node, index) => {
+      const key = `${template.id}|${index}`;
+      if (node.guidedStates?.some((entry) => entry.id === node.activeGuidedStateId)) {
+        snapshot.editor.pageTemplateBlueprintStates[key] ??= node.activeGuidedStateId;
+      }
+      (node.children || []).forEach((child, childIndex) => {
+        if (child.guidedStates?.some((entry) => entry.id === child.activeGuidedStateId)) {
+          snapshot.editor.pageTemplateChildStates[`${key}|${childIndex}`] ??= child.activeGuidedStateId;
+        }
+      });
+    });
+  }
+}
+
 export function migrateProjectSnapshot(snapshot) {
   if (!snapshot || typeof snapshot !== "object") {
     throw new Error("项目快照不存在");
@@ -249,6 +300,9 @@ export function migrateProjectSnapshot(snapshot) {
   }
 
   let migrated = clone(snapshot);
+  // Schema 3 explicitly stores table definitions and generation baselines;
+  // its table may be ahead of the preview and must remain authoritative.
+  if (migrated.schemaVersion < 3) reconcileLegacyTemplateStructure(migrated);
   while (migrated.schemaVersion < SNAPSHOT_SCHEMA_VERSION) {
     if (migrated.schemaVersion === 1) {
       migrated = migrateV1ToV2(migrated);

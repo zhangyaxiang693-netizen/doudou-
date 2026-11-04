@@ -5592,6 +5592,24 @@ function getConsumptionReturnDetailModeRowKey(moduleIndex) {
   ].join("｜");
 }
 
+function findConsumptionReturnMetadataRow(moduleIndex, key, versionName = "") {
+  const canonicalKey = [
+    versionName ? PAGE_TEMPLATE_VARIABLE_VERSION_ROW_PREFIX : PAGE_TEMPLATE_VARIABLE_ROW_PREFIX,
+    String(Number(moduleIndex) + 1),
+    ...(versionName ? [versionName] : []),
+    key,
+  ].join("｜");
+  return state.prdTableRows.find((row) => row.key === canonicalKey) ||
+    state.prdTableRows.find((row) => {
+      const parsed = versionName
+        ? parsePageTemplateVariableVersionRowKey(row.key)
+        : parsePageTemplateVariableRowKey(row.key);
+      return parsed?.moduleIndex === Number(moduleIndex) &&
+        parsed.compoundKey === key &&
+        (!versionName || parsed.versionName === versionName);
+    });
+}
+
 function getConsumptionReturnDetailMode(
   values = new Map(),
   audienceCount = 1,
@@ -7295,6 +7313,22 @@ function restoreSnapshotTemplates(snapshot) {
   projectTemplateOverlay.apply(snapshot);
 }
 
+function initializeRestoredGenerationBaseline() {
+  if (state.generatedPageBaseline || !state.pages.length ||
+      state.workflowType !== "venue" || state.selectedDemoPackageId !== PRD_TABLE_PACKAGE_ID) return;
+  // Establish the old table's generated output before any new edits, so the
+  // first rebuild can apply changed fields while retaining saved preview edits.
+  const restoredState = clone(state);
+  let baseline;
+  try {
+    generateDemoActivityPages();
+    baseline = clone(state.pages);
+  } finally {
+    Object.assign(state, restoredState);
+  }
+  state.generatedPageBaseline = baseline;
+}
+
 function applyRestoredProject(snapshot, projectId, versionId, record = {}) {
   const prepared = {};
   const migrated = applyProjectSnapshot(prepared, snapshot);
@@ -7315,6 +7349,7 @@ function applyRestoredProject(snapshot, projectId, versionId, record = {}) {
         : migrated.resume?.stage === "preview" ? "guided-preview"
         : prepared.workflowType === "resource" ? "resource-blueprint" : "prd-demo",
     });
+    if (snapshot.schemaVersion < 3) initializeRestoredGenerationBaseline();
     render();
     projectSaveController.start({ userId: sessionUser?.id, recordId: projectId, scope: record.scope, teamId: record.teamId });
     if (projectId) projectSaveController.current().savedContentKey = projectContentKey(migrated);
@@ -11527,8 +11562,8 @@ function syncConsumptionReturnSharedStateField(rowKey, value, sourceTemplateId =
   const states = PAGE_TEMPLATE_BUSINESS_STATES[schemaId]?.states || [];
   const propKey = parsed.compoundKey.split(".").pop();
   if (states.some((entry) => (entry.lockedPropKeys || []).includes(propKey))) return false;
-  const modeRow = state.prdTableRows.find(
-    (row) => row.key === getConsumptionReturnDetailModeRowKey(parsed.moduleIndex),
+  const modeRow = findConsumptionReturnMetadataRow(
+    parsed.moduleIndex, CONSUMPTION_RETURN_DETAIL_MODE_KEY,
   );
   const versionCount = getManualModuleBlueprintVersions(
     getPageTemplateVersionModuleKey(templateId, parsed.moduleIndex),
@@ -11649,8 +11684,8 @@ function isConsumptionReturnDetailShared(sourceNode, path) {
   }
   const moduleIndex = Number(sourceNode.sourcePageTemplateNodeIndex);
   if (!Number.isInteger(moduleIndex)) return false;
-  const modeRow = state.prdTableRows.find(
-    (row) => row.key === getConsumptionReturnDetailModeRowKey(moduleIndex),
+  const modeRow = findConsumptionReturnMetadataRow(
+    moduleIndex, CONSUMPTION_RETURN_DETAIL_MODE_KEY,
   );
   return modeRow?.value === CONSUMPTION_RETURN_DETAIL_MODE_SHARED;
 }
@@ -13198,9 +13233,8 @@ function renderModuleBoundBlueprintVersionMatrix(group) {
   const standardSections = indexedSections.filter(
     ({ section, sectionIndex }) => sectionIndex !== returnSection?.sectionIndex,
   );
-  const detailModeRow = state.prdTableRows.find(
-    (row) =>
-      row.key === getConsumptionReturnDetailModeRowKey(group.moduleIndex),
+  const detailModeRow = findConsumptionReturnMetadataRow(
+    group.moduleIndex, CONSUMPTION_RETURN_DETAIL_MODE_KEY,
   );
   const detailMode = getConsumptionReturnDetailMode(
     new Map([
@@ -13317,12 +13351,10 @@ function renderConsumptionReturnBlueprintMatrix(
     return value === "抽奖" || value === "抽奖任务";
   };
   const getVersionTierCount = (version) => {
-    const explicitTierRowKey = getConsumptionReturnTierCountRowKey(
+    const explicitTierRow = findConsumptionReturnMetadataRow(
       group.moduleIndex,
+      CONSUMPTION_RETURN_TIER_COUNT_KEY,
       version.isManual ? version.name : "",
-    );
-    const explicitTierRow = state.prdTableRows.find(
-      (row) => row.key === explicitTierRowKey,
     );
     const explicitTierCount = Number(explicitTierRow?.value);
     if ([3, 4].includes(explicitTierCount)) return explicitTierCount;
