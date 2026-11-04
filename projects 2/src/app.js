@@ -1260,11 +1260,31 @@ function findLatestCustomPageTemplateByPrdType(pageType) {
       aliases.some((alias) => normalizePageTemplateLookupName(alias) === normalizedType),
   );
   const lookupNames = aliasEntry?.[1] || [pageType];
+  const builtInTemplates = [...pageTemplates, ...templateSchemas];
+  // Existing pages and their blueprint version keys refer to the saved template ID.
+  // A newer local template with the same name must not replace that association.
+  const sourceTemplateIds = new Set([
+    activePage()?.sourcePageTemplateId,
+    ...(state.pages || []).map((page) => page.sourcePageTemplateId),
+  ].filter(Boolean));
+  for (const templateId of sourceTemplateIds) {
+    const template = [...builtInTemplates, ...customPageTemplates].find(
+      (item) => item.id === templateId &&
+        lookupNames.some((name) =>
+          normalizePageTemplateLookupName(item.name) === normalizePageTemplateLookupName(name)),
+    );
+    if (template) {
+      return {
+        ...template,
+        isCustom: !builtInTemplates.includes(template),
+        canvasBackground: template.canvasBackground || template.background || "#ffffff",
+      };
+    }
+  }
   for (const name of lookupNames) {
     const template = findLatestCustomPageTemplateByName(name);
     if (template) return template;
   }
-  const builtInTemplates = [...pageTemplates, ...templateSchemas];
   for (const name of lookupNames) {
     const normalizedName = normalizePageTemplateLookupName(name);
     const template = builtInTemplates.find(
