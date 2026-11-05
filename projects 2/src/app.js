@@ -1,4 +1,5 @@
 import { runServerExport, openServerExports, refreshServerExports } from "./server-export-client.js";
+import { assignExportNames, makeExportArchiveName } from "./export-names.js";
 import {
   applyProjectSnapshot,
   createProjectSnapshot,
@@ -22615,50 +22616,6 @@ function sanitizeExportFilename(value) {
     .slice(0, 80);
 }
 
-function getExportFilenameSegments(value) {
-  const omittedLabels = new Set([
-    "默认维度",
-    "维度1",
-    "默认版本",
-    "默认状态",
-    "系统状态",
-    "默认文案",
-  ]);
-  return String(value || "")
-    .split(/\s*·\s*/)
-    .map((item) => item.trim())
-    .filter((item) => item && !omittedLabels.has(item.replace(/\s+/g, "")));
-}
-
-function makeGuidedExportFilename(moduleTitle, nodeIndex, dimensionTitle, variantTitle, options = {}) {
-  const pageName = options.pageName || "";
-  const exportKind = options.exportKind || "";
-  const pageSegments = getExportFilenameSegments(pageName);
-  if (exportKind === "page-background") {
-    const segments = [
-      ...pageSegments,
-      "页面背景",
-      ...getExportFilenameSegments(variantTitle || "背景+头图"),
-    ];
-    return `${sanitizeExportFilename(segments.join("_") || "页面背景")}.png`;
-  }
-  const segments = [
-    ...pageSegments,
-    ...getExportFilenameSegments(moduleTitle),
-    ...getExportFilenameSegments(dimensionTitle),
-    ...getExportFilenameSegments(variantTitle),
-  ];
-  const uniqueSegments = segments.filter(
-    (segment, index) =>
-      segments.findIndex(
-        (candidate) =>
-          normalizePageTemplateLookupName(candidate) ===
-          normalizePageTemplateLookupName(segment),
-      ) === index,
-  );
-  return `${sanitizeExportFilename(uniqueSegments.join("_") || "切图")}.png`;
-}
-
 function getGuidedExportPageName(page) {
   if (!page) return "页面";
   if (page.isSystemFallback) {
@@ -22899,25 +22856,13 @@ function makeGuidedCutExportEntry({
   dimensionTitle,
   variantTitle,
   idParts = [],
-  fileParts = [],
-  stateFolderTitle = "",
+  naming = {},
   exportKind = "",
   dimensions,
 }) {
   const moduleTitle = getExportNodeTitle(node);
   const moduleFolderTitle = `${String(nodeIndex + 1).padStart(2, "0")}_${moduleTitle}`;
   const pageName = getGuidedExportPageName(page);
-  const fileName = makeGuidedExportFilename(
-    moduleTitle,
-    nodeIndex,
-    dimensionTitle,
-    variantTitle,
-    stateFolderTitle,
-    {
-      pageName,
-      exportKind,
-    },
-  );
   return {
     id: [page.id, node.id, ...idParts].map(sanitizeExportFilename).join("__"),
     pageId: page.id,
@@ -22928,17 +22873,11 @@ function makeGuidedCutExportEntry({
     moduleFolderTitle,
     dimensionTitle,
     variantTitle,
+    naming,
     sourceNode: node,
     node: exportNode,
     exportKind,
     dimensions,
-    fileName,
-    filePath: [
-      sanitizeExportFilename(pageName),
-      moduleFolderTitle,
-      stateFolderTitle ? sanitizeExportFilename(stateFolderTitle) : "",
-      fileName,
-    ].filter(Boolean).join("/"),
   };
 }
 
@@ -22982,7 +22921,7 @@ function getTaskListGuidedCutExportEntries(page, node, nodeIndex) {
           variant.id || "variant",
           "task-list-title",
         ],
-        fileParts: [variantTitle],
+        naming: { audienceTitle: variantTitle, audienceScopeId: node.id },
         exportKind: "task-list-title",
         dimensions: {
           width: GUIDED_CUT_EXPORT_WIDTH,
@@ -23014,7 +22953,12 @@ function getTaskListGuidedCutExportEntries(page, node, nodeIndex) {
               `task-${group.childIndex + 1}`,
               stateEntry.id || "default",
             ],
-            fileParts: [taskTitle, variantTitle],
+            naming: {
+              audienceTitle: variantTitle,
+              audienceScopeId: node.id,
+              taskIndex: groupIndex + 1,
+              stateTitle,
+            },
           });
         }),
       );
@@ -23056,7 +23000,7 @@ function getCaseShowcaseGuidedCutExportEntries(page, node, nodeIndex) {
           variant.id || variantIndex,
           "case-showcase-shell",
         ],
-        fileParts: [variantTitle],
+        naming: { audienceTitle: variantTitle, audienceScopeId: node.id },
         exportKind: "case-showcase-shell",
         dimensions: {
           width: GUIDED_CUT_EXPORT_WIDTH,
@@ -23077,7 +23021,11 @@ function getCaseShowcaseGuidedCutExportEntries(page, node, nodeIndex) {
             variant.id || variantIndex,
             `case-showcase-card-${cardIndex + 1}`,
           ],
-          fileParts: [variantTitle],
+          naming: {
+            audienceTitle: variantTitle,
+            audienceScopeId: node.id,
+            sliceTitle: card.title,
+          },
           exportKind: "case-showcase-card",
           dimensions: {
             width: card.width,
@@ -23126,7 +23074,7 @@ function getNodeGuideGuidedCutExportEntries(page, node, nodeIndex) {
           variant.id || variantIndex,
           "node-guide-title",
         ],
-        fileParts: [variantTitle],
+        naming: { audienceTitle: variantTitle, audienceScopeId: node.id },
         exportKind: "node-guide-title",
         dimensions: {
           width: GUIDED_CUT_EXPORT_WIDTH,
@@ -23151,7 +23099,11 @@ function getNodeGuideGuidedCutExportEntries(page, node, nodeIndex) {
               variant.id || variantIndex,
               `node-guide-card-${cardIndex + 1}`,
             ],
-            fileParts: [variantTitle],
+            naming: {
+              audienceTitle: variantTitle,
+              audienceScopeId: node.id,
+              sliceTitle: cardTitle,
+            },
             exportKind: "node-guide-card",
             dimensions: {
               width: 640,
@@ -23208,7 +23160,7 @@ function getLotteryPopupGuidedCutExportEntries(page, node, nodeIndex) {
       dimensionTitle: "抽奖结果",
       variantTitle: `中奖${prizeIndex} · ${prizeName}`,
       idParts: ["popup-win", prizeIndex],
-      fileParts: ["中奖"],
+      naming: { prizeIndex, prizeName, audienceScopeId: node.id },
       exportKind: "lottery-popup",
       dimensions: getNodeEstimatedExportDimensions(exportNode),
     });
@@ -23225,7 +23177,7 @@ function getLotteryPopupGuidedCutExportEntries(page, node, nodeIndex) {
     dimensionTitle: "抽奖结果",
     variantTitle: "未中奖",
     idParts: ["popup-lose"],
-    fileParts: ["未中奖"],
+    naming: { stateTitle: "未中奖", audienceScopeId: node.id },
     exportKind: "lottery-popup",
     dimensions: getNodeEstimatedExportDimensions(loseNode),
   });
@@ -23252,7 +23204,7 @@ function getStatefulGuidedCutExportEntries(page, node, nodeIndex) {
             exportNode,
             dimensionTitle,
             variantTitle: stateTitle ? `${variantTitle} · ${stateTitle}` : variantTitle,
-            stateFolderTitle: stateTitle,
+            naming: { audienceTitle: variantTitle, audienceScopeId: node.id, stateTitle },
             idParts: [
               graphNode.dimensionId || "dimension",
               variant.id || variantIndex,
@@ -23296,16 +23248,6 @@ function createGuidedPageBackgroundExportEntry(page) {
   const dimensionTitle = "页面背景";
   const variantTitle = "背景+头图";
   const pageName = getGuidedExportPageName(page);
-  const fileName = makeGuidedExportFilename(
-    moduleTitle,
-    -1,
-    dimensionTitle,
-    variantTitle,
-    {
-      pageName,
-      exportKind: "page-background",
-    },
-  );
   return {
     id: [page.id, "page-background", "header"]
       .map(sanitizeExportFilename)
@@ -23324,11 +23266,6 @@ function createGuidedPageBackgroundExportEntry(page) {
       width: GUIDED_CUT_EXPORT_WIDTH,
       height: getGuidedPageActualExportHeight(page),
     },
-    fileName,
-    filePath: [
-      sanitizeExportFilename(pageName),
-      fileName,
-    ].join("/"),
   };
 }
 
@@ -23361,33 +23298,6 @@ function getGuidedFallbackContentExportEntries(page) {
   );
 }
 
-function getChineseCounter(value) {
-  return ["", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"][value] || String(value);
-}
-
-function uniquifyGuidedExportFilenames(entries) {
-  const seen = new Map();
-  return entries.map((entry) => {
-    const pageFolder = sanitizeExportFilename(
-      entry.exportKind === "lottery-popup"
-        ? "弹窗"
-        : entry.pageName || entry.pageId || "页面",
-    );
-    const baseName = String(entry.fileName || "切图.png").replace(/\.png$/i, "");
-    const key = `${pageFolder}/${sanitizeExportFilename(baseName)}`;
-    const count = (seen.get(key) || 0) + 1;
-    seen.set(key, count);
-    const fileName = count > 1
-      ? `${sanitizeExportFilename(`${baseName}_副本${getChineseCounter(count)}`)}.png`
-      : `${sanitizeExportFilename(baseName)}.png`;
-    return {
-      ...entry,
-      fileName,
-      filePath: [pageFolder, fileName].join("/"),
-    };
-  });
-}
-
 function getGuidedCutExportEntries() {
   const entries = state.pages.flatMap((page) => {
     const pageBackgroundEntry = createGuidedPageBackgroundExportEntry(page);
@@ -23405,7 +23315,7 @@ function getGuidedCutExportEntries() {
       ? nodeEntries
       : [pageBackgroundEntry, ...nodeEntries];
   });
-  return uniquifyGuidedExportFilenames(entries);
+  return assignExportNames(entries, { pages: state.pages, workflowType: state.workflowType });
 }
 
 function renderCaseShowcaseExportContent(entry) {
@@ -23663,6 +23573,7 @@ function renderGuidedExportDimensionGroup(dimensionTitle, entries) {
 }
 
 function getGuidedExportModuleKey(entry) {
+  if (entry?.naming?.audienceScopeId) return `node:${entry.naming.audienceScopeId}`;
   if (entry?.nodeId) return `node:${entry.nodeId}`;
   return `module:${
     entry?.moduleFolderTitle ||
@@ -23874,7 +23785,7 @@ async function downloadGuidedExportBatch() {
   if (!getGuidedCutExportEntries().length) return;
   return submitServerExport({
     format: "zip", selection: { kind: "all" },
-    filename: `${sanitizeExportFilename(`${state.activity?.name || "活动"}切图`)}.zip`,
+    filename: makeExportArchiveName(state.activity?.name),
   }, document.querySelector("[data-guided-export-batch]"));
 }
 
@@ -23887,7 +23798,7 @@ async function downloadGuidedExportModule(pageId, moduleKey, button) {
   if (!entries.length) return;
   return submitServerExport({
     format: "zip", selection: { kind: "module", pageId, moduleKey },
-    filename: `${sanitizeExportFilename(`${entries[0].pageName}_${entries[0].moduleTitle}_全部切图`)}.zip`,
+    filename: makeExportArchiveName(entries[0].exportModuleName),
   }, button);
 }
 
@@ -29039,7 +28950,7 @@ function registerServerExportRuntime() {
       return selected.map((entry) => ({
         id: entry.id, name: entry.fileName,
         path: selection.kind === "module"
-          ? `${sanitizeExportFilename(entry.stateFolderTitle || "默认状态")}/${entry.fileName}` : entry.filePath,
+          ? entry.moduleFilePath : entry.filePath,
       }));
     },
     async render(id, format) {
