@@ -17374,54 +17374,83 @@ button:hover {
 }
 
 .prd-file-modal {
+  --modal-ink: #222225;
+  --modal-muted: #929298;
+  --modal-line: #e7e6ed;
+  --modal-surface: #f7f7fa;
   position: fixed;
   z-index: 100;
   inset: 0;
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(16, 24, 40, 0.34);
-  backdrop-filter: blur(6px);
+  background: rgba(41, 38, 56, 0.26);
+  backdrop-filter: blur(10px);
 }
 
 .prd-file-modal > section {
   display: flex;
-  width: min(920px, 100%);
+  width: min(880px, 100%);
   max-height: calc(100vh - 48px);
   flex-direction: column;
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 32px;
   background: #ffffff;
-  box-shadow: 0 32px 90px rgba(16, 24, 40, 0.22);
+  color: var(--modal-ink);
+  box-shadow: 0 24px 80px rgba(41, 38, 56, 0.14);
+  font-family: "Source Han Sans CN", sans-serif;
+  font-weight: 400;
+  font-synthesis: none;
+  scrollbar-width: thin;
+  scrollbar-color: #dedde5 transparent;
 }
 
 .prd-file-modal > section > header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 24px 24px 18px;
+  gap: 24px;
+  padding: 32px 36px 26px;
 }
 
 .prd-file-modal header span {
-  color: #98a2b3;
-  font-size: 10px;
+  color: var(--modal-muted);
+  font-size: 11px;
+  line-height: 1.6;
+  letter-spacing: 0.08em;
 }
 
 .prd-file-modal header h2 {
-  margin: 5px 0 0;
-  color: #101828;
-  font-size: 20px;
-  letter-spacing: -0.025em;
+  margin: 8px 0 0;
+  color: var(--modal-ink);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.035em;
 }
 
 .prd-file-modal header > button {
-  width: 30px;
-  min-height: 30px;
+  display: grid;
+  width: 36px;
+  min-height: 36px;
+  flex-shrink: 0;
+  place-items: center;
   padding: 0;
-  border: 0;
-  color: #667085;
-  font-size: 20px;
+  border: 1px solid var(--modal-line);
+  border-radius: 50%;
+  background: var(--modal-surface);
+  color: #85858d;
+  font-family: inherit;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+  transition: background 200ms ease-in-out, color 200ms ease-in-out;
+}
+
+.prd-file-modal header > button:hover {
+  background: #eeeeF3;
+  color: var(--modal-ink);
 }
 
 .prd-file-list {
@@ -17823,15 +17852,29 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-  padding: 16px 24px;
-  border-top: 1px solid #eaecf0;
-  background: #fafafa;
+  gap: 12px;
+  padding: 20px 36px;
+  border-top: 1px solid var(--modal-line);
+  background: #fafafd;
 }
 
 .prd-file-modal footer > button {
-  min-height: 40px;
-  border-radius: 9px;
+  min-width: 88px;
+  min-height: 44px;
+  padding: 0 22px;
+  border: 1px solid var(--modal-line);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #696971;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  transition: background 200ms ease-in-out, border-color 200ms ease-in-out;
+}
+
+.prd-file-modal footer > button:hover {
+  border-color: #d4d3dd;
+  background: #f1f0f7;
 }
 
 .prd-file-modal footer .prd-primary-btn {
@@ -17839,6 +17882,380 @@ button:hover {
   align-items: center;
   gap: 24px;
   background: #101828;
+}
+
+.prd-file-modal .prd-feishu-import,
+.prd-file-modal .prd-blueprint-paste {
+  display: grid;
+  gap: 18px;
+  margin: 0 36px 24px;
+  padding: 24px;
+  border: 1px solid var(--modal-line);
+  border-radius: 22px;
+  background: var(--modal-surface);
+}
+
+.prd-file-modal .prd-text-import-head {
+  align-items: center;
+  gap: 20px;
+}
+
+.prd-file-modal .prd-text-import-head > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.prd-file-modal .prd-text-import-head strong {
+  color: var(--modal-ink);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.prd-file-modal .prd-text-import-head span {
+  color: #929298;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.prd-file-modal .prd-text-import-head em {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #eeedf3;
+  color: #85858d;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.prd-file-modal .prd-feishu-import-row {
+  gap: 12px;
+}
+
+.prd-file-modal .prd-feishu-import-row input,
+.prd-file-modal .prd-blueprint-template-select select {
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid #dedde5;
+  border-radius: 12px;
+  outline: 0;
+  background: #ffffff;
+  color: var(--modal-ink);
+  font: 400 14px/1.5 "Source Han Sans CN", sans-serif;
+  transition: border-color 200ms ease-in-out, box-shadow 200ms ease-in-out;
+}
+
+.prd-file-modal .prd-feishu-import-row input::placeholder {
+  color: #a1a1a8;
+}
+
+.prd-file-modal .prd-blueprint-template-select {
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.prd-file-modal .prd-blueprint-template-select span {
+  color: #696971;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.prd-file-modal .prd-blueprint-template-select select {
+  padding-right: 36px;
+}
+
+.prd-file-modal .prd-feishu-import-row input:hover,
+.prd-file-modal .prd-blueprint-template-select select:hover {
+  border-color: #c6c5d0;
+}
+
+.prd-file-modal .prd-feishu-import-row input:focus,
+.prd-file-modal .prd-blueprint-template-select select:focus {
+  border-color: #92919f;
+  box-shadow: 0 0 0 3px rgba(146, 145, 159, 0.1);
+}
+
+.prd-file-modal .prd-feishu-import-row button,
+.prd-file-modal .prd-text-import-actions button {
+  min-height: 48px;
+  padding: 0 22px;
+  border: 1px solid #222225;
+  border-radius: 12px;
+  background: #222225;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  transition: background 200ms ease-in-out, border-color 200ms ease-in-out;
+}
+
+.prd-file-modal .prd-feishu-import-row button:hover,
+.prd-file-modal .prd-text-import-actions button:hover {
+  border-color: #414145;
+  background: #414145;
+}
+
+.prd-file-modal .prd-feishu-import-row button:disabled,
+.prd-file-modal .prd-text-import-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.prd-file-modal .prd-feishu-import-note span,
+.prd-file-modal .prd-text-import-actions > span {
+  color: #a1a1a8;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.prd-file-modal .prd-feishu-import-note span.error,
+.prd-file-modal .prd-text-import-actions > span.error {
+  color: #d92d20;
+}
+
+.prd-file-modal .prd-text-import-actions {
+  gap: 20px;
+}
+
+.prd-file-modal .prd-file-divider {
+  gap: 18px;
+  margin: -2px 36px 22px;
+  color: #a1a1a8;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.prd-file-modal .prd-file-divider::before,
+.prd-file-modal .prd-file-divider::after {
+  background: var(--modal-line);
+}
+
+.prd-file-modal .prd-venue-templates {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  margin: 0 36px 28px;
+}
+
+.prd-file-modal .prd-venue-template-track {
+  display: flex;
+  gap: 16px;
+  min-width: 0;
+  padding: 4px 3px 14px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: #dedde5 transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prd-file-modal .prd-venue-template-track:focus-visible {
+  outline: 2px solid #92919f;
+  outline-offset: 4px;
+  border-radius: 18px;
+}
+
+.prd-file-modal .prd-venue-template-card {
+  display: flex;
+  width: 224px;
+  min-width: 0;
+  flex: 0 0 224px;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  scroll-snap-align: start;
+  border: 1px solid var(--modal-line);
+  border-radius: 20px;
+  background: #ffffff;
+  color: var(--modal-ink);
+  box-shadow: 0 2px 8px rgba(37, 37, 43, 0.02);
+  font-family: inherit;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 200ms ease-in-out, box-shadow 200ms ease-in-out, transform 200ms ease-in-out;
+}
+
+.prd-file-modal .prd-venue-template-card:hover {
+  transform: translateY(-3px);
+  border-color: #c6c5d0;
+  box-shadow: 0 8px 22px rgba(37, 37, 43, 0.06);
+}
+
+.prd-file-modal .prd-venue-template-cover {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 172px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 60% 15%, #ffffff, transparent 70%),
+    #f1f0f7;
+}
+
+.prd-file-modal .prd-venue-template-cover .project-card-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.prd-file-modal .prd-venue-template-number {
+  position: absolute;
+  z-index: 1;
+  top: 14px;
+  left: 16px;
+  color: #a1a1a8;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+.prd-file-modal .prd-venue-template-caption {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+.prd-file-modal .prd-venue-template-caption strong {
+  color: var(--modal-ink);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.prd-file-modal .prd-venue-template-caption > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: #a1a1a8;
+  transition: color 200ms ease-in-out, transform 200ms ease-in-out;
+}
+
+.prd-file-modal .prd-venue-template-card:hover .prd-venue-template-caption > svg {
+  transform: translateX(3px);
+  color: var(--modal-ink);
+}
+
+.prd-file-modal .prd-venue-template-error {
+  margin: 0;
+  color: #d92d20;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.prd-file-modal button:focus-visible {
+  outline: 2px solid #92919f;
+  outline-offset: 3px;
+}
+
+@media (max-height: 820px) and (min-width: 641px) {
+  .prd-file-modal > section > header {
+    padding: 24px 36px 20px;
+  }
+
+  .prd-file-modal header h2 {
+    font-size: 24px;
+  }
+
+  .prd-file-modal .prd-feishu-import {
+    gap: 14px;
+    margin-bottom: 20px;
+    padding: 20px;
+  }
+
+  .prd-file-modal .prd-file-divider {
+    margin-bottom: 18px;
+  }
+
+  .prd-file-modal .prd-venue-templates {
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .prd-file-modal .prd-venue-template-track {
+    padding-bottom: 10px;
+  }
+
+  .prd-file-modal .prd-venue-template-cover {
+    height: 128px;
+  }
+
+  .prd-file-modal .prd-venue-template-caption {
+    min-height: 56px;
+  }
+
+  .prd-file-modal footer {
+    padding-block: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .prd-file-modal {
+    padding: 16px;
+  }
+
+  .prd-file-modal > section {
+    max-height: calc(100vh - 32px);
+    border-radius: 24px;
+  }
+
+  .prd-file-modal > section > header {
+    padding: 24px 20px 22px;
+  }
+
+  .prd-file-modal header h2 {
+    font-size: 24px;
+  }
+
+  .prd-file-modal .prd-feishu-import,
+  .prd-file-modal .prd-blueprint-paste {
+    gap: 16px;
+    margin: 0 20px 20px;
+    padding: 20px 16px;
+    border-radius: 18px;
+  }
+
+  .prd-file-modal .prd-text-import-head {
+    gap: 12px;
+  }
+
+  .prd-file-modal .prd-blueprint-template-select {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .prd-file-modal .prd-file-divider {
+    margin: 0 20px 20px;
+  }
+
+  .prd-file-modal .prd-venue-templates {
+    gap: 16px;
+    margin: 0 20px 20px;
+  }
+
+  .prd-file-modal .prd-venue-template-card {
+    width: 208px;
+    flex-basis: 208px;
+  }
+
+  .prd-file-modal .prd-venue-template-cover {
+    height: 160px;
+  }
+
+  .prd-file-modal footer {
+    padding: 16px 20px;
+  }
 }
 
 @media (max-width: 560px) {

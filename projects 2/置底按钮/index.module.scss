@@ -1,5 +1,27 @@
 .image {
+  position: relative;
   width: 750px;
   height: 287px;
   box-sizing: border-box;
+}
+
+.artwork {
+  display: block;
+  width: 750px;
+  height: 287px;
+}
+
+.buttonText {
+  position: absolute;
+  left: 375px;
+  top: 166px;
+  transform: translate(-50%, -50%);
+  min-width: 1em;
+  color: #ffffff;
+  font-family: "Source Han Sans CN", "Douyin Sans", Arial, sans-serif;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: pre;
 }

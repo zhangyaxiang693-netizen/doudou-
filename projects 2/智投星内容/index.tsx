@@ -51,31 +51,31 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     <div className={styles.page}>
       <div className={styles.wrap}>
         <img src={image1} className={styles.image} />
-        <div className={styles.text}>{renderIntroText()}</div>
+        <div className={styles.text} data-react-edit-prop="introText">{renderIntroText()}</div>
       </div>
       <div className={styles.wrap1}>
         <div className={styles.container}>
           <div className={styles.content}></div>
           <img src={image2} className={styles.image1} />
           <div className={styles.content1}>
-            <div className={styles.text1}>{card1Title}</div>
-            <div className={styles.text2}>{card1Content}</div>
+            <div className={styles.text1} data-react-edit-prop="card1Title">{card1Title}</div>
+            <div className={styles.text2} data-react-edit-prop="card1Content">{card1Content}</div>
           </div>
         </div>
         <div className={styles.container1}>
           <div className={styles.content2}></div>
           <img src={image3} className={styles.image2} />
           <div className={styles.content3}>
-            <div className={styles.text3}>{card2Title}</div>
-            <div className={styles.text4}>{card2Content}</div>
+            <div className={styles.text3} data-react-edit-prop="card2Title">{card2Title}</div>
+            <div className={styles.text4} data-react-edit-prop="card2Content">{card2Content}</div>
           </div>
         </div>
         <div className={styles.container2}>
           <div className={styles.content4}></div>
           <img src={image4} className={styles.image3} />
           <div className={styles.content5}>
-            <div className={styles.text5}>{card3Title}</div>
-            <div className={styles.text6}>{card3Content}</div>
+            <div className={styles.text5} data-react-edit-prop="card3Title">{card3Title}</div>
+            <div className={styles.text6} data-react-edit-prop="card3Content">{card3Content}</div>
           </div>
         </div>
       </div>

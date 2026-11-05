@@ -67,6 +67,7 @@ import AiTrafficCouponPrize from "../奖品-ai流量券";
 import RandomPrizeAddress from "../随机奖品填写地址";
 
 const roots = new WeakMap();
+const renderJobsByElement = new WeakMap();
 const projectFontFamilies = new Set([
   "Source Han Sans CN",
   "Source Han Sans CN ExtraLight",
@@ -79,6 +80,8 @@ const projectFontFamilies = new Set([
   "MFYuanHeiNoncommercial",
   "OPPOSans",
   "Douyin Sans",
+  "Douyin Latin",
+  "Douyin Latin Banner",
   "Douyin Number ABC",
   "Douyin Number ABC Medium",
   "Douyin Number ABC Bold",
@@ -96,6 +99,8 @@ const fontSamples = {
   "Popup Number ExtraBold": "0123456789+.-",
   "Douyin Number ABC Condensed": "0123456789+.-",
   "Douyin Number ABC Condensed Medium": "0123456789+.-",
+  "Douyin Latin": "DOU+0123456789",
+  "Douyin Latin Banner": "DOU+0123456789",
 };
 const fontLoadPromises = new Map();
 
@@ -444,7 +449,12 @@ export function renderReactMaterials(scope = document) {
         root = createRoot(element);
         roots.set(element, root);
       }
-      renderJobs.push({ element, componentName, Component, props, root });
+      const job = { element, componentName, Component, props, root };
+      renderJobsByElement.set(element, job);
+      delete element.dataset.fontsReady;
+      delete element.dataset.fontsFailed;
+      delete element.dataset.renderFailed;
+      renderJobs.push(job);
     } catch (error) {
       console.error(`组件渲染准备失败：${componentName}`, error);
       element.dataset.renderFailed = "true";
@@ -457,21 +467,39 @@ export function renderReactMaterials(scope = document) {
     });
   });
 
-  renderJobs.forEach(({ element, componentName, props }) => {
+  const isCurrentJob = (job) => renderJobsByElement.get(job.element) === job;
+  const loadFonts = async (job) => {
     try {
-      markEditableFields(element, props);
-      waitForReactMaterialFonts(element)
-        .then(() => {
-          element.dataset.fontsReady = "true";
-          delete element.dataset.fontsFailed;
-        })
-        .catch((error) => {
-          element.dataset.fontsFailed = "true";
-          console.error(`组件字体加载失败：${componentName}`, error);
-        });
+      await waitForReactMaterialFonts(job.element);
+      return isCurrentJob(job);
     } catch (error) {
-      console.error(`组件渲染失败：${componentName}`, error);
-      element.dataset.renderFailed = "true";
+      if (isCurrentJob(job)) {
+        job.element.dataset.fontsFailed = "true";
+        console.error(`组件字体加载失败：${job.componentName}`, error);
+      }
+      return false;
     }
+  };
+
+  // A font wait alone cannot update line breaks or sizes calculated in render.
+  // Re-render with the loaded fonts, then mark editable DOM and signal readiness.
+  // Keep this barrier shared by the editor, cut preview and server PNG/GIF export.
+  return Promise.all(renderJobs.map(loadFonts)).then(async (ready) => {
+    const currentJobs = renderJobs.filter((job, index) => ready[index] && isCurrentJob(job));
+    flushSync(() => {
+      currentJobs.forEach(({ Component, props, root }) => {
+        root.render(<Component {...props} />);
+      });
+    });
+    await Promise.all(currentJobs.map(async (job) => {
+      if (!await loadFonts(job)) return;
+      try {
+        markEditableFields(job.element, job.props);
+        job.element.dataset.fontsReady = "true";
+      } catch (error) {
+        console.error(`组件渲染失败：${job.componentName}`, error);
+        job.element.dataset.renderFailed = "true";
+      }
+    }));
   });
 }

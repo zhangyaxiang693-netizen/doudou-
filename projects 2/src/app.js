@@ -1119,7 +1119,6 @@ const PAGE_TEMPLATE_ENTRY_CARD_STATES = [
 const LOCKED_PAGE_TEMPLATE_BLUEPRINT_SCHEMA_IDS = new Set([
   "用户教育案例-样式1",
   "用户教育案例-样式2",
-  "AI智投",
   "节点指南",
 ]);
 const customPageTemplates = [];
@@ -10935,8 +10934,8 @@ function renderPrdFileModal() {
       <section role="dialog" aria-modal="true" aria-labelledby="prd-file-modal-title">
         <header>
           <div>
-            <span>演示模式</span>
-            <h2 id="prd-file-modal-title">导入 PRD</h2>
+            <span>活动创编</span>
+            <h2 id="prd-file-modal-title">生成会场页面</h2>
           </div>
           <button data-demo-close-file-modal aria-label="关闭">×</button>
         </header>
@@ -10963,33 +10962,40 @@ function renderPrdFileModal() {
             </span>
           </div>
         </div>
-        <div class="prd-file-divider"><span>或直接进入</span></div>
-        <div class="prd-blueprint-paste">
+        <div class="prd-file-divider"><span>或选择模板</span></div>
+        <div class="prd-venue-templates">
           <div class="prd-text-import-head">
             <div>
-              <strong>直接进入</strong>
-              <span>选择一个页面模板，直接进入编辑</span>
+              <strong>选择会场模板，快速生成</strong>
+              <span>点击模板直接进入编辑</span>
             </div>
-            <em>模板</em>
+            <em>横滑查看</em>
           </div>
-          <label class="prd-blueprint-template-select">
-            <span>页面模板</span>
-            <select data-prd-blueprint-template-select>
-              <option value="">请选择模板</option>
-              ${Object.keys(PRD_PAGE_TEMPLATE_ALIASES).map((templateName) => `
-                <option
-                  value="${escapeAttr(templateName)}"
-                  ${state.prdBlueprintPasteTemplateName === templateName ? "selected" : ""}
-                >${escapeHtml(templateName)}</option>
-              `).join("")}
-            </select>
-          </label>
-          <div class="prd-text-import-actions">
-            <span class="${state.prdBlueprintPasteError ? "error" : ""}">
-              ${escapeHtml(state.prdBlueprintPasteError || "可选择以上任一模板")}
-            </span>
-            <button type="button" data-prd-blueprint-table-submit>直接进入</button>
+          <div class="prd-venue-template-track" tabindex="0" aria-label="会场模板，可横向滚动">
+            ${Object.keys(PRD_PAGE_TEMPLATE_ALIASES).map((templateName, index) => {
+              const templateId = PRD_PAGE_TEMPLATE_ID_BY_NAME[templateName] || `template-${index}`;
+              return `
+                <button
+                  type="button"
+                  class="prd-venue-template-card"
+                  data-prd-blueprint-table-submit="${escapeAttr(templateName)}"
+                  aria-label="${escapeAttr(`使用${templateName}，进入编辑`)}"
+                >
+                  <span class="prd-venue-template-cover">
+                    <span class="prd-venue-template-number">${String(index + 1).padStart(2, "0")}</span>
+                    ${renderHistoryCover(`venue-template-${templateId}`)}
+                  </span>
+                  <span class="prd-venue-template-caption">
+                    <strong>${escapeHtml(templateName.replace(/^模板\d+\s*/, ""))}</strong>
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </button>
+              `;
+            }).join("")}
           </div>
+          ${state.prdBlueprintPasteError ? `<p class="prd-venue-template-error" role="alert">${escapeHtml(state.prdBlueprintPasteError)}</p>` : ""}
         </div>
         <footer>
           <button data-demo-close-file-modal>取消</button>
@@ -23739,12 +23745,15 @@ function renderGuidedExportPageGroup(page, entries) {
 let guidedExportReadyPromise = Promise.resolve();
 
 async function initializeGuidedExportPage(root) {
-  window.renderReactMaterials?.(root);
+  await window.renderReactMaterials?.(root);
   if (window.waitForReactMaterialFonts) {
     await window.waitForReactMaterialFonts(root);
   }
   if (document.fonts?.ready) {
     await document.fonts.ready;
+  }
+  if (root.querySelector('[data-render-failed="true"], [data-fonts-failed="true"]')) {
+    throw new Error("组件或字体渲染失败，请刷新后重试");
   }
   await waitForNextFrame();
   await waitForNextFrame();
@@ -24688,16 +24697,19 @@ function bindEvents() {
       return;
     }
 
-    if (event.target.closest("[data-prd-blueprint-table-submit]")) {
-      const templateName = state.prdBlueprintPasteTemplateName;
+    const blueprintTemplateEntry = event.target.closest("[data-prd-blueprint-table-submit]");
+    if (blueprintTemplateEntry) {
+      const templateName = blueprintTemplateEntry.dataset.prdBlueprintTableSubmit ||
+        state.prdBlueprintPasteTemplateName;
       if (!templateName) {
         state.prdBlueprintPasteError = "请先选择页面模板";
         render();
         requestAnimationFrame(() => {
-          document.querySelector("[data-prd-blueprint-template-select]")?.focus();
+          document.querySelector(".prd-venue-template-card")?.focus();
         });
         return;
       }
+      state.prdBlueprintPasteTemplateName = templateName;
       const pastedVersions = ["人群1", "人群2", "人群3"];
       const pastedModuleVersions = {};
       const pastedRows = createPrdBlueprintPasteTemplateRows(
@@ -29054,7 +29066,7 @@ function registerServerExportRuntime() {
       capture.style.setProperty("--react-component-scale", "1");
       capture.style.left = "0"; capture.style.top = "0"; capture.style.zIndex = "1";
       if (format !== "gif") capture.dataset.resourceStaticExport = "true";
-      window.renderReactMaterials?.(capture);
+      await window.renderReactMaterials?.(capture);
       await window.waitForReactMaterialFonts?.(capture);
       await Promise.all([...capture.querySelectorAll("img")].map(async (image) => {
         if (!image.complete) await image.decode();
