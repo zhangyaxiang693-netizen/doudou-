@@ -1009,9 +1009,10 @@ const BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS = new Set([
   "核心权益模块-bigday发券-样式1",
   "核心权益模块-bigday发券-样式1-已报名",
 ]);
-const BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS = new Set([
-  "1.showSpecialTag",
-]);
+function isBigdayCouponSharedStateField(path) {
+  return String(path) !== "2.buttonText";
+}
+
 const PAGE_TEMPLATE_BUSINESS_STATES = {
   "核心权益模块-bigday发券-样式1": BIGDAY_COUPON_BUSINESS_STATE_CONFIG,
   "核心权益模块-bigday发券-样式1-已报名":
@@ -11425,7 +11426,13 @@ function ensurePageTemplateStateDetailRow(
   const existingIndex = findPrdTableRowIndexByKey(rowKey);
   if (existingIndex >= 0) return existingIndex;
   const legacyRowIndex = versionName &&
-    !BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS.has(compoundKey)
+    (
+      BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(
+        field.sourceModuleSchemaId || field.moduleSchemaId,
+      )
+        ? !isBigdayCouponSharedStateField(compoundKey)
+        : compoundKey !== "1.showSpecialTag"
+    )
     ? findPrdTableRowIndexByKey(getPageTemplateStateDetailRowKey(
         templateId, field.moduleIndex, stateId, compoundKey,
       ))
@@ -11470,7 +11477,7 @@ function syncBigdayCouponSharedStateField(rowKey, value) {
     parsePageTemplateVariableRowKey(rowKey) ||
     parsePageTemplateVariableVersionRowKey(rowKey);
   const parsed = stateParsed || variableParsed;
-  if (!parsed || !BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS.has(parsed.compoundKey)) {
+  if (!parsed || !isBigdayCouponSharedStateField(parsed.compoundKey)) {
     return false;
   }
   const templateId =
@@ -11493,16 +11500,6 @@ function syncBigdayCouponSharedStateField(rowKey, value) {
     parsed.versionName
       ? getPageTemplateVariableVersionRowKey(field, parsed.versionName)
       : getPageTemplateVariableRowKey(field),
-    value,
-  );
-  setPrdTableRowValueByKey(
-    getPageTemplateStateDetailRowKey(
-      templateId,
-      parsed.moduleIndex,
-      "postSignup",
-      parsed.compoundKey,
-      parsed.versionName,
-    ),
     value,
   );
   return true;
@@ -11546,24 +11543,28 @@ function getPageTemplateIndependentStateVersion(group, baseVersion, versionName 
     ),
     sections: (baseVersion.sections || []).map((section) => ({
       ...section,
-      fields: (section.fields || []).map((field) => ({
-        ...field,
-        isPrdKey: BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(group.sourceModuleSchemaId)
-          ? false
-          : field.isPrdKey,
-        rowIndex: ensurePageTemplateStateDetailRow(
-          field,
-          group.templateId,
-          stateStorageId,
-          stateStorageId === "entry:default" ||
-            BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS.has(
-              getPageTemplateFieldLocalCompoundKey(field),
-            )
-            ? undefined
-            : getPageTemplateStateSchemaDefaultValue(group, field),
-          versionName,
-        ),
-      })),
+      fields: (section.fields || []).map((field) => {
+        if (
+          BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(group.sourceModuleSchemaId) &&
+          isBigdayCouponSharedStateField(getPageTemplateFieldLocalCompoundKey(field))
+        ) return field;
+        return {
+          ...field,
+          isPrdKey: BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(group.sourceModuleSchemaId)
+            ? false
+            : field.isPrdKey,
+          rowIndex: ensurePageTemplateStateDetailRow(
+            field,
+            group.templateId,
+            stateStorageId,
+            stateStorageId === "entry:default" ||
+              getPageTemplateFieldLocalCompoundKey(field) === "1.showSpecialTag"
+              ? undefined
+              : getPageTemplateStateSchemaDefaultValue(group, field),
+            versionName,
+          ),
+        };
+      }),
     })),
   };
 }
@@ -11727,7 +11728,7 @@ function setNodeAndGuidedStatesValueByPath(node, path, value) {
     (node.guidedStates || []).forEach((entry) => {
       if (
         entry.id !== (node.activeGuidedStateId || "default") &&
-        !BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS.has(path)
+        !isBigdayCouponSharedStateField(path)
       ) return;
       setNodeValueByPath(entry.node, path, value);
       entry.detailValues = { ...entry.detailValues, [path]: value };
@@ -11836,7 +11837,8 @@ function syncPageTemplateInlineEditToRows(sourceNode, variantId, path, value) {
   } else {
     const rowKey =
       BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(sourceNode.schemaId) &&
-      stateSourceNode.activeGuidedStateId === "postSignup"
+      stateSourceNode.activeGuidedStateId === "postSignup" &&
+      !isBigdayCouponSharedStateField(path)
         ? getPageTemplateStateDetailRowKey(
             sourceNode.sourcePageTemplateId,
             sourceNode.sourcePageTemplateNodeIndex,
@@ -18017,7 +18019,7 @@ function applyBigdayCouponStateVariableValues(node, values) {
   (node.guidedStates || []).forEach((entry) => {
     const stateValues = entry.id === "default"
       ? values
-      : new Map([...values].filter(([key]) => BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS.has(key)));
+      : new Map([...values].filter(([key]) => isBigdayCouponSharedStateField(key)));
     entry.detailValues = {
       ...entry.detailValues,
       ...Object.fromEntries(stateValues),
@@ -18054,6 +18056,10 @@ function applyPageTemplateStateDetailValuesToNode(node, rows, versionName = "") 
         parsed.templateId !== node.sourcePageTemplateId ||
         parsed.moduleIndex !== Number(node.sourcePageTemplateNodeIndex) ||
         parsed.versionName !== scopedVersion
+      ) return;
+      if (
+        BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(node.schemaId) &&
+        isBigdayCouponSharedStateField(parsed.compoundKey)
       ) return;
       if (!stateValues.has(parsed.stateId)) stateValues.set(parsed.stateId, new Map());
       stateValues.get(parsed.stateId).set(parsed.compoundKey, row.value ?? "");
@@ -27483,6 +27489,10 @@ function bindEvents() {
       state.prdTableRows[rowIndex].value = prdTemplateVariableInput.type === "checkbox"
         ? (prdTemplateVariableInput.checked ? "true" : "")
         : prdTemplateVariableInput.value;
+      syncBigdayCouponSharedStateField(
+        rowKey,
+        state.prdTableRows[rowIndex].value,
+      );
       syncConsumptionReturnSharedStateField(
         rowKey,
         state.prdTableRows[rowIndex].value,

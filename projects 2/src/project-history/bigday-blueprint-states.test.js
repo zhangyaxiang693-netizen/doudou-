@@ -51,6 +51,10 @@ function createHarness() {
   const fields = [
     ["0.titleText", "模块标题"],
     ["1.amountText", "券金额"],
+    ["1.conditionText", "券使用条件"],
+    ["1.giftConditionText", "券门槛/赠送条件"],
+    ["1.specialText", "用户标签文案"],
+    ["3.text", "补充说明"],
     ["2.buttonText", "报名按钮文案"],
   ].map(([compoundKey, label]) => ({
     moduleIndex: 0, compoundKey, key: compoundKey, label,
@@ -160,7 +164,7 @@ function values(context, version) {
   ]));
 }
 
-test("PRD audiences default to pre-signup and get independent registered blueprint rows", () => {
+test("PRD audiences share all signup fields except each audience's button text", () => {
   const { context, pageTemplate } = createHarness();
   const before = context.getPageTemplateVariableGroups(pageTemplate)[0];
   assert.equal(before.activeStateId, "default");
@@ -170,7 +174,15 @@ test("PRD audiences default to pre-signup and get independent registered bluepri
   assert.equal(values(context, after.versions[0])["2.buttonText"], "已报名");
   const beforeFields = before.versions[0].sections.flatMap((section) => section.fields);
   const afterFields = after.versions[0].sections.flatMap((section) => section.fields);
-  assert.ok(afterFields.every((field, index) => field.rowIndex !== beforeFields[index].rowIndex));
+  for (const field of afterFields) {
+    const beforeField = beforeFields.find((item) => item.compoundKey === field.compoundKey);
+    if (field.compoundKey === "2.buttonText") {
+      assert.notEqual(field.rowIndex, beforeField.rowIndex);
+    } else {
+      assert.equal(field.rowIndex, beforeField.rowIndex, field.compoundKey);
+      assert.equal(values(context, after.versions[0])[field.compoundKey], values(context, before.versions[0])[field.compoundKey]);
+    }
+  }
   assert.notEqual(afterFields[0].rowIndex, after.versions[1].sections[0].fields[0].rowIndex);
 });
 
@@ -251,4 +263,51 @@ test("registered preview edits update their state row without overwriting PRD pr
   assert.equal(nodes[0].children[2].props.buttonText, "立即报名");
   context.state.pageTemplateBlueprintStates[`${templateId}|0`] = "default";
   assert.equal(values(context, context.getPageTemplateVariableGroups(pageTemplate)[0].versions[0])["2.buttonText"], "立即报名");
+});
+
+test("registered preview edits share content with pre-signup within the selected audience", () => {
+  const { context, pageTemplate, makeNode } = createHarness();
+  context.state.pageTemplateBlueprintStates[`${templateId}|0`] = "postSignup";
+  context.getPageTemplateVariableGroups(pageTemplate);
+  const nodes = [makeNode()];
+  context.applyPageTemplateVariableRowsToNodes(nodes, context.state.prdTableRows);
+  context.applyPageTemplateVariableVersionRowsToNodes(nodes, context.state.prdTableRows, templateId);
+  context.state.pages = [{ sourcePageTemplateId: templateId, nodes }];
+  context.applyGuidedBusinessState(nodes[0], "postSignup");
+  for (const [path, value] of [["0.titleText", "个人新标题"], ["1.amountText", "888"], ["3.text", "个人新说明"]]) {
+    context.syncPageTemplateInlineEditToRows(nodes[0], "imported_personal", path, value);
+  }
+  context.applyGuidedBusinessState(nodes[0], "default");
+  assert.equal(nodes[0].children[0].props.titleText, "个人新标题");
+  assert.equal(nodes[0].children[1].props.amountText, "888");
+  assert.equal(nodes[0].children[3].props.text, "个人新说明");
+  assert.equal(nodes[0].children[2].props.buttonText, "立即报名");
+  context.state.pageTemplateBlueprintStates[`${templateId}|0`] = "default";
+  const before = context.getPageTemplateVariableGroups(pageTemplate)[0];
+  assert.equal(values(context, before.versions[0])["1.amountText"], "888");
+  assert.equal(values(context, before.versions[1])["1.amountText"], "企业20");
+});
+
+test("old registered content rows cannot override shared PRD content after restore", () => {
+  const { context, pageTemplate, makeNode } = createHarness();
+  context.state.prdTableRows.push(
+    { key: context.getPageTemplateStateDetailRowKey(templateId, 0, "postSignup", "0.titleText", "个人素人"), value: "错误独立标题" },
+    { key: context.getPageTemplateStateDetailRowKey(templateId, 0, "postSignup", "1.amountText", "个人素人"), value: "999" },
+    { key: context.getPageTemplateStateDetailRowKey(templateId, 0, "postSignup", "2.buttonText", "个人素人"), value: "报名成功" },
+  );
+  const snapshot = createProjectSnapshot(context.state);
+  context.state.prdTableRows = [];
+  applyProjectSnapshot(context.state, snapshot);
+  const nodes = [makeNode()];
+  context.applyPageTemplateVariableRowsToNodes(nodes, context.state.prdTableRows);
+  context.applyPageTemplateVariableVersionRowsToNodes(nodes, context.state.prdTableRows, templateId);
+  const [personal, enterprise] = nodes[0].guidedLineageVariants;
+  context.applyGuidedBusinessState(personal.node, "postSignup");
+  context.applyGuidedBusinessState(enterprise.node, "postSignup");
+  assert.equal(personal.node.children[0].props.titleText, "个人素人10");
+  assert.equal(personal.node.children[1].props.amountText, "个人素人10");
+  assert.equal(personal.node.children[2].props.buttonText, "报名成功");
+  assert.equal(enterprise.node.children[0].props.titleText, "企业20");
+  context.state.pageTemplateBlueprintStates[`${templateId}|0`] = "postSignup";
+  assert.equal(values(context, context.getPageTemplateVariableGroups(pageTemplate)[0].versions[0])["1.amountText"], "个人素人10");
 });
