@@ -5894,6 +5894,100 @@ button:hover {
   opacity: 0.64;
 }
 
+.guided-export-selection-bar {
+  display: flex;
+  width: min(1440px, calc(100% - 64px));
+  min-height: 62px;
+  align-items: center;
+  gap: 16px;
+  margin: 0 auto;
+  padding: 10px 0;
+  border-top: 1px solid #f0f1f4;
+  font-family: "Source Han Sans CN Regular", sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.guided-export-select-all,
+.guided-export-card-selection {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.guided-export-select-all {
+  flex: 0 0 auto;
+  color: #344054;
+}
+
+.guided-export-selection-bar input,
+.guided-export-card-selection input {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: #101828;
+  cursor: pointer;
+}
+
+.guided-export-selection-bar input:focus-visible,
+.guided-export-card-selection input:focus-visible {
+  outline: 2px solid #667085;
+  outline-offset: 3px;
+}
+
+.guided-export-selection-count {
+  color: #344054;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.guided-export-clear-selection {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #667085;
+  font: inherit;
+  cursor: pointer;
+}
+
+.guided-export-clear-selection:hover:not(:disabled) {
+  background: #f2f4f7;
+  color: #101828;
+}
+
+.guided-export-clear-selection:disabled {
+  color: #98a2b3;
+  cursor: default;
+}
+
+.guided-export-selection-hint {
+  color: #98a2b3;
+  font-size: 12px;
+}
+
+.guided-export-selection-bar .guided-export-selected {
+  margin-left: auto;
+  font-family: "Source Han Sans CN Medium", sans-serif;
+  font-weight: 500;
+}
+
+@media (max-width: 760px) {
+  .guided-export-selection-bar {
+    width: calc(100% - 32px);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .guided-export-selection-hint {
+    display: none;
+  }
+}
+
 .guided-export-content {
   display: grid;
   gap: 48px;
@@ -6073,6 +6167,21 @@ button:hover {
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 6px 18px rgba(16, 24, 40, 0.05);
+}
+
+.guided-export-card.is-selected {
+  border-color: #344054;
+  box-shadow: 0 0 0 1px #344054, 0 6px 18px rgba(16, 24, 40, 0.05);
+}
+
+.guided-export-card-selection {
+  flex: 1;
+}
+
+.guided-export-card-selection > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
 }
 
 .guided-export-card > header {

@@ -35,8 +35,16 @@ function createExportRouter(options = {}) {
     const input = req.body;
     const selection = input?.selection;
     if (!OPERATION_ID_PATTERN.test(input?.id || "") || !["png", "zip", "gif"].includes(input?.format) ||
-        !["single", "module", "all", "admin"].includes(selection?.kind)) {
+        !["single", "module", "all", "selected", "admin"].includes(selection?.kind)) {
       throw new ExportError("导出参数无效", "EXPORT_INVALID", 400);
+    }
+    if (selection.kind === "selected") {
+      if (!Array.isArray(selection.entryIds) || !selection.entryIds.length ||
+          selection.entryIds.length > 2000 ||
+          selection.entryIds.some((id) => typeof id !== "string" || !id.trim() || id.length > 512)) {
+        throw new ExportError("请选择 1–2000 张有效切图", "EXPORT_INVALID", 400);
+      }
+      selection.entryIds = [...new Set(selection.entryIds)];
     }
     const issue = snapshotError(input.snapshot);
     if (issue) throw new ExportError("活动内容无效或超过 32MB", issue, 400);
@@ -48,7 +56,7 @@ function createExportRouter(options = {}) {
         throw new ExportError("组件验证器参数无效", "EXPORT_INVALID", 400);
       }
     } else if (input.verifier) throw new ExportError("导出参数无效", "EXPORT_INVALID", 400);
-    if (["all", "module"].includes(selection.kind) !== (input.format === "zip")) {
+    if (["all", "module", "selected"].includes(selection.kind) !== (input.format === "zip")) {
       throw new ExportError("导出格式与选择范围不一致", "EXPORT_INVALID", 400);
     }
     if (input.format === "gif" && selection.kind !== "single") throw new ExportError("GIF 只能逐张生成", "EXPORT_INVALID", 400);

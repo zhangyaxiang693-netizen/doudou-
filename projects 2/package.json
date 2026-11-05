@@ -8,8 +8,8 @@
     "dev:server": "node --env-file=.env.local server/index.cjs",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --test server/__tests__/*.test.cjs src/project-history/*.test.js src/collaboration/*.test.js src/traffic-coupon.test.js src/export-names.test.js",
-    "test:export": "npm run build && EXPORT_VISUAL_TESTS=1 node --test server/__tests__/export-font-layout.test.cjs server/__tests__/export-browser.test.cjs server/__tests__/export-names.test.cjs src/project-history/daily-header-title-layout.test.js src/export-names.test.js",
+    "test": "node --test server/__tests__/*.test.cjs src/project-history/*.test.js src/collaboration/*.test.js src/traffic-coupon.test.js src/export-names.test.js src/export-selection.test.js",
+    "test:export": "npm run build && EXPORT_VISUAL_TESTS=1 node --test server/__tests__/export-font-layout.test.cjs server/__tests__/export-browser.test.cjs server/__tests__/export-names.test.cjs src/project-history/daily-header-title-layout.test.js src/export-names.test.js src/export-selection.test.js",
     "export:check": "node scripts/server-export-preflight.cjs"
   },
   "dependencies": {

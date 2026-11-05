@@ -23,6 +23,47 @@ test("export endpoints reject anonymous users and another account's job", async 
   assert.equal((await fetch(url, { headers: { "x-test-user": "other" } })).status, 404);
 });
 
+test("selected ZIP accepts arbitrary cut IDs and rejects invalid selection ranges", async (t) => {
+  const submissions = [];
+  const app = express();
+  app.use(express.json());
+  app.use("/api/exports", createExportRouter({
+    resolveUser: () => ({ id: "owner" }),
+    repository: {
+      async create(owner, input, hash, buildId, filename) {
+        submissions.push({ owner, input, hash, buildId });
+        return { id: input.id, status: "pending", filename };
+      },
+    },
+    renderer: { buildId: "build" },
+  }));
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise((resolve) => server.once("listening", resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const url = `http://127.0.0.1:${server.address().port}/api/exports`;
+  const input = {
+    id: "11111111-1111-4111-8111-111111111111",
+    format: "zip", filename: "活动_切图.zip",
+    snapshot: { schemaVersion: 3, savedAt: "2026-11-05T12:00:00.000Z", editor: { pages: [] } },
+    selection: { kind: "selected", entryIds: ["header-a", "task-done", "header-a"] },
+  };
+  const post = (overrides) => fetch(url, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...input, ...overrides }),
+  });
+  assert.equal((await post({})).status, 200);
+  assert.deepEqual(submissions[0].input.selection.entryIds, ["header-a", "task-done"]);
+  assert.equal(submissions[0].owner, "owner");
+  assert.deepEqual(submissions[0].input.snapshot, input.snapshot);
+  for (const entryIds of [undefined, [], "header-a", [null], [12], [""], [" "], ["a".repeat(513)], Array(2001).fill("header-a")]) {
+    const response = await post({ selection: { kind: "selected", entryIds } });
+    assert.equal(response.status, 400);
+    assert.equal((await response.json()).code, "EXPORT_INVALID");
+  }
+  for (const format of ["png", "gif"]) assert.equal((await post({ format })).status, 400);
+  assert.equal(submissions.length, 1, "invalid selections never create export jobs");
+});
+
 test("a restarted worker continues the next image and never re-renders completed files", async () => {
   const renders = [];
   let saved;

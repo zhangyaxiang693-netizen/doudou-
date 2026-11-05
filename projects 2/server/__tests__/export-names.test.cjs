@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 const { test } = require("node:test");
 const { ExportRenderer } = require("../export-renderer.cjs");
+const { advanceExportJob } = require("../export-jobs.cjs");
 const { crc32, zipLocalHeader, zipCentralDirectory } = require("../export-zip.cjs");
 
 function atom(id, schemaId, props = {}) {
@@ -99,6 +100,17 @@ test("production plans use actual audiences consistently for single, module and 
   assert.ok(results.every((entry) => entry.path.startsWith("抽奖结果/")));
   assert.ok(results.some((entry) => entry.path === "抽奖结果/未中奖/默认.png"));
 
+  const selectedIds = [
+    entries.find((entry) => entry.path.startsWith("【兜底页】")).id,
+    entries.find((entry) => entry.path.includes("任务/已完成/")).id,
+    header.id,
+    header.id,
+  ];
+  const selected = await plan({ kind: "selected", entryIds: selectedIds });
+  assert.deepEqual(selected, entries.filter((entry) => selectedIds.includes(entry.id)));
+  await assert.rejects(plan({ kind: "selected", entryIds: [header.id, "missing"] }), /重新选择/);
+  await assert.rejects(plan({ kind: "selected", entryIds: [] }), /找不到/);
+
   const renamed = structuredClone(snapshot);
   renamed.editor.pages[0].nodes[0].guidedLineageVariants[0].title = "个人素人";
   const after = await plan({ kind: "all" }, "zip", renamed);
@@ -123,4 +135,51 @@ test("production plans use actual audiences consistently for single, module and 
     index += 46 + length;
   }
   assert.deepEqual(zipPaths, entries.map((entry) => entry.path));
+
+  // Run selected cuts through real production PNG capture and ZIP packing.
+  const chunks = new Map();
+  const chunkKey = (index, part) => `${index}:${part}`;
+  let selectedJob = {
+    ...job, id: "selected-zip", build_id: renderer.buildId, status: "pending",
+    input_json: { ...input, selection: { kind: "selected", entryIds: selectedIds } },
+  };
+  const repository = {
+    async putBuffer(_job, _lease, index, bytes, part = 0) {
+      chunks.set(chunkKey(index, part), Buffer.from(bytes));
+      return { size: bytes.length, parts: 1, crc: crc32(bytes) };
+    },
+    async putChunk(_job, _lease, index, part, bytes) {
+      chunks.set(chunkKey(index, part), Buffer.from(bytes));
+    },
+    async getChunk(_job, index, part) { return chunks.get(chunkKey(index, part)); },
+    async checkpoint(current, _lease, progress, status = "pending") {
+      return { ...current, progress_json: progress, status };
+    },
+  };
+  for (let step = 0; selectedJob.status !== "ready" && step < 12; step++) {
+    selectedJob = await advanceExportJob({ job: selectedJob, lease: "test", repository, renderer });
+  }
+  assert.equal(selectedJob.status, "ready");
+  assert.deepEqual(selectedJob.progress_json.items, selected);
+  assert.equal(await renderer.page.locator(
+    "[data-server-capture] input[type=checkbox], [data-guided-export-selection-count]",
+  ).count(), 0, "selection controls never enter image capture");
+  const zip = Buffer.concat(Array.from(
+    { length: selectedJob.progress_json.result.parts },
+    (_, part) => chunks.get(chunkKey(-1, part)),
+  ));
+  const actualPaths = [];
+  for (let offset = 0; zip.readUInt32LE(offset) === 0x04034b50;) {
+    const size = zip.readUInt32LE(offset + 18);
+    const nameLength = zip.readUInt16LE(offset + 26);
+    const extraLength = zip.readUInt16LE(offset + 28);
+    actualPaths.push(zip.subarray(offset + 30, offset + 30 + nameLength).toString("utf8"));
+    const start = offset + 30 + nameLength + extraLength;
+    const png = zip.subarray(start, start + size);
+    assert.equal(png.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    assert.equal(crc32(png), zip.readUInt32LE(offset + 14));
+    offset = start + size;
+  }
+  assert.deepEqual(actualPaths, selected.map((entry) => entry.path));
+  assert.deepEqual(snapshot, original);
 });

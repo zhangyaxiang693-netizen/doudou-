@@ -1,5 +1,6 @@
 import { runServerExport, openServerExports, refreshServerExports } from "./server-export-client.js";
 import { assignExportNames, makeExportArchiveName } from "./export-names.js";
+import { getSelectedExportEntries } from "./export-selection.js";
 import {
   applyProjectSnapshot,
   createProjectSnapshot,
@@ -18945,6 +18946,7 @@ function renderGuidedPreview() {
   `;
   $(".guided-export-entry")?.addEventListener("click", (event) => {
     event.stopPropagation();
+    guidedExportSelectedIds.clear();
     state.selectedId = null;
     state.guidedStateMenuNodeId = null;
     state.guidedPanelMode = null;
@@ -23722,13 +23724,19 @@ function renderGuidedExportCard(entry) {
   const previewScale = width > 720 ? 0.44 : 0.46;
   const cardWidth = Math.ceil(width * previewScale);
   const supportsGif = isAnimatedResourceExportEntry(entry);
+  const selected = guidedExportSelectedIds.has(entry.id);
   return `
-    <article class="guided-export-card" style="width:${cardWidth}px;">
+    <article class="guided-export-card${selected ? " is-selected" : ""}" style="width:${cardWidth}px;">
       <header>
-        <div>
-          <span>版本</span>
-          <strong>${escapeHtml(entry.variantTitle)}</strong>
-        </div>
+        <label class="guided-export-card-selection">
+          <input type="checkbox" data-guided-export-select="${escapeAttr(entry.id)}"
+            aria-label="${escapeAttr(`选择切图：${entry.moduleTitle} · ${entry.dimensionTitle} · ${entry.variantTitle}`)}"
+            ${selected ? "checked" : ""}>
+          <div>
+            <span>版本</span>
+            <strong>${escapeHtml(entry.variantTitle)}</strong>
+          </div>
+        </label>
         <div class="guided-export-card-actions">
           <button data-guided-export-single="${escapeAttr(entry.id)}" disabled>下载 PNG</button>
           ${
@@ -23860,6 +23868,34 @@ function renderGuidedExportPageGroup(page, entries) {
 }
 
 let guidedExportReadyPromise = Promise.resolve();
+const guidedExportSelectedIds = new Set();
+let guidedExportAvailableEntries = [];
+
+function syncGuidedExportSelection() {
+  const root = document.querySelector(".guided-export-page");
+  if (!root) return;
+  const total = guidedExportAvailableEntries.length;
+  const count = guidedExportSelectedIds.size;
+  root.querySelectorAll("[data-guided-export-select]").forEach((checkbox) => {
+    const checked = guidedExportSelectedIds.has(checkbox.dataset.guidedExportSelect);
+    checkbox.checked = checked;
+    checkbox.closest(".guided-export-card")?.classList.toggle("is-selected", checked);
+  });
+  const selectAll = root.querySelector("[data-guided-export-select-all]");
+  if (selectAll) {
+    selectAll.checked = total > 0 && count === total;
+    selectAll.indeterminate = count > 0 && count < total;
+  }
+  const counter = root.querySelector("[data-guided-export-selection-count]");
+  if (counter) counter.textContent = `已选 ${count} / ${total} 张`;
+  const clear = root.querySelector("[data-guided-export-clear-selection]");
+  if (clear) clear.disabled = count === 0;
+  const download = root.querySelector("[data-guided-export-selected]");
+  if (download) {
+    download.disabled = count === 0 || root.dataset.exportReady !== "true" ||
+      download.dataset.exportSubmitting === "true";
+  }
+}
 
 async function initializeGuidedExportPage(root) {
   await window.renderReactMaterials?.(root);
@@ -23889,12 +23925,18 @@ async function initializeGuidedExportPage(root) {
       }
       button.removeAttribute("disabled");
     });
+  syncGuidedExportSelection();
 }
 
 function renderGuidedExportPage() {
   const center = $(".activity-center");
   if (!center) return;
   const entries = getGuidedCutExportEntries();
+  guidedExportAvailableEntries = entries;
+  const availableIds = new Set(entries.map((entry) => entry.id));
+  guidedExportSelectedIds.forEach((id) => {
+    if (!availableIds.has(id)) guidedExportSelectedIds.delete(id);
+  });
   const pageGroups = state.pages
     .map((page) => ({
       page,
@@ -23919,6 +23961,16 @@ function renderGuidedExportPage() {
           </button>
           <button class="guided-export-batch" data-server-export-tasks>导出任务</button>
         </div>
+        <div class="guided-export-selection-bar">
+          <label class="guided-export-select-all">
+            <input type="checkbox" data-guided-export-select-all ${entries.length ? "" : "disabled"}>
+            <span>全选</span>
+          </label>
+          <span class="guided-export-selection-count" data-guided-export-selection-count role="status" aria-live="polite"></span>
+          <button type="button" class="guided-export-clear-selection" data-guided-export-clear-selection disabled>清空选择</button>
+          <span class="guided-export-selection-hint">可跨页面、模块和状态勾选</span>
+          <button type="button" class="guided-export-batch guided-export-selected" data-guided-export-selected disabled>下载所选 ZIP</button>
+        </div>
       </header>
       <main class="guided-export-content">
         ${
@@ -23933,6 +23985,7 @@ function renderGuidedExportPage() {
       </main>
     </section>
   `;
+  syncGuidedExportSelection();
   const exportPage = center.querySelector(".guided-export-page");
   guidedExportReadyPromise = exportPage
     ? initializeGuidedExportPage(exportPage).catch((error) => {
@@ -23995,6 +24048,19 @@ async function downloadGuidedExportBatch() {
   }, document.querySelector("[data-guided-export-batch]"));
 }
 
+async function downloadGuidedExportSelected(button) {
+  if (button.disabled) return;
+  const entries = getSelectedExportEntries(
+    getGuidedCutExportEntries(), [...guidedExportSelectedIds],
+  );
+  if (!entries.length) return;
+  return submitServerExport({
+    format: "zip",
+    selection: { kind: "selected", entryIds: entries.map((entry) => entry.id) },
+    filename: makeExportArchiveName(state.activity?.name),
+  }, button);
+}
+
 async function downloadGuidedExportModule(pageId, moduleKey, button) {
   const entries = getGuidedCutExportEntries().filter(
     (entry) =>
@@ -24010,6 +24076,7 @@ async function downloadGuidedExportModule(pageId, moduleKey, button) {
 
 async function submitServerExport(input, button) {
   const label = button?.textContent;
+  if (button) button.dataset.exportSubmitting = "true";
   button?.setAttribute("disabled", "");
   try {
     await runServerExport({ snapshot: createCurrentProjectSnapshot(), ...input }, sessionUser?.id);
@@ -24017,7 +24084,11 @@ async function submitServerExport(input, button) {
     console.error("[server-export]", error);
   } finally {
     button?.removeAttribute("disabled");
-    if (button) button.textContent = label;
+    if (button) {
+      delete button.dataset.exportSubmitting;
+      button.textContent = label;
+    }
+    if (button?.matches("[data-guided-export-selected]")) syncGuidedExportSelection();
   }
 }
 
@@ -25447,6 +25518,7 @@ function bindEvents() {
     }
 
     if (event.target.closest("[data-guided-open-export]")) {
+      guidedExportSelectedIds.clear();
       state.selectedId = null;
       state.guidedStateMenuNodeId = null;
       state.guidedPanelMode = null;
@@ -25524,6 +25596,18 @@ function bindEvents() {
 
     if (event.target.closest("[data-guided-export-batch]")) {
       downloadGuidedExportBatch();
+      return;
+    }
+
+    const guidedExportSelected = event.target.closest("[data-guided-export-selected]");
+    if (guidedExportSelected) {
+      downloadGuidedExportSelected(guidedExportSelected);
+      return;
+    }
+
+    if (event.target.closest("[data-guided-export-clear-selection]")) {
+      guidedExportSelectedIds.clear();
+      syncGuidedExportSelection();
       return;
     }
 
@@ -28476,6 +28560,23 @@ function bindEvents() {
   });
 
   document.addEventListener("change", (event) => {
+    const exportCheckbox = event.target.closest("[data-guided-export-select]");
+    if (exportCheckbox) {
+      const id = exportCheckbox.dataset.guidedExportSelect;
+      if (exportCheckbox.checked) guidedExportSelectedIds.add(id);
+      else guidedExportSelectedIds.delete(id);
+      syncGuidedExportSelection();
+      return;
+    }
+    const exportSelectAll = event.target.closest("[data-guided-export-select-all]");
+    if (exportSelectAll) {
+      guidedExportSelectedIds.clear();
+      if (exportSelectAll.checked) {
+        guidedExportAvailableEntries.forEach((entry) => guidedExportSelectedIds.add(entry.id));
+      }
+      syncGuidedExportSelection();
+      return;
+    }
     const historyGroupSelect = event.target.closest(
       "[data-history-group-select]",
     );
@@ -29151,7 +29252,9 @@ function registerServerExportRuntime() {
     plan() {
       const selection = input.selection;
       if (selection.kind === "admin") return [{ id: "admin", path: input.filename, name: input.filename }];
-      const selected = entries.filter((entry) =>
+      const selected = selection.kind === "selected"
+        ? getSelectedExportEntries(entries, selection.entryIds)
+        : entries.filter((entry) =>
         selection.kind === "all" ||
         (selection.kind === "single" && entry.id === selection.entryId) ||
         (selection.kind === "module" && entry.pageId === selection.pageId && getGuidedExportModuleKey(entry) === selection.moduleKey));
