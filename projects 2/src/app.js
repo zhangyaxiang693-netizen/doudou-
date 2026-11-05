@@ -52,7 +52,7 @@ import {
   isTrafficCouponType,
   normalizeAiTrafficCouponName,
 } from "./traffic-coupon.js";
-import homeWorkstationsUrl from "../首页ui/workstations-off.png";
+import homeWorkstationsUrl from "../首页ui/workstations-off.webp";
 import "./home-studio.css";
 import "./home-employees.js";
 
