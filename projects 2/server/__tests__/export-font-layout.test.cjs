@@ -60,7 +60,7 @@ test("real PNG keeps every header glyph and matches a render with cached fonts",
   t.after(() => renderer.close());
   const job = headerJob("抽888元流量大奖");
   const entries = await renderer.plan(job);
-  const item = entries.find((entry) => /^头图(?:_|\.png$)/.test(entry.name));
+  const item = entries.find((entry) => entry.id.includes("__font-header__"));
   assert.ok(item, "the snapshot must select the real header cut");
   await renderer.page.evaluate(() => {
     // macOS has a CJK fallback that Linux's minimal image does not. Reproduce
@@ -107,7 +107,7 @@ test("real export refuses a registered font that fails to load", {
   t.after(() => renderer.close());
   const job = headerJob("抽666元流量大奖");
   const entries = await renderer.plan(job);
-  const item = entries.find((entry) => /^头图(?:_|\.png$)/.test(entry.name));
+  const item = entries.find((entry) => entry.id.includes("__font-header__"));
   await renderer.page.evaluate(() => {
     document.fonts.load = async () => { throw new Error("字体加载失败回归用例"); };
   });

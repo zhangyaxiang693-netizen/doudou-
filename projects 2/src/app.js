@@ -5141,6 +5141,16 @@ function getActivePrdPageTemplate() {
 
 function remapPrdTemplateRowsForInsertedModule(insertIndex) {
   state.prdTableRows = normalizePrdTableRows(state.prdTableRows).map((row) => {
+    const stateDetail = parsePageTemplateStateDetailRowKey(row.key);
+    if (stateDetail && stateDetail.moduleIndex >= insertIndex) {
+      return {
+        ...row,
+        key: getPageTemplateStateDetailRowKey(
+          stateDetail.templateId, stateDetail.moduleIndex + 1,
+          stateDetail.stateId, stateDetail.compoundKey, stateDetail.versionName,
+        ),
+      };
+    }
     const parsed = parsePageTemplateVariableRowKey(row.key);
     if (parsed && parsed.moduleIndex >= insertIndex) {
       const nextIndex = parsed.moduleIndex + 1;
@@ -5176,6 +5186,19 @@ function remapPrdTemplateRowsForInsertedModule(insertIndex) {
 function remapPrdTemplateRowsForDeletedModule(deleteIndex) {
   state.prdTableRows = normalizePrdTableRows(state.prdTableRows)
     .map((row) => {
+      const stateDetail = parsePageTemplateStateDetailRowKey(row.key);
+      if (stateDetail) {
+        if (stateDetail.moduleIndex === deleteIndex) return null;
+        return stateDetail.moduleIndex > deleteIndex
+          ? {
+              ...row,
+              key: getPageTemplateStateDetailRowKey(
+                stateDetail.templateId, stateDetail.moduleIndex - 1,
+                stateDetail.stateId, stateDetail.compoundKey, stateDetail.versionName,
+              ),
+            }
+          : row;
+      }
       const parsed = parsePageTemplateVariableRowKey(row.key);
       if (parsed) {
         if (parsed.moduleIndex === deleteIndex) return null;
@@ -5224,6 +5247,16 @@ function swapPrdTemplateModuleRows(firstIndex, secondIndex) {
     return moduleIndex;
   };
   state.prdTableRows = normalizePrdTableRows(state.prdTableRows).map((row) => {
+    const stateDetail = parsePageTemplateStateDetailRowKey(row.key);
+    if (stateDetail) {
+      return {
+        ...row,
+        key: getPageTemplateStateDetailRowKey(
+          stateDetail.templateId, remapIndex(stateDetail.moduleIndex),
+          stateDetail.stateId, stateDetail.compoundKey, stateDetail.versionName,
+        ),
+      };
+    }
     const parsed = parsePageTemplateVariableRowKey(row.key);
     if (parsed) {
       const nextIndex = remapIndex(parsed.moduleIndex);
@@ -5530,27 +5563,33 @@ const CONSUMPTION_RETURN_DETAIL_MODE_KEY = "__consumptionReturnDetailMode";
 const CONSUMPTION_RETURN_DETAIL_MODE_SHARED = "shared";
 const CONSUMPTION_RETURN_DETAIL_MODE_AUDIENCE = "audience";
 const PAGE_TEMPLATE_STATE_DETAIL_ROW_PREFIX = "页面模板状态变量";
+const PAGE_TEMPLATE_STATE_DETAIL_VERSION_ROW_PREFIX = "页面模板状态变量版本";
 
 function getPageTemplateStateDetailRowKey(
   templateId,
   moduleIndex,
   stateId,
   compoundKey,
+  versionName = "",
 ) {
   return [
-    PAGE_TEMPLATE_STATE_DETAIL_ROW_PREFIX,
+    versionName
+      ? PAGE_TEMPLATE_STATE_DETAIL_VERSION_ROW_PREFIX
+      : PAGE_TEMPLATE_STATE_DETAIL_ROW_PREFIX,
     templateId,
     String(Number(moduleIndex) + 1),
     stateId,
+    ...(versionName ? [versionName] : []),
     compoundKey,
   ].join("｜");
 }
 
 function parsePageTemplateStateDetailRowKey(key) {
   const parts = String(key || "").split("｜");
+  const isVersion = parts[0] === PAGE_TEMPLATE_STATE_DETAIL_VERSION_ROW_PREFIX;
   if (
-    parts[0] !== PAGE_TEMPLATE_STATE_DETAIL_ROW_PREFIX ||
-    parts.length < 5
+    (!isVersion && parts[0] !== PAGE_TEMPLATE_STATE_DETAIL_ROW_PREFIX) ||
+    parts.length < (isVersion ? 6 : 5)
   ) {
     return null;
   }
@@ -5560,7 +5599,8 @@ function parsePageTemplateStateDetailRowKey(key) {
     templateId: parts[1],
     moduleIndex,
     stateId: parts[3],
-    compoundKey: parts.slice(4).join("｜"),
+    versionName: isVersion ? parts[4] : "",
+    compoundKey: parts.slice(isVersion ? 5 : 4).join("｜"),
   };
 }
 
@@ -5698,6 +5738,8 @@ function createConsumptionReturnNodeForTier(sourceNode, tierCount) {
     "sourcePageTemplateNodeIndex",
     "sourcePageTemplateNodeKey",
     "consumptionReturnDetailMode",
+    "activeGuidedStateId",
+    "guidedStates",
     "moduleGroupId",
     "moduleGroupRole",
     "canvasPlacement",
@@ -5855,12 +5897,17 @@ function ensureConsumptionReturnBusinessStates(node) {
       ),
     );
   if (!hasCompleteStates) {
+    const previousStates = node.guidedStates || [];
     const activeStateId = expectedStateIds.includes(node.activeGuidedStateId)
       ? node.activeGuidedStateId
       : expectedStateIds[0];
     node.guidedStates = config.states
       .map(createPageTemplateBusinessStateEntry)
       .filter(Boolean);
+    node.guidedStates.forEach((entry) => {
+      const previous = previousStates.find((item) => item.id === entry.id);
+      if (previous?.detailValues) entry.detailValues = clone(previous.detailValues);
+    });
     node.activeGuidedStateId = activeStateId;
   }
   const templateId = node.sourcePageTemplateId || "";
@@ -5881,10 +5928,14 @@ function ensureConsumptionReturnBusinessStates(node) {
       if (
         parsed?.templateId === templateId &&
         parsed.moduleIndex === moduleIndex &&
-        parsed.stateId === entry.id
+        parsed.stateId === entry.id &&
+        !parsed.versionName
       ) {
         values.set(parsed.compoundKey, row.value ?? "");
       }
+    });
+    Object.entries(entry.detailValues || {}).forEach(([key, value]) => {
+      values.set(key, value);
     });
     entry.detailValues = Object.fromEntries(values);
     if (values.size) applyPageTemplateVariableValuesToNode(entry.node, values);
@@ -11038,6 +11089,14 @@ function startPrdParsing() {
   state.guidedHeaderDefaultPageSnapshots = [];
   if (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID) {
     applyConsumptionReturnMoleculeFromPrdRows(state.prdTableRows);
+    const pageTemplate = getActivePrdPageTemplate();
+    materializePageTemplateNodes(pageTemplate).forEach((node, moduleIndex) => {
+      if (!BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(node.schemaId)) return;
+      state.pageTemplateBlueprintStates = state.pageTemplateBlueprintStates || {};
+      state.pageTemplateBlueprintStates[
+        getPageTemplateBusinessStateKey(pageTemplate.id, moduleIndex)
+      ] = "default";
+    });
   }
   if (state.selectedDemoPackageId === PRD_TABLE_PACKAGE_ID) {
     state.selectedBlueprintAudienceId =
@@ -11352,6 +11411,7 @@ function ensurePageTemplateStateDetailRow(
   templateId,
   stateId,
   initialValue,
+  versionName = "",
 ) {
   if (!field || stateId === "default") return field?.rowIndex;
   const compoundKey = getPageTemplateFieldLocalCompoundKey(field);
@@ -11360,11 +11420,20 @@ function ensurePageTemplateStateDetailRow(
     field.moduleIndex,
     stateId,
     compoundKey,
+    versionName,
   );
   const existingIndex = findPrdTableRowIndexByKey(rowKey);
   if (existingIndex >= 0) return existingIndex;
+  const legacyRowIndex = versionName &&
+    !BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS.has(compoundKey)
+    ? findPrdTableRowIndexByKey(getPageTemplateStateDetailRowKey(
+        templateId, field.moduleIndex, stateId, compoundKey,
+      ))
+    : -1;
   const baseValue =
-    initialValue !== undefined
+    legacyRowIndex >= 0
+      ? state.prdTableRows[legacyRowIndex].value
+      : initialValue !== undefined
       ? initialValue
       : state.prdTableRows[field.rowIndex]?.value ?? field.value ?? "";
   state.prdTableRows.push({
@@ -11372,7 +11441,7 @@ function ensurePageTemplateStateDetailRow(
     value:
       stateId === "unregistered" && compoundKey === "4.buttonText"
         ? "立即报名"
-        : stateId === "postSignup" &&
+        : legacyRowIndex < 0 && stateId === "postSignup" &&
             BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(
               field.sourceModuleSchemaId || field.moduleSchemaId,
             ) &&
@@ -11397,7 +11466,9 @@ function hasIndependentPageTemplateStateVariables(group) {
 
 function syncBigdayCouponSharedStateField(rowKey, value) {
   const stateParsed = parsePageTemplateStateDetailRowKey(rowKey);
-  const variableParsed = parsePageTemplateVariableRowKey(rowKey);
+  const variableParsed =
+    parsePageTemplateVariableRowKey(rowKey) ||
+    parsePageTemplateVariableVersionRowKey(rowKey);
   const parsed = stateParsed || variableParsed;
   if (!parsed || !BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS.has(parsed.compoundKey)) {
     return false;
@@ -11414,11 +11485,14 @@ function syncBigdayCouponSharedStateField(rowKey, value) {
   );
   if (!BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(schemaId)) return false;
 
+  const field = {
+    moduleIndex: parsed.moduleIndex,
+    compoundKey: parsed.compoundKey,
+  };
   setPrdTableRowValueByKey(
-    getPageTemplateVariableRowKey({
-      moduleIndex: parsed.moduleIndex,
-      compoundKey: parsed.compoundKey,
-    }),
+    parsed.versionName
+      ? getPageTemplateVariableVersionRowKey(field, parsed.versionName)
+      : getPageTemplateVariableRowKey(field),
     value,
   );
   setPrdTableRowValueByKey(
@@ -11427,6 +11501,7 @@ function syncBigdayCouponSharedStateField(rowKey, value) {
       parsed.moduleIndex,
       "postSignup",
       parsed.compoundKey,
+      parsed.versionName,
     ),
     value,
   );
@@ -11454,7 +11529,7 @@ function getPageTemplateStateSchemaDefaultValue(group, field) {
   );
 }
 
-function getPageTemplateIndependentStateVersion(group, baseVersion) {
+function getPageTemplateIndependentStateVersion(group, baseVersion, versionName = "") {
   const stateStorageId = getPageTemplateIndependentStateStorageId(group);
   if (
     !baseVersion ||
@@ -11465,20 +11540,28 @@ function getPageTemplateIndependentStateVersion(group, baseVersion) {
   }
   return {
     ...baseVersion,
-    name:
+    name: versionName || (
       group.stateOptions?.find((item) => item.id === group.activeStateId)?.name ||
-      baseVersion.name,
+      baseVersion.name
+    ),
     sections: (baseVersion.sections || []).map((section) => ({
       ...section,
       fields: (section.fields || []).map((field) => ({
         ...field,
+        isPrdKey: BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(group.sourceModuleSchemaId)
+          ? false
+          : field.isPrdKey,
         rowIndex: ensurePageTemplateStateDetailRow(
           field,
           group.templateId,
           stateStorageId,
-          stateStorageId === "entry:default"
+          stateStorageId === "entry:default" ||
+            BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS.has(
+              getPageTemplateFieldLocalCompoundKey(field),
+            )
             ? undefined
             : getPageTemplateStateSchemaDefaultValue(group, field),
+          versionName,
         ),
       })),
     })),
@@ -11640,12 +11723,26 @@ function getLineageVersionNameForVariant(sourceNode, variantId) {
 function setNodeAndGuidedStatesValueByPath(node, path, value) {
   if (!node) return;
   setNodeValueByPath(node, path, value);
+  if (BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(node.schemaId)) {
+    (node.guidedStates || []).forEach((entry) => {
+      if (
+        entry.id !== (node.activeGuidedStateId || "default") &&
+        !BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS.has(path)
+      ) return;
+      setNodeValueByPath(entry.node, path, value);
+      entry.detailValues = { ...entry.detailValues, [path]: value };
+    });
+    return;
+  }
   const propKey = String(path || "").split(".").pop();
   (node.guidedStates || []).forEach((entry) => {
     if ((entry.lockedPropKeys || []).includes(propKey)) return;
     setNodeValueByPath(entry.node, path, value);
-    if (entry.detailValues && Object.hasOwn(entry.detailValues, path)) {
-      entry.detailValues[path] = value;
+    if (
+      isConsumptionReturnMoleculeNode(node) ||
+      (entry.detailValues && Object.hasOwn(entry.detailValues, path))
+    ) {
+      entry.detailValues = { ...entry.detailValues, [path]: value };
     }
   });
 }
@@ -11726,6 +11823,9 @@ function syncPageTemplateInlineEditToRows(sourceNode, variantId, path, value) {
   const sharedConsumptionReturnDetail =
     isConsumptionReturnDetailShared(sourceNode, path);
   const versionName = getLineageVersionNameForVariant(sourceNode, variantId);
+  const stateSourceNode = variantId && variantId !== "base"
+    ? findLineageVariant(sourceNode, variantId)?.node || sourceNode
+    : sourceNode;
   if (sharedConsumptionReturnDetail) {
     setPrdTableRowValueByKey(getPageTemplateVariableRowKey(field), value);
     syncConsumptionReturnSharedStateField(
@@ -11734,10 +11834,21 @@ function syncPageTemplateInlineEditToRows(sourceNode, variantId, path, value) {
       sourceNode.sourcePageTemplateId,
     );
   } else {
-    const rowKey = versionName
-      ? getPageTemplateVariableVersionRowKey(field, versionName)
-      : getPageTemplateVariableRowKey(field);
+    const rowKey =
+      BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(sourceNode.schemaId) &&
+      stateSourceNode.activeGuidedStateId === "postSignup"
+        ? getPageTemplateStateDetailRowKey(
+            sourceNode.sourcePageTemplateId,
+            sourceNode.sourcePageTemplateNodeIndex,
+            "postSignup",
+            path,
+            versionName,
+          )
+        : versionName
+          ? getPageTemplateVariableVersionRowKey(field, versionName)
+          : getPageTemplateVariableRowKey(field);
     setPrdTableRowValueByKey(rowKey, value);
+    syncBigdayCouponSharedStateField(rowKey, value);
   }
   state.prdTableBlueprint = null;
   state.prdTableBlueprintSignature = "";
@@ -12174,15 +12285,21 @@ function getPageTemplateVariableGroups(pageTemplate, targetModuleIndex = null) {
       group,
       getPageTemplateIndependentStateVersion(group, baseVersion),
     );
-    const importedVersions = manualVersions.map((version) =>
-      getConsumptionReturnAudienceStateVersion(group, {
+    const importedVersions = manualVersions.map((version) => {
+      const audienceVersion = {
         ...version,
         sections: buildPageTemplateVariableSections(
           group.fields,
           (field) => ensurePageTemplateVariableVersionRow(field, version.name),
         ),
-      }),
-    );
+      };
+      return getConsumptionReturnAudienceStateVersion(
+        group,
+        BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(group.sourceModuleSchemaId)
+          ? getPageTemplateIndependentStateVersion(group, audienceVersion, version.name)
+          : audienceVersion,
+      );
+    });
     const versions = hasImportedModuleBlueprintVersions(group.versionModuleKey) && importedVersions.length
       ? importedVersions
       : [
@@ -13032,6 +13149,21 @@ function renameManualModuleVersionRows(moduleName, prevName, nextName) {
   state.prdTableRows = normalizePrdTableRows(state.prdTableRows).map((row) => {
     const key = String(row.key || "");
     if (pageModule) {
+      const stateDetail = parsePageTemplateStateDetailRowKey(key);
+      if (
+        stateDetail?.templateId === pageModule.templateId &&
+        stateDetail.moduleIndex === pageModule.moduleIndex &&
+        stateDetail.versionName &&
+        normalizePageTemplateLookupName(stateDetail.versionName) === normalizePageTemplateLookupName(prevName)
+      ) {
+        return {
+          ...row,
+          key: getPageTemplateStateDetailRowKey(
+            stateDetail.templateId, stateDetail.moduleIndex,
+            stateDetail.stateId, stateDetail.compoundKey, nextName,
+          ),
+        };
+      }
       const parsed = parsePageTemplateVariableVersionRowKey(key);
       if (
         parsed &&
@@ -13070,6 +13202,13 @@ function deleteManualModuleVersionRows(moduleName, versionName) {
   state.prdTableRows = normalizePrdTableRows(state.prdTableRows).filter((row) => {
     const key = String(row.key || "");
     if (pageModule) {
+      const stateDetail = parsePageTemplateStateDetailRowKey(key);
+      if (
+        stateDetail?.templateId === pageModule.templateId &&
+        stateDetail.moduleIndex === pageModule.moduleIndex &&
+        stateDetail.versionName &&
+        normalizePageTemplateLookupName(stateDetail.versionName) === normalizePageTemplateLookupName(versionName)
+      ) return false;
       const parsed = parsePageTemplateVariableVersionRowKey(key);
       return !(
         parsed &&
@@ -17874,21 +18013,77 @@ function applyPageTemplateVariableValuesToNode(node, values) {
   });
 }
 
+function applyBigdayCouponStateVariableValues(node, values) {
+  (node.guidedStates || []).forEach((entry) => {
+    const stateValues = entry.id === "default"
+      ? values
+      : new Map([...values].filter(([key]) => BIGDAY_COUPON_SHARED_STATE_FIELD_KEYS.has(key)));
+    entry.detailValues = {
+      ...entry.detailValues,
+      ...Object.fromEntries(stateValues),
+    };
+    applyPageTemplateVariableValuesToNode(entry.node, stateValues);
+  });
+  applyGuidedBusinessState(node, node.activeGuidedStateId || "default");
+}
+
+function applyConsumptionReturnStateVariableValues(node, values) {
+  ensureConsumptionReturnBusinessStates(node);
+  (node.guidedStates || []).forEach((entry) => {
+    const stateValues = new Map([...values].filter(([path]) =>
+      !(entry.lockedPropKeys || []).includes(String(path).split(".").pop()),
+    ));
+    entry.detailValues = {
+      ...entry.detailValues,
+      ...Object.fromEntries(stateValues),
+    };
+    applyPageTemplateVariableValuesToNode(entry.node, stateValues);
+  });
+  applyGuidedBusinessState(node, node.activeGuidedStateId || "default");
+}
+
+function applyPageTemplateStateDetailValuesToNode(node, rows, versionName = "") {
+  if (!node?.sourcePageTemplateId) return;
+  const stateValues = new Map();
+  // Legacy state rows remain the fallback; audience rows take precedence.
+  for (const scopedVersion of versionName ? ["", versionName] : [""]) {
+    normalizePrdTableRows(rows).forEach((row) => {
+      const parsed = parsePageTemplateStateDetailRowKey(row.key);
+      if (
+        !parsed ||
+        parsed.templateId !== node.sourcePageTemplateId ||
+        parsed.moduleIndex !== Number(node.sourcePageTemplateNodeIndex) ||
+        parsed.versionName !== scopedVersion
+      ) return;
+      if (!stateValues.has(parsed.stateId)) stateValues.set(parsed.stateId, new Map());
+      stateValues.get(parsed.stateId).set(parsed.compoundKey, row.value ?? "");
+    });
+  }
+  stateValues.forEach((values, stateId) => {
+    const [businessStateId, entryCardStateId] = stateId.split(":");
+    if (
+      entryCardStateId &&
+      (
+        businessStateId !== "entry" ||
+        getPageTemplateEntryCardStateId(
+          node.sourcePageTemplateId,
+          Number(node.sourcePageTemplateNodeIndex),
+        ) !== entryCardStateId
+      )
+    ) return;
+    const entry = (node.guidedStates || []).find((item) => item.id === businessStateId);
+    if (!entry?.node) return;
+    entry.detailValues = { ...entry.detailValues, ...Object.fromEntries(values) };
+    applyPageTemplateVariableValuesToNode(entry.node, values);
+    if (node.activeGuidedStateId === businessStateId) {
+      applyPageTemplateVariableValuesToNode(node, values);
+    }
+  });
+}
+
 function applyPageTemplateVariableRowsToNodes(nodes = [], rows = []) {
   const valuesByModule = new Map();
-  const stateValuesByModule = new Map();
   normalizePrdTableRows(rows).forEach((row) => {
-    const stateParsed = parsePageTemplateStateDetailRowKey(row.key);
-    if (stateParsed) {
-      const stateKey = `${stateParsed.templateId}|${stateParsed.moduleIndex}|${stateParsed.stateId}`;
-      if (!stateValuesByModule.has(stateKey)) {
-        stateValuesByModule.set(stateKey, new Map());
-      }
-      stateValuesByModule
-        .get(stateKey)
-        .set(stateParsed.compoundKey, row.value ?? "");
-      return;
-    }
     const parsed = parsePageTemplateVariableRowKey(row.key);
     if (!parsed) return;
     const value = String(row.value ?? "");
@@ -17898,39 +18093,21 @@ function applyPageTemplateVariableRowsToNodes(nodes = [], rows = []) {
 
   valuesByModule.forEach((values, moduleIndex) => {
     const node = nodes[moduleIndex];
+    if (node && BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(node.schemaId)) {
+      applyBigdayCouponStateVariableValues(node, values);
+      return;
+    }
+    if (isConsumptionReturnMoleculeNode(node)) {
+      applyConsumptionReturnStateVariableValues(node, values);
+      return;
+    }
     applyPageTemplateVariableValuesToNode(node, values);
     (node?.guidedStates || []).forEach((entry) => {
       applyPageTemplateVariableValuesToNode(entry.node, values);
     });
   });
 
-  stateValuesByModule.forEach((values, stateKey) => {
-    const [templateId, moduleIndexText, stateId] = stateKey.split("|");
-    const node = nodes[Number(moduleIndexText)];
-    if (!node || node.sourcePageTemplateId !== templateId) return;
-    const [businessStateId, entryCardStateId] = stateId.split(":");
-    if (
-      entryCardStateId &&
-      (
-        businessStateId !== "entry" ||
-        getPageTemplateEntryCardStateId(
-          templateId,
-          Number(moduleIndexText),
-        ) !== entryCardStateId
-      )
-    ) {
-      return;
-    }
-    const entry = (node.guidedStates || []).find(
-      (item) => item.id === businessStateId,
-    );
-    if (!entry?.node) return;
-    entry.detailValues = Object.fromEntries(values);
-    applyPageTemplateVariableValuesToNode(entry.node, values);
-    if (node.activeGuidedStateId === businessStateId) {
-      applyPageTemplateVariableValuesToNode(node, values);
-    }
-  });
+  nodes.forEach((node) => applyPageTemplateStateDetailValuesToNode(node, rows));
 }
 
 function applyPageTemplateVariableVersionRowsToNodes(nodes = [], rows = [], pageTemplateId = "") {
@@ -17980,7 +18157,7 @@ function applyPageTemplateVariableVersionRowsToNodes(nodes = [], rows = [], page
           node,
           getConsumptionReturnTierCountFromValues(baseValues),
         );
-        applyPageTemplateVariableValuesToNode(nextNode, baseValues);
+        applyConsumptionReturnStateVariableValues(nextNode, baseValues);
         nodes[moduleIndex] = nextNode;
       }
       return;
@@ -17991,7 +18168,7 @@ function applyPageTemplateVariableVersionRowsToNodes(nodes = [], rows = [], page
         baseNode,
         getConsumptionReturnTierCountFromValues(baseValues),
       );
-      applyPageTemplateVariableValuesToNode(baseNode, baseValues);
+      applyConsumptionReturnStateVariableValues(baseNode, baseValues);
     }
     const baseVariant = {
       id: "base",
@@ -18015,10 +18192,17 @@ function applyPageTemplateVariableVersionRowsToNodes(nodes = [], rows = [], page
           getConsumptionReturnTierCountFromValues(effectiveValues),
         );
       }
-      applyPageTemplateVariableValuesToNode(variantNode, effectiveValues);
-      (variantNode.guidedStates || []).forEach((entry) => {
-        applyPageTemplateVariableValuesToNode(entry.node, effectiveValues);
-      });
+      if (BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(variantNode.schemaId)) {
+        applyBigdayCouponStateVariableValues(variantNode, effectiveValues);
+        applyPageTemplateStateDetailValuesToNode(variantNode, rows, version.name);
+      } else if (isConsumptionReturnMoleculeNode(variantNode)) {
+        applyConsumptionReturnStateVariableValues(variantNode, effectiveValues);
+      } else {
+        applyPageTemplateVariableValuesToNode(variantNode, effectiveValues);
+        (variantNode.guidedStates || []).forEach((entry) => {
+          applyPageTemplateVariableValuesToNode(entry.node, effectiveValues);
+        });
+      }
       return {
         id: version.id,
         title: version.name,
@@ -20215,6 +20399,8 @@ function renderGuidedLineageEdges(graph, variants) {
 
 function applyLineageVariantToNode(target, variant) {
   const source = cloneNodeForLineage(variant.node);
+  const isBigdayCoupon = BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(source.schemaId);
+  const hasAudienceStates = isBigdayCoupon || isConsumptionReturnMoleculeNode(source);
   const keep = {
     id: target.id,
     sourceContextId: target.sourceContextId,
@@ -20230,7 +20416,7 @@ function applyLineageVariantToNode(target, variant) {
     sourceLotteryNodeId: target.sourceLotteryNodeId,
     isLotteryResultPopup: target.isLotteryResultPopup,
     activeGuidedStateId: target.activeGuidedStateId,
-    guidedStates: target.guidedStates,
+    guidedStates: hasAudienceStates ? source.guidedStates : target.guidedStates,
     guidedLineageVariants: target.guidedLineageVariants,
     guidedLineageDimensions: target.guidedLineageDimensions,
     guidedLineageGraph: target.guidedLineageGraph,
@@ -20238,6 +20424,9 @@ function applyLineageVariantToNode(target, variant) {
   Object.assign(target, source, keep, {
     activeLineageVariantId: variant.id,
   });
+  if (hasAudienceStates) {
+    applyGuidedBusinessState(target, target.activeGuidedStateId || "default");
+  }
 }
 
 function renderGuidedLineageEditor(node) {
@@ -20830,6 +21019,17 @@ function applyGuidedBusinessState(node, stateId) {
     const buttonChild = node.children?.[4];
     if (progressChild?.props) progressChild.props.hideProgressGraphic = false;
     if (buttonChild?.props) buttonChild.props.buttonText = "立即报名";
+  }
+  if (
+    BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(node.schemaId) ||
+    isConsumptionReturnMoleculeNode(node)
+  ) {
+    const activeVariant = node.guidedLineageVariants?.find(
+      (variant) => variant.id === node.activeLineageVariantId,
+    );
+    if (activeVariant?.node && activeVariant.node !== node) {
+      applyGuidedBusinessState(activeVariant.node, stateId);
+    }
   }
   return true;
 }

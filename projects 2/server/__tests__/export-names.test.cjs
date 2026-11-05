@@ -68,15 +68,14 @@ test("production plans use actual audiences consistently for single, module and 
   const job = { id: "naming-plan", owner_id: "naming-regression", input_json: input };
   const entries = await renderer.plan(job);
   const names = entries.map((entry) => entry.name);
-  assert.ok(names.includes("头图_高消耗老客.png"));
-  assert.ok(names.includes("头图_人群2.png"));
-  assert.ok(names.includes("任务标题_个人素人-近30天消耗(0,100].png"));
-  assert.ok(names.includes("任务1_个人素人-近30天消耗(0,100]_未完成.png"));
-  assert.ok(names.includes("任务1_个人素人-近30天消耗(0,100]_已完成.png"));
-  assert.ok(names.includes("中奖_奖品2-1000元心动券包.png"));
-  assert.ok(entries.some((entry) => entry.path === "【兜底页】活动火爆/页面底图/页面底图.png"));
-  assert.ok(entries.some((entry) => entry.path === "【落地页】/任务/未完成/任务1_个人素人-近30天消耗(0,100]_未完成.png"));
-  assert.ok(entries.some((entry) => entry.path === "【弹窗】/抽奖结果/未中奖/未中奖.png"));
+  assert.ok(names.includes("高消耗老客.png"));
+  assert.ok(names.includes("人群2.png"));
+  assert.ok(names.includes("标题_个人素人-近30天消耗(0,100].png"));
+  assert.ok(names.includes("奖品2-1000元心动券包.png"));
+  assert.ok(entries.some((entry) => entry.path === "【兜底页】活动火爆/页面底图/默认.png"));
+  assert.ok(entries.some((entry) => entry.path === "【落地页】/任务/未完成/1_个人素人-近30天消耗(0,100].png"));
+  assert.ok(entries.some((entry) => entry.path === "【落地页】/任务/已完成/1_个人素人-近30天消耗(0,100].png"));
+  assert.ok(entries.some((entry) => entry.path === "【弹窗】/抽奖结果/未中奖/默认.png"));
   assert.equal(new Set(entries.map((entry) => entry.path)).size, entries.length);
   assert.deepEqual(snapshot, original, "planning cannot change the persisted input");
 
@@ -86,11 +85,11 @@ test("production plans use actual audiences consistently for single, module and 
       return window.serverExportRuntime.plan();
     }, { ...input, snapshot: nextSnapshot, selection, format });
   }
-  const header = entries.find((entry) => entry.name === "头图_高消耗老客.png");
+  const header = entries.find((entry) => entry.name === "高消耗老客.png");
   const single = await plan({ kind: "single", entryId: header.id }, "png");
   assert.deepEqual(single, [header]);
   const module = await plan({ kind: "module", pageId: "main", moduleKey: "node:header" });
-  assert.deepEqual(module.map((entry) => entry.name), ["头图_高消耗老客.png", "头图_人群2.png"]);
+  assert.deepEqual(module.map((entry) => entry.name), ["高消耗老客.png", "人群2.png"]);
   assert.deepEqual(module.map((entry) => entry.path), module.map((entry) => `头图/${entry.name}`));
   const tasks = await plan({ kind: "module", pageId: "main", moduleKey: "node:tasks" });
   assert.equal(tasks.length, 3);
@@ -98,13 +97,13 @@ test("production plans use actual audiences consistently for single, module and 
   const results = await plan({ kind: "module", pageId: "main", moduleKey: "node:prizes" });
   assert.equal(results.length, 3);
   assert.ok(results.every((entry) => entry.path.startsWith("抽奖结果/")));
-  assert.ok(results.some((entry) => entry.path === "抽奖结果/未中奖/未中奖.png"));
+  assert.ok(results.some((entry) => entry.path === "抽奖结果/未中奖/默认.png"));
 
   const renamed = structuredClone(snapshot);
   renamed.editor.pages[0].nodes[0].guidedLineageVariants[0].title = "个人素人";
   const after = await plan({ kind: "all" }, "zip", renamed);
   assert.deepEqual(after.map((entry) => entry.id), entries.map((entry) => entry.id));
-  assert.ok(after.some((entry) => entry.name === "头图_个人素人.png"));
+  assert.ok(after.some((entry) => entry.name === "个人素人.png"));
 
   // Exercise the production ZIP writer's UTF-8 path encoding with every cut.
   let offset = 0;

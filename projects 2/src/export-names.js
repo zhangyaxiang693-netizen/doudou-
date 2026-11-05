@@ -101,16 +101,12 @@ function moduleName(entry) {
     safe(entry.moduleTitle).split("｜").pop().replace(/\s+/g, "") || "模块";
 }
 
-function sliceName(entry, module) {
+function sliceName(entry) {
   const kind = entry.exportKind;
-  if (kind === "page-background") return "页面底图";
-  if (kind === "task-list-title") return "任务标题";
-  if (kind === "case-showcase-shell") return "案例底板";
-  if (kind === "case-showcase-card") return "案例";
-  if (kind === "node-guide-title") return "行业指南标题";
-  if (kind === "node-guide-card") return "行业指南";
-  if (entry.naming?.taskIndex) return `任务${entry.naming.taskIndex}`;
-  return module;
+  if (kind === "task-list-title" || kind === "node-guide-title") return "标题";
+  if (kind === "case-showcase-shell") return "底板";
+  if (entry.naming?.taskIndex) return String(entry.naming.taskIndex);
+  return "";
 }
 
 function joinAudience(dimension, version, count) {
@@ -150,21 +146,21 @@ export function assignExportNames(entries, { pages = [], workflowType = "venue" 
     const platform = version.platform || dimension.platform ||
       platformLabel(page?.dimension).platform || platformLabel(page?.name).platform;
     const module = moduleName(entry);
-    const slice = sliceName(entry, module);
+    const slice = sliceName(entry);
     const state = stateLabel(entry);
     const audience = entry.exportKind === "page-background" ? ""
       : joinAudience(dimension.text, version.text, counts.get(scope(entry)).size);
     let parts = [slice, audience];
     if (entry.exportKind === "lottery-popup") {
       parts = entry.naming?.prizeIndex
-        ? ["中奖", `奖品${entry.naming.prizeIndex}-${entry.naming.prizeName || "奖品"}`]
-        : ["未中奖"];
+        ? [`奖品${entry.naming.prizeIndex}-${entry.naming.prizeName || "奖品"}`]
+        : [];
     } else {
       let detail = entry.naming?.sliceTitle || "";
       if (entry.exportKind === "node-guide-card") detail = detail.replace(/行业$/, "");
-      parts.push(detail, state);
+      parts.push(detail);
     }
-    const stem = `${platform ? `【${platform}】` : ""}${parts.filter(Boolean).map(safe).filter(Boolean).join("_")}`;
+    const stem = `${platform ? `【${platform}】` : ""}${parts.filter(Boolean).map(safe).filter(Boolean).join("_") || "默认"}`;
     const category = exportCategory(entry, page, mainPages, workflowType);
     return { ...entry, exportModuleName: module, exportStateTitle: state, exportCategory: category, stem };
   });
