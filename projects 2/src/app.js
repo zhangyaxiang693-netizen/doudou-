@@ -460,7 +460,7 @@ const COMPONENT_DISPLAY_NAME_BY_ID = {
   "用户教育案例-样式1": "用户教育｜案例展示",
   "用户教育案例-样式2": "用户教育｜案例加行动按钮",
   "用户教育-攻略": "用户教育｜投放攻略",
-  AI智投: "产品教育｜AI 智投",
+  AI智投: "产品教育｜AI 投放",
   节点指南: "节点营销｜行业内容指南",
   官方小助手模块: "用户教育｜官方小助手",
   "模块标题-正常": "模块标题",
@@ -830,7 +830,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     description: "由模块标题、智投星内容和大按钮组成。",
     className: "ai-smart-invest-module",
     children: [
-      ["模块标题-正常", { titleText: "AI智投 全新上线", useUnifiedTypography: true }],
+      ["模块标题-正常", { titleText: "AI投放 全新上线", useUnifiedTypography: true }],
       ["智投星内容", {}],
       ["大按钮", { buttonText: "立即体验" }],
     ],

@@ -18,7 +18,7 @@ export type IGeneratedComponent = {
 
 export default function GeneratedComponent(props: IGeneratedComponent) {
   const {
-    introText = 'AI智投聚焦创作者在投放过程中的决策难题，对话式智能下单产品、一站式轻松稳投，帮大家精准匹配需求、选对优化目标，让投放更高效、效果更有保障',
+    introText = 'AI投放聚焦创作者在投放过程中的决策难题，对话式智能下单产品、一站式轻松稳投，帮大家精准匹配需求、选对优化目标，让投放更高效、效果更有保障',
     card1Title = '更高效',
     card1Content = '智能下单产品',
     card2Title = '更轻松',
