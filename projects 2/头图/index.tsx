@@ -6,7 +6,8 @@ import glowUrl from './assets/Group 2147240474.png'
 import mainVisualUrl from './assets/主视觉.png'
 import ribbonUrl from './assets/彩带 1.png'
 import {
-  isDailyHeaderTitleLargeLine,
+  DAILY_HEADER_TITLE_TIERS,
+  getDailyHeaderTitleTier,
   splitDailyHeaderTitleLines,
 } from '../src/daily-header-title-layout.js'
 
@@ -51,8 +52,18 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
       : hasText
         ? props.text || ''
         : '抽666元流量大奖'
+  const titleTier = getDailyHeaderTitleTier(text)
+  const titleLayout = DAILY_HEADER_TITLE_TIERS[titleTier]
   const titleLines = splitDailyHeaderTitleLines(text).slice(0, 2)
-  const isSingleLineTitle = titleLines.length === 1
+  const lineLayouts = titleLines.map((line) => {
+    const tier = getDailyHeaderTitleTier(line)
+    return { line, tier, layout: DAILY_HEADER_TITLE_TIERS[tier] }
+  })
+  const isSingleLineTitle = lineLayouts.length === 1
+  const totalTitleHeight = lineLayouts.reduce(
+    (sum, item) => sum + item.layout.lineHeight,
+    0,
+  )
   const dateText = props.dateText ?? '6月10日-6月21日'
   const mainTextColor = props.textColor || '#2C0113'
   const burstOpacity = Number(props.burstOpacity ?? 0.5)
@@ -87,10 +98,7 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   }
   const mainVisualOffsetY = Number(props.mainVisualOffsetY ?? 0)
   const mainVisualScale = Number(props.mainVisualScale ?? 1)
-  const hasWideTitleLine = titleLines.some(
-    (line) => line && !isDailyHeaderTitleLargeLine(line),
-  )
-  const mainVisualOffsetX = hasWideTitleLine ? 0 : -20
+  const mainVisualOffsetX = titleLayout.visualOffsetX
   const mainVisualStyle: React.CSSProperties = Number.isFinite(mainVisualOffsetY) || Number.isFinite(mainVisualScale)
     ? {
         transform: `translate(${mainVisualOffsetX}px, ${Number.isFinite(mainVisualOffsetY) ? mainVisualOffsetY : 0}px) scale(${Number.isFinite(mainVisualScale) ? mainVisualScale : 1})`,
@@ -98,7 +106,12 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
     : undefined
   const titleStyle = {
     color: mainTextColor,
-  }
+    minHeight: `${totalTitleHeight}px`,
+    maxHeight: `${totalTitleHeight}px`,
+  } as React.CSSProperties
+  const containerTop = isSingleLineTitle
+    ? 46 + totalTitleHeight + 15.36
+    : totalTitleHeight + 15.36
   const firstLineStyle = {
     backgroundImage: `linear-gradient(180deg, ${props.headlineGradientTop || '#FF5F5F'} 0%, ${mainTextColor} 34%, ${props.headlineGradientBottom || mainTextColor} 100%)`,
   }
@@ -115,17 +128,25 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
           style={titleStyle}
           data-react-edit-prop="text"
         >
-          {titleLines.map((line, index) => (
+          {lineLayouts.map(({ line, layout }, index) => (
             <span
               key={`${line}-${index}`}
-              className={`${styles.textLine} ${isDailyHeaderTitleLargeLine(line) ? styles.textLineLarge : styles.textLineCompact} ${index === 0 ? styles.textLineGradient : styles.textLineSolid}`}
-              style={index === 0 ? firstLineStyle : undefined}
+              className={`${styles.textLine} ${index === 0 ? styles.textLineGradient : styles.textLineSolid}`}
+              style={{
+                ...(index === 0 ? firstLineStyle : undefined),
+                '--title-font-size': `${layout.fontSize}px`,
+                '--title-line-height': `${layout.lineHeight}px`,
+                '--number-font-size': `${layout.numberFontSize}px`,
+              } as React.CSSProperties}
             >
               {renderTitleTextWithNumberFont(line)}
             </span>
           ))}
         </div>
-        <div className={`${styles.container} ${isSingleLineTitle ? styles.containerSingleLine : ''}`}>
+        <div
+          className={`${styles.container} ${isSingleLineTitle ? styles.containerSingleLine : ''}`}
+          style={{ top: containerTop }}
+        >
           <div className={styles.content} style={buttonStyle}></div>
           <div className={styles.text1} style={buttonTextStyle} data-react-edit-prop="dateText">{dateText}</div>
         </div>

@@ -48,15 +48,15 @@
   left: 0px;
   width: 380px;
   font-family: "MFBenHeiNoncommercial";
-  font-size: 70px;
+  font-size: var(--title-font-size, 62px);
   white-space: normal;
   word-break: break-all;
   overflow-wrap: anywhere;
   color: rgba(44, 1, 19, 1);
-  line-height: 92px;
+  line-height: var(--title-line-height, 82px);
   font-weight: 400;
-  min-height: 92px;
-  max-height: 184px;
+  min-height: var(--title-line-height, 82px);
+  max-height: calc(var(--title-line-height, 82px) * 2);
   overflow: hidden;
 }
 .textSingleLine {
@@ -64,19 +64,9 @@
 }
 .textLine {
   display: block;
-  height: 92px;
-}
-.textLineLarge {
-  font-size: 76px;
-}
-.textLineCompact {
-  font-size: 70px;
-}
-.textLineLarge .douyinNumber {
-  font-size: 89px;
-}
-.textLineCompact .douyinNumber {
-  font-size: 82px;
+  font-size: var(--title-font-size, 62px);
+  line-height: var(--title-line-height, 82px);
+  height: var(--title-line-height, 82px);
 }
 .textLineGradient {
   color: transparent;
@@ -90,11 +80,12 @@
 }
 .douyinNumber {
   font-family: "Douyin Number ABC", "MFBenHeiNoncommercial";
+  font-size: var(--number-font-size, 74px);
   font-weight: 800;
 }
 .container {
   position: absolute;
-  top: 199.36px;
+  top: 179.36px;
   left: 1.54px;
   display: inline-flex;
   align-items: center;
@@ -105,7 +96,7 @@
   box-sizing: border-box;
 }
 .containerSingleLine {
-  top: 153.36px;
+  top: 143.36px;
 }
 .content {
   width: auto;

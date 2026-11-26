@@ -1,10 +1,16 @@
 export const DAILY_HEADER_TITLE_MAX_WIDTH = 380;
 export const DAILY_HEADER_TITLE_MAX_LINES = 2;
 
-const TEXT_FONT = '400 70px "MFBenHeiNoncommercial"';
-const LARGE_TEXT_FONT = '400 76px "MFBenHeiNoncommercial"';
-const NUMBER_FONT = '800 82px "Douyin Number ABC", "MFBenHeiNoncommercial"';
-const LARGE_NUMBER_FONT = '800 89px "Douyin Number ABC", "MFBenHeiNoncommercial"';
+export const DAILY_HEADER_TITLE_TIERS = {
+  4: { fontSize: 76, numberFontSize: 92, lineHeight: 98, visualOffsetX: -16 },
+  5: { fontSize: 68, numberFontSize: 82, lineHeight: 90, visualOffsetX: 8 },
+  6: { fontSize: 62, numberFontSize: 74, lineHeight: 82, visualOffsetX: 20 },
+};
+
+const TEXT_FONT = '400 62px "MFBenHeiNoncommercial"';
+const LARGE_TEXT_FONT = '400 68px "MFBenHeiNoncommercial"';
+const NUMBER_FONT = '800 74px "Douyin Number ABC", "MFBenHeiNoncommercial"';
+const LARGE_NUMBER_FONT = '800 80px "Douyin Number ABC", "MFBenHeiNoncommercial"';
 const LARGE_LINE_WIDTH_REFERENCE = "中文中文";
 const DATE_FONT = '500 28px "Source Han Sans CN"';
 const DATE_WIDTH_REFERENCE = "中文中文中文中文中文中";
@@ -35,11 +41,11 @@ export function isDailyHeaderTitleLargeLine(value) {
 }
 
 function getFallbackWidth(text, isNumber, isLarge) {
-  const scale = isLarge ? 76 / 70 : 1;
+  const scale = isLarge ? 68 / 62 : 1;
   return splitTextGraphemes(text).reduce((width, character) => {
-    if (isNumber) return width + 46 * scale;
-    if (/[\u0000-\u00ff]/.test(character)) return width + 39 * scale;
-    return width + 70 * scale;
+    if (isNumber) return width + 41 * scale;
+    if (/[\u0000-\u00ff]/.test(character)) return width + 34 * scale;
+    return width + 62 * scale;
   }, 0);
 }
 
@@ -86,6 +92,22 @@ export function measureDailyHeaderTitleLine(value) {
     value,
     isDailyHeaderTitleLargeLine(value),
   );
+}
+
+export function measureDailyHeaderTitleCompact(value) {
+  return measureDailyHeaderTitleLineAtSize(value, false);
+}
+
+export function getDailyHeaderTitleTier(value) {
+  const lines = splitDailyHeaderTitleLines(value).slice(0, DAILY_HEADER_TITLE_MAX_LINES);
+  const longestLineWidth = lines.reduce(
+    (max, line) => Math.max(max, measureDailyHeaderTitleCompact(line)),
+    0,
+  );
+  const units = longestLineWidth / 62;
+  if (units <= 4.05) return 4;
+  if (units <= 5.05) return 5;
+  return 6;
 }
 
 export function splitDailyHeaderTitleLines(value) {
