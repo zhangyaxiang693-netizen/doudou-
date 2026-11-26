@@ -3218,59 +3218,46 @@ button:hover {
   margin-bottom: 40px;
 }
 
-.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child {
-  margin-bottom: 0;
-}
-
+.component.molecule.molecule-container.lottery-consumption-return-2col,
 .component.molecule.molecule-container.lottery-consumption-return-3col,
 .component.molecule.molecule-container.lottery-consumption-return-4col {
   display: flex;
   flex-direction: column;
 }
 
-.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(1) {
-  margin-bottom: 40px;
-}
-
-.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(2) {
-  margin-bottom: 32px;
-}
-
-.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(3) {
-  margin-bottom: 32px;
-}
-
-.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(4) {
-  order: 5;
-  margin-bottom: 0;
-}
-
-.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(5) {
-  order: 4;
-  margin-bottom: 40px;
-}
-
+.component.molecule.molecule-container.lottery-consumption-return-2col .molecule-child,
+.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child,
 .component.molecule.molecule-container.lottery-consumption-return-4col .molecule-child {
   margin-bottom: 0;
 }
 
+.component.molecule.molecule-container.lottery-consumption-return-2col .molecule-child:nth-child(1),
+.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(1),
 .component.molecule.molecule-container.lottery-consumption-return-4col .molecule-child:nth-child(1) {
   margin-bottom: 40px;
 }
 
+.component.molecule.molecule-container.lottery-consumption-return-2col .molecule-child:nth-child(2),
+.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(2),
 .component.molecule.molecule-container.lottery-consumption-return-4col .molecule-child:nth-child(2) {
   margin-bottom: 32px;
 }
 
+.component.molecule.molecule-container.lottery-consumption-return-2col .molecule-child:nth-child(3),
+.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(3),
 .component.molecule.molecule-container.lottery-consumption-return-4col .molecule-child:nth-child(3) {
   margin-bottom: 32px;
 }
 
+.component.molecule.molecule-container.lottery-consumption-return-2col .molecule-child:nth-child(4),
+.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(4),
 .component.molecule.molecule-container.lottery-consumption-return-4col .molecule-child:nth-child(4) {
   order: 5;
   margin-bottom: 0;
 }
 
+.component.molecule.molecule-container.lottery-consumption-return-2col .molecule-child:nth-child(5),
+.component.molecule.molecule-container.lottery-consumption-return-3col .molecule-child:nth-child(5),
 .component.molecule.molecule-container.lottery-consumption-return-4col .molecule-child:nth-child(5) {
   order: 4;
   margin-bottom: 40px;
@@ -6314,9 +6301,9 @@ button:hover {
   pointer-events: none;
 }
 
-.app-shell[data-view="guided-export"] [data-consume-tier]:not([data-consume-tier="1"]) [data-consume-amount],
-.guided-export-cut-preview [data-consume-tier]:not([data-consume-tier="1"]) [data-consume-amount],
-.admin-export-capture [data-consume-tier]:not([data-consume-tier="1"]) [data-consume-amount] {
+.app-shell[data-view="guided-export"] [data-consume-tier] [data-consume-amount],
+.guided-export-cut-preview [data-consume-tier] [data-consume-amount],
+.admin-export-capture [data-consume-tier] [data-consume-amount] {
   visibility: hidden;
 }
 

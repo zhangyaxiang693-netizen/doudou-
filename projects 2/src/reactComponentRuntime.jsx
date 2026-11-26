@@ -9,6 +9,7 @@ import CouponIssueStyle4 from "../发券-样式4";
 import CouponIssueStyle4Booked from "../发券-样式4-已预约";
 import CouponIssueStyle4GrabNow from "../发券-样式4-立即抢";
 import CouponIssueStyle4Ended from "../发券-样式4-已结束";
+import LotteryConsumeReturn2Coupons from "../抽奖+消耗返2-2个券";
 import LotteryConsumeReturn3Coupons from "../抽奖+消耗返3-3个券";
 import ConsumeReturnStyle4Coupons from "../消耗返样式4个券";
 import ConsumeReturn2 from "../消耗返-样式1-3个券";
@@ -162,6 +163,7 @@ const componentMap = {
   "发券-样式4-已预约": CouponIssueStyle4Booked,
   "发券-样式4-立即抢": CouponIssueStyle4GrabNow,
   "发券-样式4-已结束": CouponIssueStyle4Ended,
+  "抽奖+消耗返2-2个券": LotteryConsumeReturn2Coupons,
   "抽奖+消耗返3-3个券": LotteryConsumeReturn3Coupons,
   "消耗返样式4个券": ConsumeReturnStyle4Coupons,
   "消耗返-样式1-3个券": ConsumeReturn2,

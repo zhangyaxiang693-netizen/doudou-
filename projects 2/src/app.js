@@ -444,6 +444,7 @@ const COMPONENT_DISPLAY_NAME_BY_ID = {
   "核心权益模块-bigday发券-样式1-已报名": "核心权益｜big-day发券（已报名）",
   "核心权益模块-bigday发券-样式2": "核心权益｜预约抢券",
   "核心权益模块-发券-样式2": "核心权益｜发券",
+  "核心玩法模块-抽奖消返-2列": "核心玩法｜抽奖消耗返",
   "核心玩法模块-抽奖消返-3列": "核心玩法｜抽奖消耗返",
   "核心玩法模块-抽奖消返-4列": "核心玩法｜抽奖消耗返",
   "核心玩法模块-抽奖-未报名": "核心玩法｜抽奖-九宫格",
@@ -677,6 +678,20 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
       ["模块标题-正常", { iconType: "alarm" }],
       ["通知", {}],
       ["发券-样式4", {}],
+    ],
+  },
+  {
+    id: "核心玩法模块-抽奖消返-2列",
+    name: "核心玩法模块-抽奖消返-2列",
+    type: "molecule",
+    description: "由标题、2 列抽奖消返、数据条、活动规则样式 3、大按钮组成。",
+    className: "lottery-consumption-return-2col",
+    children: [
+      ["模块标题-正常", {}],
+      ["抽奖+消耗返2-2个券", {}],
+      ["横排按钮数据条", {}],
+      ["正文-活动规则样式3", {}],
+      ["大按钮", {}],
     ],
   },
   {
@@ -1037,6 +1052,28 @@ const PAGE_TEMPLATE_BUSINESS_STATES = {
     states: [
       { id: "default", name: "点击前", schemaId: "内容诊断-样式1-点击前" },
       { id: "clicked", name: "点击后", schemaId: "内容诊断-样式-点击后" },
+    ],
+  },
+  "核心玩法模块-抽奖消返-2列": {
+    label: "核心玩法｜抽奖消耗返",
+    states: [
+      {
+        id: "default",
+        name: "报名状态",
+        schemaId: "核心玩法模块-抽奖消返-2列",
+        preserveProps: true,
+      },
+      {
+        id: "unregistered",
+        name: "未报名",
+        schemaId: "核心玩法模块-抽奖消返-2列",
+        preserveProps: true,
+        lockedPropKeys: ["buttonText"],
+        childProps: {
+          1: { hideProgressGraphic: false },
+          4: { buttonText: "立即报名" },
+        },
+      },
     ],
   },
   "核心玩法模块-抽奖消返-3列": {
@@ -1549,6 +1586,38 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
           fields: [
             ["2.buttonText", "报名按钮文案"],
             ["3.text", "补充说明"],
+          ],
+        },
+      ],
+    },
+    {
+      schemaIds: ["核心玩法模块-抽奖消返-2列"],
+      moduleName: "核心玩法｜抽奖消耗返",
+      sections: [
+        {
+          title: "",
+          fields: [["0.titleText", "模块标题"]],
+        },
+        {
+          title: "返券配置",
+          fields: [
+            ["1.rewardType1", "第1档 · 类型"],
+            ["1.amountText1", "第1档 · 券金额"],
+            ["1.rewardType2", "第2档 · 类型"],
+            ["1.amountText2", "第2档 · 券金额"],
+            ["1.consumeAmountText1", "第1档 · 消耗门槛"],
+            ["1.consumeAmountText2", "第2档 · 消耗门槛"],
+          ],
+        },
+        {
+          title: "活动规则",
+          fields: [
+            ["3.titleText", "标题"],
+            ["3.firstBodyText", "规则正文1"],
+            ["3.secondBodyText", "规则正文2"],
+            ["3.thirdBodyText", "规则正文3"],
+            ["3.highlightText", "高亮内容"],
+            ["3.paragraphCount", "规则段落数量"],
           ],
         },
       ],
@@ -2111,7 +2180,7 @@ function parsePrdDocumentReturnStrategyTable(rows) {
   const maxTier = populatedTierIndexes.length
     ? Math.max(...populatedTierIndexes)
     : 3;
-  const tierCount = maxTier >= 4 ? 4 : 3;
+  const tierCount = maxTier >= 4 ? 4 : maxTier === 3 ? 3 : 2;
   const fieldValues = [];
   for (let tierIndex = 1; tierIndex <= tierCount; tierIndex += 1) {
     fieldValues.push(
@@ -2560,7 +2629,7 @@ function getPrdBlueprintConsumptionTierCountsByVersion(
       if (!String(row.values[index] || "").trim()) return;
       counts.set(
         versionName || "",
-        Math.max(counts.get(versionName || "") || 3, tierIndex),
+        Math.max(counts.get(versionName || "") || 2, tierIndex),
       );
     });
   });
@@ -2599,8 +2668,8 @@ function buildPageTemplateSeedBlueprintFromPasteRows(
 function getNormalizedPrdBlueprintModuleName(value) {
   const normalized = normalizePageTemplateLookupName(value);
   if (
-    /核心玩法.*消耗返.*(?:三档|四档|3列|4列)/.test(normalized) ||
-    /核心玩法模块抽奖消返[34]列/.test(normalized)
+    /核心玩法.*消耗返.*(?:两档|三档|四档|2列|3列|4列)/.test(normalized) ||
+    /核心玩法模块抽奖消返[234]列/.test(normalized)
   ) {
     return normalizePageTemplateLookupName("核心玩法｜抽奖消耗返");
   }
@@ -5550,14 +5619,23 @@ function getConsumptionReturnMoleculeIdByTierCount(tierCount) {
     ? "核心玩法模块-抽奖消返-4列"
     : Number(tierCount) >= 3
       ? "核心玩法模块-抽奖消返-3列"
-      : "";
+      : Number(tierCount) >= 2
+        ? "核心玩法模块-抽奖消返-2列"
+        : "";
 }
 
 function isConsumptionReturnMoleculeNode(node) {
   return [
+    "核心玩法模块-抽奖消返-2列",
     "核心玩法模块-抽奖消返-3列",
     "核心玩法模块-抽奖消返-4列",
   ].includes(node?.schemaId);
+}
+
+function getConsumptionReturnTierCountFromNode(node) {
+  const schemaId = String(node?.schemaId || "");
+  const match = schemaId.match(/核心玩法模块-抽奖消返-([234])列/);
+  return match ? Number(match[1]) : 3;
 }
 
 const CONSUMPTION_RETURN_TIER_COUNT_KEY = "__consumptionReturnTierCount";
@@ -5692,22 +5770,25 @@ function getConsumptionReturnVariantValues(
   return values;
 }
 
-function getConsumptionReturnTierCountFromValues(values = new Map()) {
+function getConsumptionReturnTierCountFromValues(values = new Map(), fallbackTierCount = 3) {
   const explicitTierCount = Number(
     values.get(CONSUMPTION_RETURN_TIER_COUNT_KEY),
   );
-  if ([3, 4].includes(explicitTierCount)) return explicitTierCount;
+  if ([2, 3, 4].includes(explicitTierCount)) return explicitTierCount;
   const fourthTierKeys = new Set([
     "1.amountText4",
     "1.consumeAmountText4",
   ]);
-  return [...values.entries()].some(
-    ([key, value]) =>
-      fourthTierKeys.has(String(key || "")) &&
-      String(value ?? "").trim(),
-  )
-    ? 4
-    : 3;
+  if (
+    [...values.entries()].some(
+      ([key, value]) =>
+        fourthTierKeys.has(String(key || "")) &&
+        String(value ?? "").trim(),
+    )
+  ) {
+    return 4;
+  }
+  return Number(fallbackTierCount) === 2 ? 2 : 3;
 }
 
 function createConsumptionReturnNodeForTier(sourceNode, tierCount) {
@@ -5754,6 +5835,11 @@ function createConsumptionReturnNodeForTier(sourceNode, tierCount) {
 }
 
 function getConsumptionReturnTierCountFromRows(rows = []) {
+  const explicitRow = rows.find((row) =>
+    String(row.key ?? row.field ?? "").includes(CONSUMPTION_RETURN_TIER_COUNT_KEY),
+  );
+  const explicitTierCount = Number(explicitRow?.value);
+  if ([2, 3, 4].includes(explicitTierCount)) return explicitTierCount;
   let maxTier = 0;
   rows.forEach((row) => {
     const value = String(row.value ?? "").trim();
@@ -5776,7 +5862,7 @@ function getConsumptionReturnTierCountFromRows(rows = []) {
     const tier = Number(chineseTierMap[tierValue] || tierValue || 0);
     if (tier) maxTier = Math.max(maxTier, tier);
   });
-  return maxTier >= 4 ? 4 : maxTier >= 1 ? 3 : 0;
+  return maxTier >= 4 ? 4 : maxTier === 3 ? 3 : maxTier === 2 ? 2 : maxTier >= 1 ? 3 : 0;
 }
 
 function applyConsumptionReturnMoleculeByTierCount(pageTemplate, tierCount) {
@@ -5784,6 +5870,7 @@ function applyConsumptionReturnMoleculeByTierCount(pageTemplate, tierCount) {
   if (!pageTemplate?.nodes?.length || !moleculeId) return false;
   const moduleIndex = pageTemplate.nodes.findIndex((entry) =>
     [
+      "核心玩法模块-抽奖消返-2列",
       "核心玩法模块-抽奖消返-3列",
       "核心玩法模块-抽奖消返-4列",
     ].includes(getPageTemplateRawNodeSchemaId(entry)),
@@ -13288,6 +13375,7 @@ function renderModuleBoundBlueprintVersionMatrix(group) {
   const dimensionGroups = getBlueprintVersionDimensionGroups(versions);
   const versionModuleKey = group.versionModuleKey || group.moduleName;
   const usesConsumptionReturnMatrix = new Set([
+    "核心玩法模块-抽奖消返-2列",
     "核心玩法模块-抽奖消返-3列",
     "核心玩法模块-抽奖消返-4列",
   ]).has(group.moduleSchemaId);
@@ -13501,16 +13589,20 @@ function renderConsumptionReturnBlueprintMatrix(
       version.isManual ? version.name : "",
     );
     const explicitTierCount = Number(explicitTierRow?.value);
-    if ([3, 4].includes(explicitTierCount)) return explicitTierCount;
+    if ([2, 3, 4].includes(explicitTierCount)) return explicitTierCount;
     const hasFourthTier = ["amountText4", "consumeAmountText4"].some((key) => {
       const field = getField(version, key);
       const row = field ? state.prdTableRows[field.rowIndex] : null;
       return Boolean(String(row?.value ?? "").trim());
     });
-    return hasFourthTier ? 4 : 3;
+    if (hasFourthTier) return 4;
+    const hasThirdTierField = ["rewardType3", "amountText3", "consumeAmountText3"].some(
+      (key) => Boolean(getField(version, key)),
+    );
+    return hasThirdTierField ? 3 : 2;
   };
   const visibleTierCount = Math.max(
-    3,
+    2,
     ...versions.map((version) => getVersionTierCount(version)),
   );
   const tiers = availableTiers.filter(
@@ -13563,6 +13655,7 @@ function renderConsumptionReturnBlueprintMatrix(
         data-prd-consumption-version-id="${escapeAttr(version.id || "base")}"
         data-prd-consumption-version-name="${escapeAttr(version.name)}"
       >
+        <option value="2" ${tierCount === 2 ? "selected" : ""}>两档</option>
         <option value="3" ${tierCount === 3 ? "selected" : ""}>三档</option>
         <option value="4" ${tierCount === 4 ? "selected" : ""}>四档</option>
       </select>
@@ -13649,13 +13742,17 @@ function refreshConsumptionReturnTierControlForInput(input) {
     "[data-prd-consumption-version-tier]",
   );
   if (!tierSelect) return;
-  const hasFourthTier = [...versionRow.querySelectorAll("textarea")].some(
-    (field) =>
-      ["第4档 · 消耗门槛", "第4档 · 券金额"].includes(field.getAttribute("aria-label")) &&
-      String(field.value || "").trim(),
-  );
-  const tierCount = hasFourthTier ? 4 : 3;
+  const hasTierValue = (labels) =>
+    [...versionRow.querySelectorAll("textarea")].some(
+      (field) =>
+        labels.includes(field.getAttribute("aria-label")) &&
+        String(field.value || "").trim(),
+    );
+  const hasFourthTier = hasTierValue(["第4档 · 消耗门槛", "第4档 · 券金额"]);
+  const hasThirdTier = hasTierValue(["第3档 · 消耗门槛", "第3档 · 券金额"]);
+  const tierCount = hasFourthTier ? 4 : hasThirdTier ? 3 : 2;
   tierSelect.value = String(tierCount);
+  tierSelect.classList.toggle("is-2-tier", tierCount === 2);
   tierSelect.classList.toggle("is-3-tier", tierCount === 3);
   tierSelect.classList.toggle("is-4-tier", tierCount === 4);
   const moduleIndex = Number(tierSelect.dataset.prdConsumptionModuleIndex);
@@ -18162,7 +18259,10 @@ function applyPageTemplateVariableVersionRowsToNodes(nodes = [], rows = [], page
       if (isConsumptionReturnMoleculeNode(node)) {
         const nextNode = createConsumptionReturnNodeForTier(
           node,
-          getConsumptionReturnTierCountFromValues(baseValues),
+          getConsumptionReturnTierCountFromValues(
+            baseValues,
+            getConsumptionReturnTierCountFromNode(node),
+          ),
         );
         applyConsumptionReturnStateVariableValues(nextNode, baseValues);
         nodes[moduleIndex] = nextNode;
@@ -18173,7 +18273,10 @@ function applyPageTemplateVariableVersionRowsToNodes(nodes = [], rows = [], page
     if (isConsumptionReturnMoleculeNode(baseNode)) {
       baseNode = createConsumptionReturnNodeForTier(
         baseNode,
-        getConsumptionReturnTierCountFromValues(baseValues),
+        getConsumptionReturnTierCountFromValues(
+          baseValues,
+          getConsumptionReturnTierCountFromNode(baseNode),
+        ),
       );
       applyConsumptionReturnStateVariableValues(baseNode, baseValues);
     }
@@ -18196,7 +18299,10 @@ function applyPageTemplateVariableVersionRowsToNodes(nodes = [], rows = [], page
       if (isConsumptionReturnMoleculeNode(variantNode)) {
         variantNode = createConsumptionReturnNodeForTier(
           variantNode,
-          getConsumptionReturnTierCountFromValues(effectiveValues),
+          getConsumptionReturnTierCountFromValues(
+            effectiveValues,
+            getConsumptionReturnTierCountFromNode(variantNode),
+          ),
         );
       }
       if (BIGDAY_COUPON_BUSINESS_STATE_SCHEMA_IDS.has(variantNode.schemaId)) {
@@ -20757,6 +20863,7 @@ function getGuidedMoleculeOptions() {
   const hiddenOptionIds = new Set([
     "MoleculeContainer",
     "核心权益模块-bigday发券-样式1-已报名",
+    "核心玩法模块-抽奖消返-2列",
     "核心玩法模块-抽奖消返-3列",
     "核心玩法模块-抽奖-已报名",
   ]);
@@ -22719,6 +22826,10 @@ function exportPage() {
 const guidedCutExportRules = {
   "投稿赢流量-样式3": {
     exportBottomSpace: 22,
+  },
+  "核心玩法模块-抽奖消返-2列": {
+    exportWidth: GUIDED_CUT_EXPORT_WIDTH,
+    exportSideSpace: GUIDED_CONSUMPTION_RETURN_EXPORT_SIDE_SPACE,
   },
   "核心玩法模块-抽奖消返-3列": {
     exportWidth: GUIDED_CUT_EXPORT_WIDTH,
@@ -27670,7 +27781,8 @@ function bindEvents() {
         versionId === "base"
           ? ""
           : prdConsumptionVersionTierSelect.dataset.prdConsumptionVersionName || "";
-      const tierCount = Number(prdConsumptionVersionTierSelect.value) === 4 ? 4 : 3;
+      const rawTierCount = Number(prdConsumptionVersionTierSelect.value);
+      const tierCount = [2, 3, 4].includes(rawTierCount) ? rawTierCount : 3;
       const templateId =
         prdConsumptionVersionTierSelect.dataset.prdConsumptionTemplateId || "";
 
@@ -27679,21 +27791,25 @@ function bindEvents() {
         String(tierCount),
       );
 
-      if (tierCount === 4) {
-        const pageTemplate = [...pageTemplates, ...customPageTemplates].find(
-          (item) => item.id === templateId,
+      const pageTemplate = [...pageTemplates, ...customPageTemplates].find(
+        (item) => item.id === templateId,
+      );
+      const currentTierCount = getConsumptionReturnTierCountFromNode(
+        materializePageTemplateNodes(pageTemplate)[moduleIndex],
+      );
+      const targetMoleculeId = getConsumptionReturnMoleculeIdByTierCount(tierCount);
+      if (
+        pageTemplate &&
+        targetMoleculeId &&
+        currentTierCount < tierCount &&
+        getPageTemplateRawNodeSchemaId(pageTemplate.nodes?.[moduleIndex]) !==
+          targetMoleculeId
+      ) {
+        replaceMoleculeInPrdPageTemplate(
+          templateId,
+          moduleIndex,
+          targetMoleculeId,
         );
-        if (
-          pageTemplate &&
-          getPageTemplateRawNodeSchemaId(pageTemplate.nodes?.[moduleIndex]) !==
-            "核心玩法模块-抽奖消返-4列"
-        ) {
-          replaceMoleculeInPrdPageTemplate(
-            templateId,
-            moduleIndex,
-            "核心玩法模块-抽奖消返-4列",
-          );
-        }
       }
 
       state.prdTableBlueprint = null;
