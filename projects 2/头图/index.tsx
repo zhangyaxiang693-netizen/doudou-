@@ -7,6 +7,7 @@ import mainVisualUrl from './assets/主视觉.png'
 import ribbonUrl from './assets/彩带 1.png'
 import {
   DAILY_HEADER_TITLE_TIERS,
+  getDailyHeaderTitleLineLayout,
   getDailyHeaderTitleTier,
   splitDailyHeaderTitleLines,
 } from '../src/daily-header-title-layout.js'
@@ -30,10 +31,17 @@ export type IGeneratedComponent = {
 }
 
 function renderTitleTextWithNumberFont(value: string) {
-  const segments = value.split(/([A-Za-z0-9０-９+＋]+)/g)
+  const segments = value.split(/([A-Za-z+＋&＆]+|[0-9０-９]+)/g)
   return segments.map((segment, index) => {
     if (!segment) return null
-    if (/^[A-Za-z0-9０-９+＋]+$/.test(segment)) {
+    if (/^[A-Za-z+＋&＆]+$/.test(segment) && /[A-Za-z]/.test(segment)) {
+      return (
+        <span key={`${segment}-${index}`} className={styles.latinText}>
+          {segment}
+        </span>
+      )
+    }
+    if (/^[A-Za-z0-9０-９+＋&＆]+$/.test(segment)) {
       return (
         <span key={`${segment}-${index}`} className={styles.douyinNumber}>
           {segment}
@@ -55,10 +63,10 @@ export default function GeneratedComponent(props: IGeneratedComponent) {
   const titleTier = getDailyHeaderTitleTier(text)
   const titleLayout = DAILY_HEADER_TITLE_TIERS[titleTier]
   const titleLines = splitDailyHeaderTitleLines(text).slice(0, 2)
-  const lineLayouts = titleLines.map((line) => {
-    const tier = getDailyHeaderTitleTier(line)
-    return { line, tier, layout: DAILY_HEADER_TITLE_TIERS[tier] }
-  })
+  const lineLayouts = titleLines.map((line) => ({
+    line,
+    layout: getDailyHeaderTitleLineLayout(line),
+  }))
   const isSingleLineTitle = lineLayouts.length === 1
   const totalTitleHeight = lineLayouts.reduce(
     (sum, item) => sum + item.layout.lineHeight,

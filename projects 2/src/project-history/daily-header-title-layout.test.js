@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   DAILY_HEADER_TITLE_TIERS,
   clampDailyHeaderTitle,
+  getDailyHeaderTitleLineLayout,
   getDailyHeaderTitleTier,
   getFittingDailyHeaderDateInsertion,
   getFittingDailyHeaderInsertion,
@@ -47,6 +48,17 @@ test("daily header title tier follows the longest wrapped line, not the total le
   assert.equal(getDailyHeaderTitleTier("好礼天天抽\n赢千元"), 5);
   assert.equal(getDailyHeaderTitleTier("好礼天天抽赢\n千元流量"), 6);
   assert.equal(getDailyHeaderTitleTier("好礼天天抽赢千元流量"), 6);
+});
+
+test("over-wide lines scale down uniformly to the six-character width", () => {
+  assert.equal(getDailyHeaderTitleLineLayout("六字标题文案").fontSize, 62);
+  assert.equal(getDailyHeaderTitleLineLayout("五字主标题").fontSize, 68);
+  assert.equal(getDailyHeaderTitleLineLayout("四字标题").fontSize, 76);
+  const tooWide = getDailyHeaderTitleLineLayout("DOU+限时福利赢");
+  assert.ok(tooWide.fontSize < 62);
+  assert.ok(tooWide.fontSize >= 50);
+  const scale = tooWide.fontSize / 62;
+  assert.ok(Math.abs(tooWide.lineHeight / 82 - scale) < 0.02);
 });
 
 test("daily header title wraps after about six Chinese characters per line", () => {
