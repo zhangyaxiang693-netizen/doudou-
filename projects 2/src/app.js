@@ -871,7 +871,7 @@ const BUILT_IN_MOLECULE_SCHEMAS = [
     children: [
       ["模块标题-正常", { iconType: "gift" }],
       ["抽奖样式2", {}],
-      ["横排按钮数据条", {}],
+      ["横排按钮数据条", { showLotteryCount: true }],
       ["大按钮", { buttonText: "立即抽奖" }],
       ["正文-带消耗阶梯", {}],
     ],
@@ -1610,6 +1610,10 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
           ],
         },
         {
+          title: "数据条",
+          fields: [["2.showLotteryCount", "显示可抽奖次数"]],
+        },
+        {
           title: "活动规则",
           fields: [
             ["3.titleText", "标题"],
@@ -1643,6 +1647,10 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
             ["1.consumeAmountText2", "第2档 · 消耗门槛"],
             ["1.consumeAmountText3", "第3档 · 消耗门槛"],
           ],
+        },
+        {
+          title: "数据条",
+          fields: [["2.showLotteryCount", "显示可抽奖次数"]],
         },
         {
           title: "活动规则",
@@ -1681,6 +1689,10 @@ const PRD_PAGE_TEMPLATE_INPUT_SPECS = {
             ["1.consumeAmountText3", "第3档 · 消耗门槛"],
             ["1.consumeAmountText4", "第4档 · 消耗门槛"],
           ],
+        },
+        {
+          title: "数据条",
+          fields: [["2.showLotteryCount", "显示可抽奖次数"]],
         },
         {
           title: "活动规则",
@@ -27839,6 +27851,12 @@ function bindEvents() {
         state.prdTableRows[rowIndex].value = prdTableRowInput.type === "checkbox"
           ? (prdTableRowInput.checked ? "true" : "")
           : prdTableRowInput.value;
+        if (prdTableRowInput.type === "checkbox") {
+          const stateLabel = prdTableRowInput
+            .closest(".prd-variable-checkbox")
+            ?.querySelector("span");
+          if (stateLabel) stateLabel.textContent = prdTableRowInput.checked ? "开启" : "关闭";
+        }
         if (/^(活动名称|名称)$/.test(rowKey)) {
           setCurrentProjectName(state.prdTableRows[rowIndex].value);
         }

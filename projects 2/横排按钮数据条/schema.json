@@ -12,7 +12,7 @@
   },
   "fonts": [
     {
-      "text": "累计现金消耗",
+      "text": "当前累计现金消耗",
       "family": "Source Han Sans CN",
       "weight": 400,
       "size": "24px",
@@ -41,6 +41,7 @@
     "matchKeywords": [
       "横排按钮数据条",
       "数据条",
+      "当前累计现金消耗",
       "累计现金消耗",
       "可抽奖次数",
       "消耗金额",
@@ -58,7 +59,7 @@
       "label": "消耗金额",
       "type": "string",
       "default": "30",
-      "description": "累计现金消耗金额数字，组件固定显示“(元)”单位。"
+      "description": "当前累计现金消耗金额数字，组件固定显示“(元)”单位。"
     },
     {
       "key": "lotteryCountText",
@@ -67,6 +68,14 @@
       "type": "string",
       "default": "2",
       "description": "可抽奖次数数字。"
+    },
+    {
+      "key": "showLotteryCount",
+      "name": "showLotteryCount",
+      "label": "显示可抽奖次数",
+      "type": "boolean",
+      "default": false,
+      "description": "开启后显示右侧可抽奖次数，左侧文案为「累计现金消耗」；关闭时显示「当前累计现金消耗」并整条居中。"
     },
     {
       "key": "valueTextColor",
