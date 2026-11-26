@@ -5835,19 +5835,22 @@ function createConsumptionReturnNodeForTier(sourceNode, tierCount) {
 }
 
 function getConsumptionReturnTierCountFromRows(rows = []) {
-  const explicitRow = rows.find((row) =>
-    String(row.key ?? row.field ?? "").includes(CONSUMPTION_RETURN_TIER_COUNT_KEY),
-  );
-  const explicitTierCount = Number(explicitRow?.value);
-  if ([2, 3, 4].includes(explicitTierCount)) return explicitTierCount;
+  let explicitMaxTierCount = 0;
   let maxTier = 0;
   rows.forEach((row) => {
     const value = String(row.value ?? "").trim();
-    const field = String(row.field ?? row.key ?? "").trim();
+    const fieldOrKey = String(row.key ?? row.field ?? "").trim();
+    if (fieldOrKey.includes(CONSUMPTION_RETURN_TIER_COUNT_KEY)) {
+      const tierCount = Number(value);
+      if ([2, 3, 4].includes(tierCount)) {
+        explicitMaxTierCount = Math.max(explicitMaxTierCount, tierCount);
+      }
+      return;
+    }
     const moduleName = String(row.module ?? "").trim();
     if (!value) return;
     const normalizedModule = normalizePageTemplateLookupName(moduleName);
-    const normalizedField = normalizePageTemplateLookupName(field);
+    const normalizedField = normalizePageTemplateLookupName(fieldOrKey);
     if (
       normalizedModule &&
       !normalizedModule.includes(normalizePageTemplateLookupName("消耗返")) &&
@@ -5862,7 +5865,9 @@ function getConsumptionReturnTierCountFromRows(rows = []) {
     const tier = Number(chineseTierMap[tierValue] || tierValue || 0);
     if (tier) maxTier = Math.max(maxTier, tier);
   });
-  return maxTier >= 4 ? 4 : maxTier === 3 ? 3 : maxTier === 2 ? 2 : maxTier >= 1 ? 3 : 0;
+  const inferredTierCount =
+    maxTier >= 4 ? 4 : maxTier === 3 ? 3 : maxTier === 2 ? 2 : maxTier >= 1 ? 3 : 0;
+  return Math.max(explicitMaxTierCount, inferredTierCount);
 }
 
 function applyConsumptionReturnMoleculeByTierCount(pageTemplate, tierCount) {

@@ -42,6 +42,36 @@ test("legacy explicit three-tier settings override retained fourth-tier values i
   assert.match(render(), /<option value="4" selected>/);
 });
 
+test("mixed two/three/four-tier audiences keep the highest tier count for the page template", () => {
+  const context = vm.createContext({
+    CONSUMPTION_RETURN_TIER_COUNT_KEY: "__consumptionReturnTierCount",
+    normalizePageTemplateLookupName: (value) =>
+      String(value || "").replace(/\s+/g, "").toLowerCase(),
+  });
+  vm.runInContext(
+    source(
+      "getConsumptionReturnTierCountFromRows",
+      "applyConsumptionReturnMoleculeByTierCount",
+    ),
+    context,
+  );
+  assert.equal(
+    context.getConsumptionReturnTierCountFromRows([
+      { key: "页面模板变量｜3｜__consumptionReturnTierCount", value: "2" },
+      { key: "页面模板变量版本｜3｜人群2｜__consumptionReturnTierCount", value: "4" },
+      { key: "页面模板变量版本｜3｜人群3｜__consumptionReturnTierCount", value: "3" },
+    ]),
+    4,
+  );
+  assert.equal(
+    context.getConsumptionReturnTierCountFromRows([
+      { module: "核心玩法｜抽奖消耗返", field: "第1档 · 消耗门槛", value: "68" },
+      { module: "核心玩法｜抽奖消耗返", field: "第3档 · 消耗门槛", value: "400" },
+    ]),
+    3,
+  );
+});
+
 test("shared detail synchronization recognizes the legacy embedded module index", () => {
   const context = vm.createContext({
     state: { prdTableRows: [{ key: "页面模板变量｜3｜2|__consumptionReturnDetailMode", value: "shared" }] },
