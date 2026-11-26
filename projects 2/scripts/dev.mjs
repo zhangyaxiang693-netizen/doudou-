@@ -15,11 +15,16 @@ const viteBin = path.join(
 const envFile = path.join(projectDir, ".env.local");
 const children = [];
 let shuttingDown = false;
+const devEnv = {
+  ...process.env,
+  NODE_ENV: process.env.NODE_ENV || "development",
+  LOCAL_PREVIEW_SESSION_STORE: process.env.LOCAL_PREVIEW_SESSION_STORE || "memory",
+};
 
 function start(command, args, label) {
   const child = spawn(command, args, {
     cwd: projectDir,
-    env: process.env,
+    env: devEnv,
     stdio: "inherit",
   });
   children.push(child);

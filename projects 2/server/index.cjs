@@ -4,7 +4,7 @@ const path = require("path");
 const { execFile } = require("child_process");
 const { promisify } = require("util");
 const session = require("express-session");
-const { SupabaseSessionStore } = require("./supabase-session-store.cjs");
+const { createSessionStore } = require("./session-store-factory.cjs");
 const { createHistoryRouter } = require("./history-routes.cjs");
 const { createExportRouter } = require("./export-routes.cjs");
 const { createCollaborationRouter } = require("./collaboration-routes.cjs");
@@ -32,9 +32,9 @@ const HOST = "0.0.0.0";
 const distDir = path.join(__dirname, "..", "dist");
 const projectRoot = path.join(__dirname, "..");
 
-// Session 配置（登录态存 Supabase，跨 FaaS 实例重启不丢失）
+// 默认持久化到 Supabase；本地开发启动脚本可显式使用临时会话。
 app.use(
-  session(createSessionOptions(new SupabaseSessionStore()))
+  session(createSessionOptions(createSessionStore()))
 );
 app.use(renewAuthenticatedSession);
 
